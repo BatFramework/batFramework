@@ -1,7 +1,7 @@
 import pygame
 import os
 
-font_path = os.getcwd() + "/batFramework/data/font.ttf"
+font_path = "data/font.ttf"
 BASE_FONT: pygame.font.Font = None
 ASSETSCALE = 2
 
