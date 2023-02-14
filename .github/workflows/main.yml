@@ -1,8 +1,9 @@
 on:
   release:
     types: [published]
-    name: "Publish With Poetry"
-    uses: celsiusnarhwal/poetry-publish@v2.0.2
-    with:
-      token: ${{ secrets.PYPI_API_TOKEN }} # optional, default is 
-      extra_build_dependency_packages: "pygame"
+    jobs:
+      name: "Publish With Poetry"
+      uses: celsiusnarhwal/poetry-publish@v2.0.2
+      with:
+        token: ${{ secrets.PYPI_API_TOKEN }} # optional, default is 
+        extra_build_dependency_packages: "pygame"
