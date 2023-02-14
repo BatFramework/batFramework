@@ -1,31 +1,8 @@
-jobs:
-  -name: Publish With Poetry
-  # You may pin to the exact commit or the version.
-  # uses: celsiusnarhwal/poetry-publish@fab19c2cf01932f0fbe9b879496111043896bf21
-  uses: celsiusnarhwal/poetry-publish@v2.0.2
-  with:
-    # The version of Python to use. If you don't provide this, the action will use whatever version is in
-    # $PATH. Poetry requires Python 3.7 or later.
-
-    python-version: # optional
-    # The version of Poetry to use. If you don't provide this, the action will use the version of Poetry
-    # in $PATH if one exists and install the latest stable version of Poetry otherwise.
-
-    poetry-version: # optional
-    # The repository to publish to. Must be either "pypi", "testpypi", or an appropriate URL. Defaults to "pypi".
-
-    repo: # optional, default is pypi
-    # The username to use for the publication repository.
-    username: # optional, default is 
-    # The password to use for the publication repository.
-    password: # optional, default is 
-    # The token to use for the publication repository. If provided, this will be preferred over a username and password.
-
-    token: ${{ secrets.PYPI_API_TOKEN }} # optional, default is 
-    # Whether to build the package before publishing it. Defaults to "true".
-    build: # optional, default is true
-    # The format to build the package in. Must be either "sdist" or "wheel". Both formats will be built if this isn't specified.
-
-    build-format: # optional, default is 
-
-    extra_build_dependency_packages: "pygame"
+on:
+  release:
+    types: [published]
+    name: "Publish With Poetry"
+    uses: celsiusnarhwal/poetry-publish@v2.0.2
+    with:
+      token: ${{ secrets.PYPI_API_TOKEN }} # optional, default is 
+      extra_build_dependency_packages: "pygame"
