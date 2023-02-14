@@ -3,7 +3,7 @@ name = "batframework"
 version = "0.1.0"
 description = "A pygame framework for making games easier"
 authors = ["Baturay <baturayturan@gmail.com>"]
-license = "MIT"
+license = "LICENCE"
 readme = "README.md"
 
 [tool.poetry.dependencies]
