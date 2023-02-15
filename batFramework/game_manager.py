@@ -6,9 +6,10 @@ from .scene_manager import SceneManager
 
 
 class GameManager:
-    def __init__(self, resolution : tuple[int], fps : int, *flags : int):
+    def __init__(self, resolution : tuple[int], fps : int, *flags : int,font_path:str=None,font_size:int=18):
         pygame.init()
-
+        if font_path :
+            lib.set_font(font_path,font_size) 
 
         pygame.display.set_mode(resolution, *flags)
 
