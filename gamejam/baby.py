@@ -97,14 +97,14 @@ class Baby(bf.AnimatedSprite):
     def __init__(self) -> None:
         super().__init__((8,16))
         self.set_debug_color("blue")
-        self.collision_rect = pygame.FRect(0,0,*self.rect.size)
+        self.collision_rect = pygame.FRect(0,0,self.rect.w,gconst.TILE_SIZE)
         self.position = Vector2()
         self.velocity :Vector2 = Vector2()
         self.spawn_point = (0,0)
         self.on_ground = False
         self.action_container = bf.ActionContainer()
         self.h_movement_speed = 50
-        self.jump_force = 170
+        self.jump_force = 140
 
 
         self.action_container.add_action(
@@ -114,15 +114,14 @@ class Baby(bf.AnimatedSprite):
             bf.Action("right").add_key_control(pygame.K_RIGHT, pygame.K_d).set_holding(),
             bf.Action("spawn").add_key_control(pygame.K_s).set_instantaneous()
 
-        )
+        ) 
 
         sprite_size = [int(i) for i in self.rect.size]
 
-        self.add_animState("run","animation/baby/idle.png",   sprite_size, [5,5])
+        self.add_animState("run","animation/baby/run.png",   sprite_size, [3]*8)
         self.add_animState("idle","animation/baby/idle.png",  sprite_size, [20,15])
         self.add_animState("jump","animation/baby/idle.png",  sprite_size, [5,5])
-        self.add_animState("fall","animation/baby/idle.png",  sprite_size, [5,5])
-        self.add_animState("hide","animation/baby/idle.png",  sprite_size, [5,5])
+        self.add_animState("fall","animation/baby/fall.png",  sprite_size, [6,6])
 
 
 
@@ -136,10 +135,14 @@ class Baby(bf.AnimatedSprite):
         self.level_link = None
         self.big_sis_link : bf.AnimatedSprite = None
         self.is_held  : bool= False
+        self.control = False
 
     def hold(self,value):
         self.is_held = value
 
+    def set_control(self,value:bool):
+        self.action_container.hard_reset()
+        self.control = value
 
     def do_when_added(self):
         self.level_link : Level = self.parent_scene.get_sharedVar("level")
@@ -151,7 +154,8 @@ class Baby(bf.AnimatedSprite):
 
 
     def process_event(self, event):
-        self.action_container.process_event(event)
+        if self.control : 
+            self.action_container.process_event(event)
 
     def set_position(self, x, y):
         self.position.update(x,y)
@@ -230,10 +234,10 @@ class Baby(bf.AnimatedSprite):
 
     def update(self, dt: float):
         super().update(dt)
-        # self.stateMachine.update(dt)
+        self.stateMachine.update(dt)
         if not self.is_held : 
             self.process_physics(dt)
-            self.set_flipX(self.big_sis_link.rect.centerx < self.rect.centerx)
+            if not self.control: self.set_flipX(self.big_sis_link.rect.centerx < self.rect.centerx)
         else:
             self.set_flipX(self.big_sis_link.flipX)
             self.set_position(*self.big_sis_link.rect.move(0,-5).midtop)

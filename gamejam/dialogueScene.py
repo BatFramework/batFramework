@@ -16,9 +16,6 @@ class DialogueScene(CustomBaseScene):
     def __init__(self) -> None:
         super().__init__("dialogue")
         self.text_box = bf.TextBox()
-
-        self.add_action(bf.Action("message").add_key_control(pygame.K_t))
-
         self.text_box = bf.TextBox()
         text_box_height = 40
         self.text_box.resize(160,text_box_height)
@@ -36,12 +33,14 @@ class DialogueScene(CustomBaseScene):
         self.dimmer = pygame.Surface(self.hud_camera.rect.size).convert_alpha()
         self.dimmer.set_alpha(140)
  
-        self.background.draw = lambda camera, dimmer=self.dimmer: custom_draw(self.background,camera,dimmer,lambda : self.character_sprite.visible == True)
+        self.background.draw = lambda camera, dimmer=self.dimmer: custom_draw(self.background,camera,dimmer,self.is_character_on_screen)
 
     def do_when_added(self):
         self.update(0.1)
-        dummy = pygame.Surface(self.hud_camera.rect.size).convert()
-        self.draw(dummy)
+
+    def is_character_on_screen(self)-> bool:
+        # print((not self.current_character is None),self.character_sprite.visible)
+        return (not self.current_character is None) and self.character_sprite.visible
 
     def set_background(self,path,convert_alpha=False):
         if path is None:
@@ -86,7 +85,7 @@ class DialogueScene(CustomBaseScene):
             self.current_character = None
             self.character_sprite.set_visible(False)
             return
-
+        self.current_character = character
         self.character_sprite.set_image(f"sprites/{character}/{emotion}.png",True)
         self.character_sprite.set_flip(not facing_right)
         self.character_sprite.set_visible(True)

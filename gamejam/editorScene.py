@@ -9,7 +9,8 @@ from game_constants import GameConstants as gconst
 class EditorScene(CustomBaseScene):
     def __init__(self) -> None:
         super().__init__("editor")
-        self.tools = ["tile","entity"]
+        self.tile_cursor : Tile =  Tile(0,0,(0,0))
+        self.tools = ["tile","entity","spawn"]
         self.tool_iterator = (i for i in itertools.count() )
         next(self.tool_iterator)
         self.tool = None
@@ -21,7 +22,8 @@ class EditorScene(CustomBaseScene):
         editor_label = bf.Label("EDITOR")
         self.add_hud_entity(editor_label)
         editor_label.set_position(*self.hud_camera.rect.move(-editor_label.rect.w,0).topright)
-        self.tile_cursor : Tile = None 
+
+        
 
         self.add_action(
             bf.Action("l_click").add_mouse_control(1).set_holding(),
@@ -46,9 +48,9 @@ class EditorScene(CustomBaseScene):
     def set_tool(self,tool:str):
         self.tool = tool
         self.tool_label.set_text(tool)
+        self.tile_cursor.set_visible(tool!="spawn")
 
     def do_when_added(self):
-        self.tile_cursor = Tile(0,0,(0,0))
         self.set_sharedVar("brush_tile",self.tile_cursor)
         self.add_hud_entity(self.tile_cursor)
         self.debugger = bf.Debugger(self.manager).set_outline(False)
@@ -143,3 +145,5 @@ class EditorScene(CustomBaseScene):
             self.camera.move(0,speed)
         
         self.tile_cursor.rect.center = pygame.mouse.get_pos()
+
+        

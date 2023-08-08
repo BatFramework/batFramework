@@ -74,7 +74,6 @@ class TextBox(Container):
         self.message_length = len(self.messages[0]) if self.messages else None
 
         if self.message_length is None:
-            print("next message : callback !",self.end_callback)
             if self.end_callback : self.end_callback()
             return
 

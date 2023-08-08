@@ -124,7 +124,6 @@ class Player(bf.AnimatedSprite):
         self.add_animState("run","animation/player/run.png",   sprite_size, [3]*8)
         self.add_animState("jump","animation/player/jump.png",  sprite_size, [4,9999])
         self.add_animState("fall","animation/player/fall.png",  sprite_size, [6,6])
-        self.add_animState("hide","animation/player/idle.png",  sprite_size, [5,5])
 
 
 
@@ -144,11 +143,16 @@ class Player(bf.AnimatedSprite):
     def get_bounding_box(self):
         return self.rect,self.collision_rect
 
+    def set_control(self,value:bool):
+        self.action_container.hard_reset()
+        self.control = value
+
     def reset_actions(self):
         self.action_container.hard_reset()
 
     def process_event(self, event):
-        self.action_container.process_event(event)
+        if self.control : 
+            self.action_container.process_event(event)
 
     def set_position(self, x, y):
         self.position.update(x,y)
@@ -229,6 +233,7 @@ class Player(bf.AnimatedSprite):
         super().update(dt)
         self.stateMachine.update(dt)
         self.process_physics(dt) 
+        if not self.control: self.set_flipX(self.baby_link.rect.centerx < self.rect.centerx)
         if self.action_container.is_active("hold"):
             # print("SPACE")
             if self.baby_link.is_held == False:

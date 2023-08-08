@@ -58,28 +58,33 @@ class DelayBlock(bf.CutsceneBlock):
 
 class IntroCutscene(bf.Cutscene):
 
+
     def __init__(self) -> None:
         super().__init__()
+        # self.add_block(
+        #     bf.SceneTransitionBlock(scene="game",transition=bf.FadeTransition,duration=300)
+        # )
+
         self.add_block(
-            ImageBlock(image_path="backgrounds/accident.png"),
+            ImageBlock(image_path="backgrounds/sky.png"),
             SetSpriteBlock("player"),
             bf.SceneTransitionBlock(scene="dialogue",transition=bf.FadeColorTransition,duration=300,color=bf.color.DARK_GB),
-            # DelayBlock(1000),
+            DelayBlock(1000),
             DialogueBlock(
-                "This is a cutscene, which was programmed to show text and pictures... :D\nHow does it look ? I can't see a thing...",
+                "So here's the thing....",
                 "player"
             ),
+            DialogueBlock("I didn't have enough time to make the story or good levels..","player","thinking"),
+            DialogueBlock("So you can make your own :)","player","neutral"),
             DelayBlock(1000),
+            DialogueBlock("Press the 'e' key to switch to edit mode !","baby","happy"),
+            DelayBlock(1000),
+            SetSpriteBlock("baby","neutral",facing_right=False),
+            DelayBlock(1000),
+            SetSpriteBlock("baby","neutral"),
             DialogueBlock(
-                "I can switch characters like this...",
-                "baby"
-            ),
-            DelayBlock(1000),
-            SetSpriteBlock("baby",facing_right=False),
-            DelayBlock(1000),
-            DialogueBlock(
-                "And I can make them flip :)",
-                "baby"
+                "And you can use the tile picker with the 'q' key, or so I'm told.",
+                "baby","happy"
             ),
             DelayBlock(1000),
             bf.SceneTransitionBlock(scene="game",transition=bf.FadeTransition,duration=300)

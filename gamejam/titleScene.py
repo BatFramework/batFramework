@@ -45,10 +45,12 @@ class TitleScene(CustomBaseScene):
         
         self.add_world_entity(bf.Image("backgrounds/sky.png"),self.bg1,self.bg2)
         self.offset = 0
-
-
+        self.music_timer = bf.Time().timer(duration=600,callback=lambda :[bf.AudioManager().play_music("title_theme",-1,0) if bf.AudioManager().current_music != "title_theme" else 0])
     def on_enter(self):
-        bf.Time().timer(duration=600,callback=lambda :[bf.AudioManager().play_music("title_theme",-1,0) if bf.AudioManager().current_music != "title_theme" else 0]).start()
+        self.music_timer.start()
+
+    def on_exit(self):
+        self.music_timer.stop()
 
     def do_update(self, dt):
         self.offset +=20 * dt

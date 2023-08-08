@@ -48,10 +48,10 @@ class AudioManager(metaclass=bf.Singleton):
     def load_music(self, name, path):
         self.musics[name] = bf.utils.get_path(path)
 
-    def play_music(self, name, loop=0, fade=1):
+    def play_music(self, name, loop=0, fade=500):
         if name in self.musics:
             pygame.mixer_music.load(self.musics[name])
-            pygame.mixer_music.play(loop, fade)
+            pygame.mixer_music.play(loop,fade_ms=fade)
             self.current_music = name
         else:
             print(f"Music '{name}' not found in AudioManager.")

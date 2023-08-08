@@ -127,7 +127,7 @@ class Label(Panel):
 
 
         new_rect_size = list(self._text_rect.inflate(self._padding).inflate(self._border_radius[0] // 2, 0).size)
-        new_rect_size[0] +=8
+        # new_rect_size[0] +=8
         
         if not self._manual_resized:
 

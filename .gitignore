@@ -8,3 +8,6 @@
 /to_exe.bat
 /batFramework/gui/__pycache__
 /project
+/.gitignore
+.gitignore
+/game.zip

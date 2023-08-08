@@ -35,7 +35,7 @@ def stylize(e : bf.Entity):
             e.set_border_color(bf.color.DARK_GB).set_background_color(bf.color.BASE_GB).set_text_color(bf.color.LIGHT_GB).set_outline_color(bf.color.DARK_GB).set_feedback_color(bf.color.LIGHT_GB)
             
             e.set_italic(True)
-            e.set_padding((0,4))
+            e.set_padding((4,4))
 
 
             e.activate_sfx = "click_fade"

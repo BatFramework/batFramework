@@ -24,6 +24,7 @@ class Scene:
         self.blit_calls = 0
 
     def set_sharedVar(self,name,value):
+        print(self._name,name,value)
         return self.manager.set_sharedVar(name,value)
 
     def get_sharedVar(self,name):

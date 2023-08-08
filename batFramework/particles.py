@@ -4,15 +4,19 @@ from pygame.math import Vector2
 
 class Particle:
 
-    def __init__(self,start_pos:tuple[float,float],start_vel:tuple[float,float],duration=1000):
+    def __init__(self,start_pos:tuple[float,float],start_vel:tuple[float,float],duration=1000,color=None):
         self.rect = pygame.FRect(*start_pos,0,0)
         self.surface = pygame.Surface((4,4)).convert()
+        if color : self.surface.fill(color)
         self.velocity = Vector2(*start_vel)
         self.start_time = pygame.time.get_ticks()
         self.duration = duration
         self.dead = False
+        self.progression = 0
     def update(self,dt):
         elapsed_time = pygame.time.get_ticks() - self.start_time
+        self.progression = elapsed_time / self.duration
+        self.surface.set_alpha(255-int(self.progression * 255))
         self.dead = elapsed_time >= self.duration 
         self.rect.center += self.velocity * dt
 
@@ -24,8 +28,8 @@ class ParticleManager(bf.Entity):
     def get_bounding_box(self):
         for particle in self.particles:
             yield particle.rect
-    def add_particle(self,start_pos,start_vel,duration=1000):
-        self.particles.append(Particle(start_pos,start_vel,duration))
+    def add_particle(self,**kwargs):
+        self.particles.append(Particle(**kwargs))
 
     def update(self, dt: float):
         particles_to_remove = []

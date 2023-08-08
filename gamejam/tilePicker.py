@@ -90,7 +90,6 @@ class TilePicker(CustomBaseScene):
 
     def on_enter(self):
         self.picker.set_position(*self.tileset_image.rect.move(*[i * 8 for i in self.get_sharedVar("brush_tile").tile_index]).topleft)
-        bf.Time().timer(duration=600,callback=lambda :[bf.AudioManager().play_music("title_theme",-1,0) if bf.AudioManager().current_music != "title_theme" else 0]).start()
         self.timer1.start()
         self.timer2.start()
 

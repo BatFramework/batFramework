@@ -12,7 +12,7 @@ chunk_res = (gconst.TILE_SIZE * gconst.CHUNK_SIZE,gconst.TILE_SIZE * gconst.CHUN
 
 def customize_tile(tile):...
 
-class Tile(bf.Entity):
+class Tile(bf.AnimatedSprite):
     def __init__(self,x,y,tile_index: tuple[int,int],flip:tuple[bool,bool]=[False,False],tags=[]) -> None:
         super().__init__((gconst.TILE_SIZE,gconst.TILE_SIZE))
         # print(tile_index)
@@ -55,6 +55,7 @@ class Tile(bf.Entity):
         pass
     def draw(self, camera: bf.Camera) -> bool:
         # print(self.tile_index)
+        if not self.visible : return 0
         camera.surface.blit(self.surface,camera.transpose(self.rect).topleft)
         return 1
     def serialize(self) -> dict:
@@ -66,8 +67,10 @@ class Tile(bf.Entity):
 
 
 def customize_tile(tile: Tile):
-    if tile.has_tag("bonus"):
-        tile.update = lambda dt,tile=tile,centery=tile.rect.centery,: tile.set_center(tile.rect.centerx,centery - (2*sin(pygame.time.get_ticks()*.01))) 
+    # return
+    if tile.has_tag("wave"):
+        y =tile.rect.top
+        tile.update = lambda dt,tile=tile,: tile.set_position(tile.rect.x,y - (2*sin(pygame.time.get_ticks()*.01))) 
 
 
 class Chunk(bf.Entity):
@@ -197,6 +200,10 @@ class Level(bf.Entity):
     
     def get_all_tiles(self):
         return sum((list(c.get_tiles()) for c in self.chunks.values()), [])
+
+    def get_by_tag(self,tag):
+        return [e for e in itertools.chain(list(self.get_all_tiles()),self.get_entites()) if e.has_tag(tag)]
+
 
     def get_entites(self):
         return self.entities

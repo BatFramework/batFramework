@@ -20,6 +20,7 @@ class CutsceneManager(metaclass=bf.Singleton):
             self.current_cutscene = cutscene
             self.current_cutscene.play()
         self.manager.set_sharedVar("in_cutscene",True)
+    
 
     def update(self,dt):
         if not self.current_cutscene is None :

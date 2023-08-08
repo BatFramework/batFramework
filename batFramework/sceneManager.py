@@ -27,7 +27,6 @@ class SceneManager:
         print("-" * 40)
 
     def set_sharedVar(self,name,value) -> bool:
-        if name in self.sharedVarDict : return False
         self.sharedVarDict[name] = value
         return True
     

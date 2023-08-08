@@ -10,6 +10,7 @@ batframework_parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)
 # Add the parent directory to sys.path
 sys.path.insert(0, batframework_parent_dir)
 
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
