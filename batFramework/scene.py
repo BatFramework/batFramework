@@ -1,157 +1,183 @@
-from typing import TYPE_CHECKING
-
+from __future__ import annotations
 import pygame
-from pygame.math import Vector2
-from .camera import Camera
-from .entitiy import Entity
-
-if TYPE_CHECKING:
-    from scene_manager import SceneManager
-    from game_manager import GameManager
+import batFramework as bf
 
 
 class Scene:
-    def __init__(self, gameManagerLink : "GameManager", sceneManagerLink: "SceneManager"):
-        self._gameManagerLink : GameManager = gameManagerLink
-        self._sceneManagerLink: SceneManager = sceneManagerLink
-        self._entities: pygame.sprite.OrderedUpdates = pygame.sprite.OrderedUpdates()
-        self._id: str = ""
-        self._is_active = True
-        self._is_visible = True
-        self._gravity = 10
-        self._camera = Camera(pygame.display.get_surface().get_size())
-        self.on_init()
+    def __init__(self, name,enable_alpha=True) -> None:
+        self._name = name
+        self._active = False
+        self._visible = False
+        self._world_entities: list[bf.Entity] = []
+        self._hud_entities: list[bf.Entity] = []
+        self.manager:bf.SceneManager = None
+        self._action_container: bf.ActionContainer = bf.ActionContainer()
+        self.camera : bf.Camera = bf.Camera()
+        self.hud_camera : bf.Camera = bf.Camera()
+        if enable_alpha : 
+            self.camera.surface = self.camera.surface.convert_alpha()
+            self.hud_camera.surface = self.camera.surface.convert_alpha()
+            
+            self.camera.set_clear_color((0,0,0))
+            self.hud_camera.set_clear_color((0,0,0,0))
 
-    def set_id(self, name: str):
-        self._id = name
+        self.blit_calls = 0
 
-    def get_id(self) -> str:
-        return self._id
+    def set_sharedVar(self,name,value):
+        return self.manager.set_sharedVar(name,value)
 
-    def set_gravity(self, value: float):
-        self._gravity = value
+    def get_sharedVar(self,name):
+        return self.manager.get_sharedVar(name)
 
-    def get_gravity(self) -> float:
-        return self._gravity
-
-    def get_world_coordinates(self, x, y)->Vector2:
-        return Vector2(x,y)/ self._camera.get_zoom() + self._camera.get_position()
-
-    def get_screen_coordinates(self, x, y)->Vector2:
-        return Vector2(x,y) / self._camera.get_zoom() - self._camera.get_position()
-
-    def get_mouse_world_coordinates(self)->Vector2:
-        return self.get_world_coordinates(*pygame.mouse.get_pos())
-
-    def set_game_manager_link(self, managerLink):
-        self._gameManagerLink = managerLink
-
-    def set_scene_manager_link(self, sceneManagerLink):
-        self._sceneManagerLink = sceneManagerLink
-
-    def get_game_manager(self):
-        return self._gameManagerLink
-
-    def get_scene_manager(self):
-        return self._sceneManagerLink
-
-    def on_init(self):
+    def do_when_added(self):
         pass
+    
+    def set_clear_color(self, color: pygame.Color):
+        self.camera.set_clear_color(color)
+        # self.hud_camera.set_clear_color(color)
 
-    def is_active(self) -> bool:
-        return self._is_active
-
-    # is drawn when visible
-    def is_visible(self) -> bool:
-        return self._is_visible
-
-    def set_active(self, value: bool):
-        self._is_active = value
+    def set_manager(self, manager_link:bf.SceneManager):
+        self.manager = manager_link
 
     def set_visible(self, value: bool):
-        self._is_visible = value
+        self._visible = value
+        self.manager.update_scene_states()
+
+
+    def set_active(self, value):
+        self._active = value
+        self.manager.update_scene_states()
+
+    def is_active(self) -> bool:
+        return self._active
+
+    def is_visible(self) -> bool:
+        return self._visible
+
+    def get_name(self) -> str:
+        return self._name
+
+    def add_world_entity(self, *entity:bf.Entity):
+        for e in entity :
+            if e not in self._world_entities:
+                self._world_entities.append(e)
+                e.parent_scene = self
+                e.do_when_added()
+
+    def remove_world_entity(self, *entity:bf.Entity):
+        # print("removing ",entity)
+        for e in entity:
+            if e  not in self._world_entities : return False
+            e.do_when_removed()
+            e.parent_scene = None
+            self._world_entities.remove(e)
+            return True
+    
+
+    def add_hud_entity(self, *entity: bf.Entity):
+        for e in entity : 
+            if e not in self._hud_entities:
+                self._hud_entities.append(e)
+                e.parent_scene = self
+                e.do_when_added()
+
+    def remove_hud_entity(self, *entity:bf.Entity):
+        for e in entity :
+            if e in self._hud_entities : 
+                e.do_when_removed()
+                e.parent_scene = None
+                self._hud_entities.remove(e)
+
+    def add_action(self, *action):
+        self._action_container.add_action(*action)
+
+
+    def get_by_tags(self, *tags):
+        return [entity for entity in self._world_entities + self._hud_entities if any(entity.has_tag(t) for t in tags)]
+
+    def get_by_uid(self,uid) -> bf.Entity|None:
+        return next((entity for entity in self._world_entities+self._hud_entities if entity.uid == uid), None)
+
+    # called before process event
+    def do_early_process_event(self, event: pygame.Event) -> bool:
+        ''' return True if stop event propagation in child entities and scene's action container'''
+        return False  
+
+    #propagates event to all entities
+    def process_event(self, event: pygame.Event):
+        '''
+            Propagates event to child events. Calls early process event first, if returns False then stops. Processes scene's action_container, then custom do_handle_event function.
+            Finally resets the action_container, and propagates to all child entities. if any of them returns True, the propagation is stopped.
+        '''
+        if self.get_sharedVar("in_transition"):return
+        if self.do_early_process_event(event):
+            return
+        self._action_container.process_event(event)
+        self.do_handle_event(event)
+        self._action_container.reset()
+        for entity in self._world_entities + self._hud_entities:
+            if entity.process_event(event):
+                return
+
+    def do_handle_event(self, event: pygame.Event):
+        '''called inside process_event but before resetting the scene's action container and propagating event to child entities of the scene ''' 
+        pass
+
+    def update(self, dt):
+        for entity in self._world_entities + self._hud_entities:
+            entity.update(dt)
+        self.do_update(dt)
+        self.camera.update(dt)
+        self.hud_camera.update(dt) 
+
+    def do_update(self, dt):
+        pass
+
+
+    def debug_entity(self, entity: bf.Entity, camera:bf.Camera):
+        # return
+        if not entity.visible : return
+        for r in entity.get_bounding_box():
+            pygame.draw.rect(camera.surface,entity._debug_color,camera.transpose(r),1)
+
+    def draw(self, surface: pygame.Surface):
+        self._world_entities.sort(key = lambda e: e.render_order )
+        self._hud_entities.sort(key = lambda e: e.render_order )
+        
+        total_blit_calls = 0
+        self.camera.clear()
+        self.hud_camera.clear()
+
+        self.do_early_draw(self.camera.surface)
+        
+        total_blit_calls += sum(entity.draw(self.camera)     for entity in self._world_entities)
+        if self.manager._debugging == 2:
+                for entity in self._world_entities:
+                    self.debug_entity(entity, self.camera)
+        self.do_post_world_draw(self.camera.surface)
+        
+        total_blit_calls += sum(entity.draw(self.hud_camera) for entity in self._hud_entities)
+        if self.manager._debugging == 2:
+            for entity in self._hud_entities:
+                self.debug_entity(entity, self.hud_camera)
+        self.do_final_draw(self.hud_camera.surface)
+
+        self.camera.draw(surface)
+        self.hud_camera.draw(surface)
+        
+        self.blit_calls = total_blit_calls
+
+    def do_early_draw(self,surface: pygame.Surface):
+        pass
+
+    def do_post_world_draw(self, surface: pygame.Surface):
+        pass
+
+    def do_final_draw(self, surface: pygame.Surface):
+        pass
 
     def on_enter(self):
         pass
 
     def on_exit(self):
-        self.set_active(False)
-        self.set_visible(False)
-
-    # not to override
-    def _on_key_down(self, key):
-        if key == pygame.K_d and pygame.key.get_mods() & pygame.KMOD_CTRL:
-            self._camera.toggle_debug()
-        for entity in self._entities:
-            if entity.on_key_down(key):
-                break
-        self.on_key_down(key)
-
-    def _on_key_up(self, key):
-        for entity in self._entities:
-            if entity.on_key_up(key):
-                break
-        self.on_key_up(key)
-
-    def _on_event(self, event: pygame.event.Event):
-        for entity in self._entities:
-            if entity.on_event(event)== True:
-                break
-        self.on_event(event)
-
-    # to override
-    def on_key_down(self, key):
         pass
-
-    def on_key_up(self, key):
-        pass
-
-    def on_event(self, event: pygame.event.Event):
-        pass
-
-    def add_entity(self, entity: Entity):
-        self._entities.add(entity)
-        entity.set_scene_manager_link(self.get_scene_manager())
-        entity.set_scene_link(self)
-
-    def clear_entities(self):
-        self._entities.empty()
-
-    def _update(self, dt: float):
-        colliders = sum(
-            [e.get_collider() for e in self._entities if e.is_collider()], []
-        )
-        dynamicEntites = [
-            e for e in self._entities if e.has_collision() or e.is_gravity_affected()
-        ]
-
-        for entity in dynamicEntites:
-            if entity.is_gravity_affected():
-                entity.add_velocity(0, self.get_gravity() * dt)
-            entity.apply_velocity_y(dt)
-            if entity.has_collision():
-                for collider in colliders:
-                    if entity.rect.colliderect(collider):
-                        entity.on_collision_y(collider)
-                        break
-
-            entity.apply_velocity_x(dt)
-            if entity.has_collision():
-                for collider in colliders:
-                    if entity.rect.colliderect(collider):
-                        entity.on_collision_x(collider)
-                        break
-
-        self._entities.update(dt)
-
-        self._camera.update(dt)
-        self.update(dt)
-
-    def update(self, dt: float):
-        pass
-
-    def draw(self, surface: pygame.Surface):
-        self._camera.clear()
-        for entity in self._entities:
-            entity.draw(self._camera)  # draw everything onto the camera surf
-        self._camera.draw(surface)  # update surf with the camera

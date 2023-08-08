@@ -1,1 +1,9 @@
-/.venv
+/gamejam/data/animation/baby
+/batFramework/__pycache__
+/gamejam/__pycache__
+/gamejam/utils/__pycache__
+/build
+/dist
+/main.spec
+/to_exe.bat
+/batFramework/gui/__pycache__
