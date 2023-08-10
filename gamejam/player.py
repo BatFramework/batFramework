@@ -25,15 +25,15 @@ class Idle(bf.State):
         self.parent_entity.set_animState("idle")
     def update(self, dt):
         if self.parent_entity.velocity.y > gconst.GRAVITY*1.5 *dt:
-            self.stateMachine.set_state("fall")
+            self.state_machine.set_state("fall")
             self.parent_entity.on_ground =False
             return
         if self.parent_entity.action_container.is_active("up") and self.parent_entity.on_ground:
-            self.stateMachine.set_state("jump")
+            self.state_machine.set_state("jump")
 
         elif self.parent_entity.action_container.is_active("right") or \
             self.parent_entity.action_container.is_active("left"):
-            self.stateMachine.set_state("run")
+            self.state_machine.set_state("run")
 
 
 class Run(bf.State):
@@ -44,15 +44,15 @@ class Run(bf.State):
         self.parent_entity.set_animState("run")
     def update(self, dt):
         if self.parent_entity.velocity.y > gconst.GRAVITY *1.5*dt:
-            self.stateMachine.set_state("fall")
+            self.state_machine.set_state("fall")
             self.parent_entity.on_ground =False
             return
         if not self.parent_entity.action_container.is_active("right") and \
             not self.parent_entity.action_container.is_active("left"):
-            self.stateMachine.set_state("idle")
+            self.state_machine.set_state("idle")
             return
         if self.parent_entity.action_container.is_active("up"):
-            self.stateMachine.set_state("jump")
+            self.state_machine.set_state("jump")
             return
         horizontal_movement(self.parent_entity,self.parent_entity.h_movement_speed)
         if next(self.incrementer) % 10 == 0 : bf.AudioManager().play_sound("step",0.5) 
@@ -67,7 +67,7 @@ class Fall(bf.State):
     def update(self, dt):
         if self.parent_entity.on_ground:
             bf.AudioManager().play_sound("step")
-            self.stateMachine.set_state("idle" if self.parent_entity.velocity.x == 0  else "run") 
+            self.state_machine.set_state("idle" if self.parent_entity.velocity.x == 0  else "run") 
             return
         horizontal_movement(self.parent_entity,self.parent_entity.h_movement_speed*1.2)
 
@@ -81,7 +81,7 @@ class Jump(bf.State):
         self._jumped = False
     def update(self, dt):
         if self.parent_entity.velocity.y >= 0 and self._jumped:
-            self.stateMachine.set_state("fall")
+            self.state_machine.set_state("fall")
             return
         # if not self._jumped and self.parent_entity.float_counter >= 2:
         #     self.parent_entity.velocity.y = -self.parent_entity.jump_force
@@ -127,12 +127,12 @@ class Player(bf.AnimatedSprite):
 
 
 
-        self.stateMachine :bf.StateMachine = bf.StateMachine(self)
-        self.stateMachine.add_state(Idle())
-        self.stateMachine.add_state(Run())
-        self.stateMachine.add_state(Jump())
-        self.stateMachine.add_state(Fall())
-        self.stateMachine.set_state("idle")
+        self.state_machine :bf.StateMachine = bf.StateMachine(self)
+        self.state_machine.add_state(Idle())
+        self.state_machine.add_state(Run())
+        self.state_machine.add_state(Jump())
+        self.state_machine.add_state(Fall())
+        self.state_machine.set_state("idle")
  
         self.level_link = None
         self.baby_link  : bf.AnimatedSprite= None
@@ -160,6 +160,7 @@ class Player(bf.AnimatedSprite):
         self.collision_rect.midbottom = self.rect.midbottom
 
     def on_collideX(self,collider: bf.Entity):
+        collider.on_collideX(self)
         if self.velocity.x >= 0:
             self.collision_rect.right = collider.rect.left
         elif self.velocity.x < 0:
@@ -168,6 +169,8 @@ class Player(bf.AnimatedSprite):
         self.position.x= self.collision_rect.left
 
     def on_collideY(self,collider:bf.Entity):
+        collider.on_collideY(self)
+
         if self.velocity.y < 0:
             self.collision_rect.top = collider.rect.bottom
         elif self.velocity.y >= 0:
@@ -176,6 +179,7 @@ class Player(bf.AnimatedSprite):
                 self.collision_rect.bottom = collider.rect.top
                 self.position.y = self.collision_rect.top
                 self.on_ground = True
+                pygame.event.post(pygame.event.Event(gconst.STEP_ON_EVENT,{"entity":collider}))
             else:
                 # Adjust the position if the player is already on the ground
                 self.collision_rect.bottom = collider.rect.top
@@ -231,7 +235,7 @@ class Player(bf.AnimatedSprite):
 
     def update(self, dt: float):
         super().update(dt)
-        self.stateMachine.update(dt)
+        self.state_machine.update(dt)
         self.process_physics(dt) 
         if not self.control: self.set_flipX(self.baby_link.rect.centerx < self.rect.centerx)
         if self.action_container.is_active("hold"):

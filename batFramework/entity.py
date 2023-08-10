@@ -3,9 +3,9 @@ import batFramework as bf
 class Entity:
     # __slots__ = "surface","rect","velocity","uid","tags","parent_scene","visible","_debug_color","render_order","z_depth","parent_container"
     def __init__(self, size=None,no_surface = False,surface_flags = 0,convert_alpha =False) -> None:
-        self.surface = pygame.Surface(size if size else (2,2),surface_flags) if no_surface == False else None
+        self.surface = pygame.Surface(size if size else (1,1),surface_flags) if no_surface == False else None
         if convert_alpha : self.surface = self.surface.convert_alpha()
-        self.rect = pygame.FRect(0, 0, *size) if size else pygame.FRect(0, 0, 0, 0)
+        self.rect = pygame.FRect(0, 0, *size) if size else pygame.FRect(0, 0, 1, 1)
         self.velocity = pygame.math.Vector2(0,0)
         self.uid: str = None
         self.tags: list[str] = []

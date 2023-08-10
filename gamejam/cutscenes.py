@@ -69,12 +69,12 @@ class IntroCutscene(bf.Cutscene):
             ImageBlock(image_path="backgrounds/sky.png"),
             SetSpriteBlock("player"),
             bf.SceneTransitionBlock(scene="dialogue",transition=bf.FadeColorTransition,duration=300,color=bf.color.DARK_GB),
-            DelayBlock(1000),
+            # DelayBlock(1000),
             DialogueBlock(
-                "So here's the thing....",
+                "So\nhere's the thing.",
                 "player"
             ),
-            DialogueBlock("I didn't have enough time to make the story or good levels..","player","thinking"),
+            DialogueBlock("I didn't have enough time to make the story or good levels...","player","thinking"),
             DialogueBlock("So you can make your own :)","player","neutral"),
             DelayBlock(1000),
             DialogueBlock("Press the 'e' key to switch to edit mode !","baby","happy"),

@@ -118,6 +118,7 @@ class Label(Panel):
             wraplength = int(self._parent_resize_request[0]) if self._parent_resize_request and self._parent_resize_request[0] else 0
         else:
             wraplength = self._wraplength
+        wraplength = 0
 
         text_surface = font.render(
             self._text, bf.const.FONT_ANTIALIASING, self._text_color, None,wraplength)

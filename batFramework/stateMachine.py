@@ -4,12 +4,12 @@ class State:
     def __init__(self, name:str) -> None:
         self.name = name
         self.parent_entity :bf.Entity | bf.AnimatedSprite = None
-        self.stateMachine : StateMachine = None
+        self.state_machine : StateMachine = None
     def set_parent_entity(self,parent_entity:bf.Entity | bf.AnimatedSprite):
         self.parent_entity = parent_entity
 
     def set_stateMachine(self,stateMachine):
-        self.stateMachine = stateMachine
+        self.state_machine = stateMachine
 
     def update(self,dt):
         pass

@@ -14,7 +14,7 @@ class Constants:
     FLAGS  : int= pygame.SCALED 
     # FLAGS = 0
 
-    SCREEN = pygame.display.set_mode(RESOLUTION, FLAGS,vsync=VSYNC)
+    SCREEN = pygame.display.set_mode(RESOLUTION, FLAGS,vsync=VSYNC,depth=8)
 
     FPS :int = 60
     # FPS :int = 0

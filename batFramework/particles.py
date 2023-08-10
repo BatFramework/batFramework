@@ -14,12 +14,18 @@ class Particle:
         self.dead = False
         self.progression = 0
     def update(self,dt):
+        if self.dead : return
         elapsed_time = pygame.time.get_ticks() - self.start_time
         self.progression = elapsed_time / self.duration
-        self.surface.set_alpha(255-int(self.progression * 255))
         self.dead = elapsed_time >= self.duration 
         self.rect.center += self.velocity * dt
+        self.update_surface()
+    def kill(self):
+        self.dead = True
+    def update_surface(self):
+        self.surface.set_alpha(255-int(self.progression * 255))
 
+        
 class ParticleManager(bf.Entity):
     def __init__(self) -> None:
         super().__init__(size=bf.const.RESOLUTION)
@@ -28,8 +34,8 @@ class ParticleManager(bf.Entity):
     def get_bounding_box(self):
         for particle in self.particles:
             yield particle.rect
-    def add_particle(self,**kwargs):
-        self.particles.append(Particle(**kwargs))
+    def add_particle(self,particle_class=Particle,**kwargs):
+        self.particles.append(particle_class(**kwargs))
 
     def update(self, dt: float):
         particles_to_remove = []

@@ -25,15 +25,15 @@ class Idle(bf.State):
         self.parent_entity.set_animState("idle")
     def update(self, dt):
         if self.parent_entity.velocity.y > gconst.GRAVITY *dt:
-            self.stateMachine.set_state("fall")
+            self.state_machine.set_state("fall")
             self.parent_entity.on_ground =False
             return
         if self.parent_entity.action_container.is_active("up") and self.parent_entity.on_ground:
-            self.stateMachine.set_state("jump")
+            self.state_machine.set_state("jump")
 
         elif self.parent_entity.action_container.is_active("right") or \
             self.parent_entity.action_container.is_active("left"):
-            self.stateMachine.set_state("run")
+            self.state_machine.set_state("run")
 
 
 class Run(bf.State):
@@ -44,15 +44,15 @@ class Run(bf.State):
 
     def update(self, dt):
         if self.parent_entity.velocity.y > gconst.GRAVITY *dt:
-            self.stateMachine.set_state("fall")
+            self.state_machine.set_state("fall")
             self.parent_entity.on_ground =False
             return
         if not self.parent_entity.action_container.is_active("right") and \
             not self.parent_entity.action_container.is_active("left"):
-            self.stateMachine.set_state("idle")
+            self.state_machine.set_state("idle")
             return
         if self.parent_entity.action_container.is_active("up"):
-            self.stateMachine.set_state("jump")
+            self.state_machine.set_state("jump")
             return
         horizontal_movement(self.parent_entity,self.parent_entity.h_movement_speed)
 
@@ -65,7 +65,7 @@ class Fall(bf.State):
         self.parent_entity.set_animState("fall")
     def update(self, dt):
         if self.parent_entity.on_ground:
-            self.stateMachine.set_state("idle" if self.parent_entity.velocity.x == 0  else "run") 
+            self.state_machine.set_state("idle" if self.parent_entity.velocity.x == 0  else "run") 
             return
         horizontal_movement(self.parent_entity,self.parent_entity.h_movement_speed*1.2)
 
@@ -80,7 +80,7 @@ class Jump(bf.State):
         self._jumped = False
     def update(self, dt):
         if self.parent_entity.velocity.y >= 0 and self._jumped:
-            self.stateMachine.set_state("fall")
+            self.state_machine.set_state("fall")
             return
         # if not self._jumped and self.parent_entity.float_counter >= 2:
         #     self.parent_entity.velocity.y = -self.parent_entity.jump_force
@@ -125,12 +125,12 @@ class Baby(bf.AnimatedSprite):
 
 
 
-        self.stateMachine :bf.StateMachine = bf.StateMachine(self)
-        self.stateMachine.add_state(Idle())
-        self.stateMachine.add_state(Run())
-        self.stateMachine.add_state(Jump())
-        self.stateMachine.add_state(Fall())
-        self.stateMachine.set_state("idle")
+        self.state_machine :bf.StateMachine = bf.StateMachine(self)
+        self.state_machine.add_state(Idle())
+        self.state_machine.add_state(Run())
+        self.state_machine.add_state(Jump())
+        self.state_machine.add_state(Fall())
+        self.state_machine.set_state("idle")
  
         self.level_link = None
         self.big_sis_link : bf.AnimatedSprite = None
@@ -234,7 +234,7 @@ class Baby(bf.AnimatedSprite):
 
     def update(self, dt: float):
         super().update(dt)
-        self.stateMachine.update(dt)
+        self.state_machine.update(dt)
         if not self.is_held : 
             self.process_physics(dt)
             if not self.control: self.set_flipX(self.big_sis_link.rect.centerx < self.rect.centerx)

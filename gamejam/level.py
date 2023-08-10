@@ -9,10 +9,10 @@ import itertools
 
 chunk_res = (gconst.TILE_SIZE * gconst.CHUNK_SIZE,gconst.TILE_SIZE * gconst.CHUNK_SIZE)
 
-
 def customize_tile(tile):...
 
 class Tile(bf.AnimatedSprite):
+
     def __init__(self,x,y,tile_index: tuple[int,int],flip:tuple[bool,bool]=[False,False],tags=[]) -> None:
         super().__init__((gconst.TILE_SIZE,gconst.TILE_SIZE))
         # print(tile_index)
@@ -26,7 +26,8 @@ class Tile(bf.AnimatedSprite):
         customize_tile(self)
     def __repr__(self) -> str:
         return f"pos:{self.rect.topleft}, index:{self.tile_index}, flip:{self.flip}, tags:{self.tags}"
-    
+    def process_event(self, event):
+        pass
     def copy(self)->"Tile":
         return Tile(**self.serialize())
     def set_index(self,x,y):
@@ -61,17 +62,21 @@ class Tile(bf.AnimatedSprite):
     def serialize(self) -> dict:
         return {"x" :int(self.rect.left),"y" :int(self.rect.top),"tile_index":self.tile_index,"flip":self.flip,"tags":self.tags}
     def is_equal(self,other:"Tile"):
-        return self.tile_index == other.tile_index and self.tags == other.tags and self.flip == other.flip        
+        return isinstance(other,Tile) and self.tile_index == other.tile_index and self.tags == other.tags and self.flip == other.flip        
 
 
 
 
-def customize_tile(tile: Tile):
+def customize_tile(self: Tile):
     # return
-    if tile.has_tag("wave"):
-        y =tile.rect.top
-        tile.update = lambda dt,tile=tile,: tile.set_position(tile.rect.x,y - (2*sin(pygame.time.get_ticks()*.01))) 
-
+    if not self.tags or self.tags == ["collider"]:
+        return
+    if self.has_tag("wave"):
+        self.anchor_y = self.rect.top
+        self.update = lambda dt: self.set_position(self.rect.x,self.anchor_y - (2*sin(pygame.time.get_ticks()*.01))) 
+    if self.has_tag("bounce"):
+        # self.process_event = lambda event: print("GOB")
+        self.process_event = lambda event : bf.AudioManager().play_sound("jump") if event.type == gconst.STEP_ON_EVENT and event.entity.is_equal(self) else 0
 
 class Chunk(bf.Entity):
     def __init__(self,x,y) -> None:
@@ -103,9 +108,12 @@ class Chunk(bf.Entity):
             return None
 
     def get_tiles(self):
-        return self.tiles.values()
+        return (t for t in self.tiles.values())
     
-
+    def process_event(self, event):
+        # print("chunk pevent")
+        for t in self.get_tiles():
+            t.process_event(event)
 
     def is_empty(self):
         return bool(self.tiles)
@@ -114,12 +122,11 @@ class Chunk(bf.Entity):
         """add new tile at global grid position"""
         tile_pos_x, tile_pos_y = x % gconst.CHUNK_SIZE, y % gconst.CHUNK_SIZE
         if (
-            tile_pos_x < 0
-            or tile_pos_x >= self.size
-            or tile_pos_y < 0
-            or tile_pos_y >= self.size
+            x < 0
+            or y < 0
         ):
             return False
+        print(x,y)
         t = Tile(x * gconst.TILE_SIZE, y * gconst.TILE_SIZE,tile_index,flip,tags)
         t.set_debug_color(bf.color.DARK_BLUE)
         if (tile_pos_x,tile_pos_y) in self.tiles : 
@@ -134,9 +141,7 @@ class Chunk(bf.Entity):
         tile_pos_x, tile_pos_y = x % gconst.CHUNK_SIZE, y % gconst.CHUNK_SIZE
         if (
             tile_pos_x < 0
-            or tile_pos_x >= self.size
             or tile_pos_y < 0
-            or tile_pos_y >= self.size
         ) or (tile_pos_x,tile_pos_y) not in self.tiles:
             return False    
         t = self.tiles.pop((tile_pos_x,tile_pos_y))
@@ -147,9 +152,9 @@ class Chunk(bf.Entity):
         # self.surface.fill((255,0,255))
         self.surface.fill((0,0,0,0))
         i = len(self.tiles)
-        self.surface.fblits([(t.surface,(t.rel_x,t.rel_y)) for t in self.tiles.values()])
+        self.surface.fblits([(t.surface,(t.rel_x,t.rel_y)) for t in self.get_tiles()])
         self.debug_surface = self.surface.copy()
-        for t in self.tiles.values():
+        for t in self.get_tiles():
             if t.has_tag("collider") :pygame.draw.rect(self.debug_surface,t._debug_color,(t.rel_x,t.rel_y,*t.rect.size),1)
         self.dirty = False    
         pygame.draw.rect(self.debug_surface,self._debug_color,(0,0,*self.rect.size),1)
@@ -162,7 +167,7 @@ class Chunk(bf.Entity):
             i += self.update_surf()
         return i
     def update(self,dt):
-        for tile in self.tiles.values():
+        for tile in self.get_tiles():
             tile.update(dt)
 
 
@@ -176,19 +181,26 @@ class Level(bf.Entity):
     def set_background_image(self,path):
         self.background_image = pygame.image.load(join(bf.const.RESOURCE_PATH,path)).convert()
 
+
+    def process_event(self, event): 
+        for obj in itertools.chain(self.chunks.values(),self.entities):
+            obj.process_event(event)
+
     def serialize(self)->dict:
-        return [c.serialize() for c in self.chunks.values()]
+        return {"chunks":[c.serialize() for c in self.chunks.values()],"entites":[e.serialize() for e in self.entities]}
     
     def load(self,data):
         self.chunks = {}
-        for chunk in data:
+        for chunk in data["chunks"]:
+            if not chunk["tiles"]: continue
             key = chunk["position"]
             tiles = chunk["tiles"]
             self.chunks[tuple(key)] = Chunk(*key)
             self.chunks[tuple(key)].load(tiles)
+        for entity in data["entites"]:
+            self.add_entity(Tile(**entity))
         return True
-    def do_when_added(self):
-        return
+    
     def get_chunk_at(self,gridx,gridy):
         if gridx < 0 or gridy < 0: return None
         chunk_pos= tools.grid_to_chunk(gridx,gridy)
@@ -269,10 +281,11 @@ class Level(bf.Entity):
         return [e for e in self.entities if rect.colliderect(e.rect)]
 
     def draw(self, camera: bf.Camera) -> bool:
-        i = sum(entity.draw(camera) for entity in self.entities)
+        i=0
         for chunk in self.chunks.values():
             # print(chunk)
             i+= chunk.draw(camera)
+        i += sum(entity.draw(camera) for entity in self.entities)
         # camera.surface.blit(self.surface, camera.transpose(self.rect))
         if self.parent_scene.get_sharedVar("is_debugging_func")() == 2:
             # print([c.rect  for c in self.chunks.values()])

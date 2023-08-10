@@ -22,39 +22,79 @@ class TextBox(Container):
         self.text_speed = max(0,min(speed,100))
 
     def get_bounding_box(self):
-        yield from super().get_bounding_box()
+        # yield from super().get_bounding_box()
         yield from self.label.get_bounding_box()
 
     def resize(self, new_width, new_height):
-        self.label.set_wraplength(new_width-self._padding[0]*2)
+        self.label.set_wraplength(new_width - self.label._padding[0]*2)
+        # print(f"wraplength set to {self.label._wraplength}")
         return super().resize(new_width, new_height)
+    
+    def string_too_wide(self,font:pygame.Font,string:str):
+        width =  font.size(string)[0]
+        # print(f"width of {repr(string)}: {width}, self.width : {self.rect.size}, label.width : {self.label.rect.w}")
+        return width >= self.rect.w - self.label._padding[0]*2-self._padding[0]*2
 
     def queue_message(self,message:str,end_callback=None):
+        # print("Queue message !",repr(message))
         self.end_callback = end_callback
-        #check message length + cut if necessary
         cut = None
-        self.label.set_text(message)
-        if self.label.rect.h> self.rect.h - self._padding[1]*2:
-            font = bf.utils.FONTS[self.label._text_size] 
-            new_lines =  [0]
-            line_size = font.get_linesize()
-            max_new_lines = (self.rect.h - self._padding[1]*2) // (line_size)
-            while len(new_lines) < max_new_lines:
-                force_break = False
-                next_space = new_lines[-1]
-                while font.size(message[new_lines[-1]:next_space].strip())[0] < self.label.rect.w - self.label._padding[0]*2:
-                    tmp = message.find(' ',next_space+1)
-                    tmp2 = message.find('\n',next_space+1)
-                    if tmp2 <0 and tmp< 0 :
-                        force_break = True
-                        break 
-                    if tmp < 0 : tmp = 1_000_000
-                    if tmp2 < 0 : tmp2 = 1_000_000
-                    next_space = min(tmp,tmp2)
-                new_lines.append(next_space)
-                if force_break : break
+        # self.label.set_text(message)
+        font = bf.utils.FONTS[self.label._text_size] 
+        new_lines =  [0]
+        line_size = font.get_linesize()
+        max_new_lines = (self.rect.h - self._padding[1]*2) // (line_size)
+        while len(new_lines) < max_new_lines:
+            reached_end = False
+            next_new_line = new_lines[-1]
+            last_index_is_space = True
+            tmp_new_line = next_new_line
+            while not reached_end:
+
+                next_sp = message.find(' ',next_new_line+1)
+                next_n = message.find('\n',next_new_line+1)
+                if next_sp >=0 and next_n >=0:
+                    tmp_new_line = min(next_sp,next_n)
+                    if next_sp != tmp_new_line :
+                        last_index_is_space = False
+                        new_lines.append(tmp_new_line+1)
+
+                elif next_n >=0:
+                    tmp_new_line = next_n
+                    new_lines.append(tmp_new_line+1)
+
+                    last_index_is_space=False
+                elif next_sp >=0:
+                    tmp_new_line = next_sp
+                else:
+                    reached_end = True
+
+                # print(next_sp,next_n,last_index_is_space,new_lines)
+
+                if self.string_too_wide(font,message[new_lines[-1]:(tmp_new_line if not reached_end else len(message)-1)]):
+                    # print(f"last newline at {next_new_line} : ",repr(message[next_new_line]))
+                    if last_index_is_space:
+                        # print(f"{repr(message[new_lines[-1]:(tmp_new_line if not reached_end else len(message)-1)])} too long, cut at last available index {next_new_line if not reached_end else len(message)-1}")
+                        message = message[:next_new_line]+'\n'+message[next_new_line+1:]
+                    # else:
+                    #     message = message[:next_new_line]+message[next_new_line+1:]
+
+                    # print(f"updated message to {repr(message)}")
+                    # next_new_line = tmp_new_line
+                    break
+                
+                last_index_is_space = True
+                next_new_line = tmp_new_line
+
+
+
+            new_lines.append(next_new_line+1)
+            if reached_end : break
+        if len(new_lines) > max_new_lines:
+            # print(f"Too many lines ->{new_lines}, cut at : ",new_lines[-2])
             message,cut = message[:new_lines[-2]].strip(),message[new_lines[-2]:].strip()
-            # print("message : ",message,"cut :",cut)
+            print("Cut result -> message : ",repr(message),"cut :",repr(cut))
+        print("Final message :",repr(message))
         self.messages.append(message)
 
 

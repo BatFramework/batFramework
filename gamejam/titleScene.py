@@ -27,6 +27,7 @@ class TitleScene(CustomBaseScene):
 
         main_frame = bf.Container("title_main")
         bf.Button("PLAY",callback=lambda:bf.CutsceneManager().play(cutscenes.IntroCutscene())).put_to(main_frame)
+        # bf.Button("PLAY",callback=lambda:self.manager.transition_to_scene("game",bf.FadeTransition)).put_to(main_frame)
         bf.Button("OPTIONS",callback=lambda:self.manager.transition_to_scene("options",bf.FadeTransition)).put_to(main_frame)
         bf.Button("QUIT",callback=lambda:pygame.event.post(pygame.Event(pygame.QUIT))).put_to(main_frame)
 
