@@ -16,9 +16,9 @@ The `batFramework` is a Python game development framework based on pygame, desig
 - Utility modules (time management, constants, etc.)
 - No external dependency except for pygame
 
-### Getting Started with batFramework
+###  Explore batFramework
 
-1. Install Python (version 3.10 or higher).
+1. Install Python (version 3.10 or higher) and the latest stable version of pygame-ce.
 2. Clone or download this repository.
 4. Explore the framework's modules in the `batFramework` directory and integrate them into your own game project.
 
@@ -28,9 +28,9 @@ For more detailed information on how to use the framework, refer to the document
 
 The `gamejam` project is a specific game developed using the `batFramework`. It serves as an example of how the framework can be used to create a game from scratch.
 
-### Getting Started with the gamejam Project
+### Play the gamejam Project
 
-1. Install Python (version 3.10 or higher).
+1. Install Python (version 3.10 or higher) and the latest stable version of pygame-ce.
 2. Clone or download this repository.
 3. Navigate to the `gamejam` directory.
 4. Run the game by executing the main script (e.g., `python main.py`).
