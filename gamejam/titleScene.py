@@ -39,8 +39,8 @@ class TitleScene(CustomBaseScene):
 
 
         bottom_text = bf.Label("Baturay Turan").set_text_color(bf.color.LIGHT_GB).set_outline_color(bf.color.BASE_GB)
-        bottom_text.set_position(0,bf.const.RESOLUTION[1]-bottom_text.rect.h)
         self.add_hud_entity(bottom_text)
+        bottom_text.set_position(0,bf.const.RESOLUTION[1]-bottom_text.rect.h)
         bottom_text.set_background_color(None).set_text_color(bf.color.BASE_GB)
 
 
@@ -58,7 +58,7 @@ class TitleScene(CustomBaseScene):
         # main_frame.update_content()
 
         tmp = main_frame.rect.copy()
-        tmp.midtop = title_image.rect.move(0,4).midbottom
+        tmp.midtop = title_image.rect.move(0,2).midbottom
         main_frame.set_center(*tmp.center)
         
         main_frame.get_focus()

@@ -5,5 +5,6 @@ from .interactiveEntity import InteractiveEntity
 from .button import Button
 from .toggle import Toggle
 from .container import Container
+from .scrollingContainer import ScrollingContainer
 from .titledFrame import TitledFrame
 from .textBox import TextBox

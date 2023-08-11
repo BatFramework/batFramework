@@ -5,6 +5,7 @@ from game_constants import GameConstants as gconst
 from level import Level
 import utils.tools as tools 
 from level import Tile,Level
+from player import Player
 
 def horizontal_movement(parent_entity:bf.AnimatedSprite, speed):
     if parent_entity.action_container.is_active("right"):
@@ -93,20 +94,15 @@ class Jump(bf.State):
         horizontal_movement(self.parent_entity,self.parent_entity.h_movement_speed*1.2)
 
 
-class Baby(bf.AnimatedSprite):
+class Baby(Player):
     def __init__(self) -> None:
-        super().__init__((8,16))
-        self.set_debug_color("blue")
-        self.collision_rect = pygame.FRect(0,0,self.rect.w,gconst.TILE_SIZE)
-        self.position = Vector2()
-        self.velocity :Vector2 = Vector2()
-        self.spawn_point = (0,0)
-        self.on_ground = False
-        self.action_container = bf.ActionContainer()
-        self.h_movement_speed = 50
-        self.jump_force = 140
+        # self.set_debug_color("blue")
+        super().__init__()
+        # bf.AnimatedSprite.__init__(self,(8,16))
 
 
+
+    def init_actions(self):
         self.action_container.add_action(
             bf.Action("down").add_key_control(pygame.K_DOWN, pygame.K_s).set_holding(),
             bf.Action("up").add_key_control(pygame.K_UP, pygame.K_w).set_holding(),
@@ -115,7 +111,7 @@ class Baby(bf.AnimatedSprite):
             bf.Action("spawn").add_key_control(pygame.K_s).set_instantaneous()
 
         ) 
-
+    def init_animStates(self):
         sprite_size = [int(i) for i in self.rect.size]
 
         self.add_animState("run","animation/baby/run.png",   sprite_size, [3]*8)
@@ -123,117 +119,40 @@ class Baby(bf.AnimatedSprite):
         self.add_animState("jump","animation/baby/idle.png",  sprite_size, [5,5])
         self.add_animState("fall","animation/baby/fall.png",  sprite_size, [6,6])
 
+    def init_class_vars(self):
 
+        self.collision_rect = pygame.FRect(0,0,self.rect.w,gconst.TILE_SIZE)
+        self.position = Vector2()
+        self.velocity :Vector2 = Vector2()
+        self.spawn_point = (0,0)
+        self.on_ground = False
+        self.action_container = bf.ActionContainer()
+        self.h_movement_speed = 50
+        self.jump_force = 140
+        # self.level_link = None
+        self.big_sis_link : bf.AnimatedSprite = None
+        self.is_held  : bool= False
+        self.control = False     
 
+    def init_stateMachine(self):
         self.state_machine :bf.StateMachine = bf.StateMachine(self)
         self.state_machine.add_state(Idle())
         self.state_machine.add_state(Run())
         self.state_machine.add_state(Jump())
         self.state_machine.add_state(Fall())
         self.state_machine.set_state("idle")
- 
-        self.level_link = None
-        self.big_sis_link : bf.AnimatedSprite = None
-        self.is_held  : bool= False
-        self.control = False
 
     def hold(self,value):
         self.is_held = value
 
-    def set_control(self,value:bool):
-        self.action_container.hard_reset()
-        self.control = value
 
     def do_when_added(self):
         self.level_link : Level = self.parent_scene.get_sharedVar("level")
         self.big_sis_link = self.parent_scene.get_sharedVar("player")
         
 
-    def get_bounding_box(self):
-        return self.rect,self.collision_rect
-
-
-    def process_event(self, event):
-        if self.control : 
-            self.action_container.process_event(event)
-
-    def set_position(self, x, y):
-        self.position.update(x,y)
-        self.rect.center = x,y
-        self.collision_rect.midbottom = self.rect.midbottom
-
-
-
-    def on_collideX(self,collider: bf.Entity):
-        if self.velocity.x >= 0:
-            self.collision_rect.right = collider.rect.left
-        elif self.velocity.x < 0:
-            self.collision_rect.left = collider.rect.right
-        self.velocity.x = 0
-        self.position.x= self.collision_rect.left
-
-    def on_collideY(self,collider:bf.Entity):
-        if self.velocity.y < 0:
-            self.collision_rect.top = collider.rect.bottom
-        elif self.velocity.y >= 0:
-            if not self.on_ground:
-
-                self.collision_rect.bottom = collider.rect.top
-                self.position.y = self.collision_rect.top
-                self.on_ground = True
-            else:
-                # Adjust the position if the player is already on the ground
-                self.collision_rect.bottom = collider.rect.top
-        self.velocity.y = 0
-        self.position.y = self.collision_rect.top
-    def process_physics(self,dt):
-        
-        #--------------X AXIS
-        #apply velocity
-        self.collision_rect.x += self.velocity.x * (dt)
-
-        #get level tiles
-        near_tiles : list[Tile]= self.level_link.get_neighboring_tiles(*tools.world_to_grid(*[int(i) for i in self.collision_rect.center]))
-        #get level entities
-        near_tiles.extend(self.level_link.get_neighboring_entities(*self.collision_rect.center,max(self.rect.size)))
-
-        near_tiles = [tile for tile in near_tiles if tile!=None and tile.has_tag("collider")]
-        if any(near_tiles):
-            collider = self.collision_rect.collidelist(near_tiles)
-            if collider > -1: self.on_collideX(near_tiles[collider])
-        
-        self.rect.centerx = self.collision_rect.centerx
-
-        #--------------Y AXIS
-
-        #GRAVITY
-        self.velocity.y = min(self.velocity.y + gconst.GRAVITY * dt, (gconst.GRAVITY // 5))
-        #apply velocity
-        self.collision_rect.y += self.velocity.y * (dt)
-        # print(self.collision_rect)
-
-
-        near_tiles = self.level_link.get_neighboring_tiles(*tools.world_to_grid(*[int(i) for i in self.collision_rect.center]))
-        near_tiles.extend(self.level_link.get_neighboring_entities(*self.collision_rect.center,max(self.rect.size)))
-
-        near_tiles = [tile for tile in near_tiles if tile!=None and tile.has_tag("collider")]
-        if any(near_tiles):
-            collider = self.collision_rect.collidelist(near_tiles)
-            if collider > -1: self.on_collideY(near_tiles[collider])
-
-        self.rect.bottom = self.collision_rect.bottom
-        
-        self.velocity.x *= (gconst.FRICTION )
-
-        if abs(self.velocity.x) < 0.02:
-            self.velocity.x = 0
-        if abs(self.velocity.y) < 0.02:
-            self.velocity.y = 0
-
-        self.set_position(*[round(i,1) for i in self.rect.center])
-
     def update(self, dt: float):
-        super().update(dt)
+        bf.AnimatedSprite.update(self,dt)
         if not self.is_held : 
             self.state_machine.update(dt)
             self.process_physics(dt)

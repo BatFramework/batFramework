@@ -28,10 +28,10 @@ class Entity:
         return self
 
     def on_collideX(self,collider:"Entity"):
-        pass
+        return False
 
     def on_collideY(self,collider: "Entity"):
-        pass
+        return False
     
     def set_debug_color(self,color):
         self._debug_color = color
@@ -87,7 +87,7 @@ class Entity:
     def update(self, dt: float):
         pass
 
-    def draw(self, camera: bf.Camera) -> bool:
+    def draw(self, camera: bf.camera=(0,0)) -> bool:
         if not self.visible : return False
         if not self.surface or not camera.intersects(self.rect): return False
         # pygame.draw.rect(camera.surface,"purple",camera.transpose(self.rect).move(2,2))

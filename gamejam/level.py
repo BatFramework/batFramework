@@ -69,8 +69,14 @@ class Tile(bf.AnimatedSprite):
 
 def customize_tile(self: Tile):
     # return
-    if not self.tags or self.tags == ["collider"]:
+    if not self.tags:
         return
+    if self.has_tag("collider"):
+        self.on_collideX = self.on_collideY = lambda collider,self=self: True
+        if self.has_tag("one_way_up"):
+            # print("customize ")
+            self.on_collideY = lambda collider,self=self:collider.velocity.y > 0 and collider.rect.bottom < self.rect.centery#  [[collider.set_on_ground(True),collider.velocity.update(collider.velocity.x,0),False] if collider.velocity.y > 20 else False]
+            self.on_collideX = lambda collider : False
     if self.has_tag("wave"):
         self.anchor_y = self.rect.top
         self.update = lambda dt: self.set_position(self.rect.x,self.anchor_y - (2*sin(pygame.time.get_ticks()*.01))) 
@@ -126,7 +132,7 @@ class Chunk(bf.Entity):
             or y < 0
         ):
             return False
-        print(x,y)
+        # print(x,y)
         t = Tile(x * gconst.TILE_SIZE, y * gconst.TILE_SIZE,tile_index,flip,tags)
         t.set_debug_color(bf.color.DARK_BLUE)
         if (tile_pos_x,tile_pos_y) in self.tiles : 
@@ -191,6 +197,7 @@ class Level(bf.Entity):
     
     def load(self,data):
         self.chunks = {}
+        self.entities = []
         for chunk in data["chunks"]:
             if not chunk["tiles"]: continue
             key = chunk["position"]
@@ -283,16 +290,12 @@ class Level(bf.Entity):
     def draw(self, camera: bf.Camera) -> bool:
         i=0
         for chunk in self.chunks.values():
-            # print(chunk)
             i+= chunk.draw(camera)
         i += sum(entity.draw(camera) for entity in self.entities)
-        # camera.surface.blit(self.surface, camera.transpose(self.rect))
         if self.parent_scene.get_sharedVar("is_debugging_func")() == 2:
-            # print([c.rect  for c in self.chunks.values()])
             camera.surface.fblits([(c.debug_surface,camera.transpose(c.rect).topleft) for c in self.chunks.values()])
             for entity in self.get_neighboring_entities(*camera.rect.center,camera.rect.w//2):
                 pygame.draw.rect(camera.surface,entity._debug_color,camera.transpose(entity.rect),1)
-            # camera.surface.fblits([(c.debug_surface,camera.transpose(c.rect).topleft) for c in self.chunks.values()])
 
         else:
             camera.surface.fblits([(c.surface,camera.transpose(c.rect).topleft) for c in self.chunks.values()])

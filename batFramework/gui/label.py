@@ -27,15 +27,11 @@ class Label(Panel):
 
 
     def set_position(self, x, y):
-        # dx,dy = x- self.rect.x,y-self.rect.y
         super().set_position(x, y)
-        # self._text_rect.move_ip(dx,dy)
         return self
 
     def set_center(self, x, y):
-        # dx,dy = x- self.rect.centerx,y-self.rect.centery
         super().set_center(x, y)
-        # self._text_rect.move_ip(dx,dy)
         return self
         
     def get_bounding_box(self):
@@ -97,15 +93,12 @@ class Label(Panel):
         if text == self._text and self._initialised:
             return
         self._text = text
-        # print("[set text] : ",self._text)
         self._text_size = size
         self._initialised = True
         self._parent_resize_request = None
         self.update_surface()
         if self.parent_container : self.parent_container.update_content()
         return self
-    
-
 
     def align_text_rect(self):
         tmp_rect = pygame.FRect(0,0,*self.rect.size)
@@ -124,8 +117,8 @@ class Label(Panel):
 
     def draw_outline(self,font:pygame.Font,wraplength):
         if self._outline:
-            outline_surf = font.render(
-            self._text, bf.const.FONT_ANTIALIASING, self._outline_color, None,wraplength)
+            # outline_surf = font.render(self._text, bf.const.FONT_ANTIALIASING, self._outline_color, None,wraplength)
+            outline_surf = font.render(self._text, True, self._outline_color, None,wraplength)
             self.surface.blit(outline_surf,self._text_rect.move(1,1))
             self.surface.blit(outline_surf,self._text_rect.move(1,0))
 
@@ -135,27 +128,23 @@ class Label(Panel):
         font.italic = self._italic
         font.underline = self._underline
         return font
-    
+
     def reset_font(self,font: pygame.Font):
         font.align = pygame.FONT_LEFT
         font.italic = False
         font.underline = False
 
     def _compute_size(self):
-        # new_rect_size = list(self._text_rect.inflate([i*2 for i in self._padding]).inflate(self._border_radius[0] // 2, 0).size)
-        # new_rect_size = list(self._text_rect.inflate(self._padding).inflate(self._border_radius[0] // 2, 0).size)
         new_rect_size = list(self._text_rect.size)
-        new_rect_size[0] += self._padding[0] + self._border_radius[0] // 2 # +(2 if self._outline else 0)
-        new_rect_size[1] += self._padding[1] #+ (1 if self._outline else 0)
-
+        new_rect_size[0] += self._padding[0]*2 #+ self._border_radius[0] // 2 # +(2 if self._outline else 0)
+        new_rect_size[1] += self._padding[1]*2#+ (1 if self._outline else 0)
         if not self._manual_resized:
-
             if self._parent_resize_request:
-
                 self.rect.w = self._parent_resize_request[0] if self._parent_resize_request[0] else new_rect_size[0]
                 self.rect.h = self._parent_resize_request[1] if self._parent_resize_request[1] else new_rect_size[1]
             else:
                 self.rect.size = new_rect_size
+
     def update_surface(self):
 
         font = self.get_font_set()
@@ -164,17 +153,12 @@ class Label(Panel):
             wraplength = int(self._parent_resize_request[0]) if self._parent_resize_request and self._parent_resize_request[0] else 0
         else:
             wraplength = self._wraplength
-        # wraplength = 0
         text_surface = font.render(
             self._text, bf.const.FONT_ANTIALIASING, self._text_color, None,wraplength)
 
         self._text_rect = text_surface.get_rect()
 
         self._compute_size()
-
-        # if self._compute_size():return
-
-        # if self.rect.size != self.surface.get_size() : self.surface = pygame.Surface(self.rect.size).convert_alpha()
         
         self.align_text_rect()
         super().update_surface()

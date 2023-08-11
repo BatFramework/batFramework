@@ -44,15 +44,6 @@ class GameScene(CustomBaseScene):
 
         for _ in range(3) :self.add_switch()
 
-    def add_switch(self):
-        self.switch_tries+=1
-        self.switch_indicators.append(Tile(2+self.switch_tries*(gconst.TILE_SIZE+2),self.hud_camera.rect.h-gconst.TILE_SIZE-2,(1,1),tags="wave"))
-        self.add_hud_entity(self.switch_indicators[-1])
-
-    def remove_switch(self):
-        self.switch_tries-=1
-        self.remove_hud_entity(self.switch_indicators[-1])
-        self.switch_indicators.pop(-1)
 
 
     def do_when_added(self):
@@ -104,10 +95,42 @@ class GameScene(CustomBaseScene):
     def on_exit(self):
         self.particle_timer.stop()
         
-        
+    def add_switch(self):
+        self.switch_tries+=1
+        self.switch_indicators.append(Tile(2+self.switch_tries*(gconst.TILE_SIZE+2),self.hud_camera.rect.h-gconst.TILE_SIZE-2,(1,1),tags="wave"))
+        self.add_hud_entity(self.switch_indicators[-1])
+
+    def remove_switch(self):
+        self.switch_tries-=1
+        self.remove_hud_entity(self.switch_indicators[-1])
+        self.switch_indicators.pop(-1)
+
     def spawn(self):
+        if self.get_sharedVar("current_player")!="player":self.switch_players()
+        
         self.player.set_position(*self.player.spawn_point)
         self.baby.set_position(*self.baby.spawn_point)
+        self.switch_tries = 0
+        self.switch_indicators = []
+        for _  in range(3): self.add_switch()
+
+    def switch_players(self):
+        current_player = self.get_sharedVar("current_player")
+        print(current_player)
+        if current_player == "player":
+            if self.baby.is_held : self.baby.hold(False)
+            self.baby.set_control(True)
+            self.player.set_control(False)
+
+            self.camera.set_follow_dynamic_point(self.player_follow_func if self.player.control else  self.baby_follow_func)
+            print(self.set_sharedVar("current_player","baby"))
+            # print(self.get_sharedVar("current_player"))
+
+        else:
+            self.baby.set_control(False)
+            self.player.set_control(True)
+            self.camera.set_follow_dynamic_point(self.player_follow_func if self.player.control else  self.baby_follow_func)
+            self.set_sharedVar("current_player","player")
 
 
     def do_early_process_event(self, event) -> bool:
@@ -125,22 +148,7 @@ class GameScene(CustomBaseScene):
         if self._action_container.is_active("switch_player"):
             if self.switch_tries <= 0 : return
             self.remove_switch()
-            current_player = self.get_sharedVar("current_player")
-            print(current_player)
-            if current_player == "player":
-                if self.baby.is_held : self.baby.hold(False)
-                self.baby.set_control(True)
-                self.player.set_control(False)
-
-                self.camera.set_follow_dynamic_point(self.player_follow_func if self.player.control else  self.baby_follow_func)
-                print(self.set_sharedVar("current_player","baby"))
-                # print(self.get_sharedVar("current_player"))
-
-            else:
-                self.baby.set_control(False)
-                self.player.set_control(True)
-                self.camera.set_follow_dynamic_point(self.player_follow_func if self.player.control else  self.baby_follow_func)
-                self.set_sharedVar("current_player","player")
+            self.switch_players()
 
     def do_update(self, dt):
         pkillers :list[bf.Entity] = self.level.get_by_tag("pKill")
@@ -154,4 +162,5 @@ class GameScene(CustomBaseScene):
         obj = self.player.rect.collideobjects(switch_add,key = lambda p : p.rect) or self.baby.rect.collideobjects(Akillers,key = lambda p : p.rect)
         if obj:
             self.add_switch()
+            bf.AudioManager().play_sound("switch")
             self.level.remove_entity(obj)

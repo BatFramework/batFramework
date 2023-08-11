@@ -23,7 +23,7 @@ class TextBox(Container):
         self.text_speed = max(0,min(speed,100))
 
     def get_bounding_box(self):
-        # yield from super().get_bounding_box()
+        yield from super().get_bounding_box()
         yield from self.label.get_bounding_box()
 
     def resize(self, new_width, new_height):
@@ -35,7 +35,7 @@ class TextBox(Container):
         width =  font.size(string)[0] + self.label._padding[0]*2
 
         # print(f"width of {repr(string)}: {width}, self.width : {self.rect.size}, label.width : {self.label.rect.w}, limit : {self.label.rect.w - self.label._padding[0]}")
-        return width >= self.rect.w - self._padding[0]*2 
+        return width >= self.rect.w - self._padding[0]*2
     
     def queue_message(self,message:str,end_callback=None):
         # print("Queue message !",repr(message))

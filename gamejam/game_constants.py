@@ -19,4 +19,10 @@ class GameConstants:
         "AKill",
         "+switch",
         "wave",
+        "one_way_up"
+        # "gob",
+        # "bob",
+        # "rob",
+        # "job",
+        # "lob"
         ]

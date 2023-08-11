@@ -99,7 +99,17 @@ class Player(bf.AnimatedSprite):
     def __init__(self) -> None:
         super().__init__((8,16))
         self.set_debug_color("blue")
-        self.collision_rect = pygame.FRect(0,0,*self.rect.size)
+
+        self.init_class_vars()
+        self.init_actions()
+        self.init_animStates()
+        self.init_stateMachine()
+ 
+        self.level_link = None
+        self.render_order = 3
+
+
+    def init_class_vars(self):
         self.position = Vector2()
         self.velocity :Vector2 = Vector2()
         self.spawn_point = (0,0)
@@ -108,7 +118,11 @@ class Player(bf.AnimatedSprite):
         self.h_movement_speed = 40
         self.jump_force = 170
         self.control = True
+        self.collision_rect = pygame.FRect(0,0,*self.rect.size)
+        self.baby_link  : bf.AnimatedSprite= None
 
+
+    def init_actions(self):
         self.action_container.add_action(
             bf.Action("down").add_key_control(pygame.K_DOWN, pygame.K_s).set_holding(),
             bf.Action("up").add_key_control(pygame.K_UP, pygame.K_w).set_holding(),
@@ -116,8 +130,9 @@ class Player(bf.AnimatedSprite):
             bf.Action("right").add_key_control(pygame.K_RIGHT, pygame.K_d).set_holding(),
             bf.Action("spawn").add_key_control(pygame.K_s).set_instantaneous(),
             bf.Action("hold").add_key_control(pygame.K_SPACE)
-
         )
+
+    def init_animStates(self):
         sprite_size = [int(i) for i in self.rect.size]
 
         self.add_animState("idle","animation/player/idle.png",  sprite_size, [20,15])
@@ -125,21 +140,18 @@ class Player(bf.AnimatedSprite):
         self.add_animState("jump","animation/player/jump.png",  sprite_size, [4,9999])
         self.add_animState("fall","animation/player/fall.png",  sprite_size, [6,6])
 
-
-
+    def init_stateMachine(self):
         self.state_machine :bf.StateMachine = bf.StateMachine(self)
         self.state_machine.add_state(Idle())
         self.state_machine.add_state(Run())
         self.state_machine.add_state(Jump())
         self.state_machine.add_state(Fall())
         self.state_machine.set_state("idle")
- 
-        self.level_link = None
-        self.baby_link  : bf.AnimatedSprite= None
-        self.render_order = 3
+
     def do_when_added(self):
         self.level_link : Level = self.parent_scene.get_sharedVar("level")
         self.baby_link = self.parent_scene.get_sharedVar("baby") 
+    
     def get_bounding_box(self):
         return self.rect,self.collision_rect
 
@@ -159,17 +171,21 @@ class Player(bf.AnimatedSprite):
         self.rect.center = x,y
         self.collision_rect.midbottom = self.rect.midbottom
 
+    def set_on_ground(self,value:bool):
+        self.on_ground = value
+
     def on_collideX(self,collider: bf.Entity):
-        collider.on_collideX(self)
+        if not collider.on_collideX(self):return False
         if self.velocity.x >= 0:
             self.collision_rect.right = collider.rect.left
         elif self.velocity.x < 0:
             self.collision_rect.left = collider.rect.right
         self.velocity.x = 0
         self.position.x= self.collision_rect.left
+        return True
 
     def on_collideY(self,collider:bf.Entity):
-        collider.on_collideY(self)
+        if not collider.on_collideY(self) : return False
 
         if self.velocity.y < 0:
             self.collision_rect.top = collider.rect.bottom
@@ -185,6 +201,7 @@ class Player(bf.AnimatedSprite):
                 self.collision_rect.bottom = collider.rect.top
         self.velocity.y = 0
         self.position.y = self.collision_rect.top
+        return True
 
     def process_physics(self,dt):
         
@@ -202,13 +219,16 @@ class Player(bf.AnimatedSprite):
         near_tiles.extend(self.level_link.get_neighboring_entities(*self.collision_rect.center,max(self.rect.size)))
         near_tiles = [tile for tile in near_tiles if tile!=None and tile.has_tag("collider")]
         if any(near_tiles):
-            collider = self.collision_rect.collidelist(near_tiles)
-            if collider > -1: self.on_collideY(near_tiles[collider])
+            colliders = [i for i in self.collision_rect.collidelistall(near_tiles) if i> -1 ]
+            for collider in colliders: 
+                if self.on_collideY(near_tiles[collider]) :break
+        
 
         self.rect.bottom = self.collision_rect.bottom
         
 
         #--------------X AXIS
+
         #apply velocity
         self.collision_rect.x += self.velocity.x * (dt)
 
@@ -218,8 +238,9 @@ class Player(bf.AnimatedSprite):
         near_tiles = [tile for tile in near_tiles if tile!=None and tile.has_tag("collider")]
         
         if any(near_tiles):
-            collider = self.collision_rect.collidelist(near_tiles)
-            if collider > -1: self.on_collideX(near_tiles[collider])
+            colliders = [i for i in self.collision_rect.collidelistall(near_tiles) if i> -1 ]
+            for collider in colliders: 
+                if self.on_collideX(near_tiles[collider]) :break
         
         self.rect.centerx = self.collision_rect.centerx
 

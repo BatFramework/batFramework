@@ -66,6 +66,21 @@
             "collider"
           ]
         },
+        "(0, 0)": {
+          "x": 64,
+          "y": 64,
+          "tile_index": [
+            0.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider"
+          ]
+        },
         "(3, 0)": {
           "x": 88,
           "y": 64,
@@ -108,22 +123,6 @@
             false
           ],
           "tags": [
-            "collider"
-          ]
-        },
-        "(0, 0)": {
-          "x": 64,
-          "y": 64,
-          "tile_index": [
-            0.0,
-            0.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": [
-            "bounce",
             "collider"
           ]
         }
@@ -299,217 +298,9 @@
           ],
           "tags": []
         },
-        "(3, 7)": {
-          "x": 88,
-          "y": 56,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(2, 7)": {
-          "x": 80,
-          "y": 56,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(1, 7)": {
-          "x": 72,
-          "y": 56,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(0, 7)": {
-          "x": 64,
-          "y": 56,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
         "(1, 6)": {
           "x": 72,
           "y": 48,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(1, 5)": {
-          "x": 72,
-          "y": 40,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(1, 4)": {
-          "x": 72,
-          "y": 32,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(0, 4)": {
-          "x": 64,
-          "y": 32,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(0, 3)": {
-          "x": 64,
-          "y": 24,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(0, 2)": {
-          "x": 64,
-          "y": 16,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(0, 1)": {
-          "x": 64,
-          "y": 8,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(0, 5)": {
-          "x": 64,
-          "y": 40,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(0, 6)": {
-          "x": 64,
-          "y": 48,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(1, 1)": {
-          "x": 72,
-          "y": 8,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(2, 1)": {
-          "x": 80,
-          "y": 8,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(3, 1)": {
-          "x": 88,
-          "y": 8,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(4, 1)": {
-          "x": 96,
-          "y": 8,
           "tile_index": [
             4.0,
             4.0
@@ -533,110 +324,6 @@
           ],
           "tags": []
         },
-        "(4, 3)": {
-          "x": 96,
-          "y": 24,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(3, 3)": {
-          "x": 88,
-          "y": 24,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(2, 3)": {
-          "x": 80,
-          "y": 24,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(1, 3)": {
-          "x": 72,
-          "y": 24,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(1, 2)": {
-          "x": 72,
-          "y": 16,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(2, 2)": {
-          "x": 80,
-          "y": 16,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(3, 2)": {
-          "x": 88,
-          "y": 16,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(3, 4)": {
-          "x": 88,
-          "y": 32,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
         "(3, 5)": {
           "x": 88,
           "y": 40,
@@ -650,48 +337,9 @@
           ],
           "tags": []
         },
-        "(3, 6)": {
-          "x": 88,
-          "y": 48,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
         "(2, 6)": {
           "x": 80,
           "y": 48,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(2, 5)": {
-          "x": 80,
-          "y": 40,
-          "tile_index": [
-            4.0,
-            4.0
-          ],
-          "flip": [
-            false,
-            false
-          ],
-          "tags": []
-        },
-        "(2, 4)": {
-          "x": 80,
-          "y": 32,
           "tile_index": [
             4.0,
             4.0
@@ -870,6 +518,177 @@
             false
           ],
           "tags": []
+        },
+        "(3, 2)": {
+          "x": 88,
+          "y": 16,
+          "tile_index": [
+            4.0,
+            3.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": []
+        },
+        "(2, 5)": {
+          "x": 80,
+          "y": 40,
+          "tile_index": [
+            4.0,
+            3.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": []
+        },
+        "(3, 6)": {
+          "x": 88,
+          "y": 48,
+          "tile_index": [
+            4.0,
+            3.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": []
+        },
+        "(3, 7)": {
+          "x": 88,
+          "y": 56,
+          "tile_index": [
+            4.0,
+            3.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": []
+        },
+        "(1, 7)": {
+          "x": 72,
+          "y": 56,
+          "tile_index": [
+            4.0,
+            3.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": []
+        },
+        "(2, 7)": {
+          "x": 80,
+          "y": 56,
+          "tile_index": [
+            4.0,
+            3.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": []
+        },
+        "(4, 3)": {
+          "x": 96,
+          "y": 24,
+          "tile_index": [
+            4.0,
+            3.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": []
+        },
+        "(0, 1)": {
+          "x": 64,
+          "y": 8,
+          "tile_index": [
+            1.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider",
+            "one_way_up"
+          ]
+        },
+        "(1, 1)": {
+          "x": 72,
+          "y": 8,
+          "tile_index": [
+            1.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider",
+            "one_way_up"
+          ]
+        },
+        "(2, 1)": {
+          "x": 80,
+          "y": 8,
+          "tile_index": [
+            1.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider",
+            "one_way_up"
+          ]
+        },
+        "(3, 1)": {
+          "x": 88,
+          "y": 8,
+          "tile_index": [
+            1.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider",
+            "one_way_up"
+          ]
+        },
+        "(4, 1)": {
+          "x": 96,
+          "y": 8,
+          "tile_index": [
+            1.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider",
+            "one_way_up"
+          ]
         }
       }
     },
@@ -2742,8 +2561,199 @@
             false
           ],
           "tags": [
-            "bounce",
             "collider"
+          ]
+        },
+        "(6, 0)": {
+          "x": 48,
+          "y": 64,
+          "tile_index": [
+            0.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider"
+          ]
+        }
+      }
+    },
+    {
+      "position": [
+        0,
+        0
+      ],
+      "tiles": {
+        "(6, 1)": {
+          "x": 48,
+          "y": 8,
+          "tile_index": [
+            5.0,
+            1.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider"
+          ]
+        },
+        "(6, 2)": {
+          "x": 48,
+          "y": 16,
+          "tile_index": [
+            5.0,
+            1.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider"
+          ]
+        },
+        "(6, 3)": {
+          "x": 48,
+          "y": 24,
+          "tile_index": [
+            5.0,
+            1.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider"
+          ]
+        },
+        "(6, 4)": {
+          "x": 48,
+          "y": 32,
+          "tile_index": [
+            5.0,
+            1.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider"
+          ]
+        },
+        "(6, 5)": {
+          "x": 48,
+          "y": 40,
+          "tile_index": [
+            5.0,
+            1.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider"
+          ]
+        },
+        "(6, 6)": {
+          "x": 48,
+          "y": 48,
+          "tile_index": [
+            5.0,
+            1.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider"
+          ]
+        },
+        "(6, 7)": {
+          "x": 48,
+          "y": 56,
+          "tile_index": [
+            5.0,
+            1.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider"
+          ]
+        },
+        "(7, 7)": {
+          "x": 56,
+          "y": 56,
+          "tile_index": [
+            1.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider",
+            "one_way_up"
+          ]
+        },
+        "(7, 5)": {
+          "x": 56,
+          "y": 40,
+          "tile_index": [
+            1.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider",
+            "one_way_up"
+          ]
+        },
+        "(7, 3)": {
+          "x": 56,
+          "y": 24,
+          "tile_index": [
+            1.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider",
+            "one_way_up"
+          ]
+        },
+        "(7, 1)": {
+          "x": 56,
+          "y": 8,
+          "tile_index": [
+            1.0,
+            0.0
+          ],
+          "flip": [
+            false,
+            false
+          ],
+          "tags": [
+            "collider",
+            "one_way_up"
           ]
         }
       }
@@ -2751,2168 +2761,8 @@
   ],
   "entites": [
     {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
       "x": 144,
-      "y": -8,
+      "y": 0,
       "tile_index": [
         1.0,
         1.0
@@ -4927,7 +2777,7 @@
     },
     {
       "x": 160,
-      "y": -8,
+      "y": 0,
       "tile_index": [
         1.0,
         1.0
@@ -4942,7 +2792,7 @@
     },
     {
       "x": 176,
-      "y": -8,
+      "y": 0,
       "tile_index": [
         1.0,
         1.0
@@ -5001,21 +2851,6 @@
       ]
     },
     {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
       "x": 216,
       "y": 112,
       "tile_index": [
@@ -5031,982 +2866,7 @@
       ]
     },
     {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
       "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 232,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 192,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 200,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 208,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 224,
-      "y": 112,
-      "tile_index": [
-        3.0,
-        0.0
-      ],
-      "flip": [
-        false,
-        false
-      ],
-      "tags": [
-        "AKill"
-      ]
-    },
-    {
-      "x": 216,
       "y": 112,
       "tile_index": [
         3.0,

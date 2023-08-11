@@ -53,6 +53,7 @@ class Container(Panel,InteractiveEntity):
             for rect in child.get_bounding_box():
                 yield rect
         yield self.rect
+        yield self.rect.inflate(-self._padding[0]*2,-self._padding[1]*2)
 
 
     # def set_background_color(self,color):

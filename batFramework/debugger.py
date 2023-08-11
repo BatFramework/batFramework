@@ -8,6 +8,7 @@ class Debugger(bf.Label):
         self._refresh_counter = 0
         self.dynamic_data = {}
         self.static_data = {}
+        self.render_order = 99
         self.set_outline_color((20,20,20))
         # self.set_background_color((0,0,0,0))
         self.set_text_color("white")

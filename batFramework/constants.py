@@ -22,9 +22,9 @@ class Constants:
     #------------GUI SPECIFIC
     DEFAULT_TEXT_SIZE :int= 8
     # DEFAULT_TEXT_SIZE :int= 12
-    GUI_SCALE : int = 2
-    # FONT_ANTIALIASING :bool= False
-    FONT_ANTIALIASING :bool= True
+    GUI_SCALE : int = 1
+    FONT_ANTIALIASING :bool= False
+    # FONT_ANTIALIASING :bool= True
 
 
     #---------------------
