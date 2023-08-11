@@ -61,33 +61,11 @@ class IntroCutscene(bf.Cutscene):
 
     def __init__(self) -> None:
         super().__init__()
-
-
-
-#         self.add_block(
-#             ImageBlock(image_path="backgrounds/sky.png"),
-#             SetSpriteBlock("player"),
-#             bf.SceneTransitionBlock(scene="dialogue",transition=bf.FadeColorTransition,duration=300,color=bf.color.DARK_GB),
-
-#             DialogueBlock("""The moonlight painted patterns on the forest floor, as if the stars themselves had come down to dance among the trees. \
-# A gentle breeze whispered secrets through the leaves, and the night held its breath in anticipation of the wonders that lay ahead. \
-# In this tranquil moment, the world seemed to pause, and every rustle of a leaf felt like a symphony, every flicker of a firefly like a beacon of magic. \
-# As the river meandered through the valley, it carried with it the stories of generations, the laughter of children, and the dreams of those \
-# who had looked upon its waters. The mountains stood as ancient sentinels, their majestic peaks kissed by the first light of dawn. \
-# The sky, a canvas of infinite possibilities, painted with hues of orange and pink, promised a day filled with adventure and discovery. \
-# In the heart of this wilderness, a lone cabin stood, its windows glowing with the warm light of a hearth.\
-# Inside, the aroma of freshly baked bread mingled with the earthy scent of pine, creating a haven of comfort and nostalgia.\
-# A worn book sat on the table, its pages filled with tales of distant lands and daring heroes, waiting to transport the reader to places only imaginable.\
-# Outside, a canopy of stars emerged, each one telling a story of its own, connecting the past with the present, and hinting at the mysteries of the cosmos.\
-# In this haven of tranquility, time seemed to lose its grip, allowing the soul to wander freely, to explore the beauty of the world and the depths of the human spirit.""",
-#             "player"
-#             ),bf.SceneTransitionBlock(scene="game",transition=bf.FadeTransition,duration=300)
-
-#         )
-
         self.add_block(
             ImageBlock(image_path="backgrounds/sky.png"),
+
             SetSpriteBlock("player"),
+
             bf.SceneTransitionBlock(scene="dialogue",transition=bf.FadeColorTransition,duration=300,color=bf.color.DARK_GB),
 
             DialogueBlock(
@@ -95,17 +73,26 @@ class IntroCutscene(bf.Cutscene):
                 "player"
             ),
             DialogueBlock("I didn't have enough time to make the story or good levels...","player","thinking"),
+
             DialogueBlock("So you can make your own :)","player","neutral"),
+
             DelayBlock(1000),
+
             DialogueBlock("Press the 'e' key to switch to edit mode !","baby","happy"),
+
             DelayBlock(1000),
+
             SetSpriteBlock("baby","neutral",facing_right=False),
+
             DelayBlock(1000),
+
             SetSpriteBlock("baby","neutral"),
+
             DialogueBlock(
                 "And you can use the tile picker with the 'q' key, or so I'm told.",
                 "baby","happy"
             ),
             DelayBlock(1000),
+            
             bf.SceneTransitionBlock(scene="game",transition=bf.FadeTransition,duration=300)
-            )
+        )

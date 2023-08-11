@@ -5,7 +5,7 @@ from os.path import join
 import utils.tools as tools
 from math import sin
 import itertools
-
+import random
 
 chunk_res = (gconst.TILE_SIZE * gconst.CHUNK_SIZE,gconst.TILE_SIZE * gconst.CHUNK_SIZE)
 
@@ -13,7 +13,7 @@ def customize_tile(tile):...
 
 class Tile(bf.AnimatedSprite):
 
-    def __init__(self,x,y,tile_index: tuple[int,int],flip:tuple[bool,bool]=[False,False],tags=[]) -> None:
+    def __init__(self,x,y,tile_index: tuple[int,int],flip:tuple[bool,bool]=[False,False],tags:list[str]=[]) -> None:
         super().__init__((gconst.TILE_SIZE,gconst.TILE_SIZE))
         # print(tile_index)
         self.rel_x, self.rel_y = 0,0
@@ -78,8 +78,9 @@ def customize_tile(self: Tile):
             self.on_collideY = lambda collider,self=self:collider.velocity.y > 0 and collider.rect.bottom < self.rect.centery#  [[collider.set_on_ground(True),collider.velocity.update(collider.velocity.x,0),False] if collider.velocity.y > 20 else False]
             self.on_collideX = lambda collider : False
     if self.has_tag("wave"):
+        offset = pygame.time.get_ticks() * random.randint(-100,100)*.01 
         self.anchor_y = self.rect.top
-        self.update = lambda dt: self.set_position(self.rect.x,self.anchor_y - (2*sin(pygame.time.get_ticks()*.01))) 
+        self.update = lambda dt,offset=offset: self.set_position(self.rect.x,self.anchor_y - (2*sin(offset +pygame.time.get_ticks()*.01))) 
     if self.has_tag("bounce"):
         # self.process_event = lambda event: print("GOB")
         self.process_event = lambda event : bf.AudioManager().play_sound("jump") if event.type == gconst.STEP_ON_EVENT and event.entity.is_equal(self) else 0

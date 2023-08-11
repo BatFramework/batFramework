@@ -42,7 +42,6 @@ class GameScene(CustomBaseScene):
                 ]
         )
 
-        for _ in range(3) :self.add_switch()
 
 
 
@@ -97,20 +96,23 @@ class GameScene(CustomBaseScene):
         
     def add_switch(self):
         self.switch_tries+=1
-        self.switch_indicators.append(Tile(2+self.switch_tries*(gconst.TILE_SIZE+2),self.hud_camera.rect.h-gconst.TILE_SIZE-2,(1,1),tags="wave"))
+        self.switch_indicators.append(Tile(2+self.switch_tries*(gconst.TILE_SIZE+2),self.hud_camera.rect.h-gconst.TILE_SIZE-2,(1,1),tags=["wave"]))
         self.add_hud_entity(self.switch_indicators[-1])
 
     def remove_switch(self):
         self.switch_tries-=1
         self.remove_hud_entity(self.switch_indicators[-1])
         self.switch_indicators.pop(-1)
+        print(self.switch_indicators)
 
     def spawn(self):
         if self.get_sharedVar("current_player")!="player":self.switch_players()
+        tools.load_level(self.level,0)
         
         self.player.set_position(*self.player.spawn_point)
         self.baby.set_position(*self.baby.spawn_point)
         self.switch_tries = 0
+        for ind in self.switch_indicators: self.remove_hud_entity(ind)
         self.switch_indicators = []
         for _  in range(3): self.add_switch()
 
