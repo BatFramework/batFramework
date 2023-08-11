@@ -74,13 +74,16 @@ class TilePicker(CustomBaseScene):
 
         self.tag_container = bf.Container("tag_container")
         bf.Label("TAGS").put_to(self.tag_container)
-        for tag in gconst.TAGS:
-
-            bf.Toggle(tag,callback=lambda x,tag_name=tag: self.get_sharedVar("brush_tile").add_tag(tag_name) if x else self.get_sharedVar("brush_tile").remove_tag(tag_name) ).put_to(self.tag_container)
-
         self.add_hud_entity(self.tag_container)
-        self.tag_container.set_padding((10,0)).set_border_width(None).set_background_color(None)
-        self.tag_container.resize(self.hud_camera.rect.w-self.tileset_image.rect.w,120)
+        for tag in gconst.TAGS:
+            t = bf.Toggle(
+                tag,
+                callback=lambda x,tag_name=tag: self.get_sharedVar("brush_tile").add_tag(tag_name) if x else self.get_sharedVar("brush_tile").remove_tag(tag_name) )
+            t.set_alignment(bf.Alignment.LEFT)
+            t.put_to(self.tag_container)
+
+        # self.tag_container.set_border_width(None).set_background_color(None)
+        # self.tag_container.resize(self.hud_camera.rect.w-self.tileset_image.rect.w,120)
         self.tag_container.get_focus()
 
     def cycle_picker_color_index(self):

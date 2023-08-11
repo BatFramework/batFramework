@@ -234,8 +234,8 @@ class Baby(bf.AnimatedSprite):
 
     def update(self, dt: float):
         super().update(dt)
-        self.state_machine.update(dt)
         if not self.is_held : 
+            self.state_machine.update(dt)
             self.process_physics(dt)
             if not self.control: self.set_flipX(self.big_sis_link.rect.centerx < self.rect.centerx)
         else:

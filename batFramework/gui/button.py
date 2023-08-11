@@ -7,20 +7,13 @@ from .interactiveEntity import InteractiveEntity
 class Button(Label, InteractiveEntity):
     def __init__(self, text="",text_size=None, callback=None) -> None:
         self._image :pygame.Surface= None
+        self._hover_surf = None
         bf.Label.__init__(self,text_size=text_size)
         bf.InteractiveEntity.__init__(self)
         # self._initialised = False
-        self._hover_surf = None
         self.set_background_color("gray19")
         self.set_text(text,text_size)
-        self.activate_container = bf.ActionContainer()
-        self.activate_action = bf.Action("key")
-        self.activate_action.add_key_control(pygame.K_RETURN,pygame.K_SPACE)
-        self.mouse_activate_action = bf.Action("mouse")
-        self.mouse_activate_action.add_mouse_control(1)
-
-        self.activate_container.add_action(self.activate_action)
-        self.activate_container.add_action(self.mouse_activate_action)
+        self.activate_container = bf.ActionContainer(bf.Action("mouse").add_mouse_control(1),bf.Action("key").add_key_control(pygame.K_RETURN,pygame.K_SPACE))
         self._callback = callback
         self._activate_flash = 0
         self._flash_animation_length = 15
@@ -33,12 +26,7 @@ class Button(Label, InteractiveEntity):
         return self
 
     def get_bounding_box(self):
-        # yield self.rect
         yield from super().get_bounding_box()
-        
-        # if self._image==None:
-        # else:
-
 
     def set_image(self,surface: pygame.Surface):
         self._image = surface
@@ -68,10 +56,11 @@ class Button(Label, InteractiveEntity):
                 # self.rect = self._image.get_rect(topleft= self.rect.topleft).inflate(*self._padding)
                 # self.surface.fill((0,0,0,0))
                 # self.surface.blit(self._image,(self._padding[0]//2,self._padding[1]//2))
-        self._hover_surf = self.surface.copy().convert_alpha()
-        tmp = pygame.Surface(self.rect.size)
-        tmp.fill((30,30,30))
-        self._hover_surf.blit(tmp,(0,0),special_flags=pygame.BLEND_ADD)
+        if not self._hover_surf or self._hover_surf.get_size() != self.surface.get_size():
+            self._hover_surf = self.surface.copy().convert_alpha()
+            tmp = pygame.Surface(self.rect.size)
+            tmp.fill((30,30,30))
+            self._hover_surf.blit(tmp,(0,0),special_flags=pygame.BLEND_ADD)
 
     def update(self, dt: float):
         if self.activate_container.is_active("key"):
@@ -83,12 +72,12 @@ class Button(Label, InteractiveEntity):
                 self._hovering = True
         else:
             self._hovering = False
-        self.activate_container.reset()
         if self._activate_flash > 0 : 
             self._activate_flash -=60 * dt
             if self._activate_flash < 0: 
                 if self._callback : self._callback()
                 if self.parent_container: self.parent_container.lock_focus = False
+        self.activate_container.reset()
 
     def draw_effect(self,camera):
         width = max(0,min(8,self.rect.h//2 -1,self.rect.w//2 -1))*(self._activate_flash /self._flash_animation_length)

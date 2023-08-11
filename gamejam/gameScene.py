@@ -95,7 +95,7 @@ class GameScene(CustomBaseScene):
 
 
     def on_enter(self):
-        if bf.AudioManager().current_music != "level" : bf.AudioManager().play_music("level",-1,500) 
+        # if bf.AudioManager().current_music != "level" : bf.AudioManager().play_music("level",-1,500) 
         self.camera.set_follow_dynamic_point(self.player_follow_func if self.player.control else  self.baby_follow_func)
         # self._action_container.hard_reset()
         self.player.action_container.hard_reset()

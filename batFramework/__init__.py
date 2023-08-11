@@ -3,7 +3,8 @@ from .constants import Colors as color
 from .utils import *
 from .utils import Utils as utils
 from .time import Time,Timer
-from .cutscene import *
+from .cutscene import CutsceneManager,Cutscene,CutsceneBlock
+from .cutsceneBlocks import *
 from .easing import Easing,EasingAnimation,EasingAnimationManager
 from .audioManager import AudioManager
 from .utils import Layout, Alignment, Direction

@@ -64,119 +64,72 @@ class Cutscene:
     def has_ended(self):
         return self.ended
 
-class CutsceneBlock: 
+# Define the base CutsceneBlock class
+class CutsceneBlock:
+    """
+    Base class for cutscene blocks. Represents a unit of action in a cutscene.
+    """
+
+    # Constructor for the CutsceneBlock
     def __init__(self) -> None:
+        # Callback function, parent cutscene, and state variables
         self.callback = None
-        self.parent_cutscene : Cutscene = None
+        self.parent_cutscene: Cutscene = None
         self.get_flag = CutsceneManager().get_flag
         self.ended = False
         self.started = False
 
-    def set_parent_cutscene(self,parent):
+    # Set the parent cutscene for this block
+    def set_parent_cutscene(self, parent):
+        """
+        Set the parent cutscene for this block.
+
+        Args:
+            parent: The parent cutscene object.
+        """
         self.parent_cutscene = parent
 
-    def process_event(self,event):
+    # Process an event (placeholder implementation, to be overridden in subclasses)
+    def process_event(self, event):
+        """
+        Process an event for this cutscene block.
+
+        Args:
+            event: The event to be processed.
+        """
         pass
 
-    def update(self,dt):
+    # Update the block (placeholder implementation, to be overridden in subclasses)
+    def update(self, dt):
+        """
+        Update the cutscene block.
+
+        Args:
+            dt: Time elapsed since the last update.
+        """
         pass
 
+    # Start the block
     def start(self):
+        """
+        Start the cutscene block.
+        """
         self.started = True
-        # print("Block start",self)
 
+    # Mark the block as ended
     def end(self):
+        """
+        Mark the cutscene block as ended.
+        """
         self.ended = True
 
+    # Check if the block has ended
     def has_ended(self):
+        """
+        Check if the cutscene block has ended.
+
+        Returns:
+            bool: True if the block has ended, False otherwise.
+        """
         return self.ended
-    
-
-class ParallelBlock(CutsceneBlock):
-    def __init__(self,*blocks) -> None:
-        super().__init__()
-        self.blocks :list[CutsceneBlock]=blocks
-        
-    def start(self):
-        super().start()
-        for block in self.blocks:
-            block.start()
-    
-    def process_event(self, event):
-        _ = [b.process_event(event) for b in self.blocks]
-        
-    
-    def update(self, dt):
-        _ = [b.update(dt) for b in self.blocks]
-    
-    def has_ended(self):
-        all(b.has_ended() for b in self.blocks)
-
-class SceneTransitionBlock(CutsceneBlock):
-    def __init__(self,scene,transition,duration,**kwargs) -> None:
-        super().__init__()
-        self.target_scene = scene
-        self.transition = transition
-        self.duration = duration
-        self.kwargs = kwargs
-        self.timer = bf.Time().timer(duration=duration,callback=self.end)
-
-    def start(self):
-        super().start()
-        CutsceneManager().manager.transition_to_scene(self.target_scene,self.transition,self.duration,**self.kwargs)
-        self.timer.start()        
-
-
-
-class PlayMusicBlock(CutsceneBlock):
-    def __init__(self,music,path=None,wait_end=False,loop=True,fade=0) -> None:
-        super().__init__()
-        if path : bf.AudioManager().load_music(music,path)
-        self.music = music
-        self.wait_end = wait_end
-        self.fade = fade
-        self.loop = loop if not wait_end else False
-
-    def start(self):
-        super().start()
-        bf.AudioManager().play_music(self.music,self.loop,self.fade)
-        if not self.wait_end:self.end()
-
-    def process_event(self, event):
-        if event.type == bf.const.MUSIC_END_EVENT:
-            # bf.AudioManager().stop_music()
-            self.end()
-
-class StopMusicBlock(CutsceneBlock):
-    def __init__(self,fade_ms=0) -> None:
-        super().__init__()
-        self.fade_ms = fade_ms
-
-    def start(self):
-        super().start()
-        if self.fade_ms:
-            bf.AudioManager().fadeout_music(self.fade_ms)
-        else:
-            bf.AudioManager().stop_music()
-            self.end()
-
-    def process_event(self, event):
-        if event.type == bf.const.MUSIC_END_EVENT:
-            self.end()
-
-
-class PlaySound(CutsceneBlock):
-    def __init__(self,sound,path=None,wait_end=False) -> None:
-        super().__init__()
-        self.sound_file = bf.AudioManager().load_sound(sound,path)
-        self.wait_end = wait_end
-        self.sound = sound
-
-    def start(self):
-        super().start()
-        bf.AudioManager().play_sound(self.sound)
-        if self.wait_end:
-            bf.Time().timer(duration=self.sound_file.get_length()*1000,callback=self.end)
-        else:
-            self.end()
 

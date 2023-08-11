@@ -17,6 +17,7 @@ class TextBox(Container):
         self.click_rate,self.click_counter = 2,0
         self.label = bf.Label("").set_alignment(bf.Alignment.LEFT).put_to(self)
         self.text_speed = 20
+        # self.text_speed = 80
         self.end_callback = None
     def set_speed(self,speed = 0):
         self.text_speed = max(0,min(speed,100))
@@ -26,15 +27,16 @@ class TextBox(Container):
         yield from self.label.get_bounding_box()
 
     def resize(self, new_width, new_height):
-        self.label.set_wraplength(new_width - self.label._padding[0]*2)
-        # print(f"wraplength set to {self.label._wraplength}")
+        self.label.set_wraplength(int(self.rect.w - self.label._padding[0]-self._padding[0]))
+        print(f"wraplength set to {self.label._wraplength}")
         return super().resize(new_width, new_height)
     
     def string_too_wide(self,font:pygame.Font,string:str):
-        width =  font.size(string)[0]
-        # print(f"width of {repr(string)}: {width}, self.width : {self.rect.size}, label.width : {self.label.rect.w}")
-        return width >= self.rect.w - self.label._padding[0]*2-self._padding[0]*2
+        width =  font.size(string)[0] + self.label._padding[0]*2
 
+        # print(f"width of {repr(string)}: {width}, self.width : {self.rect.size}, label.width : {self.label.rect.w}, limit : {self.label.rect.w - self.label._padding[0]}")
+        return width >= self.rect.w - self._padding[0]*2 
+    
     def queue_message(self,message:str,end_callback=None):
         # print("Queue message !",repr(message))
         self.end_callback = end_callback
@@ -44,7 +46,8 @@ class TextBox(Container):
         new_lines =  [0]
         line_size = font.get_linesize()
         max_new_lines = (self.rect.h - self._padding[1]*2) // (line_size)
-        while len(new_lines) < max_new_lines:
+        while len(new_lines) < max_new_lines+1:
+            print(f"Max lines : {max_new_lines}, current new_lines : {new_lines}")
             reached_end = False
             next_new_line = new_lines[-1]
             last_index_is_space = True
@@ -91,7 +94,7 @@ class TextBox(Container):
             new_lines.append(next_new_line+1)
             if reached_end : break
         if len(new_lines) > max_new_lines:
-            # print(f"Too many lines ->{new_lines}, cut at : ",new_lines[-2])
+            print(f"Too many lines ->{new_lines}, cut at : ",new_lines[-2])
             message,cut = message[:new_lines[-2]].strip(),message[new_lines[-2]:].strip()
             print("Cut result -> message : ",repr(message),"cut :",repr(cut))
         print("Final message :",repr(message))

@@ -2,8 +2,9 @@ import batFramework as bf
 
 
 class ActionContainer:
-    def __init__(self) -> None:
+    def __init__(self,*actions: list[bf.Action]) -> None:
         self._actions: dict[str,bf.Action]= {}
+        if actions :self.add_action(*actions)
 
     def clear(self):
         self._actions = {}

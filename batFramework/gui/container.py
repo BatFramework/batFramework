@@ -11,7 +11,7 @@ class Container(Panel,InteractiveEntity):
         if uid : self.set_uid(uid)
         self._background_color = None#bf.const.DARK_INDIGO
         self._border_radius = [0]
-        self._padding = (4,4)
+        self._padding = (0,0)
 
         self.children : list[bf.Panel] = []
         self.interactive_children : list[InteractiveEntity] = []
@@ -24,16 +24,18 @@ class Container(Panel,InteractiveEntity):
         self.layout = layout
         self.gap = 4
         self.lock_focus = False
-        self._sfx_volume = 0.5
-        self.actions = bf.ActionContainer()
-        self.actions.add_action(bf.Action("up").add_key_control(pygame.K_UP))
-        self.actions.add_action(bf.Action("down").add_key_control(pygame.K_DOWN))
-        self.actions.add_action(bf.Action("left").add_key_control(pygame.K_LEFT))
-        self.actions.add_action(bf.Action("right").add_key_control(pygame.K_RIGHT))
-        self.actions.add_action(bf.Action("tab").add_key_control(pygame.K_TAB))
         self.switch_focus_sfx = None
+        self._sfx_volume = 0.5
         
-        self.set_debug_color("green")
+        self.actions = bf.ActionContainer(
+            bf.Action("up").add_key_control(pygame.K_UP),
+            bf.Action("down").add_key_control(pygame.K_DOWN),
+            bf.Action("left").add_key_control(pygame.K_LEFT),
+            bf.Action("right").add_key_control(pygame.K_RIGHT),
+            bf.Action("tab").add_key_control(pygame.K_TAB)
+        )
+        
+        self.set_debug_color(bf.color.BROWN)
 
     @staticmethod
     def create_link(source:"Container", dest:"Container", hide_source=False,reset_dest_focus = True):
@@ -53,13 +55,13 @@ class Container(Panel,InteractiveEntity):
         yield self.rect
 
 
-    def set_background_color(self,color):
-        self._background_color = color
-        self.update_content()
-        return self
+    # def set_background_color(self,color):
+    #     self._background_color = color
+    #     self.update_surface()
+    #     return self
 
-    def set_padding(self,padding:tuple[int]):
-        self._padding = padding
+    def set_padding(self,value:tuple[int]):
+        self._padding = value
         self.update_content()
         return self
     
@@ -272,7 +274,7 @@ class Container(Panel,InteractiveEntity):
         if self._set_position_center : tmp = self.rect.center
         self.rect.size = (new_width,new_height)
         if self._set_position_center : self.rect.center = tmp
-        self.update_surface()
+        # self.update_surface()
         return self
 
     def update_vertical_layout(self):
@@ -281,10 +283,13 @@ class Container(Panel,InteractiveEntity):
         """
 
         #height
+
+        # _ = [c.update_surface() for c in self.children] if self.layout == bf.Layout.FIT else 0
+
         len_children = len(self.children)
         total_children_height = sum(child.rect.h for child in self.children)
         total_gap_height = max(0,(len_children - 1) * self.gap)
-        total_height = max(0,total_children_height + total_gap_height + self._padding[1] * 2)
+        total_height = max(0,total_children_height + total_gap_height + self._padding[1]*2)
 
         max_child_width = max(child.rect.w for child in self.children ) if self.children else self.rect.w
 
@@ -295,11 +300,10 @@ class Container(Panel,InteractiveEntity):
             total_height = max(0,self.rect.h)
             max_child_width = max(0,self.rect.w-self._padding[0]*2)
 
-        total_width = max_child_width + self._padding[0] * 2
+        total_width = max_child_width + self._padding[0]*2
         
-        if (total_width,total_height) != self.rect.size : 
-            self.resize_by_self(total_width, total_height)
-            return
+        self.resize_by_self(total_width, total_height)
+        
         start_y = self.rect.y + self._padding[1]
 
         for child in self.children:
@@ -346,9 +350,8 @@ class Container(Panel,InteractiveEntity):
 
         total_height = max_child_height + self._padding[1] * 2
 
-        if (total_width,total_height) != self.rect.size : 
-            self.resize_by_self(total_width, total_height)
-            return
+        self.resize_by_self(total_width, total_height)
+
         start_x = self.rect.x + self._padding[0]
 
         for child in self.children:

@@ -3,6 +3,7 @@ from enum import Enum
 import os
 import batFramework as bf
 import json
+FONT_FILENAME = "slkscr"
 
 def move_points(delta,*points):
     res = []
@@ -31,7 +32,7 @@ class Utils:
 
     FONTS: dict[int, pygame.Font] = {}
     for size in range(8, 50, 2):
-        FONTS[size] = pygame.font.Font(os.path.join(os.path.dirname(os.path.abspath(__file__)),"fonts/ps2p.ttf"), size=size)
+        FONTS[size] = pygame.font.Font(os.path.join(os.path.dirname(os.path.abspath(__file__)),f"fonts/{FONT_FILENAME}.ttf"), size=size)
         # FONTS[size].align = pygame.FONT_LEFT
         # FONTS[size].italic = True
         # FONTS[size].underline= True
