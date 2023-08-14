@@ -59,12 +59,12 @@ class TitleScene(CustomBaseScene):
             "PLAY",
             callback=lambda: bf.CutsceneManager().play(cutscenes.IntroCutscene()),
         ).put_to(main_frame)
-        bf.Button(
-            "SHORTCUT",
-            callback=lambda: self.manager.transition_to_scene(
-                "game", bf.FadeTransition
-            ),
-        ).put_to(main_frame)
+        # bf.Button(
+        #     "SHORTCUT",
+        #     callback=lambda: self.manager.transition_to_scene(
+        #         "game", bf.FadeTransition
+        #     ),
+        # ).put_to(main_frame)
 
         bf.Button(
             "OPTIONS",

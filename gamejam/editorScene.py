@@ -220,7 +220,7 @@ class EditorScene(CustomBaseScene):
 
         self.tile_cursor.rect.center = pygame.mouse.get_pos()
 
-    def do_post_world_draw(self, surface):
-        x,y = self.camera.rect.topleft
-        surface.fill("red",(0,x,-x,self.camera.rect.h))
-        surface.fill("red",(0,0,self.camera.rect.w,-y))
+    # def do_post_world_draw(self, surface):
+    #     x,y = self.camera.rect.topleft
+    #     surface.fill("red",(0,x,-x,self.camera.rect.h))
+    #     surface.fill("red",(0,0,self.camera.rect.w,-y))

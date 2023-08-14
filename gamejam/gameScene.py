@@ -21,8 +21,7 @@ class GameScene(CustomBaseScene):
             bf.Action("options").add_key_control(pygame.K_ESCAPE),
             bf.Action("spawn").add_key_control(pygame.K_0),
             bf.Action("editor").add_key_control(pygame.K_e),
-            bf.Action("switch_player").add_key_control(pygame.K_y),
-            bf.Action("warp").add_key_control(pygame.K_v),
+            bf.Action("switch_player").add_key_control(pygame.K_y)
         )
 
         self.switch_tries = 0
@@ -158,8 +157,6 @@ class GameScene(CustomBaseScene):
                 return
             self.remove_switch()
             self.switch_players()
-        if self._action_container.is_active("warp"):
-            self.player.warp()
 
     def do_update(self, dt):
         pkillers: list[bf.Entity] = self.level.get_by_tag("pKill")

@@ -60,14 +60,17 @@ class OptionsScene(CustomBaseScene):
         self.add_action(bf.Action("resume_key").add_key_control(pygame.K_ESCAPE))
 
         control_frame = bf.Container("controls")
-        control_frame.set_visible(False)
+        self.add_hud_entity(control_frame)
         bf.Label("CONTROLS").put_to(control_frame)
         control_back = bf.Button("BACK").put_to(control_frame)
         bf.Label("MOVE:WASD|ARR.KEYS").put_to(control_frame)
         bf.Label("SWITCH:Y").put_to(control_frame)
         bf.Label("NEXT:RETURN|SPACE").put_to(control_frame)
+        bf.Label("RESPAWN:0").put_to(control_frame)
+        bf.Label("SAVE:1 (edit)").put_to(control_frame)
+        bf.Label("LOAD:2 (edit)").put_to(control_frame)
+        control_frame.set_visible(False)
 
-        self.add_hud_entity(control_frame)
 
         # control_frame.set_padding((2,2)).set_border_width(0)
         # control_frame.update_content()
