@@ -1,9 +1,10 @@
 import pygame
 
+
 class Constants:
     MUSIC_END_EVENT = pygame.event.custom_type()
 
-    RESOLUTION :tuple[int,int]= (160, 144)
+    RESOLUTION: tuple[int, int] = (160, 144)
     # RESOLUTION :tuple[int,int]= (320, 288)
     # RESOLUTION :tuple[int,int]= (640, 360)
     # RESOLUTION = (1280, 720)
@@ -11,39 +12,39 @@ class Constants:
     # VSYNC = 1
     VSYNC = 0
 
-    FLAGS  : int= pygame.SCALED 
+    FLAGS: int = pygame.SCALED #| pygame.RESIZABLE
     # FLAGS = 0
 
-    SCREEN = pygame.display.set_mode(RESOLUTION, FLAGS,vsync=VSYNC,depth=8)
+    SCREEN = pygame.display.set_mode(RESOLUTION, FLAGS, vsync=VSYNC, depth=8)
 
-    FPS :int = 60
+    FPS: int = 60
     # FPS :int = 0
 
-    #------------GUI SPECIFIC
-    DEFAULT_TEXT_SIZE :int= 8
+    # ------------GUI SPECIFIC
+    DEFAULT_TEXT_SIZE: int = 8
     # DEFAULT_TEXT_SIZE :int= 12
-    GUI_SCALE : int = 1
-    FONT_ANTIALIASING :bool= False
+    GUI_SCALE: int = 1
+    FONT_ANTIALIASING: bool = False
     # FONT_ANTIALIASING :bool= True
 
-
-    #---------------------
+    # ---------------------
     RESOURCE_PATH = "."
 
     @staticmethod
-    def set_resource_path(path:str):
-        print("set resource path :",path)
+    def set_resource_path(path: str):
+        print("set resource path :", path)
         Constants.RESOURCE_PATH = path
 
     @staticmethod
-    def set_fps_limit(value:int):
+    def set_fps_limit(value: int):
         Constants.FPS = value
-        print("FPS limit to : ",value)
+        print("FPS limit to : ", value)
 
     @staticmethod
-    def set_gui_scale(value:int):
+    def set_gui_scale(value: int):
         Constants.GUI_SCALE = value
-        print("GUI_SCALE to : ",value)
+        print("GUI_SCALE to : ", value)
+
 
 class Colors:
     LIGHT_CYAN = (179, 229, 252)
@@ -62,7 +63,7 @@ class Colors:
     SILVER = (189, 195, 199)
     DARK_GRAY = (66, 66, 66)
 
-    DARK_GB = (27,42,9)
-    SHADE_GB = (14,69,11)
-    BASE_GB = (73,107,34)
-    LIGHT_GB = (154,158,63)
+    DARK_GB = (27, 42, 9)
+    SHADE_GB = (14, 69, 11)
+    BASE_GB = (73, 107, 34)
+    LIGHT_GB = (154, 158, 63)

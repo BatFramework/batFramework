@@ -2,6 +2,7 @@
 from enum import Enum
 import pygame
 
+
 class Easing(Enum):
     EASE_IN = (0.12, 0, 0.39, 0)
     EASE_OUT = (0.61, 1, 0.88, 1)
@@ -12,11 +13,17 @@ class Easing(Enum):
         self.control_points = control_points
 
 
-
-
 class EasingAnimation:
     _cache = {}
-    def __init__(self, easing_function, duration, update_callback=None, end_callback=None, loop=False):
+
+    def __init__(
+        self,
+        easing_function,
+        duration,
+        update_callback=None,
+        end_callback=None,
+        loop=False,
+    ):
         self.easing_function = easing_function
         self.duration = duration
         self.update_callback = update_callback
@@ -31,7 +38,7 @@ class EasingAnimation:
         self.progression = 0.0
 
     def end(self):
-        self.start_time = pygame.time.get_ticks()-self.duration
+        self.start_time = pygame.time.get_ticks() - self.duration
 
     def stop(self):
         self.stopped = True
@@ -41,27 +48,26 @@ class EasingAnimation:
             return False
 
         elapsed_time = pygame.time.get_ticks() - self.start_time
-        self.progression = round(min(elapsed_time / self.duration, 1),2)
+        self.progression = round(min(elapsed_time / self.duration, 1), 2)
 
         # Evaluate the cubic Bezier curve at the current progression (t)
         p0, p1, p2, p3 = self.easing_function.control_points
-        cache_key = (self.progression,p0,p1,p2,p3)
+        cache_key = (self.progression, p0, p1, p2, p3)
         if cache_key in EasingAnimation._cache:
-            y= EasingAnimation._cache[cache_key]
-            # l =len(EasingAnimation._cache) 
+            y = EasingAnimation._cache[cache_key]
+            # l =len(EasingAnimation._cache)
             # if l % 10 == 0 : print(l)
         else:
             # t = np.asarray(self.progression)
-            t =self.progression
+            t = self.progression
             t_inv = 1.0 - t
             t2 = t * t
             t3 = t * t2
             t_inv2 = t_inv * t_inv
 
-            y =   3 * t_inv2* t * p1 + 3 * t_inv * t2 * p3 + t3 * 1
+            y = 3 * t_inv2 * t * p1 + 3 * t_inv * t2 * p3 + t3 * 1
             EasingAnimation._cache[cache_key] = y
             # print(len(EasingAnimation._cache))
-
 
         if self.update_callback:
             self.update_callback(y)
@@ -72,7 +78,7 @@ class EasingAnimation:
             if self.loop:
                 self.start()
                 return True
-                
+
             return False
 
         return True
@@ -84,6 +90,7 @@ class EasingAnimation:
         self.start_time = None
         self.progression = None
 
+
 class EasingAnimationManager:
     _instance = None
 
@@ -93,8 +100,17 @@ class EasingAnimationManager:
             cls._instance.animations = []
         return cls._instance
 
-    def create_animation(self, easing_function, duration, update_callback=None, end_callback=None, loop=False):
-        animation = EasingAnimation(easing_function, duration, update_callback, end_callback, loop)
+    def create_animation(
+        self,
+        easing_function,
+        duration,
+        update_callback=None,
+        end_callback=None,
+        loop=False,
+    ):
+        animation = EasingAnimation(
+            easing_function, duration, update_callback, end_callback, loop
+        )
         self.animations.append(animation)
         return animation
 

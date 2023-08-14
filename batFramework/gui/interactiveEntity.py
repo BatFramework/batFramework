@@ -1,4 +1,6 @@
 import batFramework as bf
+
+
 class InteractiveEntity(bf.Entity):
     def __init__(self) -> None:
         super().__init__()
@@ -16,6 +18,5 @@ class InteractiveEntity(bf.Entity):
     def has_focus(self):
         return self._focused
 
-
-    def draw_focused(self, camera:bf.Camera):
+    def draw_focused(self, camera: bf.Camera):
         pass

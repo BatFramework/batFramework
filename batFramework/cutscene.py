@@ -1,47 +1,55 @@
 import batFramework as bf
 
-class CutsceneBlock:...
 
-class Cutscene:...
+class CutsceneBlock:
+    ...
+
+
+class Cutscene:
+    ...
+
 
 class CutsceneManager(metaclass=bf.Singleton):
-    def __init__(self,manager) -> None:
-        self.current_cutscene : Cutscene = None
-        self.manager : bf.Manager = manager
+    def __init__(self, manager) -> None:
+        self.current_cutscene: Cutscene = None
+        self.manager: bf.Manager = manager
 
-    def get_flag(self,flag):
+    def get_flag(self, flag):
         return None
 
-    def process_event(self,event):
+    def process_event(self, event):
         if self.current_cutscene:
             self.current_cutscene.process_event(event)
-    def play(self,cutscene: Cutscene):
+
+    def play(self, cutscene: Cutscene):
         if self.current_cutscene is None:
             self.current_cutscene = cutscene
             self.current_cutscene.play()
-        self.manager.set_sharedVar("in_cutscene",True)
-    
+        self.manager.set_sharedVar("in_cutscene", True)
 
-    def update(self,dt):
-        if not self.current_cutscene is None :
+    def update(self, dt):
+        if not self.current_cutscene is None:
             self.current_cutscene.update(dt)
             # print("cutscene manager update")
             if self.current_cutscene.has_ended():
-                self.manager.set_sharedVar("in_cutscene",False)
+                self.manager.set_sharedVar("in_cutscene", False)
                 self.current_cutscene = None
+
 
 class Cutscene:
     def __init__(self) -> None:
-        self.cutscene_blocks : list[CutsceneBlock] = []
+        self.cutscene_blocks: list[CutsceneBlock] = []
         self.block_index = 0
         self.ended = False
-    def add_block(self,*blocks:list[CutsceneBlock]):
+
+    def add_block(self, *blocks: list[CutsceneBlock]):
         for block in blocks:
             self.cutscene_blocks.append(block)
 
-    def process_event(self,event):
+    def process_event(self, event):
         if not self.ended and self.block_index < len(self.cutscene_blocks):
             self.cutscene_blocks[self.block_index].process_event(event)
+
     def play(self):
         self.block_index = 0
         if self.cutscene_blocks:
@@ -49,20 +57,23 @@ class Cutscene:
         else:
             self.ended
 
-    def update(self,dt):
-        if self.ended : return
+    def update(self, dt):
+        if self.ended:
+            return
         # print("cutscene update",self.cutscene_blocks[self.block_index])
         self.cutscene_blocks[self.block_index].update(dt)
         if self.cutscene_blocks[self.block_index].has_ended():
-            self.block_index +=1
+            self.block_index += 1
             if self.block_index == len(self.cutscene_blocks):
                 self.ended = True
                 return
             self.cutscene_blocks[self.block_index].start()
 
             # print("NEXT BLOCK")
+
     def has_ended(self):
         return self.ended
+
 
 # Define the base CutsceneBlock class
 class CutsceneBlock:
@@ -132,4 +143,3 @@ class CutsceneBlock:
             bool: True if the block has ended, False otherwise.
         """
         return self.ended
-

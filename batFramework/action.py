@@ -2,9 +2,10 @@ from enum import Enum
 import pygame
 
 ActionType = Enum("type", "INSTANTANEOUS CONTINUOUS HOLDING")
+
+
 # DEFAULT_KEY_REPEAT_PARAM = pygame.key.get_repeat()
 class Action:
-    
     def __init__(self, name: str) -> None:
         self._name = name
         self._active = False
@@ -16,7 +17,7 @@ class Action:
         self._holding: list[int] = []
         self._unique = True
 
-    def set_unique(self,val: bool):
+    def set_unique(self, val: bool):
         self._unique = val
 
     def is_active(self):
@@ -36,6 +37,7 @@ class Action:
         if mouse not in self._mouse_control:
             self._mouse_control.append(mouse)
         return self
+
     def get_name(self) -> str:
         return self._name
 
@@ -53,34 +55,35 @@ class Action:
         self._type = ActionType.INSTANTANEOUS
         self._holding = []
         return self
-    def is_instantaneous(self) -> bool:
 
+    def is_instantaneous(self) -> bool:
         return self._type == ActionType.INSTANTANEOUS
 
     def set_holding(self):
         # pygame.key.set_repeat(2)
         self._type = ActionType.HOLDING
         return self
+
     def is_holding(self):
         return self._type == ActionType.HOLDING
 
-    def process_activate(self,event:pygame.Event)->bool:
+    def process_activate(self, event: pygame.Event) -> bool:
         if event.type == pygame.KEYDOWN and event.key in self._key_control:
             self._active = True
             # print(f"Action {self._name} activated by event ",event)
             if self.is_holding():
                 self._holding.append(event.key)
             return True
-        
+
         if event.type == pygame.MOUSEBUTTONDOWN and event.button in self._mouse_control:
             self._active = True
             if self.is_holding():
                 self._holding.append(event.button)
             return True
-        
+
         return False
 
-    def process_deactivate(self,event: pygame.Event)-> bool:
+    def process_deactivate(self, event: pygame.Event) -> bool:
         if self._type == ActionType.HOLDING:
             if event.type == pygame.KEYUP and event.key in self._key_control:
                 if event.key in self._holding:
@@ -98,8 +101,9 @@ class Action:
                     self._active = False
                     return True
         return False
-    def process_event(self, event: pygame.Event)-> bool:
-        if not self._active :
+
+    def process_event(self, event: pygame.Event) -> bool:
+        if not self._active:
             return self.process_activate(event)
         else:
             return self.process_deactivate(event)
@@ -111,6 +115,7 @@ class Action:
             return
         elif self._type == ActionType.INSTANTANEOUS:
             self._active = False
+
     def hard_reset(self):
         self._active = False
         self._holding = []

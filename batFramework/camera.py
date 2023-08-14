@@ -6,17 +6,17 @@ from pygame.math import Vector2
 class Camera:
     def __init__(self, flags=0) -> None:
         self.rect = pygame.FRect(0, 0, *bf.const.RESOLUTION)
-        self.f_center = Vector2(0,0)
-        self.flags : int= flags
+        self.f_center = Vector2(0, 0)
+        self.flags: int = flags
         # self.blit_special_flags : int =pygame.BLEND_PREMULTIPLIED if (flags & pygame.SRCALPHA) else 0
-        self.blit_special_flags : int = pygame.BLEND_ALPHA_SDL2
+        self.blit_special_flags: int = pygame.BLEND_ALPHA_SDL2
         self._clear_color = (0, 0, 0, 0)
         self.zoom_factor = 1
-        self.cached_surfaces: dict[float,pygame.Surface]= {}
-        self.surface : pygame.Surface = None
+        self.cached_surfaces: dict[float, pygame.Surface] = {}
+        self.surface: pygame.Surface = None
         self.follow_point_func = None
         self.zoom(1)
-        
+
     def set_clear_color(self, color: pygame.Color):
         self._clear_color = color
 
@@ -39,34 +39,36 @@ class Camera:
         """
         self.rect.topleft = (x, y)
 
-
     def set_center(self, x, y):
         """
         Set the camera rect center position
         """
         self.rect.center = (x, y)
 
-
-    def set_follow_dynamic_point(self, func ):
+    def set_follow_dynamic_point(self, func):
         """
-        Set the following function (returns tuple x y) 
+        Set the following function (returns tuple x y)
         (camera will center its position to the center of the given coordinates)
         """
         self.follow_point_func = func
 
-    def zoom(self,factor):
-        if factor < 0.25 : return
-        if factor > 2 : return
+    def zoom(self, factor):
+        if factor < 0.25:
+            return
+        if factor > 2:
+            return
         self.zoom_factor = factor
         if factor not in self.cached_surfaces:
             # if factor != 1 : print("creating new surface in cache : ",tuple(i * factor for i in const.RESOLUTION), self.flags)
-            self.cached_surfaces[factor] = pygame.Surface(tuple(i * factor for i in bf.const.RESOLUTION), flags= self.flags).convert_alpha()
+            self.cached_surfaces[factor] = pygame.Surface(
+                tuple(i * factor for i in bf.const.RESOLUTION), flags=self.flags
+            ).convert_alpha()
             # c = self.surface.get_colorkey() if self.surface else None
             # if c : self.cached_surfaces[factor].set_colorkey(c)
-            self.cached_surfaces[factor].fill((0,0,0,0))
+            self.cached_surfaces[factor].fill((0, 0, 0, 0))
 
         self.surface = self.cached_surfaces[self.zoom_factor]
-        self.rect = self.surface.get_frect(center = self.rect.center)
+        self.rect = self.surface.get_frect(center=self.rect.center)
         # if factor != 1 : print(self.cached_surfaces)
 
     def intersects(self, rect: pygame.Rect) -> bool:
@@ -77,24 +79,27 @@ class Camera:
             and self.rect.bottom > rect.y
         )
 
-    def transpose(self, rect: pygame.Rect) -> pygame.Rect| tuple :
+    def transpose(self, rect: pygame.Rect) -> pygame.Rect | tuple:
         # print(rect)
-        x,y = round(rect.x-self.rect.left), round(rect.y-self.rect.top)
-        return pygame.Rect(x,y,*rect.size)
+        x, y = round(rect.x - self.rect.left), round(rect.y - self.rect.top)
+        return pygame.Rect(x, y, *rect.size)
 
-
-    def convert_screen_to_world(self,x,y):
-        return x * self.zoom_factor + self.rect.x, y  * self.zoom_factor + self.rect.y 
+    def convert_screen_to_world(self, x, y):
+        return x * self.zoom_factor + self.rect.x, y * self.zoom_factor + self.rect.y
 
     def update(self, dt):
         if self.follow_point_func:
             target = self.follow_point_func()
-            self.rect.center = Vector2(self.rect.center).lerp(target,((dt * 60)/10))
+            self.rect.center = Vector2(self.rect.center).lerp(target, ((dt * 60) / 10))
 
-    def draw(self,surface :pygame.Surface):
+    def draw(self, surface: pygame.Surface):
         # pygame.draw.circle(surface,bf.color.ORANGE,self.surface.get_rect().center,4)
-        if self.zoom_factor == 1 : 
-            surface.blit(self.surface,(0,0),special_flags=self.blit_special_flags)
+        if self.zoom_factor == 1:
+            surface.blit(self.surface, (0, 0), special_flags=self.blit_special_flags)
             return
         # print("From",self.surface,"Target RESOLUTION",const.RESOLUTION,"Destination",surface)
-        surface.blit(pygame.transform.scale(self.surface,bf.const.RESOLUTION),(0,0),special_flags=self.blit_special_flags)
+        surface.blit(
+            pygame.transform.scale(self.surface, bf.const.RESOLUTION),
+            (0, 0),
+            special_flags=self.blit_special_flags,
+        )

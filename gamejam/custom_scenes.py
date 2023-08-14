@@ -1,6 +1,7 @@
 import batFramework as bf
 from utils import style
 
+
 class CustomBaseScene(bf.Scene):
     def __init__(self, name, enable_alpha=True) -> None:
         super().__init__(name, enable_alpha)

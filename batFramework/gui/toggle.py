@@ -4,19 +4,18 @@ from .button import Button
 
 
 class Toggle(Button):
-    def __init__(self,text,callback=None,default_value=False):
+    def __init__(self, text, callback=None, default_value=False):
         self.value = default_value
         self.deactivate_color = bf.color.DARK_RED
         self.activate_color = bf.color.GREEN
         super().__init__(text)
         self.set_callback(callback)
 
-
-    def set_deactivate_color(self,color):
+    def set_deactivate_color(self, color):
         self.deactivate_color = color
         self.update_surface()
 
-    def set_activate_color(self,color):
+    def set_activate_color(self, color):
         self.activate_color = color
         self.update_surface()
 
@@ -31,18 +30,20 @@ class Toggle(Button):
         else:
             self._hovering = False
         self.activate_container.reset()
-        if self._activate_flash > 0 : 
-            self._activate_flash -=60 * dt
-            if self._activate_flash < 0: 
-                if self._callback : 
+        if self._activate_flash > 0:
+            self._activate_flash -= 60 * dt
+            if self._activate_flash < 0:
+                if self._callback:
                     self.toggle()
                     self._callback(self.value)
-                if self.parent_container: self.parent_container.lock_focus = False
+                if self.parent_container:
+                    self.parent_container.lock_focus = False
 
-    def toggle(self,value=None):
-        if value!=None:
-            self.value =value
-            if self._callback : self._callback(self.value)
+    def toggle(self, value=None):
+        if value != None:
+            self.value = value
+            if self._callback:
+                self._callback(self.value)
         else:
             self.value = not self.value
         self.update_surface()
@@ -50,18 +51,17 @@ class Toggle(Button):
     # def update_aligment(self):
     #     tmp_rect = pygame.FRect(0,0,*self.rect.size)
 
-    #     match self._alignement:
+    #     match self._alignment:
     #         case bf.Alignment.LEFT:
     #             self._text_rect.centery = tmp_rect.centery
     #             self._text_rect.left = self._padding[0] + (self._border_radius[1] if len(self._border_radius) == 4 else self._border_radius[0])
     #         case bf.Alignment.RIGHT:
     #             self._text_rect.centery = tmp_rect.centery
     #             self._text_rect.right = tmp_rect.w - self._padding[0] - (self._border_radius[2] if len(self._border_radius) == 4 else self._border_radius[0])
-    #         case bf.Alignment.CENTER: 
+    #         case bf.Alignment.CENTER:
     #             self._text_rect.center = tmp_rect.center
     #         case _:
     #             self._text_rect.center = tmp_rect.center
-
 
     # def _compute_size(self):
     #     new_rect_size = list(self._text_rect.inflate(self._padding).inflate(self._border_radius[0] // 2, 0).size)
@@ -74,7 +74,7 @@ class Toggle(Button):
     #             self.rect.h = self._parent_resize_request[1] if self._parent_resize_request[1] else new_rect_size[1]
     #         else:
     #             self.rect.size = new_rect_size
-    #             if self.parent_container: 
+    #             if self.parent_container:
     #                 self.parent_container.update_content()
     #                 return True
     #     return False
@@ -93,11 +93,10 @@ class Toggle(Button):
 
     #     self._text_rect = text_surface.get_rect()
 
-
     #     if self._compute_size():return
 
     #     if self.rect.size != self.surface.get_size() : self.surface = pygame.Surface(self.rect.size).convert_alpha()
-        
+
     #     self.align_text_rect()
     #     super().update_surface()
 
