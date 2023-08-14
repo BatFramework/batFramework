@@ -8,21 +8,27 @@ class Timer:
         self.stopped = False
         self.duration = duration
         self.loop = loop
-
+        self.progression = 0.0
     def start(self):
         self.start_time = pygame.time.get_ticks()
         self.stopped = False
+        self.progression =0.0
+
+    def update(self):
+        if self.progression <1:
+            elapsed_time = pygame.time.get_ticks() - self.start_time
+            self.progression = elapsed_time / self.duration
 
     def stop(self):
         self.stopped = True
 
     def end(self):
-        self.start_time = pygame.time.get_ticks() - self.duration
+        self.progression = 1
 
     def ended(self):
         return (
             not self.stopped
-            and pygame.time.get_ticks() - self.start_time >= self.duration
+            and  self.progression>= 1
             if self.start_time
             else False
         )
@@ -44,6 +50,7 @@ class Time(metaclass=bf.Singleton):
     def update(self):
         to_remove = []
         for name, child in self.timers.copy().items():
+            child[0].update()
             if child[0].ended():
                 if child[1]:
                     child[1]()

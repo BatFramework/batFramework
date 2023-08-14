@@ -1,7 +1,6 @@
-# import numpy as np
 from enum import Enum
 import pygame
-
+import batFramework as bf
 
 class Easing(Enum):
     EASE_IN = (0.12, 0, 0.39, 0)
@@ -13,7 +12,7 @@ class Easing(Enum):
         self.control_points = control_points
 
 
-class EasingAnimation:
+class EasingAnimation(bf.Timer):
     _cache = {}
 
     def __init__(
@@ -28,25 +27,18 @@ class EasingAnimation:
         self.duration = duration
         self.update_callback = update_callback
         self.end_callback = end_callback
-        self.loop = loop
-        self.start_time = None
-        self.progression = None
-        self.stopped = False
-
+        super().__init__(duration=duration)
+        self.timer.update = self.update
     def start(self):
-        self.start_time = pygame.time.get_ticks()
-        self.progression = 0.0
+        self.timer.start()        
 
     def end(self):
-        self.start_time = pygame.time.get_ticks() - self.duration
+        self.timer.end()
 
     def stop(self):
-        self.stopped = True
+        self.timer.stop()
 
     def update(self):
-        if self.start_time is None or self.stopped:
-            return False
-
         elapsed_time = pygame.time.get_ticks() - self.start_time
         self.progression = round(min(elapsed_time / self.duration, 1), 2)
 
@@ -90,43 +82,3 @@ class EasingAnimation:
         self.start_time = None
         self.progression = None
 
-
-class EasingAnimationManager:
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(EasingAnimationManager, cls).__new__(cls)
-            cls._instance.animations = []
-        return cls._instance
-
-    def create_animation(
-        self,
-        easing_function,
-        duration,
-        update_callback=None,
-        end_callback=None,
-        loop=False,
-    ):
-        animation = EasingAnimation(
-            easing_function, duration, update_callback, end_callback, loop
-        )
-        self.animations.append(animation)
-        return animation
-
-    def update(self):
-        animations_to_remove = []
-        for animation in self.animations:
-            if not animation.update():
-                animations_to_remove.append(animation)
-
-        # Remove finished animations
-        for animation in animations_to_remove:
-            self.animations.remove(animation)
-
-    def is_empty(self):
-        return len(self.animations) == 0
-
-    def reset_animations(self):
-        for animation in self.animations:
-            animation.reset()
