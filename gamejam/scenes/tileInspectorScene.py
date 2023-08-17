@@ -1,4 +1,4 @@
-from custom_scenes import CustomBaseScene
+from .custom_scenes import CustomBaseScene
 
 
 class TileInspectorScene(CustomBaseScene):

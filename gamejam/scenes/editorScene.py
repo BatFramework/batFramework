@@ -1,4 +1,4 @@
-from custom_scenes import CustomBaseScene
+from .custom_scenes import CustomBaseScene
 import batFramework as bf
 import pygame
 import utils.tools as tools
@@ -6,7 +6,7 @@ from level import Level, Tile
 import itertools
 from game_constants import GameConstants as gconst
 import random
-
+import cutscenes
 
 class EditorScene(CustomBaseScene):
     def __init__(self) -> None:
@@ -118,6 +118,7 @@ class EditorScene(CustomBaseScene):
             self.add_world_entity(self.level)
         if self.manager._scenes[1]._name == "game":
             self.camera.set_center(*self.get_sharedVar("game_camera").rect.center)
+        bf.CutsceneManager().play(cutscenes.EditorTutorial())
 
     def do_handle_event(self, event):
         if self._action_container.is_active("switch_tool"):
@@ -129,15 +130,15 @@ class EditorScene(CustomBaseScene):
             res = bf.Utils.save_json_to_file("levels/level_0.json", data)
             self.notif_label.set_text("SAVED" if res else "ERROR")
             self.notif_label.set_visible(True)
-            bf.Time().timer(
-                duration=400, callback=lambda: self.notif_label.set_visible(False)
+            bf.Timer(
+                duration=400, end_callback=lambda: self.notif_label.set_visible(False)
             ).start()
         elif self._action_container.is_active("load"):
             res = tools.load_level(self.level, 0)
             self.notif_label.set_text("LOADED" if res else "ERROR")
             self.notif_label.set_visible(True)
-            bf.Time().timer(
-                duration=400, callback=lambda: self.notif_label.set_visible(False)
+            bf.Timer(
+                duration=400, end_callback=lambda: self.notif_label.set_visible(False)
             ).start()
 
         # L CLICK / R CLICK
@@ -220,7 +221,8 @@ class EditorScene(CustomBaseScene):
 
         self.tile_cursor.rect.center = pygame.mouse.get_pos()
 
-    def do_post_world_draw(self, surface):
-        x,y = self.camera.rect.topleft
-        surface.fill("red",(0,x,-x,self.camera.rect.h))
-        surface.fill("red",(0,0,self.camera.rect.w,-y))
+    # def do_post_world_draw(self, surface):
+    #     x,y = self.camera.rect.topleft
+    #     x,y = round(x),round(y)
+    #     surface.fill("red",(0,x,-x,self.camera.rect.h))
+    #     surface.fill("red",(0,0,self.camera.rect.w,-y))

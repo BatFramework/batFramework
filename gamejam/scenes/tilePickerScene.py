@@ -1,5 +1,5 @@
 import batFramework as bf
-from custom_scenes import CustomBaseScene
+from .custom_scenes import CustomBaseScene
 from game_constants import GameConstants as gconst
 import pygame
 import itertools
@@ -14,7 +14,7 @@ def set_pos_picker(x, y, picker, shared_var, offset):
     return picker
 
 
-class TilePicker(CustomBaseScene):
+class TilePickerScene(CustomBaseScene):
     def __init__(self) -> None:
         super().__init__("tile_picker")
         # self.set_clear_color("white")
@@ -72,14 +72,14 @@ class TilePicker(CustomBaseScene):
         ]
         incrementer = (i for i in itertools.count())
         incrementer2 = (i for i in itertools.count())
-        self.timer1 = bf.Time().timer(
+        self.timer1 = bf.Timer(
             "change_tile_picker_bg_color",
             500,
             True,
             lambda: self.set_clear_color(colors[1 + next(incrementer) % 2]),
         )
 
-        self.timer2 = bf.Time().timer(
+        self.timer2 = bf.Timer(
             "change_picker_color",
             100,
             True,
@@ -139,6 +139,7 @@ class TilePicker(CustomBaseScene):
         self.timer2.start()
 
     def on_exit(self):
+        super().on_exit()
         self.timer1.stop()
         self.timer2.stop()
 

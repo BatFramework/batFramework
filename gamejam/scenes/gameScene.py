@@ -1,6 +1,6 @@
 import batFramework as bf
 import pygame
-from custom_scenes import CustomBaseScene
+from .custom_scenes import CustomBaseScene
 from level import Level, Tile
 import utils.tools as tools
 from player import Player
@@ -44,9 +44,9 @@ class GameScene(CustomBaseScene):
                 bubble_maker(bf.color.LIGHT_GB)
                 bubble_maker(bf.color.SHADE_GB)
 
-        self.particle_timer = bf.Time().timer(
+        self.particle_timer = bf.Timer(
             name="bubbles",duration=300,loop=True,
-            callback=generate_particles
+            end_callback=generate_particles
         )
 
     def do_when_added(self):
@@ -85,14 +85,19 @@ class GameScene(CustomBaseScene):
         self.set_sharedVar("game_camera", self.camera)
         self.spawn()
 
+
+
+
     def on_enter(self):
         self.camera.set_follow_dynamic_point(
             self.player_follow_func if self.player.control else self.baby_follow_func
         )
+        self.camera.set_center(*self.camera.follow_point_func())
         self.player.action_container.hard_reset()
         self.particle_timer.start()
 
     def on_exit(self):
+        super().on_exit()
         self.particle_timer.stop()
 
     def add_switch(self):
@@ -141,10 +146,7 @@ class GameScene(CustomBaseScene):
             self.camera.set_follow_dynamic_point(self.player_follow_func if self.player.control else self.baby_follow_func)
             self.set_sharedVar("current_player", "player")
 
-    def do_early_process_event(self, event) -> bool:
-        if self.get_sharedVar("in_cutscene"):
-            return True
-        return False
+
 
     def do_handle_event(self, event):
         if self._action_container.is_active("options"):

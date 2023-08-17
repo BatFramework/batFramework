@@ -1,6 +1,6 @@
 import pygame
 import batFramework as bf
-from custom_scenes import CustomBaseScene
+from .custom_scenes import CustomBaseScene
 import cutscenes
 
 
@@ -11,9 +11,9 @@ class TitleScene(CustomBaseScene):
 
     def do_when_added(self):
         bf.AudioManager().load_music("title_theme", "audio/music/main_theme.wav")
-        self.music_timer = bf.Time().timer(
+        self.music_timer = bf.Timer(
             duration=600,
-            callback=lambda: [
+            end_callback=lambda: [
                 bf.AudioManager().play_music("title_theme", -1, 0)
                 if bf.AudioManager().current_music != "title_theme"
                 else 0
@@ -45,12 +45,19 @@ class TitleScene(CustomBaseScene):
 
         bottom_text = (
             bf.Label("Baturay Turan")
-            .set_text_color(bf.color.LIGHT_GB)
-            .set_outline_color(bf.color.BASE_GB)
+            # bf.Label("おはようございます")
         )
         self.add_hud_entity(bottom_text)
         bottom_text.set_position(0, bf.const.RESOLUTION[1] - bottom_text.rect.h)
         bottom_text.set_background_color(None).set_text_color(bf.color.BASE_GB)
+
+        ver_text = (
+            bf.Label("ver 0.3")
+        )
+        self.add_hud_entity(ver_text)
+        ver_text.set_position(bf.const.RESOLUTION[0] - ver_text.rect.w, bf.const.RESOLUTION[1] - ver_text.rect.h)
+        ver_text.set_background_color(None).set_text_color(bf.color.BASE_GB)
+
 
         main_frame = bf.Container("title_main")
         self.add_hud_entity(main_frame)
@@ -88,6 +95,7 @@ class TitleScene(CustomBaseScene):
         self.music_timer.start()
 
     def on_exit(self):
+        super().on_exit()
         self.music_timer.stop()
 
     def do_update(self, dt):

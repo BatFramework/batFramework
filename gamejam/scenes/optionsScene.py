@@ -1,5 +1,5 @@
 import batFramework as bf
-from custom_scenes import CustomBaseScene
+from .custom_scenes import CustomBaseScene
 import pygame
 from game_constants import GameConstants as gconst
 
@@ -60,6 +60,7 @@ class OptionsScene(CustomBaseScene):
         self.add_action(bf.Action("resume_key").add_key_control(pygame.K_ESCAPE))
 
         control_frame = bf.Container("controls")
+        self.add_hud_entity(control_frame)
         control_frame.set_visible(False)
         bf.Label("CONTROLS").put_to(control_frame)
         control_back = bf.Button("BACK").put_to(control_frame)
@@ -67,7 +68,6 @@ class OptionsScene(CustomBaseScene):
         bf.Label("SWITCH:Y").put_to(control_frame)
         bf.Label("NEXT:RETURN|SPACE").put_to(control_frame)
 
-        self.add_hud_entity(control_frame)
 
         # control_frame.set_padding((2,2)).set_border_width(0)
         # control_frame.update_content()

@@ -1,13 +1,13 @@
 import pygame
 import batFramework as bf
-from custom_scenes import CustomBaseScene
+from .custom_scenes import CustomBaseScene
 
 
 class BootScene(CustomBaseScene):
     def __init__(self) -> None:
         super().__init__("boot")
         self.set_clear_color(bf.color.BASE_GB)
-        self.timer = bf.Time().timer(
+        self.timer = bf.Timer(
             name="boot_timer",
             duration=2000,
             callback=lambda: self.manager.transition_to_scene(
