@@ -153,8 +153,8 @@ class Scene:
             )
 
     def draw(self, surface: pygame.Surface):
-        self._world_entities.sort(key=lambda e: e.render_order)
-        self._hud_entities.sort(key=lambda e: e.render_order)
+        self._world_entities.sort(key=lambda e: (e.z_depth,e.render_order))
+        self._hud_entities.sort(key=lambda e: (e.z_depth,e.render_order))
 
         total_blit_calls = 0
         self.camera.clear()

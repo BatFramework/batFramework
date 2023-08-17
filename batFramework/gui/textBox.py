@@ -4,21 +4,44 @@ from math import sin
 from .container import Container
 
 
+class Indicator(bf.Entity):
+    def __init__(self) -> None:
+        super().__init__((10,10),convert_alpha=True)
+        self.set_visible(False)
+        self.surface.fill((0,0,0,0))
+        p2 = (0,0)
+        p1 = (p2[0] + 4, p2[1] + 4)
+        p0 = (p2[0], p2[1] + 8)
+
+        self.double_surf = self.surface.copy()
+        pygame.draw.polygon(self.surface, bf.color.LIGHT_GB, [p0, p1, p2])
+        pygame.draw.polygon(self.surface, bf.color.LIGHT_GB, [p0, p1, p2])
+        self.anchor = 0,0
+        self.anim = bf.EasingAnimation(loop=True,update_callback=lambda x,self=self: self.set_position(self.anchor[0]+(0.2* sin(pygame.time.get_ticks() * 0.008)),self.anchor[1]))
+        self.anim.start()
+
+    def set_double(self,val:bool):
+        self.double_surf = val
+
+    def set_position(self, x, y):
+        self.anchor = (x,y)
+        return super().set_position(x, y)
 class TextBox(Container):
     def __init__(self, uid=None):
         super().__init__(uid)
-        # self.set_alignment(bf.Alignment.LEFT)
-        # self.set_direction(bf.Direction.HORIZONTAL)
-        # self.set_layout(bf.Layout.FIT)
         self.messages = []
         self.message_length = None
         self.progression = 0
         self.click_rate, self.click_counter = 2, 0
         self.label = bf.Label("").set_alignment(bf.Alignment.LEFT).put_to(self)
-        self.text_speed = 20
-        # self.text_speed = 80
+        self.text_speed = 30
         self.end_callback = None
+        self.indicator = Indicator()
 
+    def set_position(self, x, y):
+        val = super().set_position(x, y)        
+        self.indicator.set_position(*self.rect.move(-12,-12).bottomright)
+        return val
     def set_speed(self, speed=0):
         self.text_speed = max(0, min(speed, 100))
 
@@ -30,13 +53,12 @@ class TextBox(Container):
         self.label.set_wraplength(
             int(self.rect.w - self.label._padding[0] - self._padding[0])
         )
-        print(f"wraplength set to {self.label._wraplength}")
+        # print(f"wraplength set to {self.label._wraplength}")
         return super().resize(new_width, new_height)
 
     def string_too_wide(self, font: pygame.Font, string: str):
         width = font.size(string)[0] + self.label._padding[0] * 2
 
-        # print(f"width of {repr(string)}: {width}, self.width : {self.rect.size}, label.width : {self.label.rect.w}, limit : {self.label.rect.w - self.label._padding[0]}")
         return width >= self.rect.w - self._padding[0] * 2
 
     def queue_message(self, message: str, end_callback=None):
@@ -118,6 +140,7 @@ class TextBox(Container):
             self.queue_message(cut, end_callback)
 
     def next_message(self):
+        self.indicator.set_visible(False)
         if self.progression != self.message_length:
             return
         self.messages.pop(0)
@@ -131,33 +154,29 @@ class TextBox(Container):
             return
 
     def update(self, dt: float):
+        self.indicator.update(dt)
         if not self.messages:
             return
         new_progression = min(
             self.progression + (dt * self.text_speed), self.message_length
         )
 
+
         if int(new_progression) != int(self.progression):
             if self.click_counter % self.click_rate == 0:
                 bf.AudioManager().play_sound("text_click", 0.5)
             self.click_counter += 1
+
+        self.label.set_text(self.messages[0][: int(new_progression)])
         self.progression = new_progression
 
-        self.label.set_text(self.messages[0][: int(self.progression)])
+        if self.progression == self.message_length:
+            self.indicator.set_visible(True)
+        else:
+            self.indicator.set_visible(False)
 
     def draw(self, camera):
-        i = super().draw(camera)
-        if self.progression == self.message_length:
-            p2 = self.rect.move(
-                -4 - (2 * sin(pygame.time.get_ticks() * 0.01)), -10
-            ).bottomright
-            p1 = (p2[0] - 4, p2[1] - 4)
-            p0 = (p2[0] - 4, p2[1] + 4)
-            if len(self.messages) == 1:
-                pygame.draw.polygon(
-                    camera.surface,
-                    bf.color.SHADE_GB,
-                    bf.move_points((3, 0), p0, p1, p2),
-                )
-            pygame.draw.polygon(camera.surface, bf.color.LIGHT_GB, [p0, p1, p2])
+        i= super().draw(camera)
+        i+=self.indicator.draw(camera)
         return i
+

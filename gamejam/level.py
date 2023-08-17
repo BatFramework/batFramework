@@ -369,11 +369,23 @@ class Level(bf.Entity):
         return [e for e in self.entities if rect.colliderect(e.rect)]
 
     def draw(self, camera: bf.Camera) -> bool:
+        show_debug = self.parent_scene.get_sharedVar("is_debugging_func")() == 2
         i = 0
+        #update chunk surface
         for chunk in self.chunks.values():
             i += chunk.draw(camera)
+        #draw chunks
+        camera.surface.fblits(
+            [
+                (c.surface, camera.transpose(c.rect).topleft)
+                for c in self.chunks.values()
+            ]
+        )
+        #draw entites
         i += sum(entity.draw(camera) for entity in self.entities)
-        if self.parent_scene.get_sharedVar("is_debugging_func")() == 2:
+
+        #draw debug
+        if show_debug:
             camera.surface.fblits(
                 [
                     (c.debug_surface, camera.transpose(c.rect).topleft)
@@ -390,11 +402,5 @@ class Level(bf.Entity):
                     1,
                 )
 
-        else:
-            camera.surface.fblits(
-                [
-                    (c.surface, camera.transpose(c.rect).topleft)
-                    for c in self.chunks.values()
-                ]
-            )
+
         return i

@@ -2,6 +2,9 @@ import pygame
 
 
 class GameConstants:
+    RESOLUTION = (160,144)
+    FLAGS = pygame.SCALED
+    VSYNC = 0
     TILE_SIZE = 8
     CHUNK_SIZE = 8
     FRICTION = 0.4

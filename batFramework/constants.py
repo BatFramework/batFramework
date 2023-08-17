@@ -2,22 +2,31 @@ import pygame
 
 
 class Constants:
+    SCREEN = None
+    RESOLUTION: tuple[int, int] = (360,240)
+    VSYNC = 0
+    FLAGS: int = pygame.SCALED #| pygame.RESIZABLE
+    FPS: int = 60
+  
+    @staticmethod
+    def init_screen(resolution:tuple[int,int],flags:int= 0, vsync:int= 0):
+        Constants.RESOLUTION = resolution
+        Constants.FLAGS = flags
+        Constants.VSYNC = vsync
+        Constants.SCREEN = pygame.display.set_mode(Constants.RESOLUTION, Constants.FLAGS,vsync=Constants.VSYNC)
+
+
     MUSIC_END_EVENT = pygame.event.custom_type()
 
-    RESOLUTION: tuple[int, int] = (160, 144)
     # RESOLUTION :tuple[int,int]= (320, 288)
     # RESOLUTION :tuple[int,int]= (640, 360)
     # RESOLUTION = (1280, 720)
 
     # VSYNC = 1
-    VSYNC = 0
 
-    FLAGS: int = pygame.SCALED #| pygame.RESIZABLE
     # FLAGS = 0
 
-    SCREEN = pygame.display.set_mode(RESOLUTION, FLAGS, vsync=VSYNC, depth=8)
 
-    FPS: int = 60
     # FPS :int = 0
 
     # ------------GUI SPECIFIC
@@ -45,6 +54,9 @@ class Constants:
         Constants.GUI_SCALE = value
         print("GUI_SCALE to : ", value)
 
+    @staticmethod
+    def set_default_text_size(size:int):
+        Constants.DEFAULT_TEXT_SIZE = size
 
 class Colors:
     LIGHT_CYAN = (179, 229, 252)

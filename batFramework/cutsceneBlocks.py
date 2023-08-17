@@ -69,7 +69,7 @@ class SceneTransitionBlock(bf.CutsceneBlock):
         self.duration = duration
         self.kwargs = kwargs
         # Timer to handle the end of the transition
-        self.timer = bf.Time().timer(duration=duration, callback=self.end)
+        self.timer = bf.Timer(name = "scene_transition_block",duration=duration, end_callback=self.end)
 
     # Start the scene transition block
     def start(self):
@@ -78,8 +78,14 @@ class SceneTransitionBlock(bf.CutsceneBlock):
         """
         super().start()
         # Initiate the scene transition
+        if self.get_current_scene()._name == self.target_scene:
+            self.end()
+            return
         bf.CutsceneManager().manager.transition_to_scene(
-            self.target_scene, self.transition, self.duration, **self.kwargs
+            self.target_scene, self.transition, duration=self.duration, **self.kwargs
         )
         # Start the timer to handle the end of the transition
         self.timer.start()
+
+    def end(self):
+        return super().end()

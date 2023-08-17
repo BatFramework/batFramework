@@ -141,17 +141,10 @@ class Player(bf.AnimatedSprite):
         self.control = True
         self.collision_rect = pygame.FRect(0, 0, *self.rect.size)
         self.baby_link: "Player" = None
-        self.fade_surf = pygame.Surface(self.rect.size,flags=pygame.SRCALPHA)
-        self.fade_in_transition = bf.EasingAnimation(bf.Easing.EASE_OUT,500,lambda x: print(x),self.end_fade_in_transition)
-    
-    def end_fade_in_transition(self):
-        self.fade_in_transition.stop()
-        self.set_center(*self.baby_link.rect.midtop)
+
 
     def warp(self):
-        if self.fade_in_transition.is_over() or self.fade_in_transition.start_time is None:
-            self.fade_in_transition.reset()
-            self.fade_in_transition.start()
+        pass
 
     def init_actions(self):
         self.action_container.add_action(
@@ -310,7 +303,6 @@ class Player(bf.AnimatedSprite):
 
     def update(self, dt: float):
         super().update(dt)
-        self.fade_in_transition.update()
         self.state_machine.update(dt)
         self.process_physics(dt)
         if not self.control:
@@ -329,13 +321,3 @@ class Player(bf.AnimatedSprite):
 
         self.action_container.reset()
 
-    def draw(self, camera: bf.Camera) -> bool:  
-        i = super().draw(camera)
-        if not self.fade_in_transition.is_over():
-            mask = pygame.mask.from_surface(self.get_state().get_frame(self.float_counter,self.flipX))
-            surf = mask.to_surface(setcolor = bf.color.CLOUD_WHITE,unsetcolor=None)
-            camera.surface.blit(
-                surf,
-                camera.transpose(self.rect),
-            )
-        return i

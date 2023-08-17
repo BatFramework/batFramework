@@ -37,6 +37,12 @@ class SceneManager:
         if name not in self.sharedVarDict:
             return None
         return self.sharedVarDict[name]
+    
+    def get_current_scene_name(self)-> str:
+        return self._scenes[0].name
+    
+    def get_current_scene(self)->bf.Scene:
+        return self._scenes[0]
 
     def update_scene_states(self):
         self.active_scenes = [s for s in reversed(self._scenes) if s._active]
@@ -50,8 +56,7 @@ class SceneManager:
         self._scenes.insert(0, scene)
 
     def remove_scene(self, name: str):
-        if self.has_scene(name):
-            self._scenes = [s for s in self._scenes if s._name != name]
+        self._scenes = [s for s in self._scenes if s._name != name]
 
     def has_scene(self, name):
         return any(name == scene._name for scene in self._scenes)
@@ -63,19 +68,18 @@ class SceneManager:
             if scene._name == name:
                 return scene
 
-    def transition_to_scene(self, dest_scene_name, transition, duration=100, **kwargs):
+    def transition_to_scene(self, dest_scene_name, transition, **kwargs):
         if not self.has_scene(dest_scene_name):
             return False
-
         source_surf = pygame.Surface(bf.const.RESOLUTION).convert_alpha()
         dest_surf = pygame.Surface(bf.const.RESOLUTION).convert_alpha()
 
+        #draw the surfaces
         self._scenes[0].draw(source_surf)
-
         self.get_scene(dest_scene_name).draw(dest_surf)
 
         instance: bf.BaseTransition = transition(
-            source_surf, dest_surf, duration, **kwargs
+            source_surf, dest_surf, **kwargs
         )
         instance.set_source_name(self._scenes[0]._name)
         instance.set_dest_name(dest_scene_name)
@@ -131,10 +135,8 @@ class SceneManager:
         return
 
     def draw(self, surface) -> None:
-        # surface.fill("red")
         if self.transitions:
             self.transitions[0].draw(surface)
             return
-
         for scene in self.visible_scenes:
             scene.draw(surface)

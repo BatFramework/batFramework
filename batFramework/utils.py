@@ -4,7 +4,7 @@ import os
 import batFramework as bf
 import json
 
-FONT_FILENAME = "slkscr"
+FONT_FILENAME = "slkscr.ttf"
 
 
 def move_points(delta, *points):
@@ -39,7 +39,7 @@ class Utils:
     for size in range(8, 50, 2):
         FONTS[size] = pygame.font.Font(
             os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), f"fonts/{FONT_FILENAME}.ttf"
+                os.path.dirname(os.path.abspath(__file__)), f"fonts/{FONT_FILENAME}"
             ),
             size=size,
         )

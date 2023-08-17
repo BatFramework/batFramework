@@ -116,12 +116,13 @@ class Label(Panel):
 
     def draw_outline(self, font: pygame.Font, wraplength):
         if self._outline:
+            offset = int(self._text_size / 8) 
             # outline_surf = font.render(self._text, bf.const.FONT_ANTIALIASING, self._outline_color, None,wraplength)
             outline_surf = font.render(
                 self._text, True, self._outline_color, None, wraplength
             )
-            self.surface.blit(outline_surf, self._text_rect.move(1, 1))
-            self.surface.blit(outline_surf, self._text_rect.move(1, 0))
+            self.surface.blit(outline_surf, self._text_rect.move(offset, offset))
+            self.surface.blit(outline_surf, self._text_rect.move(offset, 0))
 
     def get_font_set(self):
         font = bf.utils.FONTS[self._text_size]

@@ -32,9 +32,9 @@ class CutsceneManager(metaclass=bf.Singleton):
             self.current_cutscene.update(dt)
             # print("cutscene manager update")
             if self.current_cutscene.has_ended():
+                self.current_cutscene.on_exit()
                 self.manager.set_sharedVar("in_cutscene", False)
                 self.current_cutscene = None
-
 
 class Cutscene:
     def __init__(self) -> None:
@@ -42,6 +42,15 @@ class Cutscene:
         self.block_index = 0
         self.ended = False
 
+    def on_exit(self):
+        pass
+
+    def get_current_scene(self):
+        return bf.CutsceneManager().manager.get_current_scene()
+    
+    def get_scene(self,name):
+        return bf.CutsceneManager().manager.get_scene(name)
+    
     def add_block(self, *blocks: list[CutsceneBlock]):
         for block in blocks:
             self.cutscene_blocks.append(block)
@@ -90,6 +99,13 @@ class CutsceneBlock:
         self.ended = False
         self.started = False
 
+
+    def get_current_scene(self):
+        return bf.CutsceneManager().manager.get_current_scene()
+    
+    def get_scene(self,name):
+        return bf.CutsceneManager().manager.get_scene(name)
+    
     # Set the parent cutscene for this block
     def set_parent_cutscene(self, parent):
         """

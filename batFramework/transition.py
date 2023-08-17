@@ -51,37 +51,39 @@ class FadeColorTransition(BaseTransition):
         self.color_surf = pygame.Surface((source_surf.get_rect().size)).convert_alpha()
         self.color_surf.fill(color)
         self.ease_out = bf.EasingAnimation(
-            bf.Easing.EASE_IN,
-            duration,
-            lambda x: self.color_surf.set_alpha(int(255 - (255 * x))),
-            lambda: self.set_ended(True),
-        )
+            easing_function=bf.Easing.EASE_IN,
+            duration=duration,
+            update_callback = lambda x: self.color_surf.set_alpha(int(255 - (255 * x))),
+            end_callback=lambda: self.set_ended(True))
 
-        self.color_timer = bf.Time().timer(
-            name="GOB",
+        self.color_timer = bf.Timer(
             duration=color_duration,
-            callback=lambda: [self.set_state("out"), self.ease_out.start()],
-        )
+            end_callback=lambda: self.set_state("out"))
         self.ease_in = bf.EasingAnimation(
-            bf.Easing.EASE_IN,
-            duration,
+            easing_function=bf.Easing.EASE_IN,
+            duration=duration,
             update_callback=lambda x: self.color_surf.set_alpha(int(255 * x)),
-            end_callback=lambda: [self.set_state("color"), self.color_timer.start()],
-        )
+            # update_callback=lambda x: print(x),
+            end_callback=lambda: self.set_state("color"))
+        self.state = None
+
         self.state = "in"
         self.ease_in.start()
 
     def set_state(self, state: str):
         self.state = state
-
-    def update(self, dt):
-        if self.state == "in":
-            self.ease_in.update()
-        elif self.state == "out":
-            self.ease_out.update()
+        if state == "in":
+            self.ease_in.start()
+        elif state == "color":
+            self.color_timer.start()
+        elif state == "out":
+            self.ease_out.start()
 
     def has_ended(self):
         return self.ended
+
+    def set_ended(self, val):
+        super().set_ended(val)
 
     def draw(self, surface):
         if self.state != "color":
@@ -90,24 +92,19 @@ class FadeColorTransition(BaseTransition):
 
 
 class FadeTransition(BaseTransition):
-    def __init__(self, source_surf, dest_surf, duration=200) -> None:
+    def __init__(self, source_surf, dest_surf, duration=500) -> None:
         super().__init__(source_surf, dest_surf)
-        self.start_ticks = pygame.time.get_ticks()
-        self.target_time = duration
-        self.progress = 0
+        self.anim = bf.EasingAnimation(None,bf.Easing.EASE_IN_OUT,duration,self.update_surface,lambda : self.set_ended(True))
+        self.anim.start()
+
+    def update_surface(self,progress):
+        self.source.set_alpha(int(255 - (255 * progress)))
+        self.dest.set_alpha(int(255 * progress))
 
     def has_ended(self):
         return self.ended
 
-    def update(self, dt):
-        seconds = pygame.time.get_ticks() - self.start_ticks
-        self.progress = seconds / self.target_time
-        if seconds >= self.target_time:
-            self.ended = True
-
     def draw(self, surface):
-        self.source.set_alpha(int(255 - (255 * self.progress)))
-        self.dest.set_alpha(int(255 * self.progress))
         surface.blit(self.source, (0, 0))
         surface.blit(self.dest, (0, 0))
 
@@ -138,18 +135,15 @@ class SlideTransition(BaseTransition):
                 f"Unsupported Alignment : {source_alignment.value}, set to default : {bf.Alignment.LEFT.value} "
             )
         self.anim = bf.EasingAnimation(
-            easing,
-            duration,
-            lambda x: self.update_offset(self.offset.lerp((0, 0), x)),
-            lambda: self.set_ended(True),
+            easing_function=easing,
+            duration=duration,
+            update_callback =lambda x: self.update_offset(self.offset.lerp((0, 0), x)),
+            end_callback =lambda: self.set_ended(True),
         )
         self.anim.start()
 
     def update_offset(self, vec):
         self.offset.update(vec)
-
-    def update(self, dt):
-        self.anim.update()
 
     def has_ended(self):
         return self.ended
