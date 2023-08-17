@@ -6,7 +6,6 @@ class Manager(bf.SceneManager):
     def __init__(self, *initial_scene_list) -> None:
         random.seed("random")
         self._screen: pygame.Surface = bf.const.SCREEN
-        self._easing_manager = bf.EasingAnimationManager()
         self._timeManager = bf.Time()
         self._cutsceneManager = bf.CutsceneManager(self)
         print("Vsync : ", pygame.display.is_vsync())
@@ -19,10 +18,6 @@ class Manager(bf.SceneManager):
     def set_icon(path: str):
         surf = pygame.image.load(bf.utils.get_path(path)).convert_alpha()
         pygame.display.set_icon(surf)
-
-    @staticmethod
-    def set_resource_path(path):
-        bf.const.set_resource_path(path)
 
     def get_fps(self):
         return self._clock.get_fps()
@@ -42,9 +37,8 @@ class Manager(bf.SceneManager):
             # update
             dt = self._clock.tick(bf.const.FPS) / 1000
             dt = min(dt, 0.02)
-            self._easing_manager.update()
-            self._timeManager.update()
             self._cutsceneManager.update(dt)
+            self._timeManager.update()
             self.update(dt)
             # render
             self.draw(self._screen)

@@ -3,14 +3,7 @@ import batFramework as bf
 # import os
 # from pathlib import Path
 from utils.defaults import Defaults
-from titleScene import TitleScene
-from gameScene import GameScene
-from optionsScene import OptionsScene
-from bootScene import BootScene
-from tilePicker import TilePicker
-from editorScene import EditorScene
-from dialogueScene import DialogueScene
-
+from scenes import *
 # from game_constants  import GameConstants as  gconst
 
 
@@ -22,7 +15,8 @@ class MyManager(bf.Manager):
             TitleScene(),
             OptionsScene(),
             EditorScene(),
-            TilePicker(),
+            TilePickerScene(),
             GameScene(),
             DialogueScene(),
+            MovieScene()
         )
