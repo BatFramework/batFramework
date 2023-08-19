@@ -3,7 +3,7 @@ import pygame
 
 class Constants:
     SCREEN = None
-    RESOLUTION: tuple[int, int] = (360,240)
+    RESOLUTION: tuple[int, int] = (1280,720)
     VSYNC = 0
     FLAGS: int = pygame.SCALED #| pygame.RESIZABLE
     FPS: int = 60

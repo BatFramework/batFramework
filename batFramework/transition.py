@@ -16,6 +16,10 @@ class BaseTransition:
         self.source_scene_name = ""
         self.dest_scene_name = ""
         self.duration = duration
+        self.index = 0
+
+    def set_scene_index(self,index):
+        self.index = index
 
     def set_source_name(self, name):
         self.source_scene_name = name

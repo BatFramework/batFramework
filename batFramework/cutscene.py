@@ -12,6 +12,7 @@ class Cutscene:
 class CutsceneManager(metaclass=bf.Singleton):
     def __init__(self, manager) -> None:
         self.current_cutscene: Cutscene = None
+        self.cutscenes : list[bf.Cutscene] = [] 
         self.manager: bf.Manager = manager
 
     def get_flag(self, flag):
@@ -21,9 +22,16 @@ class CutsceneManager(metaclass=bf.Singleton):
         if self.current_cutscene:
             self.current_cutscene.process_event(event)
 
+    def queue(self,*cutscenes):
+        self.cutscenes.extend(cutscenes)
+        if self.current_cutscene is None:
+            self.play(self.cutscenes.pop(0))
+            
     def play(self, cutscene: Cutscene):
         if self.current_cutscene is None:
             self.current_cutscene = cutscene
+            self.current_cutscene.on_enter()
+            self.current_cutscene.init_blocks()
             self.current_cutscene.play()
         self.manager.set_sharedVar("in_cutscene", True)
 
@@ -33,21 +41,36 @@ class CutsceneManager(metaclass=bf.Singleton):
             # print("cutscene manager update")
             if self.current_cutscene.has_ended():
                 self.current_cutscene.on_exit()
-                self.manager.set_sharedVar("in_cutscene", False)
-                self.current_cutscene = None
+                self.current_cutscene =None
+                if self.cutscenes:
+                    self.play(self.cutscenes.pop(0))
+                else:
+                    self.current_cutscene = None
+                    self.manager.set_sharedVar("in_cutscene", False)
 
 class Cutscene:
-    def __init__(self) -> None:
-        self.cutscene_blocks: list[CutsceneBlock] = []
+    def __init__(self,*blocks) -> None:
+        self.cutscene_blocks: list[CutsceneBlock] = list(blocks)
         self.block_index = 0
         self.ended = False
+    def on_enter(self):
+        pass
 
     def on_exit(self):
         pass
 
+    def init_blocks(self):
+        pass
+
+    def get_scene_at(self,index):
+        return bf.CutsceneManager().manager._scenes[index]
+
     def get_current_scene(self):
         return bf.CutsceneManager().manager.get_current_scene()
     
+    def set_scene(self,name,index=0):
+        return bf.CutsceneManager().manager.set_scene(name,index)
+
     def get_scene(self,name):
         return bf.CutsceneManager().manager.get_scene(name)
     
@@ -84,78 +107,3 @@ class Cutscene:
         return self.ended
 
 
-# Define the base CutsceneBlock class
-class CutsceneBlock:
-    """
-    Base class for cutscene blocks. Represents a unit of action in a cutscene.
-    """
-
-    # Constructor for the CutsceneBlock
-    def __init__(self) -> None:
-        # Callback function, parent cutscene, and state variables
-        self.callback = None
-        self.parent_cutscene: Cutscene = None
-        self.get_flag = CutsceneManager().get_flag
-        self.ended = False
-        self.started = False
-
-
-    def get_current_scene(self):
-        return bf.CutsceneManager().manager.get_current_scene()
-    
-    def get_scene(self,name):
-        return bf.CutsceneManager().manager.get_scene(name)
-    
-    # Set the parent cutscene for this block
-    def set_parent_cutscene(self, parent):
-        """
-        Set the parent cutscene for this block.
-
-        Args:
-            parent: The parent cutscene object.
-        """
-        self.parent_cutscene = parent
-
-    # Process an event (placeholder implementation, to be overridden in subclasses)
-    def process_event(self, event):
-        """
-        Process an event for this cutscene block.
-
-        Args:
-            event: The event to be processed.
-        """
-        pass
-
-    # Update the block (placeholder implementation, to be overridden in subclasses)
-    def update(self, dt):
-        """
-        Update the cutscene block.
-
-        Args:
-            dt: Time elapsed since the last update.
-        """
-        pass
-
-    # Start the block
-    def start(self):
-        """
-        Start the cutscene block.
-        """
-        self.started = True
-
-    # Mark the block as ended
-    def end(self):
-        """
-        Mark the cutscene block as ended.
-        """
-        self.ended = True
-
-    # Check if the block has ended
-    def has_ended(self):
-        """
-        Check if the cutscene block has ended.
-
-        Returns:
-            bool: True if the block has ended, False otherwise.
-        """
-        return self.ended

@@ -1,6 +1,7 @@
 from .custom_scenes import CustomBaseScene
 import batFramework as bf
 import pygame
+from pygame.math import Vector2
 import utils.tools as tools
 from level import Level, Tile
 import itertools
@@ -11,21 +12,6 @@ import cutscenes
 class EditorScene(CustomBaseScene):
     def __init__(self) -> None:
         super().__init__("editor")
-        self.tile_cursor: Tile = Tile(0, 0, (0, 0))
-        self.tools = ["tile", "entity", "spawn"]
-        self.tool_iterator = (i for i in itertools.count())
-        next(self.tool_iterator)
-        self.tool = None
-        self.tool_label = bf.Label("")
-        self.set_tool(self.tools[0])
-        self.notif_label = bf.Label("").set_position(*self.tool_label.rect.bottomleft)
-        self.notif_label.set_visible(False)
-        self.add_hud_entity(self.notif_label, self.tool_label)
-        editor_label = bf.Label("EDITOR")
-        self.add_hud_entity(editor_label)
-        editor_label.set_position(
-            *self.hud_camera.rect.move(-editor_label.rect.w, 0).topright
-        )
 
         self.add_action(
             bf.Action("l_click").add_mouse_control(1).set_holding(),
@@ -43,12 +29,39 @@ class EditorScene(CustomBaseScene):
             .add_key_control(pygame.K_RIGHT, pygame.K_d)
             .set_holding(),
         )
+
+
+        self.tile_cursor: Tile = Tile(0, 0, (0, 0))
+        self.tools = ["tile", "entity", "spawn"]
+        self.tool_iterator = (i for i in itertools.count())
+        next(self.tool_iterator)
+
+        self.tool = None
+        self.tool_label = bf.Label("")
+        self.set_tool(self.tools[0])
+
+        self.notif_label = bf.Label("").set_position(*self.tool_label.rect.bottomleft)
+        self.notif_label.set_visible(False)
+
+        self.add_hud_entity(self.notif_label, self.tool_label)
+        editor_label = bf.Label("EDITOR")
+
+        self.add_hud_entity(editor_label)
+        editor_label.set_position(
+            *self.hud_camera.rect.move(-editor_label.rect.w, 0).topright
+        )
+
+
+
         self.level: Level = None
         self.debugger: bf.Debugger = None
+
+
         self.pm = bf.ParticleManager()
         self.pm.render_order = 4
         self.add_world_entity(self.pm)
 
+        self.camera_velocity = Vector2()
 
     def delete_effect_generate(self,start_pos):
         for _ in range(10):
@@ -110,15 +123,16 @@ class EditorScene(CustomBaseScene):
         )
 
     def on_enter(self):
+        super().on_enter()
         shared = self.get_sharedVar("level")
         if self.level != shared:
             if self.level != None:
                 self.remove_world_entity(self.level)
             self.level = shared
             self.add_world_entity(self.level)
-        if self.manager._scenes[1]._name == "game":
+        if self.manager._scenes[self.get_scene_index()+1]._name == "game":
             self.camera.set_center(*self.get_sharedVar("game_camera").rect.center)
-        bf.CutsceneManager().play(cutscenes.EditorTutorial())
+            # bf.CutsceneManager().queue(cutscenes.EditorTutorial())
 
     def do_handle_event(self, event):
         if self._action_container.is_active("switch_tool"):
@@ -143,61 +157,10 @@ class EditorScene(CustomBaseScene):
 
         # L CLICK / R CLICK
         if self._action_container.is_active("l_click"):
-            x, y = tools.world_to_grid(
-                *[
-                    int(i)
-                    for i in self.camera.convert_screen_to_world(
-                        *pygame.mouse.get_pos()
-                    )
-                ]
-            )
-            # if all(i >= 0 for i in [x,y]):
-            brush_tile: Tile = self.get_sharedVar("brush_tile")
-            match self.tool:
-                case "tile":
-                    self.level.add_tile(
-                        x, y, brush_tile.tile_index, brush_tile.flip, *brush_tile.tags
-                    )
-                case "entity":
-                    if not self.level.get_neighboring_entities(
-                        *self.camera.convert_screen_to_world(*pygame.mouse.get_pos()), 1
-                    ):
-                        self.level.add_entity(
-                            Tile(
-                                **brush_tile.copy()
-                                .set_position(
-                                    int(x * gconst.TILE_SIZE), int(y * gconst.TILE_SIZE)
-                                )
-                                .serialize()
-                            )
-                        )
+            self.left_click()
 
         if self._action_container.is_active("r_click"):
-            x, y = tools.world_to_grid(
-                *[
-                    int(i)
-                    for i in self.camera.convert_screen_to_world(
-                        *pygame.mouse.get_pos()
-                    )
-                ]
-            )
-            match self.tool:
-                case "tile":
-                    
-                    if self.level.remove_tile(x, y):
-                        self.delete_effect_generate(self.camera.convert_screen_to_world(*pygame.mouse.get_pos()))
-
-                case "entity":
-                    tile = self.level.get_neighboring_entities(
-                        *self.camera.convert_screen_to_world(*pygame.mouse.get_pos()), 1
-                    )
-                    if tile:
-                        if self.level.remove_entity(tile[0]):
-                            self.delete_effect_generate(self.camera.convert_screen_to_world(*pygame.mouse.get_pos()))
-
-
-                case _:
-                    return
+            self.right_click()
         # MIDDLE CLICK
         if self._action_container.is_active("middle_click"):
             self.tile_cursor.set_flip(*self.cycle_flip(*self.tile_cursor.flip))
@@ -209,15 +172,20 @@ class EditorScene(CustomBaseScene):
             self.manager.transition_to_scene("tile_picker", bf.FadeTransition)
 
     def do_update(self, dt):
-        speed = 100 * dt
+        self.camera_velocity *= 0.65
+        speed = 70 * dt
+
         if self._action_container.is_active("left"):
-            self.camera.move(-speed, 0)
+            self.camera_velocity.x -= speed
         if self._action_container.is_active("right"):
-            self.camera.move(speed, 0)
+            self.camera_velocity.x += speed
         if self._action_container.is_active("up"):
-            self.camera.move(0, -speed)
+
+            self.camera_velocity.y -= speed
         if self._action_container.is_active("down"):
-            self.camera.move(0, speed)
+            self.camera_velocity.y += speed
+
+        self.camera.move(*self.camera_velocity)
 
         self.tile_cursor.rect.center = pygame.mouse.get_pos()
 
@@ -226,3 +194,60 @@ class EditorScene(CustomBaseScene):
     #     x,y = round(x),round(y)
     #     surface.fill("red",(0,x,-x,self.camera.rect.h))
     #     surface.fill("red",(0,0,self.camera.rect.w,-y))
+
+
+    def left_click(self):
+        x, y = tools.world_to_grid(
+            *[
+                int(i)
+                for i in self.camera.convert_screen_to_world(
+                    *pygame.mouse.get_pos()
+                )
+            ]
+        )
+        # if all(i >= 0 for i in [x,y]):
+        brush_tile: Tile = self.get_sharedVar("brush_tile")
+        match self.tool:
+            case "tile":
+                self.level.add_tile(
+                    x, y, brush_tile.tile_index, brush_tile.flip, *brush_tile.tags
+                )
+            case "entity":
+                if not self.level.get_neighboring_entities(
+                    *self.camera.convert_screen_to_world(*pygame.mouse.get_pos()), 1
+                ):
+                    self.level.add_entity(
+                        Tile(
+                            **brush_tile.copy()
+                            .set_position(
+                                int(x * gconst.TILE_SIZE), int(y * gconst.TILE_SIZE)
+                            )
+                            .serialize()
+                        )
+                    )
+    def right_click(self):
+        x, y = tools.world_to_grid(
+            *[
+                int(i)
+                for i in self.camera.convert_screen_to_world(
+                    *pygame.mouse.get_pos()
+                )
+            ]
+        )
+        match self.tool:
+            case "tile":
+                
+                if self.level.remove_tile(x, y):
+                    self.delete_effect_generate(self.camera.convert_screen_to_world(*pygame.mouse.get_pos()))
+
+            case "entity":
+                tile = self.level.get_neighboring_entities(
+                    *self.camera.convert_screen_to_world(*pygame.mouse.get_pos()), 1
+                )
+                if tile:
+                    if self.level.remove_entity(tile[0]):
+                        self.delete_effect_generate(self.camera.convert_screen_to_world(*pygame.mouse.get_pos()))
+
+
+            case _:
+                return

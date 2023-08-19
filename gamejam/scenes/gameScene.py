@@ -89,6 +89,7 @@ class GameScene(CustomBaseScene):
 
 
     def on_enter(self):
+        super().on_enter()
         self.camera.set_follow_dynamic_point(
             self.player_follow_func if self.player.control else self.baby_follow_func
         )
@@ -116,7 +117,6 @@ class GameScene(CustomBaseScene):
         self.switch_tries -= 1
         self.remove_hud_entity(self.switch_indicators[-1])
         self.switch_indicators.pop(-1)
-        print(self.switch_indicators)
 
     def spawn(self):
         if self.get_sharedVar("current_player") != "player":

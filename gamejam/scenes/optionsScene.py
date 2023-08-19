@@ -110,6 +110,7 @@ class OptionsScene(CustomBaseScene):
         bf.AudioManager().set_music_volume(volume)
 
     def on_enter(self):
+        super().on_enter()
         self.main_frame.get_focus()
         if (
             self.manager._scenes[1]._name == "game"

@@ -130,6 +130,7 @@ class TilePickerScene(CustomBaseScene):
         )
 
     def on_enter(self):
+        super().on_enter()
         self.picker.set_position(
             *self.tileset_image.rect.move(
                 *[i * 8 for i in self.get_sharedVar("brush_tile").tile_index]

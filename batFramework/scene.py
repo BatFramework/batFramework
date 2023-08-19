@@ -13,6 +13,7 @@ class Scene:
         self.manager: bf.SceneManager = None
         self._action_container: bf.ActionContainer = bf.ActionContainer()
         self.camera: bf.Camera = bf.Camera()
+        self.scene_index = 0
         self.hud_camera: bf.Camera = bf.Camera()
         if enable_alpha:
             self.camera.surface = self.camera.surface.convert_alpha()
@@ -22,6 +23,12 @@ class Scene:
             self.hud_camera.set_clear_color((0, 0, 0, 0))
 
         self.blit_calls = 0
+
+    def set_scene_index(self,index):
+        self.scene_index = index
+
+    def get_scene_index(self):
+        return self.scene_index
 
     def set_sharedVar(self, name, value):
         return self.manager.set_sharedVar(name, value)
@@ -193,7 +200,10 @@ class Scene:
         pass
 
     def on_enter(self):
-        pass
+        self.set_active(True)
+        self.set_visible(True)
 
     def on_exit(self):
-        pass
+        self.set_active(False)
+        self.set_visible(False)
+        self._action_container.hard_reset()

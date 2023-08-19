@@ -64,7 +64,7 @@ class TitleScene(CustomBaseScene):
 
         bf.Button(
             "PLAY",
-            callback=lambda: bf.CutsceneManager().play(cutscenes.IntroCutscene()),
+            callback=lambda: bf.CutsceneManager().queue(cutscenes.IntroCutscene()),
         ).put_to(main_frame)
         bf.Button(
             "SHORTCUT",
@@ -92,6 +92,7 @@ class TitleScene(CustomBaseScene):
         main_frame.get_focus()
 
     def on_enter(self):
+        super().on_enter()
         self.music_timer.start()
 
     def on_exit(self):

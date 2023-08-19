@@ -18,23 +18,12 @@ class DialogueBlock(bf.CutsceneBlock):
             end_callback=self.timer_callback
         )
     def timer_callback(self):
-        if self.scene is None:
-            self.get_current_scene().say(self.message, callback=self.end)
-        else:
-            self.get_scene(self.scene).say(self.message, callback=self.end)
+        self.get_scene("dialogue").say(self.message, callback=self.end)
 
     def start(self):
         super().start()
+        # bf.CutsceneManager().manager.set_scene("dialogue")
         # print("dialog set sprite : ",self.char, self.emotion, self.facing_right)
-        if any(val is not None for val in [self.char,self.emotion,self.facing_right]):
-            if self.scene is None:
-                self.get_current_scene().set_sprite(
-                self.char, self.emotion, self.facing_right
-            )
-            else:
-                self.get_scene(self.scene).set_sprite(
-                self.char, self.emotion, self.facing_right
-            )
         self.timer.start()
 
 
@@ -48,14 +37,10 @@ class SetSpriteBlock(bf.CutsceneBlock):
     def start(self):
         super().start()
         # print("set sprite block")
-        if self.scene is None:
-            self.get_current_scene().set_sprite(
-            self.char, self.emotion, self.facing_right
-        )
-        else:
-            self.get_scene(self.scene).set_sprite(
-            self.char, self.emotion, self.facing_right
-        )
+        # if self.scene is None:
+        #     self.get_scene("dialogue").set_sprite(
+        #     self.char, self.emotion, self.facing_right
+        # )
         self.end()
 
 
@@ -69,18 +54,12 @@ class ImageBlock(bf.CutsceneBlock):
 
     def start(self):
         super().start()
-        if self.scene is None:
-            self.get_current_scene().set_background(self.image_path)
-        else:
-            self.get_scene(self.scene).set_background(self.image_path)
+
         self.timer.start()
 
     def end(self):
-        if self.hide_at_exit:
-            if self.scene is None:
-                self.get_current_scene().set_background(None)
-            else:
-                self.get_scene(self.scene).set_background(None)
+        # if self.hide_at_exit:
+
         return super().end()
 
 
@@ -93,39 +72,76 @@ class DelayBlock(bf.CutsceneBlock):
         super().start()
         self.timer.start()
 
+class DialogueFadeIn(bf.CutsceneBlock):
+    def __init__(self,duration) -> None:
+        super().__init__()
+        self.duration = duration
+    def start(self):
+        super().start()
+        self.get_scene("dialogue").fade_in(self.duration)
+        bf.Timer(duration=self.duration,end_callback=self.end).start()
+
+
+class DialogueFadeOut(bf.CutsceneBlock):
+    def __init__(self,duration) -> None:
+        super().__init__()
+        self.duration = duration
+    def start(self):
+        super().start()
+        self.get_scene("dialogue").fade_out(self.duration)
+        bf.Timer(duration=self.duration,end_callback=self.end).start()
+    
+    def end(self):
+        self.set_scene(bf.CutsceneManager().manager._scenes[1]._name)
+        return super().end()
+
+
+class BgSceneTransitionBlock(bf.SceneTransitionBlock):
+    # Start the scene transition block
+    def start(self):
+        bf.CutsceneBlock.start(self)
+        # Initiate the scene transition
+        if self.get_current_scene()._name == self.target_scene:
+            self.end()
+            return
+        bf.CutsceneManager().manager.transition_to_scene(
+            self.target_scene, self.transition, duration=self.duration,index=1, **self.kwargs
+        )
+        # Start the timer to handle the end of the transition
+        self.timer.start()
+
+
+class MoveCamera(bf.CutsceneBlock):
+    def __init__(self) -> None:
+        super().__init__()
+            
+
+
+
+
 class CustomCutsceneBase(bf.Cutscene):
+    def on_enter(self):
+        self.set_scene("dialogue")
+        self.add_block(DialogueFadeIn(300))
+
     def on_exit(self):
-        # print("custom exit")
-        current_scene  = self.get_current_scene()
-        current_scene.set_background(None)
-        current_scene.set_sprite()
-                
+        bf.CutsceneManager().queue(bf.Cutscene(DialogueFadeOut(300)))
+
+
 
 
 class IntroCutscene(CustomCutsceneBase):
-    def __init__(self) -> None:
-        super().__init__()
+    def init_blocks(self) -> None:
         self.add_block(
-            bf.SceneTransitionBlock(
-                scene="game", transition=bf.FadeTransition, duration=300
-            ),
-            # DelayBlock(1000),
-            SetSpriteBlock("baby","happy",scene="game"),
-            # ImageBlock(image_path="backgrounds/sky.png"),
-
-            DialogueBlock("Did you see that cool fading effect ?"),
-            SetSpriteBlock("player","thinking",facing_right=False),
-            DelayBlock(1000),
-            DialogueBlock("Meh..","player","neutral"),
-            DialogueBlock("Alright then check this out : Try pressing the 'e' key on your keyboard !","baby","happy"),
-            DelayBlock(1000)
-
+            # DelayBlock(500),
+            DialogueBlock("TEXT HERE"),
+            BgSceneTransitionBlock("game",bf.FadeTransition,duration=1000),
+            DelayBlock(500),
         )
 
 
 class EditorTutorial(CustomCutsceneBase):
-    def __init__(self) -> None:
-        super().__init__()
+    def init_blocks(self):
         self.add_block(
             # SetSpriteBlock("baby","happy"),
             DelayBlock(500),

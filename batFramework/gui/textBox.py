@@ -140,9 +140,9 @@ class TextBox(Container):
             self.queue_message(cut, end_callback)
 
     def next_message(self):
-        self.indicator.set_visible(False)
         if self.progression != self.message_length:
             return
+        self.indicator.set_visible(False)
         self.messages.pop(0)
         self.progression = 0
         self.click_counter = 0

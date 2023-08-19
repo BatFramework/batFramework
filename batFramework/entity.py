@@ -14,6 +14,7 @@ class Entity:
         )
         if convert_alpha:
             self.surface = self.surface.convert_alpha()
+            self.surface.fill((0,0,0,0))
         self.rect = pygame.FRect(0, 0, *size) if size else pygame.FRect(0, 0, 1, 1)
         self.velocity = pygame.math.Vector2(0, 0)
         self.uid: str = None
