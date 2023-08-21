@@ -29,9 +29,9 @@ class Timer:
             elapsed_time = pygame.time.get_ticks() - self.start_time
             self.progression = elapsed_time / self.duration
             # print(self.name,self.progression)
-            if self.progression >= 1: 
+            if self.progression >= 1:
                 # print("GOB END",self.end_callback)
-                if self.end_callback : self.end_callback()
+                self.end()
                 return True
         elif self.loop : 
             self.start()
@@ -41,7 +41,7 @@ class Timer:
 
     def end(self):
         self.progression = 1
-
+        if self.end_callback : self.end_callback()
     def ended(self):
         if self.start_time: 
             return not self.loop and self.progression>=1 and self.stopped == False

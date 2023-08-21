@@ -40,11 +40,12 @@ class EditorScene(CustomBaseScene):
         self.tool_label = bf.Label("")
         self.set_tool(self.tools[0])
 
-        self.notif_label = bf.Label("").set_position(*self.tool_label.rect.bottomleft)
+        self.notif_label = bf.Label("")
         self.notif_label.set_visible(False)
 
         self.add_hud_entity(self.notif_label, self.tool_label)
         editor_label = bf.Label("EDITOR")
+        self.notif_label.set_position(*self.tool_label.rect.bottomleft)
 
         self.add_hud_entity(editor_label)
         editor_label.set_position(

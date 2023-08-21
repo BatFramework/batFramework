@@ -45,7 +45,7 @@ class FadeColorTransition(BaseTransition):
         self,
         source_surf,
         dest_surf,
-        duration=200,
+        duration=600,
         color_duration=200,
         color=bf.color.CLOUD_WHITE,
         **kwargs,
@@ -56,7 +56,7 @@ class FadeColorTransition(BaseTransition):
         self.color_surf.fill(color)
         self.ease_out = bf.EasingAnimation(
             easing_function=bf.Easing.EASE_IN,
-            duration=duration,
+            duration=(duration-color_duration)//2,
             update_callback = lambda x: self.color_surf.set_alpha(int(255 - (255 * x))),
             end_callback=lambda: self.set_ended(True))
 
@@ -65,7 +65,7 @@ class FadeColorTransition(BaseTransition):
             end_callback=lambda: self.set_state("out"))
         self.ease_in = bf.EasingAnimation(
             easing_function=bf.Easing.EASE_IN,
-            duration=duration,
+            duration=(duration-color_duration)//2,
             update_callback=lambda x: self.color_surf.set_alpha(int(255 * x)),
             # update_callback=lambda x: print(x),
             end_callback=lambda: self.set_state("color"))

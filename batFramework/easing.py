@@ -6,6 +6,7 @@ class Easing(Enum):
     EASE_IN     = (0.12, 0, 0.39, 0)
     EASE_OUT    = (0.61, 1, 0.88, 1)
     EASE_IN_OUT = (0.37, 0, 0.63, 1)
+    EASE_IN_OUT_ELASTIC = (.7,-0.5,.3,1.5)
     LINEAR      = (1, 1, 0, 0)
     # Add more easing functions as needed
 
@@ -29,9 +30,7 @@ class EasingAnimation(bf.Timer):
         self.update_callback = update_callback
         self.value = 0.0
 
-    def update(self):
-        if super().update(): return
-        # Evaluate the cubic Bezier curve at the current progression (t)
+    def _process_value(self):
         p0, p1, p2, p3 = self.easing_function.control_points
         cache_key = (self.progression, p0, p1, p2, p3)
         if cache_key in EasingAnimation._cache:
@@ -48,12 +47,20 @@ class EasingAnimation(bf.Timer):
 
             y = 3 * t_inv2 * t * p1 + 3 * t_inv * t2 * p3 + t3 * 1
             EasingAnimation._cache[cache_key] = y
-            # print(len(EasingAnimation._cache))
         self.value = y
+
+    def update(self):
+        if super().update(): return
+        # Evaluate the cubic Bezier curve at the current progression (t)
+        self._process_value()
+            # print(len(EasingAnimation._cache))
         if self.update_callback:
             self.update_callback(self.value)
 
     def end(self):
+        self.progression = 1
+        self._process_value()
+        self.update_callback(self.value)
         super().end()
         self.value =  0
 

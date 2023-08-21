@@ -52,6 +52,7 @@ class Cutscene:
     def __init__(self,*blocks) -> None:
         self.cutscene_blocks: list[CutsceneBlock] = list(blocks)
         self.block_index = 0
+        self.end_blocks : list[CutsceneBlock] = []
         self.ended = False
     def on_enter(self):
         pass
@@ -61,6 +62,10 @@ class Cutscene:
 
     def init_blocks(self):
         pass
+
+    def add_end_block(self,block):
+        block.set_parent_cutscene(self)
+        self.end_blocks.append(block)
 
     def get_scene_at(self,index):
         return bf.CutsceneManager().manager._scenes[index]
@@ -76,6 +81,7 @@ class Cutscene:
     
     def add_block(self, *blocks: list[CutsceneBlock]):
         for block in blocks:
+            block.set_parent_cutscene(self)
             self.cutscene_blocks.append(block)
 
     def process_event(self, event):
@@ -97,8 +103,12 @@ class Cutscene:
         if self.cutscene_blocks[self.block_index].has_ended():
             self.block_index += 1
             if self.block_index == len(self.cutscene_blocks):
-                self.ended = True
-                return
+                if not self.end_blocks:
+                    self.ended = True
+                    return
+                else:
+                    self.cutscene_blocks.extend(self.end_blocks)
+                    self.end_blocks = []
             self.cutscene_blocks[self.block_index].start()
 
             # print("NEXT BLOCK")

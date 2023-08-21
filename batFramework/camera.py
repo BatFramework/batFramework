@@ -6,7 +6,6 @@ from pygame.math import Vector2
 class Camera:
     def __init__(self, flags=0) -> None:
         self.rect = pygame.FRect(0, 0, *bf.const.RESOLUTION)
-        self.f_center = Vector2(0, 0)
         self.flags: int = flags
         # self.blit_special_flags : int =pygame.BLEND_PREMULTIPLIED if (flags & pygame.SRCALPHA) else 0
         self.blit_special_flags: int = pygame.BLEND_ALPHA_SDL2
@@ -26,6 +25,11 @@ class Camera:
         (default is transparent/black)
         """
         self.surface.fill(self._clear_color)
+
+    def get_center(self):
+        return self.rect.center
+
+    
 
     def move(self, x, y):
         """
@@ -57,11 +61,12 @@ class Camera:
             return
         if factor > 2:
             return
+        factor = round(factor,2)
         self.zoom_factor = factor
         if factor not in self.cached_surfaces:
             # if factor != 1 : print("creating new surface in cache : ",tuple(i * factor for i in const.RESOLUTION), self.flags)
             self.cached_surfaces[factor] = pygame.Surface(
-                tuple(i * factor for i in bf.const.RESOLUTION), flags=self.flags
+                tuple(i / factor for i in bf.const.RESOLUTION), flags=self.flags
             ).convert_alpha()
             # c = self.surface.get_colorkey() if self.surface else None
             # if c : self.cached_surfaces[factor].set_colorkey(c)
