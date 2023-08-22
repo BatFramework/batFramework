@@ -3,99 +3,75 @@ from pygame.math import Vector2
 from .container import Container
 import pygame
 
-
 class ScrollingContainer(Container):
     def __init__(self, uid=None, layout: bf.Layout = bf.Layout.FILL, size=None):
+        self.scroll = Vector2(0,0)
+        self.children_rect = pygame.FRect(0,0,0,0)
         super().__init__(uid, layout)
         if size:
             self.resize(*size)
         else:
             self.resize(50, 50)
-        self.scroll = Vector2()
 
-    def get_offset_position(self, x, y):
-        return -self.scroll + (x, y)
+    def _update_vertical_children(self):
+        max_child_width = self.rect.width - self._padding[0]*2
 
-    def next(self):
-        self.interactive_children[self.focused_index].lose_focus()
-        new_index = min((self.focused_index + 1), len(self.interactive_children) - 1)
-        if new_index != self.focused_index:
-            self.focused_index = new_index
-            self.interactive_children[self.focused_index].get_focus()
-            if self.switch_focus_sfx:
-                bf.AudioManager().play_sound(self.switch_focus_sfx, self._sfx_volume)
-            self.scroll.y += self.get_focused_child().rect.h + self.gap
-        # print(self.focused_index)
+        start_y = self.rect.y + self._padding[1] - self.scroll.y
+        self.children_rect = pygame.FRect(0,0,0,0)
+        for child in self.children:
+            y = start_y
+            x = self.rect.left
+            if self.layout == bf.Layout.FILL:     
+                child.resize_by_parent(max_child_width, None)
+            if self.alignment == bf.Alignment.LEFT:
+                x = self.rect.x + self._padding[0]
+            elif self.alignment == bf.Alignment.RIGHT:
+                x = self.rect.right - child.rect.w - self._padding[0]
+            elif self.alignment == bf.Alignment.CENTER:
+                tmp = child.rect.copy()
+                tmp.centerx = self.rect.centerx
+                x = tmp.left
+            child.set_position(x, y)
+            if child.rect.top < self.rect.top + self._padding[1] or child.rect.bottom > self.rect.bottom - self._padding[1]:
+                child.set_visible(False)
+            else:
+                child.set_visible(True)
+            start_y = child.rect.bottom + (self.gap if len(self.children) > 1 else 0)
+            self.children_rect.union_ip(child.rect)
+        
 
-    def prev(self):
-        self.interactive_children[self.focused_index].lose_focus()
-        new_index = max((self.focused_index - 1), 0)
-        if new_index != self.focused_index:
-            self.focused_index = new_index
-            self.interactive_children[self.focused_index].get_focus()
-            if self.switch_focus_sfx:
-                bf.AudioManager().play_sound(self.switch_focus_sfx, self._sfx_volume)
-            self.scroll.y -= self.get_focused_child().rect.h - self.gap
-        # print(self.focused_index)
+    def get_visible_height(self):
+        return (self.rect.h - self._padding[1]*2)
+        
+    def set_focused_child_index(self,index:int):
+        super().set_focused_child_index(index)
+        current_child = self.get_focused_child()
+        print(current_child._text)
+        # self.scroll.y = self.rect.top + current_child.rect.top +self.scroll.y - self._padding[1]
+        print(self.children_rect.h,self.get_visible_height(),self.scroll.y,current_child.rect.top)
+        # if current_child.rect.bottom > self.rect.top + self.get_visible_height():
+            # self.scroll.y = self.rect.top - self.get_visible_height() + self._padding[1] + (current_child.rect.top + self.scroll.y)
+        # elif current_child.rect.top <  self.rect.top:
+            # self.scroll.y = self.rect.top + self._padding[1] + (current_child.rect.top + self.scroll.y)
+        # else:
+            # return
+        self._update_vertical_children()
 
-    def draw_focused_child(self, camera):
-        child = self.get_focused_child()
-        super().draw_focused_child(camera)
-        pygame.draw.rect(camera.surface, bf.color.ORANGE, (*child.rect.topleft, 3, 3))
+    def get_scroll_ratio(self):
+        return self.scroll.y *  (self.get_visible_height() / self.children_rect.h)
+    def get_scrollbar_height(self):
+        return self.get_visible_height() * (self.get_visible_height() / self.children_rect.h)
 
-    def get_indicator_ratio(self):
-        len_children = len(self.children)
-        total_children_height = sum(child.rect.h for child in self.children)
-        total_gap_height = max(0, (len_children - 1) * self.gap)
-        total_height = max(
-            0, total_children_height + total_gap_height + self._padding[1] * 2
-        )
+    # def process_event(self,event):
+        # super().process_event(event)
+        # if event.type == pygame.MOUSEWHEEL:
+            # self.scroll.y += event.y * 30
+            # self._update_vertical_children()
 
-        return self.rect.h / total_height
-
-    def draw(self, camera: bf.Camera):
-        """
-        Draw the container and its children.
-
-        Parameters:
-            camera (Camera): The camera to draw the container onto.
-
-        Returns:
-            int: The number of entities drawn.
-        """
-        if not self.visible:
-            return 0
-        num_drawn = 1
-        camera.surface.blit(self.surface, camera.transpose(self.rect))
-        for child in [
-            c
-            for c in self.children
-            if c.rect.move(*-self.scroll).colliderect(
-                self.rect.inflate(-self._padding[0] * 2, -self._padding[1] * 2)
-            )
-            and c.visible
-            and not (isinstance(c, bf.InteractiveEntity) and c._focused)
-        ]:
-            child.draw(camera)
-            num_drawn += 1
-        if self._focused and self.get_focused_child().rect.move(
-            *-self.scroll
-        ).colliderect(self.rect.inflate(-self._padding[0] * 2, -self._padding[1] * 2)):
-            self.draw_focused_child(camera)
-            num_drawn += 1
-        pygame.draw.rect(
-            camera.surface,
-            bf.color.CLOUD_WHITE,
-            (
-                *camera.transpose(self.rect)
-                .move(
-                    -4,
-                    self._padding[1] + int(self.scroll.y * self.get_indicator_ratio()),
-                )
-                .topright,
-                2,
-                int(self.rect.h * self.get_indicator_ratio()),
-            ),
-        )
-
-        return num_drawn
+    def draw(self,camera):
+        i = super().draw(camera)
+        scroll_width = 4
+        scroll_margin = 2
+        scrollbar_rect = pygame.FRect(self.rect.right-scroll_margin-scroll_width,self.rect.top + self.get_scroll_ratio(),scroll_width,self.get_scrollbar_height())
+        pygame.draw.rect(camera.surface,bf.color.CLOUD_WHITE,camera.transpose(scrollbar_rect))
+        return i

@@ -139,6 +139,14 @@ class TextBox(Container):
         if cut:
             self.queue_message(cut, end_callback)
 
+    def is_busy(self) -> bool:
+        return self.message_length and self.progression < self.message_length
+
+    def skip(self):
+        if self.is_busy():
+            self.progression = self.message_length
+    
+
     def next_message(self):
         if self.progression != self.message_length:
             return

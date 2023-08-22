@@ -218,16 +218,12 @@ class Container(Panel, InteractiveEntity):
             self.set_focused_child_index(index)
 
     def next(self):
-        self.interactive_children[self.focused_index].lose_focus()
-        self.focused_index = (self.focused_index + 1) % len(self.interactive_children)
-        self.interactive_children[self.focused_index].get_focus()
+        self.set_focused_child_index( (self.focused_index + 1) % len(self.interactive_children))
         if self.switch_focus_sfx:
             bf.AudioManager().play_sound(self.switch_focus_sfx, self._sfx_volume)
 
     def prev(self):
-        self.interactive_children[self.focused_index].lose_focus()
-        self.focused_index = (self.focused_index - 1) % len(self.interactive_children)
-        self.interactive_children[self.focused_index].get_focus()
+        self.set_focused_child_index( (self.focused_index - 1) % len(self.interactive_children))
         if self.switch_focus_sfx:
             bf.AudioManager().play_sound(self.switch_focus_sfx, self._sfx_volume)
 
@@ -326,6 +322,11 @@ class Container(Panel, InteractiveEntity):
 
         self.resize_by_self(total_width, total_height)
 
+        self._update_vertical_children()
+
+    def _update_vertical_children(self):
+        max_child_width = self.rect.width - self._padding[0]*2
+        
         start_y = self.rect.y + self._padding[1]
 
         for child in self.children:
@@ -342,13 +343,8 @@ class Container(Panel, InteractiveEntity):
                 tmp.centerx = self.rect.centerx
                 x = tmp.left
             child.set_position(x, y)
-            start_y = child.rect.bottom + (self.gap if len_children > 1 else 0)
+            start_y = child.rect.bottom + (self.gap if len(self.children) > 1 else 0)
 
-        # tmp_center = self.rect.center
-        # self.rect.size = (total_width,total_height)
-        # if self._set_position_center:
-        #     self.rect.center = tmp_center
-        # self.resize(total_width,total_height)
 
     def update_horizontal_layout(self):
         """

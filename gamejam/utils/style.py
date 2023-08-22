@@ -21,17 +21,19 @@ def draw_focused_func(self: bf.Button, camera: bf.Camera):
 
 
 def _toggle_draw(self: bf.Toggle, camera: bf.camera):
-    super(bf.Toggle, self).draw(camera)
-    camera.surface.fill(
-        self.activate_color if self.value else self.deactivate_color,
-        (
-            *self.rect.move(
-                -TOGGLE_INDICATOR_SIZE[0] * 2, -TOGGLE_INDICATOR_HALF_SIZE[1]
-            ).midright,
-            *TOGGLE_INDICATOR_SIZE,
-        ),
-    )
-    return 2
+    i = super(bf.Toggle, self).draw(camera)
+    if i:
+        camera.surface.fill(
+            self.activate_color if self.value else self.deactivate_color,
+            (
+                *self.rect.move(
+                    -TOGGLE_INDICATOR_SIZE[0] * 2, -TOGGLE_INDICATOR_HALF_SIZE[1]
+                ).midright,
+                *TOGGLE_INDICATOR_SIZE,
+            ),
+        )
+        i+=1
+    return i
 
 
 def _toggle_align_text(self: bf.Toggle):

@@ -69,7 +69,7 @@ class TitleScene(CustomBaseScene):
         bf.Button(
             "SHORTCUT",
             callback=lambda: self.manager.transition_to_scene(
-                "game", bf.FadeTransition
+                "tile_picker", bf.FadeTransition
             ),
         ).put_to(main_frame)
 

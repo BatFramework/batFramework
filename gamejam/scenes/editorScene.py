@@ -168,9 +168,9 @@ class EditorScene(CustomBaseScene):
 
         # EXIT SCENE
         if self._action_container.is_active("game_scene"):
-            self.manager.transition_to_scene("game", bf.FadeTransition)
+            self.manager.transition_to_scene("game", bf.FadeTransition,duration=200)
         elif self._action_container.is_active("tile_picker"):
-            self.manager.transition_to_scene("tile_picker", bf.FadeTransition)
+            self.manager.transition_to_scene("tile_picker", bf.FadeTransition,duration =200)
 
     def do_update(self, dt):
         self.camera_velocity *= 0.65

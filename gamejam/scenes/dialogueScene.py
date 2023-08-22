@@ -27,6 +27,7 @@ class DialogueScene(CustomBaseScene):
         self.dimmer.set_visible(False)
         self.add_hud_entity(self.dimmer,self.character_sprite,self.scene_textbox)
         self.add_action(bf.Action("next").add_key_control(pygame.K_SPACE,pygame.K_RETURN))
+        self.skippable : bool = True # can I skip current dialogue ?
 
 
     def on_enter(self):
@@ -104,7 +105,10 @@ class DialogueScene(CustomBaseScene):
 
     def do_handle_event(self, event):
         if self._action_container.is_active("next") and self.control:
-            self.scene_textbox.next_message()
+            if self.scene_textbox.is_busy():
+                self.scene_textbox.skip()
+            else:
+                self.scene_textbox.next_message()
 
     # empty string == keep current
     def set_character(self,character:str="",emotion:str="",facing_right:bool=None):
