@@ -1,3 +1,11 @@
 __pycache__
-.sai2
-.sai
+*.sai2
+*.sai
+*.bat
+*.exe
+*.zip
+*.spec
+dist/
+build/
+project/
+test/
