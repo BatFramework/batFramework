@@ -8,7 +8,8 @@ DEFAULT_PADDING = [2, 1]
 
 
 def draw_focused_func(self: bf.Button, camera: bf.Camera):
-    self.draw(camera)
+    i = self.draw(camera)
+    if i == 0:return 0
     p2 = self.rect.move(-(2 * sin(pygame.time.get_ticks() * 0.01)), 0).midleft
     p1 = (p2[0] - 4, p2[1] - 4)
     p0 = (p2[0] - 4, p2[1] + 4)
@@ -18,7 +19,7 @@ def draw_focused_func(self: bf.Button, camera: bf.Camera):
     pygame.draw.polygon(camera.surface, bf.color.LIGHT_GB, [p0, p1, p2])
     if self._activate_flash > 0:
         self.draw_effect(camera)
-
+    return i+1
 
 def _toggle_draw(self: bf.Toggle, camera: bf.camera):
     i = super(bf.Toggle, self).draw(camera)
@@ -88,77 +89,83 @@ def _toggle_compute_size(self: bf.Toggle):
             self.rect.size = new_rect_size
 
 
-def stylize(e: bf.Entity):
-    match e:
+def stylize(entity: bf.Entity):
+    match entity:
         case bf.TextBox():
-            e.set_background_color(bf.color.DARK_GB).set_border_width(
+            entity.set_background_color(bf.color.DARK_GB).set_border_width(
                 1
             ).set_border_color(bf.color.SHADE_GB).set_padding(DEFAULT_PADDING)
-            stylize(e.label)
-            e.label.set_background_color(None).set_outline(False)
+            stylize(entity.label)
+            entity.label.set_background_color(None).set_outline(False)
 
         case bf.TitledFrame():
-            e.set_border_color(bf.color.SHADE_GB).set_border_width(
+            entity.set_border_color(bf.color.SHADE_GB).set_border_width(
                 2
             ).set_background_color(bf.color.DARK_GB)
-            e.title_label.set_background_color(bf.color.BASE_GB).set_text_color(
+            entity.title_label.set_background_color(bf.color.BASE_GB).set_text_color(
                 bf.color.LIGHT_GB
             )
-            e.title_label.set_underline(True)
+            entity.title_label.set_underline(True)
 
         case bf.Toggle():
-            e._parent_resize_request = None
-            e._compute_size = lambda self=e: _toggle_compute_size(self)
-            e.align_text_rect = lambda self=e: _toggle_align_text(self)
-            e.set_border_color(bf.color.DARK_GB).set_background_color(
+            entity._parent_resize_request = None
+            entity._compute_size = lambda self=entity: _toggle_compute_size(self)
+            entity.align_text_rect = lambda self=entity: _toggle_align_text(self)
+            entity.set_border_color(bf.color.DARK_GB).set_background_color(
                 bf.color.BASE_GB
             ).set_text_color(bf.color.LIGHT_GB).set_outline_color(
                 bf.color.DARK_GB
             ).set_feedback_color(
                 bf.color.LIGHT_GB
             )
-            e.set_padding(DEFAULT_PADDING)
+            entity.set_padding(DEFAULT_PADDING)
 
-            e.activate_sfx = "click_fade"
-            e.set_deactivate_color(bf.color.DARK_GB)
-            e.set_activate_color(bf.color.LIGHT_GB)
+            entity.activate_sfx = "click_fade"
+            entity.set_deactivate_color(bf.color.DARK_GB)
+            entity.set_activate_color(bf.color.LIGHT_GB)
 
-            e.update_surface()
-            e.draw_focused = lambda cam, e=e: draw_focused_func(e, cam)
-            e.draw = lambda camera, e=e: _toggle_draw(e, camera)
+            entity.update_surface()
+            entity.draw_focused = lambda cam, entity=entity: draw_focused_func(entity, cam)
+            entity.draw = lambda camera, entity=entity: _toggle_draw(entity, camera)
+
+
 
         case bf.Container():
-            [stylize(child) for child in e.children]
-            e.set_border_width(2).set_border_color(
+            [stylize(child) for child in entity.children]
+            entity.set_border_width(2).set_border_color(
                 bf.color.LIGHT_GB
-            ).set_background_color(bf.color.DARK_GB).set_padding((6, 6)).set_gap(4)
-            e.update_content()
-            e.switch_focus_sfx = "click"
-            e.add_entity = lambda entity: [
-                stylize(entity),
-                bf.Container.add_entity(e, entity),
-                e,
+            ).set_background_color(bf.color.DARK_GB).set_padding((6, 6)).set_gap(2)
+            entity.update_content()
+            entity.switch_focus_sfx = "click"
+            entity.add_entity = lambda other_entity: [
+                stylize(other_entity),
+                bf.Container.add_entity(entity, other_entity),
+                entity,
             ]
+            if isinstance(entity,bf.ScrollingContainer):
+                entity.set_scrollbar_color(bf.color.LIGHT_GB)
+                entity.set_scrollbar_margin(3)
+                entity.set_scrollbar_width(2)
 
         case bf.Button():
-            e.set_border_color(bf.color.DARK_GB).set_background_color(
+            entity.set_border_color(bf.color.DARK_GB).set_background_color(
                 bf.color.BASE_GB
             ).set_text_color(bf.color.LIGHT_GB).set_outline_color(
                 bf.color.DARK_GB
             ).set_feedback_color(
                 bf.color.LIGHT_GB
             )
-            e.draw_focused = lambda cam, e=e: draw_focused_func(e, cam)
-            e.set_padding(DEFAULT_PADDING)
+            entity.draw_focused = lambda cam, entity=entity: draw_focused_func(entity, cam)
+            entity.set_padding(DEFAULT_PADDING)
 
-            e.activate_sfx = "click_fade"
+            entity.activate_sfx = "click_fade"
 
         case bf.Label():
-            e.set_border_color(bf.color.DARK_GB).set_background_color(
+            entity.set_border_color(bf.color.DARK_GB).set_background_color(
                 bf.color.SHADE_GB
             ).set_text_color(bf.color.LIGHT_GB).set_outline_color(bf.color.DARK_GB)
-            e.set_padding(DEFAULT_PADDING)
+            entity.set_padding(DEFAULT_PADDING)
 
         case _:
             pass
-            # print("Can't stylize unknown entity :",e)
+            # print("Can't stylize unknown other_entity :",entity)

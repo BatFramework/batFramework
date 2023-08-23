@@ -71,15 +71,18 @@ class Button(Label, InteractiveEntity):
             self._hover_surf.blit(tmp, (0, 0), special_flags=pygame.BLEND_ADD)
 
     def update(self, dt: float):
-        if self.activate_container.is_active("key"):
-            self.activate()
-        elif self.rect.collidepoint(pygame.mouse.get_pos()):
-            if self.activate_container.is_active("mouse"):
-                self.activate(bypass_focus=True)
+        if self.visible:
+            if self.activate_container.is_active("key"):
+                self.activate()
+            elif self.rect.collidepoint(pygame.mouse.get_pos()): 
+                if self.activate_container.is_active("mouse"):
+                    self.activate(bypass_focus=True)
+                else:
+                    self._hovering = True
             else:
-                self._hovering = True
+                self._hovering = False
         else:
-            self._hovering = False
+            print("not visible")
         if self._activate_flash > 0:
             self._activate_flash -= 60 * dt
             if self._activate_flash < 0:
@@ -120,7 +123,8 @@ class Button(Label, InteractiveEntity):
         return True
 
     def draw_focused(self, camera):
-        self.draw(camera)
+        i = self.draw(camera)
+        if i == 0 : return 0
         focus_width = 2
         pygame.draw.rect(
             camera.surface,
@@ -131,3 +135,4 @@ class Button(Label, InteractiveEntity):
         )
         if self._activate_flash > 0:
             self.draw_effect(camera)
+        return i+1

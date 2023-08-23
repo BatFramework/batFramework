@@ -97,7 +97,7 @@ class TilePickerScene(CustomBaseScene):
         # self.tag_container = bf.Container("tag_container")
         self.tag_container = bf.ScrollingContainer("tag_container")
 
-        self.tag_container.resize(self.hud_camera.rect.w-self.tileset_image.rect.w,120)
+        self.tag_container.resize(self.hud_camera.rect.w-self.tileset_image.rect.w,130)
 
         bf.Label("TAGS").put_to(self.tag_container)
 

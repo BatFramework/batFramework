@@ -12,7 +12,8 @@ def setup_framework():
             base_path = sys._MEIPASS
         except Exception:
             base_path = os.path.abspath(".")
-            base_path = os.path.join(os.path.abspath(__file__),os.path.dirname(__file__))
+            base_path = os.path.join(os.
+            path.abspath(__file__),os.path.dirname(__file__))
         return os.path.join(base_path, relative_path)
 
     pygame.display.set_caption("GAME")

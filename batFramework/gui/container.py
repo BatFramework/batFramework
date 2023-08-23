@@ -397,8 +397,8 @@ class Container(Panel, InteractiveEntity):
     def draw_focused_child(self, camera):
         child = self.get_focused_child()
         if child:
-            child.draw_focused(camera)
-
+            return child.draw_focused(camera)
+        return 0
     def draw(self, camera):
         """
         Draw the container and its children.
@@ -416,12 +416,11 @@ class Container(Panel, InteractiveEntity):
         for child in [
             c
             for c in self.children
-            if c.visible or not isinstance(c, InteractiveEntity) or not c._focused
+            if  not isinstance(c, InteractiveEntity) or not c._focused
         ]:
             child.draw(camera)
             num_drawn += 1
         if self._focused:
-            self.draw_focused_child(camera)
-            num_drawn += 1
+            num_drawn += self.draw_focused_child(camera)
 
         return num_drawn
