@@ -1,4 +1,4 @@
-from .panel import Panel
+from .frame import Frame
 from .image import Image
 from .label import Label
 from .interactiveEntity import InteractiveEntity
@@ -7,4 +7,5 @@ from .toggle import Toggle
 from .container import Container
 from .scrollingContainer import ScrollingContainer
 from .titledFrame import TitledFrame
+from .titledContainer import TitledContainer
 from .textBox import TextBox

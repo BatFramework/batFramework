@@ -142,6 +142,9 @@ def stylize(entity: bf.Entity):
                 bf.Container.add_entity(entity, other_entity),
                 entity,
             ]
+            if isinstance(entity,bf.TitledContainer):
+                stylize(entity.title_label)
+                entity.set_title_padding((6,2))
             if isinstance(entity,bf.ScrollingContainer):
                 entity.set_scrollbar_color(bf.color.LIGHT_GB)
                 entity.set_scrollbar_margin(3)

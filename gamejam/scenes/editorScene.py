@@ -25,9 +25,8 @@ class EditorScene(CustomBaseScene):
             bf.Action("up").add_key_control(pygame.K_UP, pygame.K_w).set_holding(),
             bf.Action("down").add_key_control(pygame.K_DOWN, pygame.K_s).set_holding(),
             bf.Action("left").add_key_control(pygame.K_LEFT, pygame.K_a).set_holding(),
-            bf.Action("right")
-            .add_key_control(pygame.K_RIGHT, pygame.K_d)
-            .set_holding(),
+            bf.Action("right").add_key_control(pygame.K_RIGHT, pygame.K_d).set_holding(),
+            bf.Action("control").add_key_control(pygame.K_LCTRL,pygame.K_RCTRL).set_holding()
         )
 
 
@@ -162,9 +161,14 @@ class EditorScene(CustomBaseScene):
 
         if self._action_container.is_active("r_click"):
             self.right_click()
+
+
         # MIDDLE CLICK
         if self._action_container.is_active("middle_click"):
-            self.tile_cursor.set_flip(*self.cycle_flip(*self.tile_cursor.flip))
+            if self._action_container.is_active("control"):
+                self.camera.zoom(1)
+            else:
+                self.tile_cursor.set_flip(*self.cycle_flip(*self.tile_cursor.flip))
 
         # EXIT SCENE
         if self._action_container.is_active("game_scene"):
@@ -172,6 +176,10 @@ class EditorScene(CustomBaseScene):
         elif self._action_container.is_active("tile_picker"):
             self.manager.transition_to_scene("tile_picker", bf.FadeTransition,duration =200)
 
+
+        # ZOOM
+        if self._action_container.is_active("control") and event.type == pygame.MOUSEWHEEL:
+            self.camera.zoom_by(abs(event.y) / event.y * 0.1)
     def do_update(self, dt):
         self.camera_velocity *= 0.65
         speed = 70 * dt
@@ -185,6 +193,7 @@ class EditorScene(CustomBaseScene):
             self.camera_velocity.y -= speed
         if self._action_container.is_active("down"):
             self.camera_velocity.y += speed
+
 
         self.camera.move(*self.camera_velocity)
 

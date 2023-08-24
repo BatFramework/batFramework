@@ -1,12 +1,12 @@
 import batFramework as bf
 import pygame
-from .panel import Panel
+from .frame import Frame
 from .interactiveEntity import InteractiveEntity
 
 
-class Container(Panel, InteractiveEntity):
+class Container(Frame, InteractiveEntity):
     def __init__(self, uid=None, layout: bf.Layout = bf.Layout.FILL):
-        bf.Panel.__init__(self)
+        bf.Frame.__init__(self)
         InteractiveEntity.__init__(self)
         if uid:
             self.set_uid(uid)
@@ -14,7 +14,7 @@ class Container(Panel, InteractiveEntity):
         self._border_radius = [0]
         self._padding = (0, 0)
 
-        self.children: list[bf.Panel] = []
+        self.children: list[bf.Frame] = []
         self.interactive_children: list[InteractiveEntity] = []
 
         self.focused_index = 0
@@ -269,13 +269,13 @@ class Container(Panel, InteractiveEntity):
         if (new_width, new_height) == self.rect.size:
             return
         # print(self.uid,new_width,new_height)
-        bf.Panel.resize(self, new_width, new_height)
+        bf.Frame.resize(self, new_width, new_height)
         self.update_content()
 
     def resize_by_parent(self, new_width, new_height):
         if self._manual_resized or (new_width, new_height) == self.rect.size:
             return
-        bf.Panel.resize_by_parent(self, new_width, new_height)
+        bf.Frame.resize_by_parent(self, new_width, new_height)
         self.update_content()
 
     def resize_by_self(self, new_width, new_height):
@@ -289,14 +289,13 @@ class Container(Panel, InteractiveEntity):
         # self.update_surface()
         return self
 
+    def get_max_child_width(self):
+        return max(child.rect.w for child in self.children) if self.children else self.rect.w
+
     def update_vertical_layout(self):
         """
         Update the vertical layout and positioning of the container's children.
         """
-
-        # height
-
-        # _ = [c.update_surface() for c in self.children] if self.layout == bf.Layout.FIT else 0
 
         len_children = len(self.children)
         total_children_height = sum(child.rect.h for child in self.children)
@@ -305,11 +304,8 @@ class Container(Panel, InteractiveEntity):
             0, total_children_height + total_gap_height + self._padding[1] * 2
         )
 
-        max_child_width = (
-            max(child.rect.w for child in self.children)
-            if self.children
-            else self.rect.w
-        )
+        max_child_width = self.get_max_child_width()
+
 
         if self._manual_resized:
             total_width, total_height = self.rect.size

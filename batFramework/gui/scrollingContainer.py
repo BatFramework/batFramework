@@ -9,6 +9,7 @@ class ScrollingContainer(Container):
         self.scrollbar_color = bf.color.CLOUD_WHITE
         self.scrollbar_margin = 2
         self.scrollbar_width = 4
+        self.scroll_target = pygame.Vector2(0,0)
         self.children_rect = None
         super().__init__(uid, layout)
         if size:
@@ -45,7 +46,7 @@ class ScrollingContainer(Container):
                 tmp.centerx = self.rect.centerx
                 x = tmp.left
             child.set_position(x, y)
-            if child.rect.top < self.rect.top + self._padding[1] or child.rect.bottom > self.rect.bottom - self._padding[1]:
+            if child != self.get_focused_child() and child.rect.top < self.rect.top  or child.rect.bottom > self.rect.bottom :
                 child.set_visible(False)
             else:
                 child.set_visible(True)
@@ -74,23 +75,23 @@ class ScrollingContainer(Container):
     def set_scroll(self,value):
         max_scroll = self.rect.top + self.children_rect.h - self.get_visible_height() 
         value = max(min(value,max_scroll),0)
-        self.scroll.y = value
-        
-        self._update_vertical_children()
+        # self.scroll.y = value
+        self.scroll_target.y = value
+        # self._update_vertical_children()
 
 
     def get_scroll_ratio(self):
         return round(self.scroll.y *  (self.get_visible_height() / self.children_rect.h),1)
 
     def get_scrollbar_height(self):
-        return int(self.get_visible_height() * (self.get_visible_height() / self.children_rect.h))
+        return int(self.get_visible_height() * min(1,(self.get_visible_height() / self.children_rect.h)))
 
     def process_event(self,event):
         super().process_event(event)
         if event.type == pygame.MOUSEWHEEL:
             if self.rect.collidepoint(*pygame.mouse.get_pos()):
 
-                self.set_scroll(self.scroll.y - event.y * 5)
+                self.set_scroll(self.scroll.y - event.y * 20)
 
     def draw(self,camera):
         i = super().draw(camera)
@@ -101,3 +102,13 @@ class ScrollingContainer(Container):
         scrollbar_rect = pygame.FRect(self.rect.right-self.scrollbar_margin-self.scrollbar_width,self.rect.top + self._padding[1] + self.get_scroll_ratio(),self.scrollbar_width,self.get_scrollbar_height())
         pygame.draw.rect(camera.surface,self.scrollbar_color,camera.transpose(scrollbar_rect))
         return 1
+    
+    def update(self, dt):
+        super().update(dt)
+        if self.scroll_target != self.scroll:
+            self.scroll += ((self.scroll_target - self.scroll) * (dt*60)) / 5
+            if round(self.scroll.x,1) == round(self.scroll_target.x,1) and\
+                round(self.scroll.y,1) == round(self.scroll_target.y,1):
+                self.scroll.update(*self.scroll_target)
+
+            self._update_vertical_children()

@@ -2,7 +2,7 @@ import batFramework as bf
 import pygame
 
 
-class Panel(bf.Entity):
+class Frame(bf.Entity):
     def __init__(self, size=None, surface_flags=0) -> None:
         bf.Entity.__init__(self, size=size, surface_flags=surface_flags)
         self.surface = self.surface.convert_alpha()

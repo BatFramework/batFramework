@@ -1,8 +1,8 @@
 import batFramework as bf
-from .panel import Panel
+from .frame import Frame
 
 
-class TitledFrame(Panel):
+class TitledFrame(Frame):
     def __init__(
         self,
         text="",

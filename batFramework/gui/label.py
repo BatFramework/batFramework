@@ -1,9 +1,9 @@
 import batFramework as bf
 import pygame
-from .panel import Panel
+from .frame import Frame
 
 
-class Label(Panel):
+class Label(Frame):
     def __init__(self, text="", text_size=None):
         super().__init__()
         self._text = ""

@@ -56,8 +56,11 @@ class Camera:
         """
         self.follow_point_func = func
 
+    def zoom_by(self, amount:float):
+        self.zoom(self.zoom_factor + amount)
+
     def zoom(self, factor):
-        if factor < 0.25:
+        if factor < 0.1:
             return
         if factor > 2:
             return

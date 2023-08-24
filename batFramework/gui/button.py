@@ -81,8 +81,6 @@ class Button(Label, InteractiveEntity):
                     self._hovering = True
             else:
                 self._hovering = False
-        else:
-            print("not visible")
         if self._activate_flash > 0:
             self._activate_flash -= 60 * dt
             if self._activate_flash < 0:

@@ -17,8 +17,8 @@ class ActionContainer:
     def has_action(self, name):
         return name in self._actions
 
-    def is_active(self, name: str):
-        return self._actions[name].is_active()
+    def is_active(self, *names):
+        return all(self._actions[name].is_active() for name in names)
 
     def process_event(self, event):
         for action in self._actions.values():

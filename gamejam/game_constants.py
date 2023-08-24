@@ -24,9 +24,5 @@ class GameConstants:
         "+switch",
         "wave",
         "one_way_up",
-        "gob",
-        "bob",
-        "rob",
-        "job",
-        "lob"
     ]
+    # TAGS = [str(i) for i in range(1,41)]

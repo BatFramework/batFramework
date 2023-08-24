@@ -8,10 +8,10 @@ class OptionsScene(CustomBaseScene):
     def __init__(self) -> None:
         super().__init__("options")
 
-        self.add_hud_entity(bf.Label("OPTIONS"))
-        self.set_clear_color(bf.color.DARK_GB)
+        # self.add_hud_entity(bf.Label("OPTIONS"))
+        # self.set_clear_color(bf.color.DARK_GB)
 
-        self.main_frame = bf.Container("options_main", bf.Layout.FILL)
+        self.main_frame = bf.TitledContainer(title="OPTIONS",uid="options_main",layout= bf.Layout.FILL)
         self.add_hud_entity(self.main_frame)
 
         self.btn_music = bf.Button(
@@ -54,30 +54,31 @@ class OptionsScene(CustomBaseScene):
             ),
         )
 
-        self.main_frame.set_center(*self.hud_camera.rect.center)
+        # self.main_frame.set_center(*self.hud_camera.rect.center)
+        self.main_frame.set_position(0,0)
         self.set_sfx_volume(gconst.DEFAULT_SFX_VOLUME)
         self.set_music_volume(gconst.DEFAULT_MUSIC_VOLUME)
         self.add_action(bf.Action("resume_key").add_key_control(pygame.K_ESCAPE))
 
-        control_frame = bf.Container("controls")
+        control_frame = bf.TitledContainer(title="CONTROLS",uid="controls")
         self.add_hud_entity(control_frame)
         control_frame.set_visible(False)
-        bf.Label("CONTROLS").put_to(control_frame)
+        # bf.Label("CONTROLS").put_to(control_frame)
         control_back = bf.Button("BACK").put_to(control_frame)
-        bf.Label("MOVE:WASD|ARR.KEYS").put_to(control_frame)
-        bf.Label("SWITCH:Y").put_to(control_frame)
-        bf.Label("NEXT:RETURN|SPACE").put_to(control_frame)
+        # bf.Label("MOVE:WASD|ARR.KEYS").put_to(control_frame)
+        # bf.Label("SWITCH:Y").put_to(control_frame)
+        # bf.Label("NEXT:RETURN|SPACE").put_to(control_frame)
 
 
         # control_frame.set_padding((2,2)).set_border_width(0)
         # control_frame.update_content()
-        control_frame.set_center(*self.hud_camera.rect.center)
-
+        # control_frame.set_center(*self.hud_camera.rect.center)
+        control_frame.set_position(0,0)
         control_button.set_callback(
             bf.Container.create_link(self.main_frame, control_frame, True)
         )
         control_back.set_callback(
-            bf.Container.create_link(control_frame, self.main_frame, True, False)
+            bf.Container.create_link(control_frame, self.main_frame, True,False)
         )
 
     def snap_value(self, volume):
