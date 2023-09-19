@@ -38,9 +38,6 @@ class Utils:
     FONTS: dict[int, pygame.Font] = {}
     for size in range(8, 50, 2):
         FONTS[size] = pygame.font.Font(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), f"fonts/{FONT_FILENAME}"
-            ),
             size=size,
         )
         # FONTS[size].align = pygame.FONT_LEFT
