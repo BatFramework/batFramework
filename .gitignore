@@ -9,3 +9,4 @@ dist/
 build/
 project/
 test/
+src/batframework.egg-info
