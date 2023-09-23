@@ -4,8 +4,6 @@ import os
 import batFramework as bf
 import json
 
-FONT_FILENAME = "slkscr.ttf"
-
 
 def move_points(delta, *points):
     res = []
@@ -35,15 +33,10 @@ class Layout(Enum):
 class Utils:
     pygame.font.init()
 
-    FONTS: dict[int, pygame.Font] = {}
-    for size in range(8, 50, 2):
-        FONTS[size] = pygame.font.Font(
-            size=size,
-        )
-        # FONTS[size].align = pygame.FONT_LEFT
-        # FONTS[size].italic = True
-        # FONTS[size].underline= True
-        # FONTS[size].set_direction(pygame.DIRECTION_TTB)
+    FONTS = {}
+    self.load_font(None)
+    #initialize default font (None)
+    
 
     tilesets = {}
 
@@ -135,14 +128,28 @@ class Utils:
             return None
 
     @staticmethod
-    def save_json_to_file(path: str, data):
+    def save_json_to_file(path: str, data) -> bool:
         try:
             with open(Utils.get_path(path), "w") as file:
                 json.dump(data, file, indent=2)
             return True
         except FileNotFoundError:
             return False
+            
+    @staticmethod
+    def load_font(path:str):
+    
+        if path is not None: path = Utils.get_path(path)
+        filename = os.paht.basename(path) if path is not None else None
+        Utils.FONT[filename] = {}
+        for size in range(8, 50, 2):
+            Utils.FONT[path][size] = pygame.font.Font(path,size=size)
 
+    @staticmethod
+    def get_font(filename,text_size:int) -> pygame.Font:
+        if not filename in Utils.FONT: return None
+        if not text_size in Utils.FONT: return None
+        return Utils.FONT[filename]
 
 class Singleton(type):
     _instances = {}

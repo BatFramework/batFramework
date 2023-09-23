@@ -4,8 +4,9 @@ from .frame import Frame
 
 
 class Label(Frame):
-    def __init__(self, text="", text_size=None):
+    def __init__(self, text="", text_size=None, font_name=None):
         super().__init__()
+        self._font_name = font_name
         self._text = ""
         self._text_size = bf.const.DEFAULT_TEXT_SIZE if not text_size else text_size
         self._padding = (0, 0)
@@ -78,6 +79,9 @@ class Label(Frame):
 
         return self
 
+    def set_font(self,filename):
+        f = 
+
     def set_text(
         self,
         text,
@@ -125,7 +129,7 @@ class Label(Frame):
             self.surface.blit(outline_surf, self._text_rect.move(offset, 0))
 
     def get_font_set(self):
-        font = bf.utils.FONTS[self._text_size]
+        font = bf.utils.get_font(self._font_name,self._text_size)
         font.align = self._font_align
         font.italic = self._italic
         font.underline = self._underline

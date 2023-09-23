@@ -3,10 +3,10 @@ from .constants import Constants as const
 
 initialized = False
 
-
-def init(resolution, flags:int=0, vsync:int = 0,default_text_size=None,resource_path:str=None,window_title:str="pygame window"):
+def init(resolution, flags:int=0, vsync:int = 0,default_text_size=None  ,resource_path:str=None,window_title:str="pygame window"):
     global initialized
     if not initialized:
+        print("batFramework ver 0.1.5")
         pygame.init()
         pygame.display.set_caption(window_title)
         const.init_screen(resolution,flags,vsync)
