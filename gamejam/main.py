@@ -19,7 +19,18 @@ def setup_framework():
     pygame.display.set_caption("GAME")
     # Import batframework after modifying sys.path
     from batFramework import init
-    init((160,144),pygame.SCALED,default_text_size=8,resource_path=resource_path("data"),window_title="Tied Together")
+
+    init(
+        (160,144),
+        pygame.SCALED,
+        default_text_size=8,
+        resource_path=resource_path("data"),
+        default_font="fonts/slkscr.ttf",
+        window_title="Tied Together"
+    )
+
+
+
     from myManager import MyManager
     m = MyManager()
     m.run()

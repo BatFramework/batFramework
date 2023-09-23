@@ -7,6 +7,7 @@ class Label(Frame):
     def __init__(self, text="", text_size=None, font_name=None):
         super().__init__()
         self._font_name = font_name
+        self._font_object : pygame.Font = None
         self._text = ""
         self._text_size = bf.const.DEFAULT_TEXT_SIZE if not text_size else text_size
         self._padding = (0, 0)
@@ -20,6 +21,7 @@ class Label(Frame):
         self._outline_color = "gray2"
         self._text_rect = pygame.Rect(0, 0, 0, 0)
         self._wraplength = None
+        self.set_font(None)
         self.set_text(text, self._text_size)
 
     def set_wraplength(self, val: int):
@@ -80,7 +82,10 @@ class Label(Frame):
         return self
 
     def set_font(self,filename):
-        f = 
+        f : pygame.Font = bf.utils.get_font(filename,self._text_size)
+        if f is None: return self
+        self._font_object = f
+        return self
 
     def set_text(
         self,
@@ -128,17 +133,16 @@ class Label(Frame):
             self.surface.blit(outline_surf, self._text_rect.move(offset, offset))
             self.surface.blit(outline_surf, self._text_rect.move(offset, 0))
 
-    def get_font_set(self):
-        font = bf.utils.get_font(self._font_name,self._text_size)
-        font.align = self._font_align
-        font.italic = self._italic
-        font.underline = self._underline
-        return font
+    def init_font(self):
+        self._font_object.align = self._font_align
+        self._font_object.italic = self._italic
+        self._font_object.underline = self._underline
 
-    def reset_font(self, font: pygame.Font):
-        font.align = pygame.FONT_LEFT
-        font.italic = False
-        font.underline = False
+    def reset_font(self):
+
+        self._font_object.align = pygame.FONT_LEFT
+        self._font_object.italic = False
+        self._font_object.underline = False
 
     def _compute_size(self):
         new_rect_size = list(self._text_rect.size)
@@ -162,8 +166,7 @@ class Label(Frame):
                 self.rect.size = new_rect_size
 
     def update_surface(self):
-        font = self.get_font_set()
-
+        self.init_font()
 
         if self._wraplength is None:
             wraplength = int(self._parent_resize_request[0]) \
@@ -172,7 +175,7 @@ class Label(Frame):
         else:
             wraplength = self._wraplength
 
-        text_surface = font.render(
+        text_surface  = self._font_object.render(
             self._text, bf.const.FONT_ANTIALIASING, self._text_color, None, wraplength
         )
 
@@ -184,8 +187,8 @@ class Label(Frame):
         super().update_surface()
 
         if self._outline:
-            self.draw_outline(font, wraplength)
+            self.draw_outline(self._font_object, wraplength)
 
-        self.reset_font(font)
+        self.reset_font()
 
         self.surface.blit(text_surface, self._text_rect)

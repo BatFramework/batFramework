@@ -3,7 +3,7 @@ from .constants import Constants as const
 
 initialized = False
 
-def init(resolution, flags:int=0, vsync:int = 0,default_text_size=None  ,resource_path:str=None,window_title:str="pygame window"):
+def init(resolution, flags:int=0, vsync:int = 0,default_text_size=None,default_font=None  ,resource_path:str=None,window_title:str="pygame window"):
     global initialized
     if not initialized:
         print("batFramework ver 0.1.5")
@@ -12,6 +12,8 @@ def init(resolution, flags:int=0, vsync:int = 0,default_text_size=None  ,resourc
         const.init_screen(resolution,flags,vsync)
         if default_text_size: const.set_default_text_size(default_text_size)
         if resource_path: const.set_resource_path(resource_path)
+        from .utils import Utils
+        Utils.init_font(default_font)
         initialized = True
 
 if not initialized:
@@ -23,8 +25,8 @@ from .utils import Singleton
 from .time import Time, Timer
 from .cutscene import Cutscene,CutsceneManager
 from .cutsceneBlocks import *
-from .utils import *
 from .utils import Utils as utils
+from .utils import *
 from .easing import Easing, EasingAnimation
 from .audioManager import AudioManager
 from .utils import Layout, Alignment, Direction
