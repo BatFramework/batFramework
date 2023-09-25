@@ -35,8 +35,9 @@ class Utils:
 
     FONTS = {}
     
-
     tilesets = {}
+
+
 
     @staticmethod
     def get_path(path: str):
@@ -61,21 +62,29 @@ class Utils:
             return False
             
     @staticmethod
-    def load_font(path:str):
+    def init_font(path:str):
+        Utils.load_font(Utils.get_path(path) if path else None,None)
+        if path is not None:
+            Utils.load_font(Utils.get_path(path),'')
+
+
+    @staticmethod
+    def load_font(path:str,name:str=''):
         if path is not None: path = Utils.get_path(path)
-        filename = os.paht.basename(path) if path is not None else None
-        Utils.FONT[filename] = {}
+        filename = os.path.basename(path).split('.')[0] if path is not None else None
+        if name != '' : filename = name
+        Utils.FONTS[filename] = {}
         for size in range(8, 50, 2):
-            Utils.FONT[path][size] = pygame.font.Font(path,size=size)
+            Utils.FONTS[filename][size] = pygame.font.Font(path,size=size)
 
     @staticmethod
     def get_font(filename,text_size:int) -> pygame.Font:
-        if not filename in Utils.FONT: return None
-        if not text_size in Utils.FONT: return None
-        return Utils.FONT[filename]
+        if not filename in Utils.FONTS: return None
+
+        if not text_size in Utils.FONTS[filename]: return None
+        return Utils.FONTS[filename][text_size]
 
 
-    load_font(None)
 
 
     class Tileset:
