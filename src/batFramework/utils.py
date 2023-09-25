@@ -32,20 +32,15 @@ class Layout(Enum):
 
 class Utils:
     pygame.font.init()
-    FONTS = {}
-    tilesets = {}
 
+    FONTS = {}
+    
+
+    tilesets = {}
 
     @staticmethod
     def get_path(path: str):
         return os.path.join(bf.const.RESOURCE_PATH, path)
-
-    @staticmethod
-    def init_font(path=None):
-        Utils.load_font(Utils.get_path(path) if path is not None else None,None)
-
-
-
 
     @staticmethod
     def load_json_from_file(path: str) -> dict:
@@ -64,24 +59,23 @@ class Utils:
             return True
         except FileNotFoundError:
             return False
-
+            
     @staticmethod
-    def load_font(path:str,name:str=''):
+    def load_font(path:str):
         if path is not None: path = Utils.get_path(path)
-        filename = os.path.basename(path) if path is not None else None
-        if name != '' : filename = name
-        print(f"LOAD FONT : {filename}")
-        Utils.FONTS[filename] = {}
+        filename = os.paht.basename(path) if path is not None else None
+        Utils.FONT[filename] = {}
         for size in range(8, 50, 2):
-            Utils.FONTS[filename][size] = pygame.font.Font(path,size=size)
+            Utils.FONT[path][size] = pygame.font.Font(path,size=size)
 
     @staticmethod
     def get_font(filename,text_size:int) -> pygame.Font:
-        if not filename in Utils.FONTS.keys(): return None
-        if not text_size in Utils.FONTS[filename]: return None
-        return Utils.FONTS[filename][text_size]
+        if not filename in Utils.FONT: return None
+        if not text_size in Utils.FONT: return None
+        return Utils.FONT[filename]
 
 
+    load_font(None)
 
 
     class Tileset:
@@ -157,7 +151,6 @@ class Utils:
         if name not in Utils.tilesets:
             return None
         return Utils.tilesets[name]
-
 
 
 class Singleton(type):
