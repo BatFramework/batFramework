@@ -33,7 +33,8 @@ class TextBox(Container):
         self.label = bf.Label("").set_alignment(bf.Alignment.LEFT).put_to(self)
         self.text_speed = 30
         self.end_callback = None
-        self.indicator :bf.Entity = Indicator()
+        self.indicator :bf.Entity = None
+        self.set_indicator(Indicator())
         self.text_click_sfx = None
 
     def set_indicator(self,indicator:bf.Entity):
