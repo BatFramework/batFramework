@@ -7,6 +7,32 @@ TOGGLE_INDICATOR_HALF_SIZE = [i // 2 for i in TOGGLE_INDICATOR_SIZE]
 DEFAULT_PADDING = [2, 1]
 
 
+class TextBoxIndicator(bf.Entity):
+    def __init__(self) -> None:
+        super().__init__((10,10),convert_alpha=True)
+        self.set_visible(False)
+        self.surface.fill((0,0,0,0))
+        p2 = (0,0)
+        p1 = (p2[0] + 4, p2[1] + 4)
+        p0 = (p2[0], p2[1] + 8)
+
+        self.double_surf = self.surface.copy()
+        pygame.draw.polygon(self.surface, bf.color.LIGHT_GB, [p0, p1, p2])
+        pygame.draw.polygon(self.surface, bf.color.LIGHT_GB, [p0, p1, p2])
+        self.anchor = 0,0
+        self.anim = bf.EasingAnimation(name="text_box_indicator",loop=True,update_callback=lambda x,self=self: self.set_position(self.anchor[0]+(0.2* sin(pygame.time.get_ticks() * 0.008)),self.anchor[1]))
+        self.anim.start()
+        
+    def set_double(self,val:bool):
+        self.double_surf = val
+
+    def set_position(self, x, y):
+        self.anchor = (x,y)
+        return super().set_position(x, y)
+
+
+
+
 def draw_focused_func(self: bf.Button, camera: bf.Camera):
     i = self.draw(camera)
     if i == 0:return 0
@@ -97,6 +123,7 @@ def stylize(entity: bf.Entity):
             ).set_border_color(bf.color.SHADE_GB).set_padding(DEFAULT_PADDING)
             stylize(entity.label)
             entity.label.set_background_color(None).set_outline(False)
+            entity.set_indicator(TextBoxIndicator())
 
         case bf.TitledFrame():
             entity.set_border_color(bf.color.SHADE_GB).set_border_width(

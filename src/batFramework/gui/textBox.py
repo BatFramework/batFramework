@@ -9,15 +9,9 @@ class Indicator(bf.Entity):
         super().__init__((10,10),convert_alpha=True)
         self.set_visible(False)
         self.surface.fill((0,0,0,0))
-        p2 = (0,0)
-        p1 = (p2[0] + 4, p2[1] + 4)
-        p0 = (p2[0], p2[1] + 8)
-
-        self.double_surf = self.surface.copy()
-        pygame.draw.polygon(self.surface, bf.color.LIGHT_GB, [p0, p1, p2])
-        pygame.draw.polygon(self.surface, bf.color.LIGHT_GB, [p0, p1, p2])
+        self.surface.fill("white",self.surface.get_rect().inflate(-2,-2))
         self.anchor = 0,0
-        self.anim = bf.EasingAnimation(loop=True,update_callback=lambda x,self=self: self.set_position(self.anchor[0]+(0.2* sin(pygame.time.get_ticks() * 0.008)),self.anchor[1]))
+        self.anim = bf.EasingAnimation(name="text_box_indicator",loop=True,update_callback=lambda x,self=self: self.set_position(self.anchor[0]+(0.2* sin(pygame.time.get_ticks() * 0.008)),self.anchor[1]))
         self.anim.start()
 
     def set_double(self,val:bool):
@@ -26,6 +20,9 @@ class Indicator(bf.Entity):
     def set_position(self, x, y):
         self.anchor = (x,y)
         return super().set_position(x, y)
+
+
+    
 class TextBox(Container):
     def __init__(self, uid=None):
         super().__init__(uid)
@@ -36,7 +33,17 @@ class TextBox(Container):
         self.label = bf.Label("").set_alignment(bf.Alignment.LEFT).put_to(self)
         self.text_speed = 30
         self.end_callback = None
-        self.indicator = Indicator()
+        self.indicator :bf.Entity = Indicator()
+        self.text_click_sfx = None
+
+    def set_indicator(self,indicator:bf.Entity):
+        self.indicator = indicator
+        self.set_position(*self.rect.topleft)
+
+    def set_text_click_sfx(self,sfx:str)->"TextBox":
+        self.text_click_sfx = sfx
+        return self
+
 
     def set_position(self, x, y):
         val = super().set_position(x, y)        
@@ -48,6 +55,7 @@ class TextBox(Container):
     def get_bounding_box(self):
         yield from super().get_bounding_box()
         yield from self.label.get_bounding_box()
+        yield from self.indicator.get_bounding_box()
 
     def resize(self, new_width, new_height):
         self.label.set_wraplength(
@@ -66,7 +74,7 @@ class TextBox(Container):
         self.end_callback = end_callback
         cut = None
         # self.label.set_text(message)
-        font = bf.utils.FONTS[self.label._text_size]
+        font = self.label._font_object
         new_lines = [0]
         line_size = font.get_linesize()
         max_new_lines = (self.rect.h - self._padding[1] * 2) // (line_size)
@@ -169,10 +177,9 @@ class TextBox(Container):
             self.progression + (dt * self.text_speed), self.message_length
         )
 
-
-        if int(new_progression) != int(self.progression):
+        if self.text_click_sfx and  int(new_progression) != int(self.progression):
             if self.click_counter % self.click_rate == 0:
-                bf.AudioManager().play_sound("text_click", 0.5)
+                bf.AudioManager().play_sound(self.text_click_sfx, 0.5)
             self.click_counter += 1
 
         self.label.set_text(self.messages[0][: int(new_progression)])

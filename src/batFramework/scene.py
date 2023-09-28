@@ -183,10 +183,11 @@ class Scene:
         if self.manager._debugging == 2:
             for entity in self._hud_entities:
                 self.debug_entity(entity, self.hud_camera)
-        self.do_final_draw(self.hud_camera.surface)
+
 
         self.camera.draw(surface)
         self.hud_camera.draw(surface)
+        self.do_final_draw(surface)
 
         self.blit_calls = total_blit_calls
 

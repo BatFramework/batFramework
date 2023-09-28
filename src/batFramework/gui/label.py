@@ -17,7 +17,7 @@ class Label(Frame):
         self._italic = False
         self._text_color = "white"
         self._initialised = False
-        self._outline = True
+        self._outline = False
         self._outline_color = "gray2"
         self._text_rect = pygame.Rect(0, 0, 0, 0)
         self._wraplength = None
