@@ -158,6 +158,8 @@ class Scene:
             pygame.draw.rect(
                 camera.surface, entity._debug_color, camera.transpose(r), 1
             )
+        if isinstance(entity,bf.GUIEntity):
+            for child in entity.children : self.debug_entity(child,camera)
 
     def draw(self, surface: pygame.Surface):
         self._world_entities.sort(key=lambda e: (e.z_depth,e.render_order))

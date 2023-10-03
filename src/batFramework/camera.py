@@ -79,7 +79,7 @@ class Camera:
         self.rect = self.surface.get_frect(center=self.rect.center)
         # if factor != 1 : print(self.cached_surfaces)
 
-    def intersects(self, rect: pygame.Rect) -> bool:
+    def intersects(self, rect: pygame.Rect | pygame.FRect) -> bool:
         return (
             self.rect.x < rect.right
             and self.rect.right > rect.x
@@ -87,7 +87,7 @@ class Camera:
             and self.rect.bottom > rect.y
         )
 
-    def transpose(self, rect: pygame.Rect) -> pygame.Rect | tuple:
+    def transpose(self, rect: pygame.Rect | pygame.FRect) -> pygame.Rect | pygame.FRect:
         # print(rect)
         x, y = round(rect.x - self.rect.left), round(rect.y - self.rect.top)
         return pygame.Rect(x, y, *rect.size)

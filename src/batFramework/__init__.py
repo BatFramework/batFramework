@@ -3,7 +3,15 @@ from .constants import Constants as const
 
 initialized = False
 
-def init(resolution, flags:int=0, vsync:int = 0,default_text_size=None,default_font=None  ,resource_path:str=None,window_title:str="pygame window"):
+def init(
+    resolution:tuple[int,int],
+    flags:int=0,
+    vsync:int = 0,
+    default_text_size=None,
+    default_font=None,
+    resource_path:str|None=None,
+    window_title:str="pygame window"
+    ):
     global initialized
     if not initialized:
         print("batFramework ver 0.1.9")
@@ -38,10 +46,9 @@ from .camera import Camera
 from .entity import Entity
 from .animatedSprite import AnimatedSprite, AnimState
 from .stateMachine import State, StateMachine
-from .gui.interactiveEntity import InteractiveEntity
 from .particles import Particle, ParticleManager
 from .gui import * 
-from .debugger import Debugger
+# from .debugger import Debugger
 from .scene import Scene
 from .sceneManager import SceneManager
 from .manager import Manager
