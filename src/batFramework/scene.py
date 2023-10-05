@@ -22,6 +22,8 @@ class Scene:
             self.camera.set_clear_color((0, 0, 0))
             self.hud_camera.set_clear_color((0, 0, 0, 0))
 
+        self.root = bf.Root()
+        
         self.blit_calls = 0
 
     def set_scene_index(self,index):
@@ -66,7 +68,9 @@ class Scene:
     def add_world_entity(self, *entity: bf.Entity):
         for e in entity:
             if e not in self._world_entities:
+                
                 self._world_entities.append(e)
+
                 e.parent_scene = self
                 e.do_when_added()
 
@@ -77,6 +81,8 @@ class Scene:
                 return False
             e.do_when_removed()
             e.parent_scene = None
+            if isinstance(e,bf.GUIEntity) and e.parent == self.root:
+                self.root.remove_child(e)
             self._world_entities.remove(e)
             return True
 

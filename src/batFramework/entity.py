@@ -10,6 +10,7 @@ class Entity:
         surface_flags : int =0,
         convert_alpha : bool=False
     ) -> None:
+        self.convert_alpha = convert_alpha
         if size is None:
             size= (100,100)
             

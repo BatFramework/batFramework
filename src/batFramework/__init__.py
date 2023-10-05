@@ -47,9 +47,9 @@ from .entity import Entity
 from .animatedSprite import AnimatedSprite, AnimState
 from .stateMachine import State, StateMachine
 from .particles import Particle, ParticleManager
-from .gui import * 
 # from .debugger import Debugger
 from .scene import Scene
+from .gui import * 
 from .sceneManager import SceneManager
 from .manager import Manager
 

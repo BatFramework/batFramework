@@ -11,6 +11,45 @@ class GUIEntity(bf.Entity):
         self.set_debug_color("green")
         if self.surface : self.surface.fill("white")
 
+    def get_bounding_box(self):
+        yield self.rect
+        for child in self.children:
+            yield from child.get_bounding_box()
+
+    def set_x(self,x:float)->"GUIEntity":
+        delta = x - self.rect.x
+        self.rect.x = x
+        for child in self.children:
+            child.set_x(child.rect.x + delta)
+        return self
+
+    def set_y(self,y:float)->"GUIEntity":
+        delta = y - self.rect.y
+        self.rect.y = y
+        for child in self.children:
+            child.set_y(child.rect.y + delta)
+        return self
+
+    def set_position(self,x:float,y:float)->"GUIEntity":
+        delta_x = x - self.rect.x
+        delta_y = y - self.rect.y
+        self.rect.topleft = x,y
+        for child in self.children:
+            child.set_position(child.rect.x + delta_x,child.rect.y+delta_y)
+        return self
+        
+    def set_center(self,x:float,y:float)->"GUIEntity":
+        delta_x = x - self.rect.centerx
+        delta_y = y - self.rect.centery
+        self.rect.center = x,y
+        for child in self.children:
+            child.set_position(child.rect.x + delta_x,child.rect.y+delta_y)
+        return self
+
+    def get_center(self)->tuple[float,float]:
+        return self.rect.center
+
+
     def print_tree(self,ident:int=0)->None:
         print('\t'*ident+self.to_string()+(':' if self.children else ''))
         for child in self.children :
@@ -20,7 +59,7 @@ class GUIEntity(bf.Entity):
         if self.is_root : 
             return "ROOT"
         else :
-            return f"GUIEntity@{self.rect.topleft}|{self.rect.size}"
+            return f"GUIEntity@{*self.rect.topleft,* self.rect.size}"
 
     def set_root(self) -> "GUIEntity":
         self.is_root = True
@@ -28,6 +67,10 @@ class GUIEntity(bf.Entity):
 
     def add_child(self,child:"GUIEntity")->None:
         self.children.append(child)
+
+    def remove_child(self,child:"GUIEntity")->None:
+        self.children.remove(child)
+
 
     # if return True -> don't propagate upwards
     def process_event(self, event: pygame.Event)->bool:
@@ -49,9 +92,11 @@ class GUIEntity(bf.Entity):
 
     def set_size(self, width : float, height: float) -> "GUIEntity":
         self.rect.size = (width,height)
+        self.build()
         return self
+        
     def get_size_int(self)->tuple[int,int]:
-        return (ceil(i) for i in self.rect.size)
+        return (ceil(self.rect.width),ceil(self.rect.height))
 
     def build(self)->None:
         if not self.surface: return
