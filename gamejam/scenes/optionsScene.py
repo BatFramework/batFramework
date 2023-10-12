@@ -134,7 +134,7 @@ class OptionsScene(CustomBaseScene):
         self.add_hud_entity(self.debugger)
 
     def do_handle_event(self, event):
-        if self.btn_resume_game.parent_container and self._action_container.is_active(
+        if self.btn_resume_game.parent_container and self.actions.is_active(
             "resume_key"
         ):
             self.btn_resume_game.activate(True)

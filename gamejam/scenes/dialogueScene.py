@@ -104,7 +104,7 @@ class DialogueScene(CustomBaseScene):
         )
 
     def do_handle_event(self, event):
-        if self._action_container.is_active("next") and self.control:
+        if self.actions.is_active("next") and self.control:
             if self.scene_textbox.is_busy():
                 self.scene_textbox.skip()
             else:

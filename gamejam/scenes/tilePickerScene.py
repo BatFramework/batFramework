@@ -149,9 +149,9 @@ class TilePickerScene(CustomBaseScene):
         self.timer2.stop()
 
     def do_handle_event(self, event):
-        if self._action_container.is_active("resume"):
+        if self.actions.is_active("resume"):
             self.manager.transition_to_scene("editor", bf.FadeTransition,duration=100)
-        if self._action_container.is_active("l_click"):
+        if self.actions.is_active("l_click"):
             x, y = pygame.mouse.get_pos()
 
             x_index = (x - self.tileset_image.rect.left) // 8
@@ -162,13 +162,13 @@ class TilePickerScene(CustomBaseScene):
                 return
             self.picker.set_position(x * 8, y * 8)
 
-        # if self._action_container.is_active("up") and self.picker.rect.y > self.tileset_image.rect.top:
+        # if self.actions.is_active("up") and self.picker.rect.y > self.tileset_image.rect.top:
         #     self.picker.set_position(*self.picker.rect.move(0,-8).topleft)
-        # if self._action_container.is_active("down") and self.picker.rect.bottom < self.tileset_image.rect.bottom:
+        # if self.actions.is_active("down") and self.picker.rect.bottom < self.tileset_image.rect.bottom:
         #     self.picker.set_position(*self.picker.rect.move(0,8).topleft)
-        # if self._action_container.is_active("left") and self.picker.rect.x > self.tileset_image.rect.left:
+        # if self.actions.is_active("left") and self.picker.rect.x > self.tileset_image.rect.left:
         #     self.picker.set_position(*self.picker.rect.move(-8,0).topleft)
-        # if self._action_container.is_active("right") and self.picker.rect.right < self.tileset_image.rect.right:
+        # if self.actions.is_active("right") and self.picker.rect.right < self.tileset_image.rect.right:
         #     self.picker.set_position(*self.picker.rect.move(8,0).topleft)
 
     def do_update(self, dt):

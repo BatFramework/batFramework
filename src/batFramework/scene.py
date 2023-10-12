@@ -11,7 +11,7 @@ class Scene:
         self._world_entities: list[bf.Entity] = []
         self._hud_entities: list[bf.Entity] = []
         self.manager: bf.SceneManager = None
-        self._action_container: bf.ActionContainer = bf.ActionContainer()
+        self.actions: bf.ActionContainer = bf.ActionContainer()
         self.camera: bf.Camera = bf.Camera()
         self.scene_index = 0
         self.hud_camera: bf.Camera = bf.Camera()
@@ -102,7 +102,7 @@ class Scene:
                 self._hud_entities.remove(e)
 
     def add_action(self, *action):
-        self._action_container.add_action(*action)
+        self.actions.add_action(*action)
 
     def get_by_tags(self, *tags):
         return [
@@ -136,9 +136,9 @@ class Scene:
             return
         if self.do_early_process_event(event):
             return
-        self._action_container.process_event(event)
+        self.actions.process_event(event)
         self.do_handle_event(event)
-        self._action_container.reset()
+        self.actions.reset()
         for entity in self._world_entities + self._hud_entities:
             if entity.process_event(event):
                 return
@@ -216,4 +216,4 @@ class Scene:
     def on_exit(self):
         self.set_active(False)
         self.set_visible(False)
-        self._action_container.hard_reset()
+        self.actions.hard_reset()

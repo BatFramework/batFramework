@@ -41,7 +41,7 @@ class BootScene(CustomBaseScene):
         surface.blit(self.color_surf, (0, 0))
 
     def do_handle_event(self, event):
-        if self._action_container.is_active("skip"):
+        if self.actions.is_active("skip"):
             self.anim.stop()
             self.timer.stop()
             bf.AudioManager().stop_sound("boot")

@@ -149,18 +149,18 @@ class GameScene(CustomBaseScene):
 
 
     def do_handle_event(self, event):
-        if self._action_container.is_active("options"):
+        if self.actions.is_active("options"):
             self.manager.transition_to_scene("options", bf.FadeTransition)
-        if self._action_container.is_active("editor"):
+        if self.actions.is_active("editor"):
             self.manager.set_scene("editor")
-        if self._action_container.is_active("spawn"):
+        if self.actions.is_active("spawn"):
             self.spawn()
-        if self._action_container.is_active("switch_player"):
+        if self.actions.is_active("switch_player"):
             if self.switch_tries <= 0:
                 return
             self.remove_switch()
             self.switch_players()
-        if self._action_container.is_active("warp"):
+        if self.actions.is_active("warp"):
             self.player.warp()
 
     def do_update(self, dt):

@@ -135,11 +135,11 @@ class EditorScene(CustomBaseScene):
             # bf.CutsceneManager().queue(cutscenes.EditorTutorial())
 
     def do_handle_event(self, event):
-        if self._action_container.is_active("switch_tool"):
+        if self.actions.is_active("switch_tool"):
             self.set_tool(self.tools[next(self.tool_iterator) % len(self.tools)])
 
         # SAVE/LOAD
-        if self._action_container.is_active("save"):
+        if self.actions.is_active("save"):
             data = self.level.serialize()
             res = bf.Utils.save_json_to_file("levels/level_0.json", data)
             self.notif_label.set_text("SAVED" if res else "ERROR")
@@ -147,7 +147,7 @@ class EditorScene(CustomBaseScene):
             bf.Timer(
                 duration=400, end_callback=lambda: self.notif_label.set_visible(False)
             ).start()
-        elif self._action_container.is_active("load"):
+        elif self.actions.is_active("load"):
             res = tools.load_level(self.level, 0)
             self.notif_label.set_text("LOADED" if res else "ERROR")
             self.notif_label.set_visible(True)
@@ -156,42 +156,42 @@ class EditorScene(CustomBaseScene):
             ).start()
 
         # L CLICK / R CLICK
-        if self._action_container.is_active("l_click"):
+        if self.actions.is_active("l_click"):
             self.left_click()
 
-        if self._action_container.is_active("r_click"):
+        if self.actions.is_active("r_click"):
             self.right_click()
 
 
         # MIDDLE CLICK
-        if self._action_container.is_active("middle_click"):
-            if self._action_container.is_active("control"):
+        if self.actions.is_active("middle_click"):
+            if self.actions.is_active("control"):
                 self.camera.zoom(1)
             else:
                 self.tile_cursor.set_flip(*self.cycle_flip(*self.tile_cursor.flip))
 
         # EXIT SCENE
-        if self._action_container.is_active("game_scene"):
+        if self.actions.is_active("game_scene"):
             self.manager.transition_to_scene("game", bf.FadeTransition,duration=200)
-        elif self._action_container.is_active("tile_picker"):
+        elif self.actions.is_active("tile_picker"):
             self.manager.transition_to_scene("tile_picker", bf.FadeTransition,duration =200)
 
 
         # ZOOM
-        if self._action_container.is_active("control") and event.type == pygame.MOUSEWHEEL:
+        if self.actions.is_active("control") and event.type == pygame.MOUSEWHEEL:
             self.camera.zoom_by(abs(event.y) / event.y * 0.1)
     def do_update(self, dt):
         self.camera_velocity *= 0.65
         speed = 70 * dt
 
-        if self._action_container.is_active("left"):
+        if self.actions.is_active("left"):
             self.camera_velocity.x -= speed
-        if self._action_container.is_active("right"):
+        if self.actions.is_active("right"):
             self.camera_velocity.x += speed
-        if self._action_container.is_active("up"):
+        if self.actions.is_active("up"):
 
             self.camera_velocity.y -= speed
-        if self._action_container.is_active("down"):
+        if self.actions.is_active("down"):
             self.camera_velocity.y += speed
 
 
