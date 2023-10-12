@@ -2,12 +2,12 @@ import batFramework as bf
 import pygame
 from math import ceil
 
-class GUIEntity(bf.Entity):
+class Widget(bf.Entity):
     def __init__(self)->None:
         super().__init__(convert_alpha=True)
-        self.parent : None|"GUIEntity" = None 
+        self.parent : None|"Widget" = None 
         self.is_root :bool = False
-        self.children : list["GUIEntity"] = []
+        self.children : list["Widget"] = []
         self.set_debug_color("green")
         if self.surface : self.surface.fill("white")
 
@@ -16,21 +16,21 @@ class GUIEntity(bf.Entity):
         for child in self.children:
             yield from child.get_bounding_box()
 
-    def set_x(self,x:float)->"GUIEntity":
+    def set_x(self,x:float)->"Widget":
         delta = x - self.rect.x
         self.rect.x = x
         for child in self.children:
             child.set_x(child.rect.x + delta)
         return self
 
-    def set_y(self,y:float)->"GUIEntity":
+    def set_y(self,y:float)->"Widget":
         delta = y - self.rect.y
         self.rect.y = y
         for child in self.children:
             child.set_y(child.rect.y + delta)
         return self
 
-    def set_position(self,x:float,y:float)->"GUIEntity":
+    def set_position(self,x:float,y:float)->"Widget":
         delta_x = x - self.rect.x
         delta_y = y - self.rect.y
         self.rect.topleft = x,y
@@ -38,7 +38,7 @@ class GUIEntity(bf.Entity):
             child.set_position(child.rect.x + delta_x,child.rect.y+delta_y)
         return self
         
-    def set_center(self,x:float,y:float)->"GUIEntity":
+    def set_center(self,x:float,y:float)->"Widget":
         delta_x = x - self.rect.centerx
         delta_y = y - self.rect.centery
         self.rect.center = x,y
@@ -59,16 +59,16 @@ class GUIEntity(bf.Entity):
         if self.is_root : 
             return "ROOT"
         else :
-            return f"GUIEntity@{*self.rect.topleft,* self.rect.size}"
+            return f"Widget@{*self.rect.topleft,* self.rect.size}"
 
-    def set_root(self) -> "GUIEntity":
+    def set_root(self) -> "Widget":
         self.is_root = True
         return self
 
-    def add_child(self,child:"GUIEntity")->None:
+    def add_child(self,child:"Widget")->None:
         self.children.append(child)
 
-    def remove_child(self,child:"GUIEntity")->None:
+    def remove_child(self,child:"Widget")->None:
         self.children.remove(child)
 
 
@@ -90,7 +90,7 @@ class GUIEntity(bf.Entity):
         return super().draw(camera) +\
          sum([child.draw(camera) for child in self.children])
 
-    def set_size(self, width : float, height: float) -> "GUIEntity":
+    def set_size(self, width : float, height: float) -> "Widget":
         self.rect.size = (width,height)
         self.build()
         return self
