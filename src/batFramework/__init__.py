@@ -10,7 +10,8 @@ def init(
     default_text_size=None,
     default_font=None,
     resource_path:str|None=None,
-    window_title:str="pygame window"
+    window_title:str="pygame window",
+    fps_limit : int = 0
     ):
     global initialized
     if not initialized:
@@ -24,6 +25,7 @@ def init(
         Utils.init_font(default_font)
         # print(Utils.FONTS)
         initialized = True
+        const.set_fps_limit(fps_limit)
 
 if not initialized:
     # print("[IMPORTANT] Initialize batFramework after you import 'init' !")
