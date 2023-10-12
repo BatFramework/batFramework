@@ -23,6 +23,7 @@ class Scene:
             self.hud_camera.set_clear_color((0, 0, 0, 0))
 
         self.root = bf.Root()
+        self.add_hud_entity(self.root)
         
         self.blit_calls = 0
 
@@ -81,7 +82,7 @@ class Scene:
                 return False
             e.do_when_removed()
             e.parent_scene = None
-            if isinstance(e,bf.GUIEntity) and e.parent == self.root:
+            if isinstance(e,bf.Widget) and e.parent == self.root:
                 self.root.remove_child(e)
             self._world_entities.remove(e)
             return True
@@ -164,7 +165,7 @@ class Scene:
             pygame.draw.rect(
                 camera.surface, entity._debug_color, camera.transpose(r), 1
             )
-        if isinstance(entity,bf.GUIEntity):
+        if isinstance(entity,bf.Widget):
             for child in entity.children : self.debug_entity(child,camera)
 
     def draw(self, surface: pygame.Surface):
