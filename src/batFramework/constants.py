@@ -7,9 +7,11 @@ class Constants:
     VSYNC = 0
     FLAGS: int = pygame.SCALED #| pygame.RESIZABLE
     FPS: int = 60
-  
+    RESOURCE_PATH = "."
+    
     @staticmethod
     def init_screen(resolution:tuple[int,int],flags:int= 0, vsync:int= 0):
+        print(f"Window : {resolution[0]}x{resolution[1]}px | flags:{flags}, vsync:{bool(vsync)}")
         Constants.RESOLUTION = resolution
         Constants.FLAGS = flags
         Constants.VSYNC = vsync
@@ -18,26 +20,11 @@ class Constants:
 
     MUSIC_END_EVENT = pygame.event.custom_type()
 
-    # RESOLUTION :tuple[int,int]= (320, 288)
-    # RESOLUTION :tuple[int,int]= (640, 360)
-    # RESOLUTION = (1280, 720)
-
-    # VSYNC = 1
-
-    # FLAGS = 0
-
-
-    # FPS :int = 0
-
     # ------------GUI SPECIFIC
     DEFAULT_TEXT_SIZE: int = 8
-    # DEFAULT_TEXT_SIZE :int= 12
-    GUI_SCALE: int = 1
-    FONT_ANTIALIASING: bool = False
-    # FONT_ANTIALIASING :bool= True
 
+    GUI_SCALE: int = 1
     # ---------------------
-    RESOURCE_PATH = "."
 
     @staticmethod
     def set_resource_path(path: str):
