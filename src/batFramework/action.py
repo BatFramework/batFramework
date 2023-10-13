@@ -34,9 +34,10 @@ class Action:
                 self._key_control.append(key)
         return self
 
-    def add_mouse_control(self, mouse):
-        if mouse not in self._mouse_control:
-            self._mouse_control.append(mouse)
+    def add_mouse_control(self, *mouse_buttons):
+        for mouse in mouse_buttons:
+            if mouse not in self._mouse_control:
+                self._mouse_control.append(mouse)
         return self
 
     def get_name(self) -> str:
@@ -90,8 +91,8 @@ class Action:
         return False
 
     def process_update(self,event:pygame.Event)->None:
-        if self.is_active() and self.is_holding_type() and pygame.MOUSEMOTION in self._mouse_control:
-            self.value = {"pos":event.pos,"rel":event.rel}
+        if self.is_active() and event.type == pygame.MOUSEMOTION and  self.is_holding_type() and pygame.MOUSEMOTION in self._mouse_control:
+            self.data = {"pos":event.pos,"rel":event.rel}
 
     def process_deactivate(self, event: pygame.Event) -> bool:
         if self._type == ActionType.HOLDING:
@@ -123,11 +124,14 @@ class Action:
         return False
 
     def process_event(self, event: pygame.Event) -> bool:
-        if not self._active:
-            return self.process_activate(event)
-        else:
-            return self.process_deactivate(event)
+        
 
+        if not self._active:
+            res = self.process_activate(event)
+        else :
+            res = self.process_deactivate(event)
+        self.process_update(event)
+        return res
     def reset(self):
         # if self._name == "click":print("RESET")
 
