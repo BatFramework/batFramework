@@ -16,6 +16,7 @@ class Action:
         self._gamepad_axis_control: list[int] = []
         self._holding: list[int] = []
         self._unique = True
+        self.data = None
 
     def set_unique(self, val: bool):
         self._unique = val
@@ -64,24 +65,33 @@ class Action:
         self._type = ActionType.HOLDING
         return self
 
-    def is_holding(self):
+    def is_holding_type(self):
         return self._type == ActionType.HOLDING
 
     def process_activate(self, event: pygame.Event) -> bool:
         if event.type == pygame.KEYDOWN and event.key in self._key_control:
             self._active = True
             # print(f"Action {self._name} activated by event ",event)
-            if self.is_holding():
+            if self.is_holding_type():
                 self._holding.append(event.key)
             return True
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button in self._mouse_control:
             self._active = True
-            if self.is_holding():
+            if self.is_holding_type():
                 self._holding.append(event.button)
             return True
+        # TODO Add mouse motion actions
+        if event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
+            self._active = True
+            if self.is_holding_type():
+                self._holding.append(event.type)
 
         return False
+
+    def process_update(self,event:pygame.Event)->None:
+        if self.is_active() and self.is_holding_type() and pygame.MOUSEMOTION in self._mouse_control:
+            self.value = {"pos":event.pos,"rel":event.rel}
 
     def process_deactivate(self, event: pygame.Event) -> bool:
         if self._type == ActionType.HOLDING:
@@ -97,6 +107,16 @@ class Action:
             ):
                 if event.button in self._holding:
                     self._holding.remove(event.button)
+                if not self._holding:
+                    self._active = False
+                    return True
+            elif (
+                event.type == pygame.MOUSEMOTION
+                and event.type in self._mouse_control
+            ):
+                self.value = None
+                if event.type in self._holding:
+                    self._holding.remove(event.type)
                 if not self._holding:
                     self._active = False
                     return True

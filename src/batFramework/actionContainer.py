@@ -14,11 +14,14 @@ class ActionContainer:
         for action in actions:
             self._actions[action.get_name()] = action
 
-    def has_action(self, name):
+    def get(self,name:str)->bf.Action:
+        return self._actions.get(name)
+
+    def has_action(self, name:str):
         return name in self._actions
 
-    def is_active(self, *names):
-        return all(self._actions[name].is_active() for name in names)
+    def is_active(self, *names:str)->bool:
+        return all(self._actions.get(name).is_active() if name in self._actions else False for name in names)
 
     def process_event(self, event):
         for action in self._actions.values():
