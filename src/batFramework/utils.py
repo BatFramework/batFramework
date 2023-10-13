@@ -1,7 +1,6 @@
 import pygame
 from enum import Enum
 import os
-import sys
 import batFramework as bf
 import json
 
@@ -79,7 +78,6 @@ class Utils:
         Utils.FONTS[filename] = {}
         for size in range(MIN_FONT_SIZE, MAX_FONT_SIZE, 2):
             Utils.FONTS[filename][size] = pygame.font.Font(path,size=size)
-        print(sum( sys.getsizeof(i) for i in Utils.FONTS.values()) / (1024 * 1024) )
 
     @staticmethod
     def get_font(name:str|None=None,text_size:int=12) -> pygame.Font:
