@@ -8,8 +8,25 @@ class Widget(bf.Entity):
         self.parent : None|"Widget" = None 
         self.is_root :bool = False
         self.children : list["Widget"] = []
-        self.set_debug_color("green")
+        self.focusable :bool= False
+        self.is_focused :bool= False
+        
         if self.surface : self.surface.fill("white")
+        self.set_debug_color("green")
+
+    
+    def get_root(self)-> "Widget":
+        if self.is_root: return self
+        return None  if self.parent is None else self.parent.get_root()
+        
+
+    def get_focus(self)->False:
+        if self.parent is None or not self.focusable: return False
+        self.get_root().focus_on(self)
+        if not self.parent.is_focused:
+            self.parent.get_focus()
+        self.focused = True
+        
 
     def get_bounding_box(self):
         yield self.rect
@@ -65,8 +82,9 @@ class Widget(bf.Entity):
         self.is_root = True
         return self
 
-    def add_child(self,child:"Widget")->None:
-        self.children.append(child)
+    def add_child(self,*child:"Widget")->None:
+        for c in child : 
+            self.children.append(c)
 
     def remove_child(self,child:"Widget")->None:
         self.children.remove(child)
@@ -99,6 +117,10 @@ class Widget(bf.Entity):
         return (ceil(self.rect.width),ceil(self.rect.height))
 
     def build(self)->None:
+        """
+        This function is called each time the widget's surface has to be updated
+        It usually has to be overriden if inherited to suit the needs of the new class
+        """
         if not self.surface: return
         if self.surface.get_size() != self.get_size_int():
             self.surface = pygame.Surface(self.get_size_int())
