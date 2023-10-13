@@ -23,7 +23,9 @@ class Scene:
             self.hud_camera.set_clear_color((0, 0, 0, 0))
 
         self.root = bf.Root()
+        self.root.set_center(*self.hud_camera.get_center())
         self.add_hud_entity(self.root)
+
         
         self.blit_calls = 0
 
