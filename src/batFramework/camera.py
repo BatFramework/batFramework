@@ -22,7 +22,7 @@ class Camera:
     def clear(self):
         """
         Clear the camera surface with the set clear color
-        (default is transparent/black)
+        (default is tranparent)
         """
         self.surface.fill(self._clear_color)
 
