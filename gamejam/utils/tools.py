@@ -16,9 +16,5 @@ def grid_to_chunk(x, y):
     return x // gconst.CHUNK_SIZE, y // gconst.CHUNK_SIZE
 
 
-def load_level(level, n: int):
-    data = bf.utils.load_json_from_file(f"levels/level_{n}.json")
-    if data == None:
-        return False
-    return level.load(data)
+
 

@@ -102,10 +102,11 @@ def stylize(entity: bf.Entity):
             entity.set_border_color(bf.color.SHADE_GB).set_border_width(
                 2
             ).set_background_color(bf.color.DARK_GB)
-            entity.title_label.set_background_color(bf.color.BASE_GB).set_text_color(
-                bf.color.LIGHT_GB
-            )
-            entity.title_label.set_underline(True)
+            stylize(entity.title_label)
+            # entity.title_label.set_background_color(bf.color.BASE_GB).set_text_color(
+            #     bf.color.LIGHT_GB
+            # )
+            # entity.title_label.set_underline(True)
 
         case bf.Toggle():
             entity._parent_resize_request = None

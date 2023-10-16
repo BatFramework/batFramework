@@ -21,9 +21,14 @@ class Label(Frame):
         self._wraplength = None
         self.set_text(text, self._text_size)
 
+    def set_text_size(self,size:int):
+        self._text_size = size
+        return self
+
     def set_wraplength(self, val: int):
         self._wraplength = val
         self.update_surface()
+        return self
 
     def get_bounding_box(self):
         yield self.rect

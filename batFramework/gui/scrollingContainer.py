@@ -46,7 +46,7 @@ class ScrollingContainer(Container):
                 tmp.centerx = self.rect.centerx
                 x = tmp.left
             child.set_position(x, y)
-            if child != self.get_focused_child() and child.rect.top < self.rect.top  or child.rect.bottom > self.rect.bottom :
+            if child.rect.top < self.rect.top + self._padding[1]  or child.rect.bottom > self.rect.bottom - self._padding[1]  :
                 child.set_visible(False)
             else:
                 child.set_visible(True)
@@ -73,11 +73,13 @@ class ScrollingContainer(Container):
             self.set_scroll(self.rect.top - self._padding[1] + (current_child.rect.top + self.scroll.y))
 
     def set_scroll(self,value):
-        max_scroll = self.rect.top + self.children_rect.h - self.get_visible_height() 
+        max_scroll = self.children_rect.h - self.get_visible_height()
         value = max(min(value,max_scroll),0)
         # self.scroll.y = value
         self.scroll_target.y = value
         # self._update_vertical_children()
+        print(self.get_scroll_ratio(),self.get_visible_height(),self.scroll_target,max_scroll)
+
 
 
     def get_scroll_ratio(self):

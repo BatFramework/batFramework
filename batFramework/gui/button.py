@@ -55,6 +55,10 @@ class Button(Label, InteractiveEntity):
     def process_event(self, event):
         self.activate_container.process_event(event)
 
+    def set_text(self, text, size=None, align: int = pygame.FONT_LEFT, underline: bool = None, italic: bool = None):
+        self._hover_surf = None
+        return super().set_text(text, size, align, underline, italic)
+
     def update_surface(self):
         if not self._image:
             super().update_surface()

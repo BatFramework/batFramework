@@ -218,11 +218,14 @@ class Container(Frame, InteractiveEntity):
             self.set_focused_child_index(index)
 
     def next(self):
+        if not self.interactive_children: return
         self.set_focused_child_index( (self.focused_index + 1) % len(self.interactive_children))
         if self.switch_focus_sfx:
             bf.AudioManager().play_sound(self.switch_focus_sfx, self._sfx_volume)
 
     def prev(self):
+        if not self.interactive_children: return
+
         self.set_focused_child_index( (self.focused_index - 1) % len(self.interactive_children))
         if self.switch_focus_sfx:
             bf.AudioManager().play_sound(self.switch_focus_sfx, self._sfx_volume)
@@ -267,10 +270,11 @@ class Container(Frame, InteractiveEntity):
     def resize(self, new_width, new_height):
         self._manual_resized = True
         if (new_width, new_height) == self.rect.size:
-            return
+            return self
         # print(self.uid,new_width,new_height)
         bf.Frame.resize(self, new_width, new_height)
         self.update_content()
+        return self
 
     def resize_by_parent(self, new_width, new_height):
         if self._manual_resized or (new_width, new_height) == self.rect.size:
@@ -414,8 +418,8 @@ class Container(Frame, InteractiveEntity):
             for c in self.children
             if  not isinstance(c, InteractiveEntity) or not c._focused
         ]:
-            child.draw(camera)
-            num_drawn += 1
+            num_drawn += child.draw(camera)
+            
         if self._focused:
             num_drawn += self.draw_focused_child(camera)
 

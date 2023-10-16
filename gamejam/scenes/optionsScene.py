@@ -69,10 +69,6 @@ class OptionsScene(CustomBaseScene):
         # bf.Label("SWITCH:Y").put_to(control_frame)
         # bf.Label("NEXT:RETURN|SPACE").put_to(control_frame)
 
-
-        # control_frame.set_padding((2,2)).set_border_width(0)
-        # control_frame.update_content()
-        # control_frame.set_center(*self.hud_camera.rect.center)
         control_frame.set_position(0,0)
         control_button.set_callback(
             bf.Container.create_link(self.main_frame, control_frame, True)

@@ -19,4 +19,4 @@ class InteractiveEntity(bf.Entity):
         return self._focused
 
     def draw_focused(self, camera: bf.Camera):
-        pass
+        return self.draw(camera)

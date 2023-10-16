@@ -33,6 +33,8 @@ class TextBox(Container):
         self.message_length = None
         self.progression = 0
         self.click_rate, self.click_counter = 2, 0
+        self.click_sfx = None
+
         self.label = bf.Label("").set_alignment(bf.Alignment.LEFT).put_to(self)
         self.text_speed = 30
         self.end_callback = None
@@ -95,7 +97,7 @@ class TextBox(Container):
                 else:
                     reached_end = True
 
-                # print(next_sp,next_n,last_index_is_space,new_lines)
+                print(next_sp,next_n,last_index_is_space,new_lines)
 
                 if self.string_too_wide(
                     font,
@@ -127,8 +129,8 @@ class TextBox(Container):
                 message[: new_lines[-2]].strip(),
                 message[new_lines[-2] :].strip(),
             )
-            # print("Cut result -> message : ", repr(message), "cut :", repr(cut))
-        # print("Final message :", repr(message))
+            print("Cut result -> message : ", repr(message), "cut :", repr(cut))
+        print("Final message :", repr(message))
         self.messages.append(message)
 
         # IF this is the first message
@@ -136,7 +138,7 @@ class TextBox(Container):
             self.progression = 0
             self.message_length = len(self.messages[0])
             # self.set_visible(True)
-        if cut:
+        if cut != '' and cut is not None:
             self.queue_message(cut, end_callback)
 
     def is_busy(self) -> bool:
@@ -159,6 +161,7 @@ class TextBox(Container):
         if self.message_length is None:
             if self.end_callback:
                 self.end_callback()
+            self.label.set_text("")
             return
 
     def update(self, dt: float):
@@ -170,10 +173,11 @@ class TextBox(Container):
         )
 
 
-        if int(new_progression) != int(self.progression):
-            if self.click_counter % self.click_rate == 0:
-                bf.AudioManager().play_sound("text_click", 0.5)
-            self.click_counter += 1
+        if self.click_sfx :
+            if int(new_progression) != int(self.progression):
+                if self.click_counter % self.click_rate == 0:
+                    bf.AudioManager().play_sound("text_click", 0.5)
+                self.click_counter += 1
 
         self.label.set_text(self.messages[0][: int(new_progression)])
         self.progression = new_progression

@@ -24,8 +24,6 @@ class TitledContainer(Container):
         yield from super().get_bounding_box()
         yield from self.title_label.get_bounding_box()
 
-    def get_max_child_width(self):
-        return max(child.rect.w for child in self.children+[self.title_label]) if self.children else self.rect.w
     def set_center(self,x,y):
         union = self.rect.union(self.title_label.rect.inflate(*self._padding))
         union.center = (x,y)
@@ -33,6 +31,8 @@ class TitledContainer(Container):
         self.title_label.set_position(self.rect.left,self.rect.top-self.title_label.rect.h)
         return self
     
+    def get_max_child_width(self):
+        return max(child.rect.w for child in self.children+[self.title_label]) if self.children else self.rect.w
     def draw(self, camera):
 
         i = super().draw(camera) 

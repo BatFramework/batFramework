@@ -1,7 +1,7 @@
 import batFramework as bf
 import pygame
 from game_constants import GameConstants as gconst
-from os.path import join
+from os.path import join,basename
 import utils.tools as tools
 from math import sin
 import itertools
@@ -249,6 +249,7 @@ class Level(bf.Entity):
         self.background_image = None
         self.chunks: dict[tuple[int, int], Chunk] = {}
         self.entities: list[bf.Entity] = []
+        self.filename :str  = ""
 
     def set_background_image(self, path):
         self.background_image = pygame.image.load(
@@ -278,6 +279,14 @@ class Level(bf.Entity):
         for entity in data["entites"]:
             self.add_entity(Tile(**entity))
         return True
+
+    def load_file(self, path:str):
+        data = bf.utils.load_json_from_file(path)
+        self.filename = basename(path)
+        
+        if data == None:
+            return False
+        return self.load(data)
 
     def get_chunk_at(self, gridx, gridy):
         if gridx < 0 or gridy < 0:

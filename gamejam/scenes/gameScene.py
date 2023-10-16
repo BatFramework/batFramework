@@ -63,7 +63,8 @@ class GameScene(CustomBaseScene):
         self.level: Level = Level()
         self.add_world_entity(self.level)
         self.set_sharedVar("level", self.level)
-        tools.load_level(self.level, 0)
+        self.set_sharedVar("level_num",0)
+        self.level.load_file(f"levels/level_{self.get_sharedVar('level_num')}.json")
 
         self.player: Player = Player()
         self.baby = Baby()
@@ -97,6 +98,7 @@ class GameScene(CustomBaseScene):
         self.player.action_container.hard_reset()
         self.particle_timer.start()
 
+
     def on_exit(self):
         super().on_exit()
         self.particle_timer.stop()
@@ -121,7 +123,7 @@ class GameScene(CustomBaseScene):
     def spawn(self):
         if self.get_sharedVar("current_player") != "player":
             self.switch_players()
-        tools.load_level(self.level, 0)
+        self.level.load_file(f"levels/level_{self.get_sharedVar('level_num')}.json")
 
         self.player.set_position(*self.player.spawn_point)
         self.baby.set_position(*self.baby.spawn_point)

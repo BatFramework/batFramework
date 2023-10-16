@@ -234,7 +234,6 @@ class IntroCutscene(CustomCutsceneBase):
             Wait(1000),
             Zoom(2,800),
             Wait(1000),
-
             DialogueFadeIn(300),
             Say("This is me and that little kid..."),
             Say("Guess we look kinda weird from here huh ?",emotion="thinking"),
