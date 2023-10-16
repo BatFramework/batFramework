@@ -71,21 +71,17 @@ class Scene:
     def add_world_entity(self, *entity: bf.Entity):
         for e in entity:
             if e not in self._world_entities:
-                
-                self._world_entities.append(e)
 
+                self._world_entities.append(e)
                 e.parent_scene = self
                 e.do_when_added()
 
     def remove_world_entity(self, *entity: bf.Entity):
-        # print("removing ",entity)
         for e in entity:
             if e not in self._world_entities:
                 return False
             e.do_when_removed()
             e.parent_scene = None
-            if isinstance(e,bf.Widget) and e.parent == self.root:
-                self.root.remove_child(e)
             self._world_entities.remove(e)
             return True
 

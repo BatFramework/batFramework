@@ -110,7 +110,7 @@ class ConstraintPercentageHeight(Constraint):
 
 
 class ConstraintAspectRatio(Constraint):
-    def __init__(self,ratio=1,):
+    def __init__(self,ratio=1):
         super().__init__(name="aspect_ratio")
         if isinstance(ratio, float):
             self.ratio : float = ratio
@@ -121,5 +121,6 @@ class ConstraintAspectRatio(Constraint):
     def evaluate(self, parent_widget,child_widget):
         return  self.ratio  ==  child_widget.rect.w / child_widget.rect.h
         
-    def apply(self,parent_widget,child_widget):
-        
+    def apply_constraint(self,parent_widget,child_widget):
+        if not self.evaluate(parent_widget,child_widget):
+            return

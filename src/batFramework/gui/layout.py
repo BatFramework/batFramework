@@ -15,7 +15,6 @@ class Layout:
     def arrange(self)->None:
         raise NotImplementedError("Subclasses must implement arrange  method")
 
-
 class ColumnLayout(Layout):
     def __init__(self,gap:int=0,*constraints:Constraint):
         super().__init__()

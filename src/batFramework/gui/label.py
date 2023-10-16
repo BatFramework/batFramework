@@ -3,10 +3,7 @@ import pygame
 from .frame import Frame
 
 class Label(Frame):
-    def __init__(self,text:str,width:float|None=None,height:float|None=None) -> None:   
-
-
-
+    def __init__(self,text:str) -> None:   
         self._text = ""
         # Enable/Disable antialiasing
         self._antialias : bool = True
@@ -31,7 +28,7 @@ class Label(Frame):
         self.set_text(text)
 
     def to_string(self)->str:
-        return f"Label@{self._text}|{*self.rect.topleft,* self.rect.size}"
+        return f"Label({self._text})@|{*self.rect.topleft,* self.rect.size}"
 
     def get_bounding_box(self):
         yield from super().get_bounding_box()
