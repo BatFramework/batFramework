@@ -4,8 +4,6 @@ import os
 import batFramework as bf
 import json
 
-FONT_FILENAME = "slkscr.ttf"
-
 
 def move_points(delta, *points):
     res = []
@@ -35,20 +33,59 @@ class Layout(Enum):
 class Utils:
     pygame.font.init()
 
-    FONTS: dict[int, pygame.Font] = {}
-    for size in range(8, 50, 2):
-        FONTS[size] = pygame.font.Font(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), f"fonts/{FONT_FILENAME}"
-            ),
-            size=size,
-        )
-        # FONTS[size].align = pygame.FONT_LEFT
-        # FONTS[size].italic = True
-        # FONTS[size].underline= True
-        # FONTS[size].set_direction(pygame.DIRECTION_TTB)
-
+    FONTS = {}
+    
     tilesets = {}
+
+
+
+    @staticmethod
+    def get_path(path: str):
+        return os.path.join(bf.const.RESOURCE_PATH, path)
+
+    @staticmethod
+    def load_json_from_file(path: str) -> dict:
+        try:
+            with open(Utils.get_path(path), "r") as file:
+                data = json.load(file)
+            return data
+        except FileNotFoundError:
+            return None
+
+    @staticmethod
+    def save_json_to_file(path: str, data) -> bool:
+        try:
+            with open(Utils.get_path(path), "w") as file:
+                json.dump(data, file, indent=2)
+            return True
+        except FileNotFoundError:
+            return False
+            
+    @staticmethod
+    def init_font(path:str):
+        Utils.load_font(Utils.get_path(path) if path else None,None)
+        if path is not None:
+            Utils.load_font(Utils.get_path(path),'')
+
+
+    @staticmethod
+    def load_font(path:str,name:str=''):
+        if path is not None: path = Utils.get_path(path)
+        filename = os.path.basename(path).split('.')[0] if path is not None else None
+        if name != '' : filename = name
+        Utils.FONTS[filename] = {}
+        for size in range(8, 50, 2):
+            Utils.FONTS[filename][size] = pygame.font.Font(path,size=size)
+
+    @staticmethod
+    def get_font(filename,text_size:int) -> pygame.Font:
+        if not filename in Utils.FONTS: return None
+
+        if not text_size in Utils.FONTS[filename]: return None
+        return Utils.FONTS[filename][text_size]
+
+
+
 
     class Tileset:
         _flip_cache = {}  # {"tileset":tileset,"index","flipX","flipY"}
@@ -123,28 +160,6 @@ class Utils:
         if name not in Utils.tilesets:
             return None
         return Utils.tilesets[name]
-
-    @staticmethod
-    def get_path(path: str):
-        return os.path.join(bf.const.RESOURCE_PATH, path)
-
-    @staticmethod
-    def load_json_from_file(path: str) -> dict:
-        try:
-            with open(Utils.get_path(path), "r") as file:
-                data = json.load(file)
-            return data
-        except FileNotFoundError:
-            return None
-
-    @staticmethod
-    def save_json_to_file(path: str, data):
-        try:
-            with open(Utils.get_path(path), "w") as file:
-                json.dump(data, file, indent=2)
-            return True
-        except FileNotFoundError:
-            return False
 
 
 class Singleton(type):

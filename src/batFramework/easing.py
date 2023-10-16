@@ -58,13 +58,16 @@ class EasingAnimation(bf.Timer):
             self.update_callback(self.value)
 
     def end(self):
+        # print(f"Anim {self.name} end")
+
         self.progression = 1
         self._process_value()
-        self.update_callback(self.value)
+        if self.update_callback is not None : self.update_callback(self.value)
         super().end()
         self.value =  0
 
     def start(self):
+        # print(f"Anim {self.name} start")
         super().start()
         self.value =  0
     

@@ -10,8 +10,8 @@ from scenes import *
 class MyManager(bf.Manager):
     def __init__(self) -> None:
         Defaults.initialize()
-        # super().__init__(BootScene(),TitleScene(),OptionsScene(),EditorScene(),TilePicker(),GameScene(),DialogueScene()) # with boot
         super().__init__(
+            # BootScene(),
             TitleScene(),
             OptionsScene(),
             EditorScene(),
