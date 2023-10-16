@@ -1,22 +1,23 @@
 import pygame
+from enum import Enum
+
 
 
 class Constants:
     SCREEN = None
     RESOLUTION: tuple[int, int] = (1280,720)
     VSYNC = 0
-    FLAGS: int = pygame.SCALED #| pygame.RESIZABLE
+    FLAGS: int = pygame.SCALED | pygame.RESIZABLE
     FPS: int = 60
     RESOURCE_PATH = "."
     
     @staticmethod
     def init_screen(resolution:tuple[int,int],flags:int= 0, vsync:int= 0):
-        print(f"Window : {resolution[0]}x{resolution[1]}px | flags:{flags}, vsync:{bool(vsync)}")
+        print(f"Window : {resolution[0]}x{resolution[1]}px | flags:{flags.bit_count()}, vsync:{bool(vsync)}")
         Constants.RESOLUTION = resolution
         Constants.FLAGS = flags
         Constants.VSYNC = vsync
         Constants.SCREEN = pygame.display.set_mode(Constants.RESOLUTION, Constants.FLAGS,vsync=Constants.VSYNC)
-
 
     MUSIC_END_EVENT = pygame.event.custom_type()
 
@@ -25,6 +26,10 @@ class Constants:
 
     GUI_SCALE: int = 1
     # ---------------------
+
+    @staticmethod
+    def set_resolution(resolution : tuple[int,int]):
+        Constants.RESOLUTION = resolution
 
     @staticmethod
     def set_resource_path(path: str):
@@ -66,3 +71,7 @@ class Colors:
     SHADE_GB = (14, 69, 11)
     BASE_GB = (73, 107, 34)
     LIGHT_GB = (154, 158, 63)
+
+class Axis(Enum):
+    HORIZONTAL  = 1
+    VERTICAL    = 2

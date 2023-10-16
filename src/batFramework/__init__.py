@@ -23,7 +23,8 @@ def init(
         if resource_path: const.set_resource_path(resource_path)
         from .utils import Utils
         Utils.init_font(default_font)
-        # print(Utils.FONTS)
+        f = list(Utils.FONTS[None].values())[0]
+        print(f"Set default font to : {f.name} {'' if default_font is not None else '(default value)'}")
         initialized = True
         const.set_fps_limit(fps_limit)
 
@@ -32,6 +33,7 @@ if not initialized:
     pass
 
 from .constants import Colors as color
+from .constants import Axis as axis
 from .utils import *
 from .utils import Utils as utils
 from .utils import Singleton

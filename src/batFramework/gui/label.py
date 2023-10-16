@@ -5,8 +5,7 @@ from .frame import Frame
 class Label(Frame):
     def __init__(self,text:str,width:float|None=None,height:float|None=None) -> None:   
 
-        # Resize the widget size according to the text
-        self._autoresize = True
+
 
         self._text = ""
         # Enable/Disable antialiasing
@@ -30,6 +29,9 @@ class Label(Frame):
 
         self.set_font(force=True)
         self.set_text(text)
+
+    def to_string(self)->str:
+        return f"Label@{self._text}|{*self.rect.topleft,* self.rect.size}"
 
     def get_bounding_box(self):
         yield from super().get_bounding_box()
@@ -63,6 +65,13 @@ class Label(Frame):
         return self._padding
 
 
+    def is_antialias(self)->bool:
+        return self._antialias
+
+    def set_antialias(self,value:bool)->"Label":
+        self._antialias = value
+        self.build()
+        return self
 
     def set_text(self,text:str) -> "Label":
         if text == self._text : return self
@@ -74,9 +83,6 @@ class Label(Frame):
         return self._text
 
 
-    def set_autoresize(self,value:bool)-> "Label":
-        self._autoresize = value
-        return self
 
     def _build_text(self)-> None:
         if self._font_object is None: return
@@ -93,7 +99,7 @@ class Label(Frame):
         )
         self.surface.blit(self._text_surface,self._text_rect)
         
-        if self._autoresize:
+        if self.autoresize:
             # modify rect so it is the same size as text_rect, but still same center as before.
             if self.rect.size != self._text_rect.inflate(*self._padding).size :
                 self.rect.size = self._text_rect.inflate(*self._padding).size

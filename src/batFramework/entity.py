@@ -85,11 +85,13 @@ class Entity:
     def has_tag(self, tag) -> bool:
         return tag in self.tags
 
-    def process_event(self, event: pygame.Event):
+    def process_event(self, event: pygame.Event)->bool:
         # insert action process here
         self.do_handle_event(event)
         # insert action reset heres
 
+        #return True if the method is blocking (no propagation to next children of the scene)
+        return False
     def do_handle_event(self, event: pygame.Event):
         pass
 

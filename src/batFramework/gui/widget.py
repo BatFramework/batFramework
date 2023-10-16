@@ -1,26 +1,70 @@
 import batFramework as bf
 import pygame
 from math import ceil
+from .constraints import Constraint
 
 class Widget(bf.Entity):
     def __init__(self)->None:
         super().__init__(convert_alpha=True)
+        # Resize the widget size according to the text
+        self.autoresize = True
         self.parent : None|"Widget" = None 
         self.is_root :bool = False
         self.children : list["Widget"] = []
         self.focusable :bool= False
         self.is_focused :bool= False
+        self.constraints : list[Constraint] = []
         
         if self.surface : self.surface.fill("white")
         self.set_debug_color("green")
 
+    def add_constraint(self,constraint:Constraint)->"Widget":
+        self.constraints.append(constraint)
+        self.apply_constraints()
+        return self
+
+    def has_constraint(self,name:str)->str:
+        return any(c.name == name for c in self.constraints)
+
+    def apply_all_constraints(self)->None:
+        self.apply_constraints()
+        for child in self.children : child.apply_constraints()
+
     
+    def apply_constraints(self, max_iterations: int = 10) -> None:
+        if not self.constraints or not self.parent:
+            return
+        # Sort constraints based on priority
+        self.constraints.sort(key=lambda c: c.priority)
+
+        for iteration in range(max_iterations):
+            unsatisfied = []  # Initialize a flag
+
+            for constraint in self.constraints:
+                if not constraint.evaluate(self.parent, self):
+                    unsatisfied.append(constraint)
+                    constraint.apply(self.parent, self)
+            if not unsatisfied:
+                print(f"pass {iteration}/{max_iterations} : unsatisfied = {unsatisfied}")
+                break
+                
+            if iteration == max_iterations - 1:
+                raise ValueError(f"Following constraints for {self.to_string()} were not satisfied : \n\t{','.join([c.name for c in unsatisfied])}")
+        
     def get_root(self)-> "Widget":
         if self.is_root: return self
-        return None  if self.parent is None else self.parent.get_root()
-        
+        if self.parent_scene is not None : return self.parent_scene.root
+        return None if self.parent is None else self.parent.get_root()
 
-    def get_focus(self)->False:
+    def set_autoresize(self,value:bool)-> "Label":
+        self.autoresize = value
+        return self
+
+    def set_parent(self,parent:"Widget")->None:
+        self.parent = parent
+        self.apply_constraints()
+        
+    def get_focus(self)->bool:
         if self.parent is None or not self.focusable: return False
         self.get_root().focus_on(self)
         if not self.parent.is_focused:
@@ -73,10 +117,8 @@ class Widget(bf.Entity):
             child.print_tree(ident+1)
 
     def to_string(self)->str:
-        if self.is_root : 
-            return "ROOT"
-        else :
-            return f"Widget@{*self.rect.topleft,* self.rect.size}"
+        
+        return f"Widget@{*self.rect.topleft,* self.rect.size}"
 
     def set_root(self) -> "Widget":
         self.is_root = True
@@ -85,10 +127,11 @@ class Widget(bf.Entity):
     def add_child(self,*child:"Widget")->None:
         for c in child : 
             self.children.append(c)
+            c.set_parent(self)
 
     def remove_child(self,child:"Widget")->None:
         self.children.remove(child)
-
+        child.set_parent(None)
 
     # if return True -> don't propagate upwards
     def process_event(self, event: pygame.Event)->bool:
@@ -98,7 +141,9 @@ class Widget(bf.Entity):
                 return False
         self.do_handle_event(event)
         # insert action reset heres
-        return True
+
+         #return True if the method is blocking (no propagation to next children of the scene)
+        return False
 
     def update(self,dt:float):
         for child in self.children:

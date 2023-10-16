@@ -33,6 +33,8 @@ class Manager(bf.SceneManager):
                 if event.type == pygame.QUIT:
                     self._running = False
                     break
+                if event.type == pygame.VIDEORESIZE:
+                    bf.const.set_resolution((event.w,event.h))
                 self.process_event(event)
             # update
             dt = self._clock.tick(bf.const.FPS) / 1000
