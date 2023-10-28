@@ -86,16 +86,27 @@ class Entity:
         return tag in self.tags
 
     def process_event(self, event: pygame.Event)->bool:
-        # insert action process here
-        self.do_handle_event(event)
-        # insert action reset heres
+        """
+        Returns bool : True if the method is blocking (no propagation to next children of the scene)
+        """
+        self.do_process_actions(event)
+        res = self.do_handle_event(event)
+        self.do_reset_actions()
+        return res
 
-        #return True if the method is blocking (no propagation to next children of the scene)
-        return False
-    def do_handle_event(self, event: pygame.Event):
+    def do_process_actions(self,event : pygame.Event)->None:
         pass
 
+    def do_reset_actions(self)->None:
+        pass
+    
+    def do_handle_event(self, event: pygame.Event) -> bool:
+        return False
+
     def update(self, dt: float):
+        self.do_update(dt)
+
+    def do_update(self,dt:float):
         pass
 
     def draw(self, camera: bf.Camera) -> int:
