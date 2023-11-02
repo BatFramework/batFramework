@@ -8,7 +8,6 @@ class Manager(bf.SceneManager):
         self._screen: pygame.Surface = bf.const.SCREEN
         self._timeManager = bf.Time()
         self._cutsceneManager = bf.CutsceneManager(self)
-        print("Vsync : ", pygame.display.is_vsync())
         self._clock: pygame.Clock = pygame.Clock()
         super().__init__(*initial_scene_list)
         self.set_sharedVar("clock", self._clock)
@@ -25,6 +24,9 @@ class Manager(bf.SceneManager):
     def do_init(self):
         pass
 
+    def stop(self)->None:
+        self._running = False
+
     def run(self):
         self._running = True
         dt: float = 0
@@ -37,7 +39,7 @@ class Manager(bf.SceneManager):
                     bf.const.set_resolution((event.w,event.h))
                 self.process_event(event)
             # update
-            dt = self._clock.tick(bf.const.FPS) / 1000
+            dt = self._clock.tick(bf.const.FPS if  not bf.const.VSYNC else 0) / 1000
             dt = min(dt, 0.02)
             self._cutsceneManager.update(dt)
             self._timeManager.update()

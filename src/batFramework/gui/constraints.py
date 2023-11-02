@@ -4,15 +4,17 @@ if TYPE_CHECKING:
     from .widget import Widget
 import batFramework as bf
 
+
 class Constraint:
-    def __init__(self,name, priority=0):
+    def __init__(self,name="Constraint", priority=0):
         self.priority = priority
         self.name = name
 
     def set_priority(self, priority)->"Constraint":
         self.priority = priority
         return self
-
+    def to_string(self)->str:
+        return f"{self.name.upper()}"
     def evaluate(self, parent_widget:Widget, child_widget:Widget) -> bool:
         raise NotImplementedError("Subclasses must implement evaluate method")
 
@@ -76,7 +78,8 @@ class ConstraintPercentageWidth(Constraint):
         super().__init__(name="percentage_width")
         self.percentage:float = percentage
         self.keep_autoresize: bool = keep_autoresize
-
+    def to_string(self)->str:
+        return f"{super().to_string()}.[{self.percentage},{self.keep_autoresize}]"
     def evaluate(self, parent_widget, child_widget):
         return child_widget.rect.width == round(parent_widget.rect.width * self.percentage)
 
@@ -108,6 +111,40 @@ class ConstraintPercentageHeight(Constraint):
                 child_widget.set_autoresize(False)
             child_widget.set_size(child_widget.rect.w,round(parent_widget.rect.h * self.percentage))
 
+class ConstraintHeight(Constraint):
+    def __init__(self,height:float):
+        if height < 0 :
+            raise ValueError("height can't be negative")
+        super().__init__(name="height")
+        self.height = height
+
+    def to_string(self)->str:
+        return f"{super().to_string()}.({self.height})"
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.height == self.height
+
+    def apply_constraint(self,parent_widget,child_widget):
+        if not self.evaluate(parent_widget,child_widget):
+            child_widget.set_size(child_widget.rect.w,self.height)
+
+class ConstraintWidth(Constraint):
+    def __init__(self,width:float):
+        if width < 0 :
+            raise ValueError("width can't be negative")
+        super().__init__(name="width")
+        self.width = width
+
+    def to_string(self)->str:
+        return f"{super().to_string()}.({self.width})"
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.width == self.width
+
+    def apply_constraint(self,parent_widget,child_widget):
+        if not self.evaluate(parent_widget,child_widget):
+            child_widget.set_size(self.width,child_widget.rect.h)
+
 
 class ConstraintAspectRatio(Constraint):
     def __init__(self,ratio=1):
@@ -123,4 +160,31 @@ class ConstraintAspectRatio(Constraint):
         
     def apply_constraint(self,parent_widget,child_widget):
         if not self.evaluate(parent_widget,child_widget):
-            return
+            return # TODO
+
+class ConstraintAnchorBottom(Constraint):
+    def __init__(self):
+        super().__init__(name="anchor_bottom")
+        
+    def evaluate(self, parent_widget,child_widget):
+        return  child_widget.rect.bottom == parent_widget.rect.bottom
+        
+    def apply_constraint(self,parent_widget,child_widget):
+        if not self.evaluate(parent_widget,child_widget):
+            child_widget.set_y(parent_widget.rect.bottom - child_widget.rect.h)
+
+
+class ConstraintAnchorTopRight(Constraint):
+    def __init__(self):
+        super().__init__(name="anchor_topright")
+        
+    def evaluate(self, parent_widget,child_widget):
+        return  child_widget.rect.topright == parent_widget.rect.topright
+        
+    def apply_constraint(self,parent_widget,child_widget):
+        if not self.evaluate(parent_widget,child_widget):
+            child_widget.set_position(parent_widget.rect.right-child_widget.rect.w, parent_widget.rect.top)
+
+
+
+

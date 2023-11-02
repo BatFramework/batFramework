@@ -25,8 +25,6 @@ class Scene:
         self.root = bf.Root()
         self.root.set_center(*self.hud_camera.get_center())
         self.add_hud_entity(self.root)
-
-        
         self.blit_calls = 0
 
     def set_scene_index(self,index):
@@ -136,10 +134,10 @@ class Scene:
             return
         self.actions.process_event(event)
         self.do_handle_event(event)
-        self.actions.reset()
         for entity in self._world_entities + self._hud_entities:
             if entity.process_event(event):
-                return
+                break
+        self.actions.reset()
 
     def do_handle_event(self, event: pygame.Event):
         """called inside process_event but before resetting the scene's action container and propagating event to child entities of the scene"""
@@ -159,12 +157,15 @@ class Scene:
         # return
         if not entity.visible:
             return
-        for r in entity.get_bounding_box():
-            pygame.draw.rect(
-                camera.surface, entity._debug_color, camera.transpose(r), 1
-            )
-        if isinstance(entity,bf.Widget):
-            for child in entity.children : self.debug_entity(child,camera)
+        for data in entity.get_bounding_box():
+            if isinstance(data,tuple):
+                rect = data[0]
+                color = data[1]
+            else:
+                rect = data
+                color = entity._debug_color
+
+            pygame.draw.rect(camera.surface, color , camera.transpose(rect), 1)
 
     def draw(self, surface: pygame.Surface):
         self._world_entities.sort(key=lambda e: (e.z_depth,e.render_order))
@@ -174,7 +175,6 @@ class Scene:
         self.camera.clear()
         self.hud_camera.clear()
 
-        self.do_early_draw(self.camera.surface)
 
         total_blit_calls += sum(
             entity.draw(self.camera) for entity in self._world_entities
@@ -182,7 +182,6 @@ class Scene:
         if self.manager._debugging == 2:
             for entity in self._world_entities:
                 self.debug_entity(entity, self.camera)
-        self.do_post_world_draw(self.camera.surface)
 
         total_blit_calls += sum(
             entity.draw(self.hud_camera) for entity in self._hud_entities
@@ -192,7 +191,9 @@ class Scene:
                 self.debug_entity(entity, self.hud_camera)
 
 
+        self.do_early_draw(surface)
         self.camera.draw(surface)
+        self.do_post_world_draw(surface)
         self.hud_camera.draw(surface)
         self.do_final_draw(surface)
 

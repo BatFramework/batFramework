@@ -14,10 +14,18 @@ class Camera:
         self.cached_surfaces: dict[float, pygame.Surface] = {}
         self.surface: pygame.Surface = None
         self.follow_point_func = None
+        self.max_zoom = 2
+        self.min_zoom = 0.1
         self.zoom(1)
 
     def set_clear_color(self, color: pygame.Color):
         self._clear_color = color
+
+    def set_max_zoom(self,value:float):
+        self.max_zoom = value
+
+    def set_min_zoom(self,value:float):
+        self.min_zoom = value
 
     def clear(self):
         """
@@ -60,9 +68,9 @@ class Camera:
         self.zoom(self.zoom_factor + amount)
 
     def zoom(self, factor):
-        if factor < 0.1:
+        if factor <self.min_zoom:
             return
-        if factor > 2:
+        if factor > self.max_zoom:
             return
         factor = round(factor,2)
         self.zoom_factor = factor

@@ -21,14 +21,14 @@ class Label(Frame):
         self._text_rect = None
         # text surface (result of font.render)
         self._text_surface : pygame.Surface | None= None 
-                
-        super().__init__(100,100)
-
+        super().__init__(0,0)
+        self.set_color("white")
+        self.set_autoresize(True)
         self.set_font(force=True)
         self.set_text(text)
 
-    def to_string(self)->str:
-        return f"Label({self._text})@|{*self.rect.topleft,* self.rect.size}"
+    def to_string_id(self)->str:
+        return f"Label({self._text})"
 
     def get_bounding_box(self):
         yield from super().get_bounding_box()
@@ -79,8 +79,6 @@ class Label(Frame):
     def get_text(self)->str:
         return self._text
 
-
-
     def _build_text(self)-> None:
         if self._font_object is None: return
         # render(text, antialias, color, bgcolor=None, wraplength=0) -> Surface
@@ -105,3 +103,5 @@ class Label(Frame):
     def build(self)->None:
         super().build()
         self._build_text()
+        self.apply_constraints()
+        if self.parent : self.parent.children_modified()

@@ -21,6 +21,7 @@ class Particle:
         self.duration = duration
         self.dead = False
         self.progression = 0
+        self.z_depth = 1
 
     def update(self, dt):
         if self.dead:
@@ -66,6 +67,11 @@ class ParticleManager(bf.Entity):
 
     def draw(self, camera) -> bool:
         camera.surface.fblits(
-            [(p.surface, camera.transpose(p.rect).topleft) for p in self.particles]
+            [
+                (
+                    p.surface,
+                    tuple(round(i * self.z_depth) for i in camera.transpose(self.rect).topleft)
+                ) for p in self.particles
+            ]
         )
         return len(self.particles)

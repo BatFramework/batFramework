@@ -13,12 +13,11 @@ class Constants:
     
     @staticmethod
     def init_screen(resolution:tuple[int,int],flags:int= 0, vsync:int= 0):
-        print(f"Window : {resolution[0]}x{resolution[1]}px | flags:{flags.bit_count()}, vsync:{bool(vsync)}")
         Constants.RESOLUTION = resolution
         Constants.FLAGS = flags
         Constants.VSYNC = vsync
         Constants.SCREEN = pygame.display.set_mode(Constants.RESOLUTION, Constants.FLAGS,vsync=Constants.VSYNC)
-
+        print(f"Window : {resolution[0]}x{resolution[1]}px | flags:{flags.bit_count()}, vsync:{pygame.display.is_vsync()}")
     MUSIC_END_EVENT = pygame.event.custom_type()
 
     # ------------GUI SPECIFIC

@@ -1,6 +1,7 @@
 import pygame
 from .constants import Constants as const
-
+import os
+import json
 initialized = False
 
 def init(
@@ -10,33 +11,49 @@ def init(
     default_text_size=None,
     default_font=None,
     resource_path:str|None=None,
-    window_title:str="pygame window",
+    window_title:str="BatFramework Project",
     fps_limit : int = 0
     ):
     global initialized
     if not initialized:
-        print("batFramework ver 0.1.9")
+        version_path = os.path.abspath(__file__)
+        version_path = version_path.split(os.path.basename(__file__))[0] + "version.json"
+        try:
+            with open(version_path, 'r') as file:
+                data = json.load(file)
+                ver = data["version"]
+        except FileNotFoundError:
+            print(f"File '{version_path}' not found")
+            exit(1)
+            
+        print(f"batFramework {ver}")
         pygame.init()
         pygame.display.set_caption(window_title)
+
+        # Initialize display
         const.init_screen(resolution,flags,vsync)
+        const.set_fps_limit(fps_limit)
+
+        # Initialize default text size
         if default_text_size: const.set_default_text_size(default_text_size)
+        # Initialize resource path for game data
         if resource_path: const.set_resource_path(resource_path)
+
+        # Initialize default font cache
         from .utils import Utils
-        Utils.init_font(default_font)
+        if default_font is None or isinstance(default_font,str):
+            Utils.init_font(default_font)
+        else:
+            raise ValueError(f"default_font '{default_font}' can be either string or None")
+        
         f = list(Utils.FONTS[None].values())[0]
         print(f"Set default font to : {f.name} {'' if default_font is not None else '(default value)'}")
         initialized = True
-        const.set_fps_limit(fps_limit)
-
-if not initialized:
-    # print("[IMPORTANT] Initialize batFramework after you import 'init' !")
-    pass
 
 from .constants import Colors as color
 from .constants import Axis as axis
-from .utils import *
-from .utils import Utils as utils
 from .utils import Singleton
+from .utils import Utils as utils
 from .time import Time, Timer
 from .cutscene import Cutscene,CutsceneManager
 from .cutsceneBlocks import *
@@ -48,6 +65,7 @@ from .action import Action
 from .actionContainer import ActionContainer
 from .camera import Camera
 from .entity import Entity
+from .dynamicEntity import DynamicEntity
 from .animatedSprite import AnimatedSprite, AnimState
 from .stateMachine import State, StateMachine
 from .particles import Particle, ParticleManager

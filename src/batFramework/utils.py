@@ -7,11 +7,13 @@ import json
 MAX_FONT_SIZE = 100
 MIN_FONT_SIZE = 8
 
-def move_points(delta, *points):
-    res = []
-    for point in points:
-        res.append((point[0] + delta[0], point[1] + delta[1]))
-    return res
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 
 class Direction(Enum):
@@ -34,12 +36,8 @@ class Layout(Enum):
 
 class Utils:
     pygame.font.init()
-
     FONTS = {}
-    
     tilesets = {}
-
-
 
     @staticmethod
     def get_path(path: str):
@@ -52,6 +50,7 @@ class Utils:
                 data = json.load(file)
             return data
         except FileNotFoundError:
+            print(f"File '{path}' not found")
             return None
 
     @staticmethod
@@ -64,29 +63,41 @@ class Utils:
             return False
             
     @staticmethod
-    def init_font(path:str):
-        Utils.load_font(Utils.get_path(path) if path else None,None)
-        if path is not None:
-            Utils.load_font(Utils.get_path(path),'')
+    def init_font(raw_path:str):
+            try :
+                if raw_path is not None:
+                    Utils.load_font(raw_path if raw_path else None,None)
+                Utils.load_font(raw_path)
+            except FileNotFoundError:
+                Utils.load_sysfont(raw_path)
+                Utils.load_sysfont(raw_path,None)
 
 
     @staticmethod
     def load_font(path:str,name:str=''):
-        if path is not None: path = Utils.get_path(path)
-        filename = os.path.basename(path).split('.')[0] if path is not None else None
-        if name != '' : filename = name
+        if path is not None: path = Utils.get_path(path) # convert path if given
+        filename = os.path.basename(path).split('.')[0] if path is not None else None # get filename if path is given, else None
+        if name != '' : filename = name # if name is not given, name is the filename
         Utils.FONTS[filename] = {}
+        # fill the dict 
         for size in range(MIN_FONT_SIZE, MAX_FONT_SIZE, 2):
             Utils.FONTS[filename][size] = pygame.font.Font(path,size=size)
+
+    def load_sysfont(font_name:str,key:str=''):
+        if key == '' : key = font_name
+        if pygame.font.match_font(font_name) is None: 
+            raise FileNotFoundError(f"Requested font '{font_namey}' was not found")
+        Utils.FONTS[font_name] = {}
+
+        for size in range(MIN_FONT_SIZE, MAX_FONT_SIZE, 2):
+            Utils.FONTS[key][size] = pygame.font.SysFont(font_name,size=size)  
+              
 
     @staticmethod
     def get_font(name:str|None=None,text_size:int=12) -> pygame.Font:
         if not name in Utils.FONTS: return None
         if not text_size in Utils.FONTS[name]: return None
         return Utils.FONTS[name][text_size]
-
-
-
 
     class Tileset:
         _flip_cache = {}  # {"tileset":tileset,"index","flipX","flipY"}
@@ -163,10 +174,11 @@ class Utils:
         return Utils.tilesets[name]
 
 
-class Singleton(type):
-    _instances = {}
+    
 
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
+
+def move_points(delta, *points):
+    res = []
+    for point in points:
+        res.append((point[0] + delta[0], point[1] + delta[1]))
+    return res

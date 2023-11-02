@@ -9,7 +9,7 @@ class Frame(Widget):
         self._border_radius:list[int] = [0] 
         self._outline : int = 0 
         self._outline_color : tuple[int,int,int] | str = (0,0,0,0) 
-        super().__init__()
+        super().__init__(True)
         self.set_size(width,height)
 
     def set_color(self,color:tuple[int,int,int]|str) -> "Frame":
@@ -27,10 +27,9 @@ class Frame(Widget):
             self._border_radius = [value]
         else:
             self._border_radius = value
-
-        # print(f"Set border radius : ",self._border_radius)
         self.build()
         return self
+        
     def set_outline_width(self,value:int) -> "Frame":
         self._outline = value
         self.build()
@@ -43,14 +42,14 @@ class Frame(Widget):
                 self.surface = self.surface.convert_alpha()
                 self.surface.fill((0,0,0,0))
 
-        self._build_shape()
         if self._border_radius == [0]:
             self._build_shape()    
             if self._outline : self._build_outline()
         else:
             self._build_rounded_shape()
             if self._outline : self._build_rounded_outline()
-
+        if self.parent :
+            self.parent.children_modified()
 
     def _build_shape(self)->None:
         self.surface.fill(self._color)
