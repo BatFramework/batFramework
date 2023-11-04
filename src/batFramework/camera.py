@@ -106,7 +106,7 @@ class Camera:
     def update(self, dt):
         if self.follow_point_func:
             target = self.follow_point_func()
-            self.rect.center = Vector2(self.rect.center).lerp(target, ((dt * 60) / 10))
+            self.rect.center = Vector2(self.rect.center).lerp(target, ((dt * 60) * 0.1))
 
     def draw(self, surface: pygame.Surface):
         # pygame.draw.circle(surface,bf.color.ORANGE,self.surface.get_rect().center,4)

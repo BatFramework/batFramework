@@ -115,8 +115,6 @@ class SceneManager:
         target_scene.on_enter()
 
 
-
-
     def process_event(self, event: pygame.Event):
         if self.transitions:
             return

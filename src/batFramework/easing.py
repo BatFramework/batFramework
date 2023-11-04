@@ -1,6 +1,7 @@
 from enum import Enum
 import pygame
 import batFramework as bf
+
 class Easing(Enum):
     EASE_IN     = (0.12, 0, 0.39, 0)
     EASE_OUT    = (0.61, 1, 0.88, 1)
@@ -11,8 +12,6 @@ class Easing(Enum):
 
     def __init__(self, *control_points):
         self.control_points = control_points
-
-
 
 class EasingAnimation(bf.Timer):
     _cache = {}
@@ -45,7 +44,7 @@ class EasingAnimation(bf.Timer):
         # if self.name == 0: print("UPDATING (callback) in easing")
         if self.update_callback: self.update_callback(self.value)
         return False
-        
+
     def end(self):
         # Call update 1 last time with the last value
 
@@ -54,7 +53,6 @@ class EasingAnimation(bf.Timer):
         if self.update_callback: self.update_callback(self.value)
         self.value =  0
         super().end() # sets elapsed_progress to 0
-
 
     def _process_value(self):
         p0, p1, p2, p3 = self.easing_function.control_points

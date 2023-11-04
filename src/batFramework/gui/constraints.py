@@ -9,7 +9,6 @@ class Constraint:
     def __init__(self,name="Constraint", priority=0):
         self.priority = priority
         self.name = name
-
     def set_priority(self, priority)->"Constraint":
         self.priority = priority
         return self
