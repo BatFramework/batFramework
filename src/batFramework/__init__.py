@@ -16,17 +16,6 @@ def init(
     ):
     global initialized
     if not initialized:
-        version_path = os.path.abspath(__file__)
-        version_path = version_path.split(os.path.basename(__file__))[0] + "version.json"
-        try:
-            with open(version_path, 'r') as file:
-                data = json.load(file)
-                ver = data["version"]
-        except FileNotFoundError:
-            print(f"File '{version_path}' not found")
-            exit(1)
-            
-        print(f"batFramework {ver}")
         pygame.init()
         pygame.display.set_caption(window_title)
 
