@@ -36,6 +36,7 @@ class Label(Shape):
     def to_string_id(self)->str:
         return f"Label({self._text})"
 
+
     def get_bounding_box(self):
         yield from super().get_bounding_box()
         if self._text_rect : yield self._text_rect.move(*self.rect.topleft)

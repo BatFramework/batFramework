@@ -79,5 +79,6 @@ class Button(Label,InteractiveWidget):
                 Button._cache[self.surface.get_size()] = hover_surf
             self.surface.blit(hover_surf,(0,0),special_flags = pygame.BLEND_ADD)
 
+
     def apply_contraints(self)->None:
         super().apply_contraints() 

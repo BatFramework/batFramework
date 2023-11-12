@@ -97,13 +97,13 @@ class Camera:
             and self.rect.bottom > rect.y
         )
 
+
     def transpose(self, rect: pygame.Rect | pygame.FRect) -> pygame.Rect | pygame.FRect:
-        # print(rect)
         x, y = round(rect.x - self.rect.left), round(rect.y - self.rect.top)
         return pygame.Rect(x, y, *rect.size)
 
     def convert_screen_to_world(self, x, y):
-        return x * self.zoom_factor + self.rect.x, y * self.zoom_factor + self.rect.y
+        return x / self.zoom_factor + self.rect.x, y / self.zoom_factor + self.rect.y
 
     def update(self, dt):
         if self.follow_point_func:

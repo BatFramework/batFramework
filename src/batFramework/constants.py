@@ -2,7 +2,6 @@ import pygame
 from enum import Enum
 
 
-
 class Constants:
     SCREEN = None
     RESOLUTION: tuple[int, int] = (1280,720)
@@ -51,7 +50,7 @@ class Constants:
 
 class Colors:
     LIGHT_CYAN = (179, 229, 252)
-    WET_BLUE = (52, 73, 94)
+    WASHED_BLUE = (52, 73, 94)
     RIVER_BLUE = (52, 152, 219)
     DARK_INDIGO = (40, 53, 147)
     LIGHT_BLUE = (3, 169, 244)
