@@ -9,16 +9,18 @@ class Camera:
         self.flags: int = flags
         # self.blit_special_flags : int =pygame.BLEND_PREMULTIPLIED if (flags & pygame.SRCALPHA) else 0
         self.blit_special_flags: int = pygame.BLEND_ALPHA_SDL2
-        self._clear_color = (0, 0, 0, 0)
+        self._clear_color : pygame.Color = pygame.Color(0, 0, 0, 0)
         self.zoom_factor = 1
         self.cached_surfaces: dict[float, pygame.Surface] = {}
-        self.surface: pygame.Surface = None
+        self.surface: pygame.Surface = pygame.Surface((0,0))
         self.follow_point_func = None
         self.max_zoom = 2
         self.min_zoom = 0.1
         self.zoom(1)
 
-    def set_clear_color(self, color: pygame.Color):
+    def set_clear_color(self, color: pygame.Color|tuple):
+        if not isinstance(color,pygame.Color):
+            color = pygame.Color(color)
         self._clear_color = color
 
     def set_max_zoom(self,value:float):

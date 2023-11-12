@@ -1,4 +1,8 @@
 from __future__ import annotations
+import re
+from typing import TYPE_CHECKING,Any
+if TYPE_CHECKING:
+    from .manager import Manager
 import pygame
 import batFramework as bf
 
@@ -10,7 +14,7 @@ class Scene:
         self._visible = False
         self._world_entities: list[bf.Entity] = []
         self._hud_entities: list[bf.Entity] = []
-        self.manager: bf.SceneManager = None
+        self.manager: Manager | None = None
         self.actions: bf.ActionContainer = bf.ActionContainer()
         self.camera: bf.Camera = bf.Camera()
         self.scene_index = 0
@@ -22,7 +26,7 @@ class Scene:
             self.camera.set_clear_color((0, 0, 0))
             self.hud_camera.set_clear_color((0, 0, 0, 0))
 
-        self.root = bf.Root()
+        self.root  : bf.Root = bf.Root()
         self.root.set_center(*self.hud_camera.get_center())
         self.add_hud_entity(self.root)
         self.blit_calls = 0
@@ -33,29 +37,31 @@ class Scene:
     def get_scene_index(self):
         return self.scene_index
 
-    def set_sharedVar(self, name, value):
+    def set_sharedVar(self, name, value)->bool:
+        if not self.manager : return False 
         return self.manager.set_sharedVar(name, value)
 
-    def get_sharedVar(self, name):
+    def get_sharedVar(self, name)->Any:
+        if not self.manager : return False 
         return self.manager.get_sharedVar(name)
 
     def do_when_added(self):
         pass
 
-    def set_clear_color(self, color: pygame.Color):
+    def set_clear_color(self, color: pygame.Color|tuple):
         self.camera.set_clear_color(color)
         # self.hud_camera.set_clear_color(color)
 
-    def set_manager(self, manager_link: bf.SceneManager):
+    def set_manager(self, manager_link: Manager):
         self.manager = manager_link
 
     def set_visible(self, value: bool):
         self._visible = value
-        self.manager.update_scene_states()
+        if self.manager : self.manager.update_scene_states()
 
     def set_active(self, value):
         self._active = value
-        self.manager.update_scene_states()
+        if self.manager : self.manager.update_scene_states()
 
     def is_active(self) -> bool:
         return self._active
@@ -158,12 +164,13 @@ class Scene:
         if not entity.visible:
             return
         for data in entity.get_bounding_box():
-            if isinstance(data,tuple):
-                rect = data[0]
-                color = data[1]
-            else:
+            if isinstance(data,pygame.FRect):
                 rect = data
                 color = entity._debug_color
+            else:
+                rect = data[0]
+                color = data[1]
+            if not isinstance(color,pygame.Color): color = pygame.Color(color)
 
             pygame.draw.rect(camera.surface, color , camera.transpose(rect), 1)
 
@@ -179,14 +186,15 @@ class Scene:
         total_blit_calls += sum(
             entity.draw(self.camera) for entity in self._world_entities
         )
-        if self.manager._debugging == 2:
+
+        if self.manager and  self.manager._debugging == 2:
             for entity in self._world_entities:
                 self.debug_entity(entity, self.camera)
 
         total_blit_calls += sum(
             entity.draw(self.hud_camera) for entity in self._hud_entities
         )
-        if self.manager._debugging == 2:
+        if  self.manager and  self.manager._debugging == 2:
             for entity in self._hud_entities:
                 self.debug_entity(entity, self.hud_camera)
 

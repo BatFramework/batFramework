@@ -1,8 +1,9 @@
 import pygame
 import batFramework as bf
-
+from typing import Any
 
 class Entity:
+    instance_num = 0
     def __init__(
         self,
         size : None|tuple[int,int]=None,
@@ -23,18 +24,19 @@ class Entity:
             self.surface = self.surface.convert_alpha()
             self.surface.fill((0,0,0,0))
 
-        self.uid: str | None= None
+        self.uid: Any = Entity.instance_num
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
         self.rect = pygame.FRect(0, 0, *size)
         
         self.visible = True
-        self._debug_color = bf.color.DARK_RED
+        self._debug_color : tuple = bf.color.DARK_RED
         self.render_order = 0
         self.z_depth = 1
+        Entity.instance_num += 1
 
     def get_bounding_box(self):
-        yield self.rect
+        yield (self.rect,self._debug_color)
 
     def set_debug_color(self, color):
         self._debug_color = color

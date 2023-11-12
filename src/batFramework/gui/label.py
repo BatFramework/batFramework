@@ -1,14 +1,13 @@
 import batFramework as bf
 import pygame
-from .frame import Frame
+from .shape import Shape
+from typing import Self
 
-class Label(Frame):
+class Label(Shape):
     def __init__(self,text:str) -> None:   
         self._text = ""
         # Enable/Disable antialiasing
         self._antialias : bool = True
-        # Horizontal and vertical padding between text and frame
-        self._padding : tuple[int,int] = (10,10)
         
         self._text_size = bf.const.DEFAULT_TEXT_SIZE
         
@@ -21,11 +20,18 @@ class Label(Frame):
         self._text_rect = None
         # text surface (result of font.render)
         self._text_surface : pygame.Surface | None= None 
-        super().__init__(0,0)
+        super().__init__(width=0,height=0)
+        self.set_padding((10,4))
+        self.set_debug_color("blue")
         self.set_color("white")
         self.set_autoresize(True)
         self.set_font(force=True)
         self.set_text(text)
+
+    def set_text_color(self,color)->Self:
+        self._text_color = color
+        self.build()
+        return self
 
     def to_string_id(self)->str:
         return f"Label({self._text})"
@@ -52,16 +58,6 @@ class Label(Frame):
     def get_text_size(self)-> int:
         return self._text_size
 
-    def set_padding(self,value:tuple[int,int])-> "Label":
-        if self._padding != value : return self
-        self._padding = value
-        self.build()
-        return self
-
-    def get_padding(self)->tuple[int,int]:
-        return self._padding
-
-
     def is_antialias(self)->bool:
         return self._antialias
 
@@ -79,8 +75,11 @@ class Label(Frame):
     def get_text(self)->str:
         return self._text
 
+
     def _build_text(self)-> None:
-        if self._font_object is None: return
+        if self._font_object is None:
+            print("No font :(")
+            return
         # render(text, antialias, color, bgcolor=None, wraplength=0) -> Surface
         self._text_surface = self._font_object.render(
             text        = self._text,
@@ -89,19 +88,22 @@ class Label(Frame):
             bgcolor     = self._color,
             wraplength  = 0
         )
-        self._text_rect = self._text_surface.get_frect(
-            center = self.rect.move(-self.rect.left,-self.rect.top).center
-        )
-        self.surface.blit(self._text_surface,self._text_rect)
-        
-        if self.autoresize:
-            # modify rect so it is the same size as text_rect, but still same center as before.
-            if self.rect.size != self._text_rect.inflate(*self._padding).size :
-                self.rect.size = self._text_rect.inflate(*self._padding).size
-                self.build()
+        self._text_rect = self._text_surface.get_frect()
 
+    def _build_layout(self)->None:
+        if self.autoresize:
+            if self.rect.size != self.inflate_rect_by_padding(self._text_rect).size :
+                self.set_size(
+                    self._text_rect.w + self.padding[0]+self.padding[2], 
+                    self._text_rect.h + self.padding[1]+self.padding[3] 
+                )
+                return
+        self._text_rect.center = self.get_content_rect_rel().center
+        self.surface.blit(self._text_surface,self._text_rect)
+                
     def build(self)->None:
         super().build()
+        if not self._font_object:return
         self._build_text()
-        self.apply_constraints()
-        if self.parent : self.parent.children_modified()
+        self._build_layout()
+

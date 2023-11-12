@@ -25,11 +25,10 @@ class Column(Layout):
         super().__init__()
         self.gap = gap
         self.shrink :bool = shrink
-
-
+        
     def arrange(self)->None:
-        if not self.parent : return
-        if self.shrink and self.parent.children:
+        if not self.parent or not self.parent.children : return 
+        if self.shrink:
             len_children = len(self.parent.children)
             parent_height = sum(c.rect.h for c in self.parent.children)
             parent_width = max(c.rect.w for c in self.parent.children)
@@ -42,12 +41,13 @@ class Column(Layout):
             if not c or c.width != parent_width : 
                 self.parent.add_constraint(ConstraintWidth(parent_width))
         current_y = self.parent.rect.top
+
         for child in self.parent.children:
+            child.set_position(self.parent.rect.x,current_y)
+            current_y += child.rect.h + self.gap
             for c in self.child_constraints:
                 if not child.has_constraint(c.name):
                     child.add_constraint(c)
-            child.set_position(self.parent.rect.x,current_y)
-            current_y += child.rect.h + self.gap
             
 class Row(Layout):
     def __init__(self, gap: int = 0, shrink: bool = False):
@@ -74,8 +74,8 @@ class Row(Layout):
 
         current_x = self.parent.rect.left
         for child in self.parent.children:
+            child.set_position(current_x,self.parent.rect.y)
+            current_x += child.rect.w + self.gap
             for c in self.child_constraints:
                 if not child.has_constraint(c.name):
                     child.add_constraint(c)
-            child.set_position(current_x,self.parent.rect.y)
-            current_x += child.rect.w + self.gap

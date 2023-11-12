@@ -1,3 +1,4 @@
+from typing import Any
 from enum import Enum
 import pygame
 
@@ -20,7 +21,7 @@ class Action:
         self._gamepad_axis_control = set()
         self._holding = set()
         self._unique = True
-        self.data = None
+        self.data : Any = None
 
     def set_unique(self, val: bool) -> None:
         """

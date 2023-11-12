@@ -9,7 +9,7 @@ class Root(InteractiveWidget):
         self.surface = None
         self.set_root()
         self.rect.size = pygame.display.get_surface().get_size()
-        self.focused : Widget = self
+        self.focused : InteractiveWidget = self
         self.hovered : Widget|None = self
         self.set_debug_color("purple")
 
@@ -19,13 +19,13 @@ class Root(InteractiveWidget):
     def get_focused(self)->Widget|None:
         return self.focused
 
-    def get_hovered(self)->Widget:
+    def get_hovered(self)->Widget|None:
         return self.hovered
          
     def to_string_id(self)->str:
         return "ROOT"
 
-    def focus_on(self,widget:Widget)->None:
+    def focus_on(self,widget:InteractiveWidget)->None:
         if self.focused is not None: 
             self.focused.on_lose_focus()
         if widget is None :

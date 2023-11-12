@@ -1,7 +1,7 @@
 from .widget import Widget
 
 class InteractiveWidget(Widget):
-    def __init__(self,*args):
+    def __init__(self,*args,**kwargs):
         super().__init__(convert_alpha = True)
         self.focusable = True
         self.is_focused : bool = False
