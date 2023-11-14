@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkbat_documentation=self.webpackChunkbat_documentation||[]).push([[6728],{9765:a=>{a.exports=JSON.parse('{"label":"hello","permalink":"/batFramework/blog/tags/hello","allTagsPath":"/batFramework/blog/tags","count":2,"unlisted":false}')}}]);

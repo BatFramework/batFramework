@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkbat_documentation=self.webpackChunkbat_documentation||[]).push([[6090],{1557:t=>{t.exports=JSON.parse('{"permalink":"/batFramework/blog/tags/facebook","page":1,"postsPerPage":10,"totalPages":1,"totalCount":1,"blogDescription":"Blog","blogTitle":"Blog"}')}}]);

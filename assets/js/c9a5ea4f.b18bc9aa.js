@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkbat_documentation=self.webpackChunkbat_documentation||[]).push([[9734],{2250:a=>{a.exports=JSON.parse('{"label":"docusaurus","permalink":"/batFramework/blog/tags/docusaurus","allTagsPath":"/batFramework/blog/tags","count":4,"unlisted":false}')}}]);
