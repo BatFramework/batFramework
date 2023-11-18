@@ -2,6 +2,12 @@ import batFramework as bf
 import pygame
 from .shape import Shape
 from typing import Self
+from enum import Enum
+
+class Align(Enum):
+    LEFT = 1
+    RIGHT = 2
+    CENTER = 3
 
 class Label(Shape):
     def __init__(self,text:str) -> None:   
@@ -10,6 +16,10 @@ class Label(Shape):
         self._antialias : bool = True
         
         self._text_size = bf.const.DEFAULT_TEXT_SIZE
+
+        self.auto_wraplength:bool = False
+
+        self._alignment : Align = Align.CENTER
         
         self._text_color : tuple[int,int,int]|str = "black"
         # font name (given when loaded by utils) to use for the text
@@ -36,6 +46,15 @@ class Label(Shape):
     def to_string_id(self)->str:
         return f"Label({self._text})"
 
+    def set_align(self,alignment:Align)->"Label":
+        self._alignment = alignment
+        self.build() 
+        return self
+
+    def set_auto_wraplength(self,val:bool)->"Label":
+        self.auto_wraplength = val
+        self.build()
+        return self
 
     def get_bounding_box(self):
         yield from super().get_bounding_box()
@@ -87,8 +106,9 @@ class Label(Shape):
             antialias   = self._antialias,
             color       = self._text_color,
             bgcolor     = self._color,
-            wraplength  = 0
+            wraplength  = int(self.get_content_width()) if self.auto_wraplength else 0 
         )
+        
         self._text_rect = self._text_surface.get_frect()
 
     def _build_layout(self)->None:
@@ -99,7 +119,15 @@ class Label(Shape):
                     self._text_rect.h + self.padding[1]+self.padding[3] 
                 )
                 return
-        self._text_rect.center = self.get_content_rect_rel().center
+        if self._alignment == Align.CENTER:
+            self._text_rect.center = self.get_content_rect_rel().center
+        elif self._alignment == Align.LEFT:
+            self._text_rect.topleft = self.get_content_rect_rel().topleft
+        elif self._alignment == Align.RIGHT:
+            self._text_rect.topright = self.get_content_rect_rel().topright
+        
+
+
         self.surface.blit(self._text_surface,self._text_rect)
                 
     def build(self)->None:
