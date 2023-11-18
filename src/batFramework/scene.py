@@ -221,6 +221,9 @@ class Scene:
         self.set_visible(True)
 
     def on_exit(self):
+        self.root.focus_on(None)
+        self.root.hover = None
+        self.root.build()
         self.set_active(False)
         self.set_visible(False)
         self.actions.hard_reset()
