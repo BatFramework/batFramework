@@ -12,7 +12,6 @@ class Frame(Shape):
         return "Frame"
 
     def children_modified(self)->None:
-        print(self.children)
         self.set_size(
             *self.inflate_rect_by_padding(self.rect.unionall(list(c.rect for c in self.children))).size
         )

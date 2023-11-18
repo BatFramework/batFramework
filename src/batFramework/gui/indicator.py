@@ -36,5 +36,7 @@ class ToggleIndicator(Indicator):
         self.build()
 
     def get_value(self)->bool:
-        return self.value
-# 
+        return self.value 
+
+    def top_at(self, x: float, y: float) -> "None|Widget":
+        return None

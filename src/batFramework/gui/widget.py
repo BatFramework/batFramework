@@ -31,9 +31,9 @@ class Widget(bf.Entity):
             self.rect.h - self.padding[1] - self.padding[3]
         )
         if isinstance(value,list) or isinstance(value,tuple):
-            if len(value) > 4 : return self
-            if any(v<0 for v in value) : return self
-            if len(value) == 2:
+            if len(value) > 4 : pass
+            elif any(v<0 for v in value) : pass
+            elif len(value) == 2:
                 self.padding = (value[0],value[1],value[0],value[1])
             else:
                 self.padding = (*value, *self.padding[len(value):])
@@ -44,6 +44,9 @@ class Widget(bf.Entity):
             old_raw_size[0] + self.padding[0] +  self.padding[2],
             old_raw_size[1] + self.padding[1] +  self.padding[3],
         )
+        if self.parent :
+            self.apply_constraints()
+            self.parent.children_modified()
         return self
         
     def inflate_rect_by_padding(self,rect:pygame.FRect)->pygame.FRect:
@@ -106,18 +109,14 @@ class Widget(bf.Entity):
         return next((c for c in self.constraints if c.name == name), None)
 
     def add_constraints(self,*constraints:Constraint)->Self:
-        for c in constraints:
-            self.add_constraint(c,False)
+        for constraint in constraints:
+            c = self.get_constraint(constraint.name)
+            if c is not None:
+                self.constraints.remove(c)
+            self.constraints.append(constraint)
         self.apply_constraints()
         return self
-        
-    def add_constraint(self,constraint:Constraint,apply:bool=True)->Self:
-        c = self.get_constraint(constraint.name)
-        if c is not None:
-            self.constraints.remove(c)
-        self.constraints.append(constraint)
-        self.apply_constraints()
-        return self
+
 
     def has_constraint(self,name:str)->bool:
         return any(c.name == name for c in self.constraints)
@@ -262,12 +261,14 @@ class Widget(bf.Entity):
             c.set_parent(self)
             c.set_parent_scene(self.parent_scene)
             c.apply_constraints()
+        self.apply_constraints()
         self.children_modified()
 
     def remove_child(self,child:Self)->None:
         self.children.remove(child)
         child.set_parent(None)
         child.set_parent_scene(None)
+        self.apply_constraints()
         self.children_modified()
 
 
@@ -275,6 +276,7 @@ class Widget(bf.Entity):
 
     # if return True -> don't propagate to siblings or parents
     def process_event(self, event: pygame.Event)->bool:
+    
         # First propagate to children
         for child in self.children:
             if child.process_event(event):
@@ -299,9 +301,10 @@ class Widget(bf.Entity):
         if not self.surface: return
         if self.surface.get_size() != self.get_size_int():
             self.surface = pygame.Surface(self.get_size_int())
-            if self.parent : self.parent.children_modified()
+            if self.parent : 
+                self.apply_constraints()
+                self.parent.children_modified()
 
     def children_modified(self)->None:
-        self.apply_constraints()
         if self.parent and not self.is_root:
             self.parent.children_modified()

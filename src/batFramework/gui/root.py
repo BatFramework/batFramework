@@ -53,8 +53,12 @@ class Root(InteractiveWidget):
 
     def update(self,dt:float)->None:
         super().update(dt)
+        old = self.hovered
         self.hovered = self.top_at(*pygame.mouse.get_pos()) if self.top_at(*pygame.mouse.get_pos()) else None
-        
-
+        if old == self.hovered:return
+        if isinstance(self.hovered,bf.Button):
+            pygame.mouse.set_cursor(*pygame.cursors.tri_left)
+        else:
+            pygame.mouse.set_cursor()
 
         

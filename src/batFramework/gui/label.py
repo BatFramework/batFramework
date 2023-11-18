@@ -79,7 +79,7 @@ class Label(Shape):
 
     def _build_text(self)-> None:
         if self._font_object is None:
-            print("No font :(")
+            print(f"No font for '{self.to_string_id()}' :(")
             return
         # render(text, antialias, color, bgcolor=None, wraplength=0) -> Surface
         self._text_surface = self._font_object.render(
@@ -107,4 +107,6 @@ class Label(Shape):
         if not self._font_object:return
         self._build_text()
         self._build_layout()
+        self.apply_constraints()
+
 

@@ -56,15 +56,18 @@ class Button(Label,InteractiveWidget):
             if root.hovered ==  self:
                 if not self.is_focused :  self.get_focus()
                 self.click()
+                res = True
         elif self.hover_action.is_active():
             root = self.get_root()
             if root:
                 if self.is_hovered and root.hovered != self:
                     self.is_hovered = False
                     self.build()
+                    res = True
                 if not self.is_hovered and root.hovered == self:
                     self.is_hovered = True
                     self.build()
+                    res = True
         return res
 
 

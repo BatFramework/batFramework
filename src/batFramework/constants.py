@@ -1,6 +1,15 @@
 import pygame
 from enum import Enum
+import sys, os
 
+
+if getattr(sys, 'frozen', False):
+    # If the application is run as a bundle, the PyInstaller bootloader
+    # extends the sys module by a flag frozen=True and sets the app 
+    # path into variable _MEIPASS'.
+    application_path = sys._MEIPASS
+else:
+    application_path = os.getcwd()
 
 class Constants:
     SCREEN = None
@@ -32,7 +41,7 @@ class Constants:
     @staticmethod
     def set_resource_path(path: str):
         print("set resource path :", path)
-        Constants.RESOURCE_PATH = path
+        Constants.RESOURCE_PATH = os.path.join(application_path,path)
 
     @staticmethod
     def set_fps_limit(value: int):
