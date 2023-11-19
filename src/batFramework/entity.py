@@ -29,10 +29,10 @@ class Entity:
         self.parent_scene: bf.Scene | None = None
         self.rect = pygame.FRect(0, 0, *size)
         
-        self.visible = True
+        self.visible :bool = True
         self._debug_color : tuple = bf.color.DARK_RED
-        self.render_order = 0
-        self.z_depth = 1
+        self.render_order :int = 0
+        self.z_depth :float = 1
         Entity.instance_num += 1
 
     def get_bounding_box(self):
@@ -82,7 +82,6 @@ class Entity:
 
     def remove_tag(self, *tags):
         self.tags = [tag for tag in self.tags if tag not in tags]
-        self.tags.sort()
 
     def has_tag(self, tag) -> bool:
         return tag in self.tags
@@ -113,11 +112,11 @@ class Entity:
 
     def draw(self, camera: bf.Camera) -> int:
         if not self.visible:
-            return False
+            return 0
         if not self.surface or not camera.intersects(self.rect):
-            return False
+            return 0
         camera.surface.blit(
             self.surface,
             tuple(round(i * self.z_depth) for i in camera.transpose(self.rect).topleft),
         )
-        return True
+        return 1

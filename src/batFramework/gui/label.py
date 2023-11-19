@@ -12,6 +12,9 @@ class Align(Enum):
 class Label(Shape):
     def __init__(self,text:str) -> None:   
         self._text = ""
+
+        self._resized_flag : bool = False
+
         # Enable/Disable antialiasing
         self._antialias : bool = True
         
@@ -33,7 +36,7 @@ class Label(Shape):
         super().__init__(width=0,height=0)
         self.set_padding((10,4))
         self.set_debug_color("blue")
-        self.set_color("white")
+        self.set_color(bf.color.CLOUD_WHITE)
         self.set_autoresize(True)
         self.set_font(force=True)
         self.set_text(text)
@@ -118,6 +121,7 @@ class Label(Shape):
                     self._text_rect.w + self.padding[0]+self.padding[2], 
                     self._text_rect.h + self.padding[1]+self.padding[3] 
                 )
+                self._resized_flag  = True
                 return
         if self._alignment == Align.CENTER:
             self._text_rect.center = self.get_content_rect_rel().center
@@ -125,7 +129,11 @@ class Label(Shape):
             self._text_rect.topleft = self.get_content_rect_rel().topleft
         elif self._alignment == Align.RIGHT:
             self._text_rect.topright = self.get_content_rect_rel().topright
-        
+        if self._resized_flag : 
+            self._resized_flag = False
+            if self.parent : self.parent.children_modified()
+
+
 
 
         self.surface.blit(self._text_surface,self._text_rect)

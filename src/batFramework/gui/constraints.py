@@ -181,7 +181,7 @@ class ConstraintAnchorBottom(Constraint):
         super().__init__(name="anchor_bottom")
         
     def evaluate(self, parent_widget,child_widget):
-        return  child_widget.rect.bottom == parent_widget.rect.bottom
+        return  child_widget.rect.bottom == parent_widget.get_content_bottom()
         
     def apply_constraint(self,parent_widget,child_widget):
         if not self.evaluate(parent_widget,child_widget):
@@ -193,12 +193,37 @@ class ConstraintAnchorTopRight(Constraint):
         super().__init__(name="anchor_topright")
         
     def evaluate(self, parent_widget,child_widget):
-        return  child_widget.rect.topright == parent_widget.rect.topright
+        return  child_widget.rect.topright == parent_widget.get_content_rect().topright
         
     def apply_constraint(self,parent_widget,child_widget):
         if not self.evaluate(parent_widget,child_widget):
             child_widget.set_position(parent_widget.get_content_right()-child_widget.rect.w, parent_widget.get_content_top())
 
 
+
+class ConstraintAnchorRight(Constraint):
+    def __init__(self):
+        super().__init__(name="anchor_right")
+        
+    def evaluate(self, parent_widget,child_widget):
+        return  child_widget.rect.right == parent_widget.get_content_right()
+        
+    def apply_constraint(self,parent_widget,child_widget):
+        if not self.evaluate(parent_widget,child_widget):
+            child_widget.set_position(parent_widget.get_content_right()-child_widget.rect.w, child_widget.rect.top)
+
+
+
+
+class ConstraintAnchorLeft(Constraint):
+    def __init__(self):
+        super().__init__(name="anchor_left")
+        
+    def evaluate(self, parent_widget,child_widget):
+        return  child_widget.rect.left == parent_widget.get_content_left()
+        
+    def apply_constraint(self,parent_widget,child_widget):
+        if not self.evaluate(parent_widget,child_widget):
+            child_widget.set_position(parent_widget.get_content_left(), child_widget.rect.top)
 
 

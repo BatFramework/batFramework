@@ -107,11 +107,15 @@ class Scene:
         self.actions.add_action(*action)
 
     def get_by_tags(self, *tags):
-        return [
+        res =  [
             entity
             for entity in self._world_entities + self._hud_entities
             if any(entity.has_tag(t) for t in tags)
         ]
+        res.extend(
+            list(self.root.get_by_tags(*tags))
+        )
+        return res
 
     def get_by_uid(self, uid) -> bf.Entity | None:
         return next(
@@ -122,6 +126,8 @@ class Scene:
             ),
             None,
         )
+        # TODO
+        # ADD FOR WIDGETS TOO TOO
 
     # called before process event
     def do_early_process_event(self, event: pygame.Event) -> bool:
@@ -139,11 +145,16 @@ class Scene:
         if self.do_early_process_event(event):
             return
         self.actions.process_event(event)
+        self.do_handle_actions()
         self.do_handle_event(event)
         for entity in self._world_entities + self._hud_entities:
             if entity.process_event(event):
                 break
+        
         self.actions.reset()
+
+    def do_handle_actions(self)->None:
+        pass
 
     def do_handle_event(self, event: pygame.Event):
         """called inside process_event but before resetting the scene's action container and propagating event to child entities of the scene"""
@@ -163,6 +174,7 @@ class Scene:
         # return
         if not entity.visible:
             return
+        # print(entity,entity.visible)
         for data in entity.get_bounding_box():
             if isinstance(data,pygame.FRect):
                 rect = data
@@ -175,27 +187,36 @@ class Scene:
             pygame.draw.rect(camera.surface, color , camera.transpose(rect), 1)
 
     def draw(self, surface: pygame.Surface):
-        self._world_entities.sort(key=lambda e: (e.z_depth,e.render_order))
-        self._hud_entities.sort(key=lambda e: (e.z_depth,e.render_order))
+        self._world_entities.sort(key=lambda e: (e.z_depth, e.render_order))
+        self._hud_entities.sort(key=lambda e: (e.z_depth, e.render_order))
 
         total_blit_calls = 0
         self.camera.clear()
         self.hud_camera.clear()
 
+        debug_2_or_3 = self.manager and self.manager._debugging in [2, 3]
+        debug_3 = debug_2_or_3 and self.manager._debugging == 3
 
         total_blit_calls += sum(
             entity.draw(self.camera) for entity in self._world_entities
+            if not (debug_2_or_3 and ((debug_3 and not entity.visible) or not debug_3))
         )
 
-        if self.manager and  self.manager._debugging == 2:
+        if debug_2_or_3:
             for entity in self._world_entities:
+                if debug_3 and not entity.visible:
+                    continue
                 self.debug_entity(entity, self.camera)
 
         total_blit_calls += sum(
             entity.draw(self.hud_camera) for entity in self._hud_entities
+            if not (debug_2_or_3 and ((debug_3 and not entity.visible) or not debug_3))
         )
-        if  self.manager and  self.manager._debugging == 2:
+
+        if debug_2_or_3:
             for entity in self._hud_entities:
+                if debug_3 and not entity.visible:
+                    continue
                 self.debug_entity(entity, self.hud_camera)
 
 
@@ -219,11 +240,12 @@ class Scene:
     def on_enter(self):
         self.set_active(True)
         self.set_visible(True)
+        self.root.build()
+
 
     def on_exit(self):
         self.root.focus_on(None)
         self.root.hover = None
-        self.root.build()
         self.set_active(False)
         self.set_visible(False)
         self.actions.hard_reset()

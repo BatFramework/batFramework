@@ -43,6 +43,7 @@ from .constants import Colors as color
 from .constants import Axis as axis
 from .utils import Singleton
 from .utils import Utils as utils
+from .tileset import Tileset
 from .time import Time, Timer
 from .cutscene import Cutscene,CutsceneManager
 from .cutsceneBlocks import *

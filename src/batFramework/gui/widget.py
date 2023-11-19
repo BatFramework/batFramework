@@ -151,6 +151,12 @@ class Widget(bf.Entity):
                 raise ValueError(f"[WARNING] Following constraints for {self.to_string()} were not satisfied : \n\t{';'.join([c.to_string() for c in unsatisfied])}")
 
     # GETTERS
+    def get_by_tags(self,*tags):
+        for c in self.children:
+            yield from c.get_by_tags(*tags)
+        if any(self.has_tag(t) for t in tags):
+            yield self
+
     def get_root(self)-> Self|Root|None:
         if self.is_root: return self
         if self.parent_scene is not None : return self.parent_scene.root
@@ -230,6 +236,7 @@ class Widget(bf.Entity):
     def set_size(self, width : float, height: float) -> Self:
         self.rect.size = (width,height)
         self.build()
+
         return self
         
 
@@ -301,10 +308,14 @@ class Widget(bf.Entity):
         if not self.surface: return
         if self.surface.get_size() != self.get_size_int():
             self.surface = pygame.Surface(self.get_size_int())
+            self.apply_constraints()
             if self.parent : 
-                self.apply_constraints()
                 self.parent.children_modified()
 
+    def build_all(self)->None:
+        for child in self.children:
+            child.build_all()
+        self.build()
     def children_modified(self)->None:
         if self.parent and not self.is_root:
             self.parent.children_modified()
