@@ -12,3 +12,4 @@ test/
 HalloweenGamejam/
 src/batframework.egg-info
 new/
+build_version.sh
