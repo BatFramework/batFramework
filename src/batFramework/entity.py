@@ -35,6 +35,10 @@ class Entity:
         self.z_depth :float = 1
         Entity.instance_num += 1
 
+    def set_render_order(self,render_order:int):
+        self.render_order = render_order
+        return self
+
     def get_bounding_box(self):
         yield (self.rect,self._debug_color)
 
@@ -43,6 +47,7 @@ class Entity:
 
     def set_visible(self, value: bool):
         self.visible = value
+        return self
 
     def set_parent_scene(self, scene):
         self.parent_scene = scene
@@ -56,6 +61,12 @@ class Entity:
     def set_position(self, x, y):
         self.rect.topleft = (x, y)
         return self
+
+    def get_position(self)->tuple:
+        return self.rect.topleft
+
+    def get_center(self)->tuple:
+        return self.rect.center
 
     def set_x(self,x):
         self.rect.x = x
@@ -73,18 +84,21 @@ class Entity:
         self.uid = uid
         return self
 
-    def add_tag(self, *tags):
+    def add_tags(self, *tags):
         for tag in tags:
             if tag not in self.tags:
                 self.tags.append(tag)
         self.tags.sort()
         return self
 
-    def remove_tag(self, *tags):
+    def remove_tags(self, *tags):
         self.tags = [tag for tag in self.tags if tag not in tags]
 
-    def has_tag(self, tag) -> bool:
-        return tag in self.tags
+    def has_tags(self, *tags) -> bool:
+        return all(tag in self.tags for tag in tags)
+
+    def get_tags(self)->list[str]:
+        return self.tags
 
     def process_event(self, event: pygame.Event)->bool:
         """
