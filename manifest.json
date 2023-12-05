@@ -1,0 +1,24 @@
+{
+    "short_name": "BatFramework",
+    "name": "BatFramework Documentation",
+    "icons": [
+      {
+        "src": "./img/docusaurus.png",
+        "type": "image/png",
+        "sizes": "200x200"
+      }
+    ],
+    "start_url": "./index.html",
+    "background_color": "#3367D6",
+    "display": "standalone",
+    "scope": "./",
+    "theme_color": "#3367D6",
+    "description": "Application framework for building web applications",
+    "related_application" : [
+      {
+        "platform": "webapp",
+        "url": "https://https://turanbaturay.github.io/batFramework/manifest.json"
+      }
+    ]
+  }
+  
