@@ -18,7 +18,7 @@ class BaseTransition:
         self.duration = duration
         self.index = 0
 
-    def set_scene_index(self,index):
+    def set_scene_index(self, index):
         self.index = index
 
     def set_source_name(self, name):
@@ -56,19 +56,21 @@ class FadeColorTransition(BaseTransition):
         self.color_surf.fill(color)
         self.ease_out = bf.EasingAnimation(
             easing_function=bf.Easing.EASE_IN,
-            duration=(duration-color_duration)//2,
-            update_callback = lambda x: self.color_surf.set_alpha(int(255 - (255 * x))),
-            end_callback=lambda: self.set_ended(True))
+            duration=(duration - color_duration) // 2,
+            update_callback=lambda x: self.color_surf.set_alpha(int(255 - (255 * x))),
+            end_callback=lambda: self.set_ended(True),
+        )
 
         self.color_timer = bf.Timer(
-            duration=color_duration,
-            end_callback=lambda: self.set_state("out"))
+            duration=color_duration, end_callback=lambda: self.set_state("out")
+        )
         self.ease_in = bf.EasingAnimation(
             easing_function=bf.Easing.EASE_IN,
-            duration=(duration-color_duration)//2,
+            duration=(duration - color_duration) // 2,
             update_callback=lambda x: self.color_surf.set_alpha(int(255 * x)),
             # update_callback=lambda x: print(x),
-            end_callback=lambda: self.set_state("color"))
+            end_callback=lambda: self.set_state("color"),
+        )
         self.state = None
 
         self.state = "in"
@@ -98,10 +100,16 @@ class FadeColorTransition(BaseTransition):
 class FadeTransition(BaseTransition):
     def __init__(self, source_surf, dest_surf, duration=500) -> None:
         super().__init__(source_surf, dest_surf)
-        self.anim = bf.EasingAnimation(None,bf.Easing.EASE_IN_OUT,duration,self.update_surface,lambda : self.set_ended(True))
+        self.anim = bf.EasingAnimation(
+            None,
+            bf.Easing.EASE_IN_OUT,
+            duration,
+            self.update_surface,
+            lambda: self.set_ended(True),
+        )
         self.anim.start()
 
-    def update_surface(self,progress):
+    def update_surface(self, progress):
         self.source.set_alpha(int(255 - (255 * progress)))
         self.dest.set_alpha(int(255 * progress))
 
@@ -141,8 +149,8 @@ class SlideTransition(BaseTransition):
         self.anim = bf.EasingAnimation(
             easing_function=easing,
             duration=duration,
-            update_callback =lambda x: self.update_offset(self.offset.lerp((0, 0), x)),
-            end_callback =lambda: self.set_ended(True),
+            update_callback=lambda x: self.update_offset(self.offset.lerp((0, 0), x)),
+            end_callback=lambda: self.set_ended(True),
         )
         self.anim.start()
 

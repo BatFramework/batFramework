@@ -12,20 +12,21 @@ class Action:
         Args:
             name (str): The name of the action.
         """
-        self._name = name
-        self._active = False
-        self._type = ActionType.INSTANTANEOUS
-        self._key_control = set()
-        self._mouse_control = set()
-        self._gamepad_button_control = set()
-        self._gamepad_axis_control = set()
+        self._name :str= name
+        self._active :bool= False
+        self._type :ActionType = ActionType.INSTANTANEOUS
+        self._key_control : set= set()       
+        self._mouse_control :set = set()
+        self._gamepad_button_control :set = set()
+        self._gamepad_axis_control :set = set()
         self._holding = set()
         self._unique = True
-        self.data : Any = None
+        self.data: Any = None
 
     def set_unique(self, val: bool) -> None:
         """
         Set whether this action is unique (exclusive).
+        When in an action Container, unique actions -when active - break the propagation of their event to other actions.
 
         Args:
             val (bool): True if the action is unique, False otherwise.
@@ -51,7 +52,7 @@ class Action:
         self._active = value
         self._holding = set()
 
-    def add_key_control(self, *keys) -> 'Action':
+    def add_key_control(self, *keys) -> "Action":
         """
         Add key controls to the action.
 
@@ -64,7 +65,26 @@ class Action:
         self._key_control.update(keys)
         return self
 
-    def add_mouse_control(self, *mouse_buttons) -> 'Action':
+    def remove_key_control(self, *keys:int) -> "Action":
+        """
+        Remove key controls to the action.
+
+        Args:
+            *keys (int): Key codes to control this action.
+
+        Returns:
+            Action: The updated Action object for method chaining.
+        """
+        self._key_control = self._key_control - set(keys)
+        return self
+
+    def replace_key_control(self, key, new_key) -> "Action":
+        if not key in self._key_control : return self
+        self.remove_key_control(key)
+        self.add_key_control(new_key)
+        return self
+
+    def add_mouse_control(self, *mouse_buttons:int) -> "Action":
         """
         Add mouse control to the action.
 
@@ -86,7 +106,7 @@ class Action:
         """
         return self._name
 
-    def set_continuous(self) -> 'Action':
+    def set_continuous(self) -> "Action":
         """
         Set the action type to continuous.
 
@@ -106,7 +126,7 @@ class Action:
         """
         return self._type == ActionType.CONTINUOUS
 
-    def set_instantaneous(self) -> 'Action':
+    def set_instantaneous(self) -> "Action":
         """
         Set the action type to instantaneous.
 
@@ -126,7 +146,7 @@ class Action:
         """
         return self._type == ActionType.INSTANTANEOUS
 
-    def set_holding(self) -> 'Action':
+    def set_holding(self) -> "Action":
         """
         Set the action type to holding.
 
@@ -145,9 +165,14 @@ class Action:
         """
         return self._type == ActionType.HOLDING
 
-    def process_update(self,event:pygame.Event)->None:
-        if self.is_active() and event.type == pygame.MOUSEMOTION and  self.is_holding_type() and pygame.MOUSEMOTION in self._mouse_control:
-            self.data = {"pos":event.pos,"rel":event.rel}
+    def process_update(self, event: pygame.Event) -> None:
+        if (
+            self.is_active()
+            and event.type == pygame.MOUSEMOTION
+            and self.is_holding_type()
+            and pygame.MOUSEMOTION in self._mouse_control
+        ):
+            self.data = {"pos": event.pos, "rel": event.rel}
 
     def process_activate(self, event: pygame.event.Event) -> bool:
         """
@@ -205,10 +230,7 @@ class Action:
                 if not self._holding:
                     self._active = False
                     return True
-            elif (
-                event.type == pygame.MOUSEMOTION
-                and event.type in self._mouse_control
-            ):
+            elif event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
                 self.value = None
                 if event.type in self._holding:
                     self._holding.remove(event.type)

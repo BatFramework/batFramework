@@ -1,5 +1,5 @@
 import batFramework as bf
-from .cutscene import Cutscene,CutsceneManager
+from .cutscene import Cutscene, CutsceneManager
 
 
 # Define the base CutsceneBlock class
@@ -17,18 +17,18 @@ class CutsceneBlock:
         self.ended = False
         self.started = False
 
-    def get_scene_at(self,index):
+    def get_scene_at(self, index):
         return bf.CutsceneManager().manager._scenes[index]
 
-    def set_scene(self,name,index=0):
-        return CutsceneManager().manager.set_scene(name,index)
-    
+    def set_scene(self, name, index=0):
+        return CutsceneManager().manager.set_scene(name, index)
+
     def get_current_scene(self):
         return CutsceneManager().manager.get_current_scene()
-    
-    def get_scene(self,name):
+
+    def get_scene(self, name):
         return CutsceneManager().manager.get_scene(name)
-    
+
     # Set the parent cutscene for this block
     def set_parent_cutscene(self, parent):
         """
@@ -152,7 +152,9 @@ class SceneTransitionBlock(CutsceneBlock):
         self.duration = duration
         self.kwargs = kwargs
         # Timer to handle the end of the transition
-        self.timer = bf.Timer(name = "scene_transition_block",duration=duration, end_callback=self.end)
+        self.timer = bf.Timer(
+            name="scene_transition_block", duration=duration, end_callback=self.end
+        )
 
     # Start the scene transition block
     def start(self):

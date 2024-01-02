@@ -1,15 +1,15 @@
-import pygame 
+import pygame
 from .utils import Utils
+
 
 class Tileset:
     _tilesets = {}
     _flip_cache = {}  # {"tileset":tileset,"index","flipX","flipY"}
 
-    def __init__(self, source: pygame.Surface|str, tilesize) -> None:
-
-        if isinstance(source,str):
+    def __init__(self, source: pygame.Surface | str, tilesize) -> None:
+        if isinstance(source, str):
             source = pygame.image.load(Utils.get_path(source)).convert_alpha()
-            
+
         self.tile_dict = {}
         self.surface = source
         self.tile_size = tilesize
@@ -48,13 +48,11 @@ class Tileset:
         return self.tile_dict[(x, y)]
 
     @staticmethod
-    def load_tileset(path: str, name: str, tilesize)->"Tileset":
+    def load_tileset(path: str, name: str, tilesize) -> "Tileset":
         if name in Tileset._tilesets:
             return Tileset._tilesets[name]
         else:
-            img = pygame.image.load(
-                Utils.get_path(path)
-            ).convert_alpha()
+            img = pygame.image.load(Utils.get_path(path)).convert_alpha()
             tileset = Tileset(img, tilesize)
             Tileset._tilesets[name] = tileset
             return tileset

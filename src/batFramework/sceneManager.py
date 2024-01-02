@@ -2,7 +2,6 @@ import batFramework as bf
 import pygame
 
 
-
 class SceneManager:
     def __init__(self, *initial_scenes: bf.Scene) -> None:
         self._debugging = 0
@@ -13,7 +12,7 @@ class SceneManager:
         self.set_sharedVar("in_cutscene", False)
 
         self._scenes: list[bf.Scene] = list(initial_scenes)
-        for index,s in enumerate(self._scenes):
+        for index, s in enumerate(self._scenes):
             s.set_manager(self)
             s.set_scene_index(index)
             s.do_when_added()
@@ -22,7 +21,7 @@ class SceneManager:
 
     def print_status(self):
         print("-" * 40)
-        print([(s._name, s._active, s._visible,s.scene_index) for s in self._scenes])
+        print([(s._name, s._active, s._visible, s.scene_index) for s in self._scenes])
         print(f"[Debugging] = {self._debugging}")
         print("---SHARED VARIABLES---")
         _ = [
@@ -39,11 +38,11 @@ class SceneManager:
         if name not in self.sharedVarDict:
             return None
         return self.sharedVarDict[name]
-    
-    def get_current_scene_name(self)-> str:
-        return self._scenes[0].name
-    
-    def get_current_scene(self)->bf.Scene:
+
+    def get_current_scene_name(self) -> str:
+        return self._scenes[0].get_name()
+
+    def get_current_scene(self) -> bf.Scene:
         return self._scenes[0]
 
     def update_scene_states(self):
@@ -72,19 +71,24 @@ class SceneManager:
 
     def transition_to_scene(self, dest_scene_name, transition, **kwargs):
         self.set_scene(dest_scene_name)
-        
-    def set_scene(self, name,index=0):
-        if len(self._scenes)==0 or not self.has_scene(name) or index>=len(self._scenes):return
+
+    def set_scene(self, name, index=0):
+        if (
+            len(self._scenes) == 0
+            or not self.has_scene(name)
+            or index >= len(self._scenes)
+        ):
+            return
 
         target_scene = self.get_scene(name)
+        if not target_scene : return
         old_scene = self._scenes[index]
-        #switch
+        # switch
         old_scene.on_exit()
         self.remove_scene(name)
-        self._scenes.insert(index,target_scene)
-        _ = [s.set_scene_index(i) for i,s in enumerate(self._scenes)]
+        self._scenes.insert(index, target_scene)
+        _ = [s.set_scene_index(i) for i, s in enumerate(self._scenes)]
         target_scene.on_enter()
-
 
     def process_event(self, event: pygame.Event):
         keys = pygame.key.get_pressed()

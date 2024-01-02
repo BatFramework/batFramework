@@ -44,6 +44,7 @@ class StateMachine:
                 self.current_state.on_exit()
             self.current_state = self.states[state_name]
             self.current_state.on_enter()
+
     def get_current_state(self) -> State:
         return self.current_state
 
