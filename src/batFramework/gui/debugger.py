@@ -55,7 +55,7 @@ class Debugger(Label):
     def update(self, dt: float) -> None:
         if not self.parent_scene:
             return
-        if self.parent_scene.get_sharedVar("is_debugging_func")() != 1:
+        if self.parent_scene.get_sharedVar("debugging_mode") not in [1,3]:
             self.set_visible(False)
             return
         self.set_visible(True)
@@ -92,6 +92,6 @@ class BasicDebugger(Debugger):
                 *pygame.mouse.get_pos())
             ),
         )
-        self.add_dynamic_data(
-            "Entities", lambda: str(len(parent_scene._world_entities))
-        )
+        self.add_dynamic_data("W. Ent.",lambda : parent_scene.get_world_entity_count())
+        self.add_dynamic_data("H. Ent.",lambda : parent_scene.get_hud_entity_count())
+        

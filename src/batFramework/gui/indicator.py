@@ -30,6 +30,8 @@ class ToggleIndicator(Indicator):
     def __init__(self, default_value: bool) -> None:
         self.value: bool = default_value
         super().__init__(20, 20)
+
+        #TODO aspect ratio would be good right about here
         # self.add_constraint(ConstraintAspectRatio(1))
 
     def set_value(self, value) -> None:

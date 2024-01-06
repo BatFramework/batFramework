@@ -82,3 +82,4 @@ class Button(Label, InteractiveWidget):
 
     def apply_contraints(self) -> None:
         super().apply_constraints()
+

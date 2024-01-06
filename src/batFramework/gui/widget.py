@@ -53,6 +53,7 @@ class Widget(bf.Entity):
             self.parent.children_modified()
         return self
 
+
     def inflate_rect_by_padding(self, rect: pygame.FRect) -> pygame.FRect:
         return pygame.FRect(
             rect[0] - self.padding[0],
@@ -60,6 +61,8 @@ class Widget(bf.Entity):
             rect[2] + self.padding[0] + self.padding[2],
             rect[3] + self.padding[1] + self.padding[3],
         )
+    def get_min_required_size(self)->tuple[float,float]:
+        return self.rect.size
 
     def get_content_left(self) -> float:
         return self.rect.left + self.padding[0]
@@ -126,10 +129,9 @@ class Widget(bf.Entity):
         return any(c.name == name for c in self.constraints)
 
     def apply_all_constraints(self) -> None:
-        # print("APPLY ALL CONSTRAINTS IN ",self.to_string())
-        self.apply_constraints()
         for child in self.children:
             child.apply_all_constraints()
+        self.apply_constraints()
 
     def apply_constraints(self) -> None:
         if not self.parent:
@@ -164,6 +166,15 @@ class Widget(bf.Entity):
             yield from c.get_by_tags(*tags)
         if any(self.has_tags(t) for t in tags):
             yield self
+
+    def count_children_recursive(self):
+        return 1 + sum(child.count_children_recursive() for child in self.children)
+
+
+    def propagate_function(self,function):
+        function(self)
+        for child in self.children:
+            child.propagate_function(function)
 
     def get_root(self) -> Root | None:
         if self.parent_scene is not None:
@@ -206,6 +217,7 @@ class Widget(bf.Entity):
             child.set_parent_scene(scene)
         return self
     def set_x(self, x: float) -> Self:
+        if x == self.rect.x : return self
         delta = x - self.rect.x
         self.rect.x = x
         for child in self.children:
@@ -214,15 +226,16 @@ class Widget(bf.Entity):
         return self
 
     def set_y(self, y: float) -> Self:
+        if y == self.rect.y : return self
         delta = y - self.rect.y
         self.rect.y = y
         for child in self.children:
             child.set_y(child.rect.y + delta)
         self.apply_constraints()
-
         return self
 
     def set_position(self, x: float, y: float) -> Self:
+        if self.rect.topleft == (x,y) : return self
         delta_x = x - self.rect.x
         delta_y = y - self.rect.y
         self.rect.topleft = x, y
@@ -232,6 +245,7 @@ class Widget(bf.Entity):
         return self
 
     def set_center(self, x: float, y: float) -> Self:
+        if self.rect.center == (x,y) : return self
         delta_x = x - self.rect.centerx
         delta_y = y - self.rect.centery
         self.rect.center = x, y
@@ -241,11 +255,11 @@ class Widget(bf.Entity):
         return self
 
     def set_size(self, width: float, height: float) -> Self:
+        if self.rect.size == (width,height) : return self
         self.rect.size = (width, height)
         self.build()
-        # self.apply_constraints()
-        # if self.parent:
-        #     self.parent.children_modified()
+        self.apply_constraints()
+        self.children_modified()
         return self
 
     # Other Methods
@@ -273,17 +287,20 @@ class Widget(bf.Entity):
             c.set_parent(self)
             c.set_parent_scene(self.parent_scene)
             c.do_when_added()
-            c.apply_constraints()
-        self.apply_constraints()
-        # self.children_modified()
+        self.apply_all_constraints()
+        self.children_modified()
 
     def remove_child(self, child: "Widget") -> None:
-        self.children.remove(child)
+        try : 
+            self.children.remove(child)
+        except ValueError:
+            return
         child.set_parent(None)
         child.do_when_removed()
         child.set_parent_scene(None)
-        self.apply_constraints()
-        # self.children_modified()
+        self.apply_all_constraints()
+        self.children_modified()
+
 
     # if return True -> don't propagate to siblings or parents
     def process_event(self, event: pygame.Event) -> bool:
@@ -297,6 +314,7 @@ class Widget(bf.Entity):
     def update(self, dt: float):
         for child in self.children:
             child.update(dt)
+        self.do_update(dt)
 
     def draw(self, camera: bf.Camera) -> int:
         return super().draw(camera) + sum(
@@ -315,10 +333,9 @@ class Widget(bf.Entity):
 
 
     def build_all(self) -> None:
+        self.build()
         for child in self.children:
             child.build_all()
-        self.build()
-
 
     def children_modified(self) -> None:
         if self.parent and not self.is_root:

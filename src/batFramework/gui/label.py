@@ -104,6 +104,10 @@ class Label(Shape):
     def get_text(self) -> str:
         return self._text
 
+
+    def get_min_required_size(self)->tuple[float,float]:
+        return (0,0) if not self._font_object else self.inflate_rect_by_padding(pygame.FRect(0,0,*self._font_object.size(self._text))).size
+
     def _build_text(self) -> None:
         if self._font_object is None:
             print(f"No font for '{self.to_string_id()}' :(")
@@ -120,13 +124,12 @@ class Label(Shape):
         self._text_rect = self._text_surface.get_frect()
 
     def _build_layout(self) -> None:
+        if not self._text_rect : return
         if self.autoresize:
-            if self.rect.size != self.inflate_rect_by_padding(self._text_rect).size:
-                self.set_size(
-                    self._text_rect.w + self.padding[0] + self.padding[2],
-                    self._text_rect.h + self.padding[1] + self.padding[3],
-                )
+            target_rect = self.inflate_rect_by_padding(self._text_rect)
+            if self.rect.size != target_rect.size:
                 self._resized_flag = True
+                self.set_size(* target_rect.size)
                 return
         if self._alignment == Align.CENTER:
             self._text_rect.center = self.get_content_rect_rel().center
@@ -137,9 +140,10 @@ class Label(Shape):
         if self._resized_flag:
             self._resized_flag = False
             if self.parent:
+                # print("Children modified call")
                 self.parent.children_modified()
 
-        self.surface.blit(self._text_surface, self._text_rect)
+        self.surface.fblits([(self._text_surface, self._text_rect)])
 
     def build(self) -> None:
         super().build()

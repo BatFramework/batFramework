@@ -19,11 +19,15 @@ class Colors:
     LIGHT_BLUE = (3, 169, 244)
     DEEP_BLUE = (41, 121, 255)
     DARK_BLUE = (44, 62, 80)
+    
     GREEN = (67, 160, 71)
     DARK_GREEN = (39, 174, 96)
+    
     BROWN = (109, 76, 65)
     DARK_RED = (192, 57, 43)
+    
     ORANGE = (251, 140, 0)
+    
     CLOUD_WHITE = (236, 240, 241)
     SILVER = (189, 195, 199)
     DARK_GRAY = (66, 66, 66)

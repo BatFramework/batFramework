@@ -52,14 +52,6 @@ class Container(Widget):
     def to_string_id(self) -> str:
         return f"Container({self.uid},{len(self.children)},{[c.to_string() for c in self.constraints]})"
 
-
-    def children_modified(self) -> None:
-        self.build_all()
-        self.set_size(
-            # *self.inflate_rect_by_padding(self.rect.unionall(list(c.rect for c in self.children))).size
-            *self.rect.unionall(list(c.rect for c in self.children)).size
-        )
-
-        self.apply_constraints()
-
+    def children_modified(self)->None:
+        self.apply_all_constraints()
         super().children_modified()

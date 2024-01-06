@@ -25,19 +25,18 @@ class Layout:
 
 
 class Column(Layout):
-    def __init__(self, gap: int = 0, shrink: bool = False, center: bool = False):
+    def __init__(self, gap: int = 0, fit_children: bool = False, center: bool = False):
         super().__init__()
         self.gap = gap
-        self.shrink: bool = shrink
+        self.fit_children: bool = fit_children
         self.center = center
 
     def arrange(self) -> None:
         if not self.parent or not self.parent.children:
             return
-
         len_children = len(self.parent.children)
-        parent_height = sum(c.rect.h for c in self.parent.children)
-        parent_width = max(c.rect.w for c in self.parent.children)
+        parent_height = sum(c.get_min_required_size()[1] for c in self.parent.children)
+        parent_width = max(c.get_min_required_size()[0] for c in self.parent.children)
         if self.gap:
             parent_height += (len_children - 1) * self.gap
         self.children_rect.update(
@@ -48,28 +47,24 @@ class Column(Layout):
         )
         if self.center:
             self.children_rect.center = self.parent.rect.center
-        if self.shrink:
-            c = self.parent.get_constraint("height")
-            if not c or c.height != parent_height:
-                self.parent.add_constraints(ConstraintHeight(parent_height))
-            c = self.parent.get_constraint("width")
-            if not c or c.width != parent_width:
-                self.parent.add_constraints(ConstraintWidth(parent_width))
+        if self.fit_children:
+            self.parent.set_size(parent_width,parent_height)
+
         current_y = self.children_rect.top
 
         for child in self.parent.children:
             child.set_position(self.parent.rect.x, current_y)
             current_y += child.rect.h + self.gap
             for c in self.child_constraints:
-                if not child.has_constraint(c.name):
-                    child.add_constraints(c)
+                child.add_constraints(c)
+                # if not child.has_constraint(c.name):
 
 
 class Row(Layout):
-    def __init__(self, gap: int = 0, shrink: bool = False, center: bool = False):
+    def __init__(self, gap: int = 0, fit_children: bool = False, center: bool = False):
         super().__init__()
         self.gap = gap
-        self.shrink: bool = shrink
+        self.fit_children: bool = fit_children
         self.center = center
 
     def arrange(self) -> None:
@@ -89,13 +84,14 @@ class Row(Layout):
         )
         if self.center:
             self.children_rect.center = self.parent.get_content_center()
-        if self.shrink:
-            c = self.parent.get_constraint("width")
-            if not c or c.width != parent_width:
-                self.parent.add_constraints(ConstraintWidth(parent_width))
-            c = self.parent.get_constraint("height")
-            if not c or c.height != parent_height:
-                self.parent.add_constraints(ConstraintHeight(parent_height))
+        if self.fit_children:
+            # c = self.parent.get_constraint("width")
+            # if not c or c.width != parent_width:
+            #     self.parent.add_constraints(ConstraintWidth(parent_width))
+            # c = self.parent.get_constraint("height")
+            # if not c or c.height != parent_height:
+            #     self.parent.add_constraints(ConstraintHeight(parent_height))
+            self.parent.set_size(parent_width,parent_height)
         current_x = self.children_rect.left
 
         for child in self.parent.children:

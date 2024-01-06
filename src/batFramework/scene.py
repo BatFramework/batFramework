@@ -44,6 +44,15 @@ class Scene:
         self.add_hud_entity(self.root)
         self.blit_calls = 0
 
+
+    def get_world_entity_count(self)->int:
+        return len(self._world_entities)
+
+
+    def get_hud_entity_count(self)->int:
+        return len(self._world_entities) + self.root.count_children_recursive() -1
+
+
     def set_scene_index(self, index: int):
         """Set the scene index."""
         self.scene_index = index
@@ -168,16 +177,29 @@ class Scene:
 
     def get_by_uid(self, uid) -> bf.Entity | None:
         """Get an entity by its unique identifier."""
-        return next(
-            (
-                entity
-                for entity in self._world_entities + self._hud_entities
-                if entity.uid == uid
-            ),
-            None,
-        )
-        # TODO
-        # ADD FOR WIDGETS TOO TOO
+        res = self._find_entity_by_uid(uid, self._world_entities + self._hud_entities)
+        if res is None:
+            res = self._recursive_search_by_uid(uid, self.root)
+        return res
+
+    def _find_entity_by_uid(self, uid, entities) -> bf.Entity | None:
+        """Search for entity by uid in a list of entities."""
+        for entity in entities:
+            if entity.uid == uid:
+                return entity
+        return None
+
+    def _recursive_search_by_uid(self, uid, widget) -> bf.Entity | None:
+        """Recursively search for entity by uid in the widget's children."""
+        if widget.uid == uid:
+            return widget
+
+        for child in widget.children:
+            res = self._recursive_search_by_uid(uid, child)
+            if res is not None:
+                return res
+        
+        return None
 
     # called before process event
     def do_early_process_event(self, event: pygame.Event) -> bool:
@@ -214,12 +236,12 @@ class Scene:
         for entity in self._world_entities + self._hud_entities:
             entity.update(dt)
         self.do_update(dt)
-        self.actions.reset()
         self.camera.update(dt)
         self.hud_camera.update(dt)
+        self.actions.reset()
 
     def do_update(self, dt):
-        """Specific update actions within the scene."""
+        """Specific update within the scene."""
         pass
 
     def debug_entity(self, entity: bf.Entity, camera: bf.Camera):
@@ -234,8 +256,8 @@ class Scene:
             else:
                 rect = data[0]
                 color = data[1]
-            if not isinstance(color, pygame.Color):
-                color = pygame.Color(color)
+            # if not isinstance(color, pygame.Color):
+            #     color = pygame.Color(color)
 
             pygame.draw.rect(camera.surface, color, camera.transpose(rect), 1)
 

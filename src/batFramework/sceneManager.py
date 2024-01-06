@@ -8,7 +8,7 @@ class SceneManager:
         self.sharedVarDict = {}
 
         self.transitions: list[bf.BaseTransition] = []
-        self.set_sharedVar("is_debugging_func", lambda: self._debugging)
+        self.set_sharedVar("debugging_mode",self._debugging)
         self.set_sharedVar("in_cutscene", False)
 
         self._scenes: list[bf.Scene] = list(initial_scenes)
@@ -98,6 +98,8 @@ class SceneManager:
             and event.key == pygame.K_d
         ):
             self._debugging = (self._debugging + 1) % 4
+            self.set_sharedVar("debugging_mode",self._debugging)
+
             return
         if (
             keys[pygame.K_LCTRL]
