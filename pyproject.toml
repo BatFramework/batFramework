@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "batframework"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
     { name="Turan Baturay", email="baturayturan@gmail.com" }
 ]
@@ -15,7 +15,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies=[
     "pygame-ce"
 ]
