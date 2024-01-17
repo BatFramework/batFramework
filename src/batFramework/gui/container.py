@@ -15,6 +15,9 @@ class Container(Widget):
         for child in children:
             self.add_child(child)
 
+    def set_padding(self,value)->Self:
+        return self
+
     def set_layout(self, layout: Layout) -> Self:
         self.layout = layout
         self.apply_constraints()

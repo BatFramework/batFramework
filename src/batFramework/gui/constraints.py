@@ -137,11 +137,12 @@ class ConstraintPercentageHeight(Constraint):
 
 
 class ConstraintHeight(Constraint):
-    def __init__(self, height: float):
+    def __init__(self, height: float, keep_autoresize: bool = True):
         if height < 0:
             raise ValueError("height can't be negative")
         super().__init__(name="height")
         self.height = height
+        self.keep_autoresize:bool = keep_autoresize
 
     def to_string(self) -> str:
         return f"{super().to_string()}.(height={self.height})"
@@ -151,15 +152,23 @@ class ConstraintHeight(Constraint):
 
     def apply_constraint(self, parent_widget, child_widget):
         if not self.evaluate(parent_widget, child_widget):
+            if child_widget.autoresize:
+                if self.keep_autoresize:
+                    print(
+                        f"Warning: Constraint on {child_widget.to_string()} can't resize, autoresize set to True"
+                    )
+                    return
+                child_widget.set_autoresize(False)
             child_widget.set_size(child_widget.rect.w, self.height)
 
 
 class ConstraintWidth(Constraint):
-    def __init__(self, width: float):
+    def __init__(self, width: float, keep_autoresize: bool = True):
         if width < 0:
             raise ValueError("width can't be negative")
         super().__init__(name="width")
         self.width = width
+        self.keep_autoresize : bool = keep_autoresize
 
     def to_string(self) -> str:
         return f"{super().to_string()}.(width={self.width})"
@@ -169,6 +178,13 @@ class ConstraintWidth(Constraint):
 
     def apply_constraint(self, parent_widget, child_widget):
         if not self.evaluate(parent_widget, child_widget):
+            if child_widget.autoresize:
+                if self.keep_autoresize:
+                    print(
+                        f"Warning: Constraint on {child_widget.to_string()} can't resize, autoresize set to True"
+                    )
+                    return
+                child_widget.set_autoresize(False)
             child_widget.set_size(self.width, child_widget.rect.h)
 
 

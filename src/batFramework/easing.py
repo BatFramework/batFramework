@@ -20,14 +20,14 @@ class EasingAnimation(bf.Timer):
 
     def __init__(
         self,
-        name: str = None,
+        name: str = '',
         easing_function: Easing = Easing.LINEAR,
         duration: int = 100,
         update_callback=None,
         end_callback=None,
         loop: bool = False,
         reusable: bool = False,
-    ):
+    )->None:
         self.easing_function = easing_function
         self.update_callback = update_callback
         self.value = 0.0
@@ -40,8 +40,8 @@ class EasingAnimation(bf.Timer):
         self.value = 0
         super().start()  # self.elapsed_progress set to 0 here
 
-    def update(self) -> bool:
-        if super().update():
+    def update(self,dt) -> bool:
+        if super().update(dt):
             return True  # If timer ended now, end() is called. So don't process value.
         self._process_value()
         # if self.name == 0: print("UPDATING (callback) in easing")
@@ -61,7 +61,7 @@ class EasingAnimation(bf.Timer):
 
     def _process_value(self):
         p0, p1, p2, p3 = self.easing_function.control_points
-        cache_key = (self.elapsed_progress, p0, p1, p2, p3)
+        cache_key = (self.easing_function,self.elapsed_progress, p0, p1, p2, p3)
         if cache_key in EasingAnimation._cache:
             y = EasingAnimation._cache[cache_key]
         else:

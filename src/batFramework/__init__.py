@@ -39,7 +39,7 @@ def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
         const.RESOLUTION,const.FLAGS, vsync=const.VSYNC
     )
     print(
-        f"Window : {resolution[0]}x{resolution[1]}px | flags:{flags.bit_count()}, vsync:{pygame.display.is_vsync()}"
+        f"Window : {resolution[0]}x{resolution[1]} [vsync:{pygame.display.is_vsync()}]"
     )
 
 def init(

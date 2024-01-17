@@ -1,90 +1,85 @@
 import pygame
 import batFramework as bf
-
+from typing import Self
 
 class Timer:
-    _highest_count = 0
-
-    def __init__(
-        self,
-        name=None,
-        duration=1000,
-        loop=False,
-        end_callback=None,
-        reusable: bool = False,
-    ):
-        # Initialize timer properties
-        self.start_time = None
-        self.stopped = True
-        self.name = name if name is not None else self._highest_count
-        Timer._highest_count += 1
-        self.duration = duration
-        self.loop = loop
-        self.elapsed_progress = 0.0
+    _count :int = 0
+    def __init__(self,duration:int,end_callback,loop:bool=False)->None:
+        self.name = Timer._count
+        Timer._count+=1
         self.end_callback = end_callback
-        self.reusable: bool = reusable
+        self.duration : int = duration
+        self.paused : bool = False
+        self.elapsed_time : int = -1
+        self.over : bool = False  
+        self.do_delete:bool = False
+        self.is_looping :bool = loop 
 
-    def start(self):
-        # Start the timer and set the start time
-        if self.start_time is None:
-            Time().add_timer(self)
+    def stop(self)->Self:
+        self.elapsed_time =-1
+        self.over = False
+        self.paused = False
+        return self
+    
+    def start(self)->Self:
+        if self.elapsed_time >= 0 : return self
+        self.elapsed_time = 0
+        self.paused = False
+        self.over = False
+        bf.TimeManager().add_timer(self)
+        return self
+        
+    def pause(self)->Self:
+        self.paused = True
+        return self
 
-        self.start_time = pygame.time.get_ticks()
-        self.stopped = False
-        self.elapsed_progress = 0.0
-
-    def update(self):
-        if self.stopped:
-            return False
-        current_time = pygame.time.get_ticks()
-        if self.elapsed_progress < 1:
-            # Calculate elapsed progress
-            self.elapsed_progress = (current_time - self.start_time) / self.duration
-            if self.elapsed_progress >= 1:
-                # Timer has completed
-                self.end()
-                return True
-        elif self.loop:
-            # If looping, restart the timer
-            self.start()
-        return False
-
-    def stop(self):
-        # Stop the timer
-        self.stopped = True
-
+    def resume(self)->Self:
+        self.paused = False
+        return self
+    def delete(self)->Self:
+        self.do_delete = True
+        return self
+    def get_progression(self)->float:
+        if self.elapsed_time < 0 : return 0
+        if self.elapsed_time >= self.duration: return 1
+        return  self.elapsed_time / self.duration
+        
+    def update(self,dt)->None:
+        if self.elapsed_time < 0 or self.paused: return
+        self.elapsed_time += dt
+        # print("update :",self.elapsed_time,self.duration)
+        if self.get_progression() == 1:
+            self.end()
+            
     def end(self):
-        self.elapsed_progress = 1
-        self.stopped = False
-        if self.end_callback:
-            self.end_callback()
+        print("END")
+        self.end_callback()
+        if self.is_looping:
+            self.elapsed_time = -1
+            self.start()
+            return
+            
+        self.over = True
 
-    def ended(self):
-        if self.start_time is None:
-            return False
-        return (
-            (not self.loop)
-            and (self.elapsed_progress >= 1)
-            and (not self.stopped)
-            and not self.reusable
-        )
+    def has_ended(self)->bool:
+        return self.over or self.do_delete
 
 
 class TimeManager(metaclass=bf.Singleton):
     def __init__(self):
-        # Initialize the Time class with a dictionary of timers
+        # Initialize the TimeManager class with a dictionary of timers
         self.timers = {}
 
     def add_timer(self, timer):
         # Add a timer to the dictionary
         self.timers[timer.name] = timer
 
-    def update(self):
+    def update(self,dt):
         # Update all timers and remove completed ones
         for timer in list(self.timers.values()):
-            timer.update()
+            timer.update(dt)
 
-        to_remove = [name for name, timer in self.timers.items() if timer.ended()]
+        to_remove = [name for name, timer in self.timers.items() if timer.has_ended()]
 
         for name in to_remove:
             # print(self.timers.pop(name).name,"removed !")

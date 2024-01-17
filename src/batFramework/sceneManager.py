@@ -73,15 +73,15 @@ class SceneManager:
         self.set_scene(dest_scene_name)
 
     def set_scene(self, name, index=0):
+        target_scene = self.get_scene(name)
         if (
             len(self._scenes) == 0
-            or not self.has_scene(name)
+            or not target_scene
             or index >= len(self._scenes)
+            or index < 0
         ):
             return
 
-        target_scene = self.get_scene(name)
-        if not target_scene : return
         old_scene = self._scenes[index]
         # switch
         old_scene.on_exit()
@@ -99,7 +99,6 @@ class SceneManager:
         ):
             self._debugging = (self._debugging + 1) % 4
             self.set_sharedVar("debugging_mode",self._debugging)
-
             return
         if (
             keys[pygame.K_LCTRL]

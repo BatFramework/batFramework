@@ -7,16 +7,6 @@ if TYPE_CHECKING:
     from .sceneManager import SceneManager
 import pygame
 import batFramework as bf
-import math
-
-
-def rotate_point(origin, point, angle):
-    ox, oy = origin
-    px, py = point
-    angle_rad = math.radians(angle)
-    qx = ox + math.cos(angle_rad) * (px - ox) - math.sin(angle_rad) * (py - oy)
-    qy = oy + math.sin(angle_rad) * (px - ox) + math.cos(angle_rad) * (py - oy)
-    return int(qx), int(qy)
 
 
 class Scene:

@@ -33,28 +33,8 @@ class Entity:
         self.visible: bool = True
         self.debug_color: tuple = bf.color.DARK_RED
         self.render_order: int = 0
-        self.rotation_origin = (0, 0)
-        self.rotation: float = 0
-        self._rotated_cache = (0,self.surface)
         self.uid: Any = Entity.__instance_count
         Entity.__instance_count += 1
-
-    def set_rotation_origin(self, point: tuple) -> Self:
-        self.rotation_origin = point
-        return self
-
-    def get_rotation_origin(self) -> tuple:
-        return self.rotation_origin
-
-    def rotate(self, value: float) -> Self:
-        self.rotation = value
-        self._rotated_cache = None
-        return self
-
-    def rotate_by(self, value: float) -> Self:
-        self.rotation += value
-        self._rotated_cache = None
-        return self
 
     def set_render_order(self, render_order: int) -> Self:
         self.render_order = render_order
@@ -175,18 +155,6 @@ class Entity:
         should_not_draw = not self.visible or not self.surface or not camera.intersects(self.rect)
         if should_not_draw:
             return 0
-        if self.rotation == 0:
-            camera.surface.blit(self.surface, camera.transpose(self.rect))
-            return 1
-        if self._rotated_cache is not None:
-            camera.surface.blit(self._rotated_cache[1], camera.transpose(self.rect))
-            return 1
-            
-        rotated = pygame.transform.rotate(self.surface,self.rotation)
-        # if self.convert_alpha : rotated.convert_alpha()
-        new_center = self.rect.move(self.rotation_origin[0],self.rotation_origin[1]).center
-        tmp = rotated.get_rect(center = new_center)
-        camera.surface.blit(rotated, camera.transpose(tmp))
-        self._rotated_cache = (self.rotation,rotated)
+        camera.surface.blit(self.surface, camera.transpose(self.rect))
 
         return 1

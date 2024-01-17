@@ -4,12 +4,10 @@ from .shape import Shape
 from typing import Self
 from enum import Enum
 
-
 class Align(Enum):
     LEFT = 1
     RIGHT = 2
     CENTER = 3
-
 
 class Label(Shape):
     def __init__(self, text: str) -> None:

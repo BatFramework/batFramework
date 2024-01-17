@@ -48,9 +48,6 @@ class Widget(bf.Entity):
             old_raw_size[0] + self.padding[0] + self.padding[2],
             old_raw_size[1] + self.padding[1] + self.padding[3],
         )
-        if self.parent:
-            self.apply_constraints()
-            self.parent.children_modified()
         return self
 
 
@@ -340,3 +337,5 @@ class Widget(bf.Entity):
     def children_modified(self) -> None:
         if self.parent and not self.is_root:
             self.parent.children_modified()
+
+
