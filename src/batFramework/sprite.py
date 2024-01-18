@@ -22,6 +22,8 @@ class Sprite(bf.DynamicEntity):
             self.original_surface = tmp
         elif isinstance(data, pygame.Surface):
             self.original_surface = data
+        else:
+            raise ValueError("Image data can be either path or Surface")
         if self.convert_alpha:
             self.original_surface = self.original_surface.convert_alpha()
         if not size:
