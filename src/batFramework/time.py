@@ -52,7 +52,6 @@ class Timer:
             self.end()
             
     def end(self):
-        print("END")
         self.end_callback()
         if self.is_looping:
             self.elapsed_time = -1
