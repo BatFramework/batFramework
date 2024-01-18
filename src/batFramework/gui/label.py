@@ -49,7 +49,7 @@ class Label(Shape):
     def to_string_id(self) -> str:
         return f"Label({self._text})"
 
-    def set_align(self, alignment: Align) -> "Label":
+    def set_alignment(self, alignment: Align) -> "Label":
         self._alignment = alignment
         self.build()
         return self

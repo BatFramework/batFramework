@@ -5,8 +5,9 @@ import pygame
 
 
 class Root(InteractiveWidget):
-    def __init__(self):
+    def __init__(self,camera):
         super().__init__()
+        self.drawing_camera = camera
         self.surface = None
         self.set_root()
         self.rect.size = pygame.display.get_surface().get_size()
@@ -17,18 +18,21 @@ class Root(InteractiveWidget):
     def to_string(self) -> str:
         return "ROOT"
 
+    def to_string_id(self) -> str:
+        return "ROOT"
+        
     def get_focused(self) -> Widget | None:
         return self.focused
 
     def get_hovered(self) -> Widget | None:
         return self.hovered
 
-    def reset(self)->None:
+    def clear_focused(self)->None:
         self.focus_on(None)
-        self.hovered = None
 
-    def to_string_id(self) -> str:
-        return "ROOT"
+    def clear_hovered(self)->None:
+        if isinstance(self.hovered,InteractiveWidget):   self.hovered.on_exit()
+        self.hovered = None
 
     def focus_on(self, widget: InteractiveWidget|None) -> None:
         if self.focused is not None:
@@ -56,6 +60,13 @@ class Root(InteractiveWidget):
         if event.type == pygame.VIDEORESIZE:
             self.set_size(event.w, event.h, force=True)
             return True
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.hovered and isinstance(self.hovered,InteractiveWidget) :
+                self.hovered.on_click_down(event.button)
+        if event.type == pygame.MOUSEBUTTONUP:
+            if self.hovered and isinstance(self.hovered,InteractiveWidget) :
+                self.hovered.on_click_up(event.button)            
+
         return False
 
     def get_root(self) -> "Root" :
@@ -65,14 +76,17 @@ class Root(InteractiveWidget):
     def update(self, dt: float) -> None:
         super().update(dt)
         old = self.hovered
+        transposed = self.drawing_camera.transpose_point(pygame.mouse.get_pos())
         self.hovered = (
-            self.top_at(*pygame.mouse.get_pos())
-            if self.top_at(*pygame.mouse.get_pos())
+            self.top_at(*transposed)
+            if self.top_at(*transposed)
             else None
         )
         if old == self.hovered:
             return
-        if isinstance(self.hovered, bf.Button):
-            pygame.mouse.set_cursor(*pygame.cursors.tri_left)
-        else:
-            pygame.mouse.set_cursor(pygame.cursors.arrow)
+        new_is_interactive = isinstance(self.hovered,InteractiveWidget)
+        old_is_interactive = isinstance(old,InteractiveWidget)
+        if old and old_is_interactive : old.on_exit()
+        if self.hovered and new_is_interactive:
+            self.hovered.on_enter()
+

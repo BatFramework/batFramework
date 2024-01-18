@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .constraints import Constraint
     from .root import Root
+    from .interactiveWidget import InteractiveWidget
 from typing import Self
 
 import batFramework as bf
@@ -99,8 +100,8 @@ class Widget(bf.Entity):
         else:
             self.gui_depth = self.parent.get_depth() + 1
         return self.gui_depth
-
-    def top_at(self, x: float, y: float) -> "None|Widget":
+        
+    def top_at(self, x: float|int, y: float|int) -> "None|Widget":
         if self.children:
             for child in reversed(self.children):
                 r = child.top_at(x, y)
@@ -252,6 +253,8 @@ class Widget(bf.Entity):
         return self
 
     def set_size(self, width: float, height: float) -> Self:
+        if width is None : width = self.rect.w
+        if height is None : height = self.rect.h
         if self.rect.size == (width,height) : return self
         self.rect.size = (width, height)
         self.build()
@@ -284,6 +287,7 @@ class Widget(bf.Entity):
             c.set_parent(self)
             c.set_parent_scene(self.parent_scene)
             c.do_when_added()
+        self._sort_children()
         self.apply_all_constraints()
         self.children_modified()
 
@@ -295,8 +299,12 @@ class Widget(bf.Entity):
         child.set_parent(None)
         child.do_when_removed()
         child.set_parent_scene(None)
+        self._sort_children()
         self.apply_all_constraints()
         self.children_modified()
+
+    def _sort_children(self):
+        self.children.sort(key=lambda child : child.render_order)
 
 
     # if return True -> don't propagate to siblings or parents

@@ -11,26 +11,36 @@ class Button(Label, InteractiveWidget):
     def __init__(self, text: str, callback: None| Callable = None) -> None:
         # Label.__init__(self,text)
         self.callback = callback
-        self.click_action = bf.Action("click").add_mouse_control(1)
-        self.hover_action = bf.Action("hover").add_mouse_control(pygame.MOUSEMOTION)
         self.is_hovered: bool = False
-        self.is_clicking: bool = False
         self.effect_max :float= 20
-        self.effect_speed :float= 1.2
+        self.effect_speed :float= 1.8
+        self.is_clicking : bool = False
         self.effect :float = 0
         self.enabled :bool = True
         super().__init__(text=text)
         self.set_debug_color("cyan")
 
-    def get_surface_filter(self)->pygame.Surface|None:
-        if not self.surface : return None
-        size = self.surface.get_size()
-        surface_filter = Button._cache.get(size, None)
-        if surface_filter is None:
-            surface_filter = pygame.Surface(size).convert_alpha()
-            surface_filter.fill((30, 30, 30, 0))
-            Button._cache[size] = surface_filter
-        return surface_filter
+    def get_surface_filter(self) -> pygame.Surface | None:
+            if not self.surface:
+                return None
+
+            size = self.surface.get_size()
+            surface_filter = Button._cache.get(size, None)
+
+            if surface_filter is None:
+                # Create a mask from the original surface
+                mask = pygame.mask.from_surface(self.surface,threshold=0)
+
+                # Get the bounding box of the mask
+                silhouette_surface = mask.to_surface(
+                    setcolor = (30,30,30),unsetcolor= (255,255,255)
+                ).convert_alpha()
+                
+
+                Button._cache[size] = silhouette_surface
+                surface_filter = silhouette_surface
+
+            return surface_filter
     def enable(self)->Self:
         self.enabled = True
         self.build()
@@ -60,79 +70,88 @@ class Button(Label, InteractiveWidget):
         return f"Button({self._text}){'' if self.enabled else '[disabled]'}"
 
     def click(self) -> None:
-        if self.callback is not None and not self.is_clicking:
-            self.is_clicking = True
+        if self.callback is not None:
             self.callback()
-            self.is_clicking = False
+            bf.Timer(duration=0.3,end_callback=self._safety_effect_end).start()
 
+    def _safety_effect_end(self)->None:
+        if self.effect > 0:
+            self.effect = 0
+            self.build()
+                    
     def start_effect(self):
         if self.effect <= 0 : self.effect = self.effect_max
 
-    def do_process_actions(self, event):
-        self.click_action.process_event(event)
-        self.hover_action.process_event(event)
 
-    def do_reset_actions(self):
-        self.click_action.reset()
-        self.hover_action.reset()
+    def do_on_click_down(self,button)->None:
+        if self.enabled and button == 1 and self.effect == 0:
+            self.is_clicking = True
+            self.start_effect()
 
-    def do_handle_event(self, event) -> bool:
-        res = False
-        if self.click_action.is_active():
-            root = self.get_root()
-            if root is None : return res
-            if root.get_hovered() == self and self.enabled:
-                if not self.is_focused:
-                    self.get_focus()
-                # self.click()
-                self.start_effect()
-                res = True
-        elif self.hover_action.is_active():
-            root = self.get_root()
-            if root:
-                if self.is_hovered and root.hovered != self:
-                    self.is_hovered = False
-                    self.build()
-                    res = True
-                if not self.is_hovered and root.hovered == self:
-                    self.is_hovered = True
-                    self.build()
-                    res = True
-        return res
+    def do_on_click_up(self,button)->None:
+        if self.enabled and button == 1 and self.is_clicking: 
+            # self.effect = 0
+            self.is_clicking = False
+            self.build()
+            self.click()
+    
+    def on_enter(self)->None:
+        if not self.enabled : return
+        super().on_enter()
+        self.effect = 0
+        self.build()
+        pygame.mouse.set_cursor(*pygame.cursors.tri_left)
+
+    def on_exit(self)->None:
+        super().on_exit()
+        # self.effect = 0
+        self.is_clicking = False
+        self.build()
+        pygame.mouse.set_cursor(pygame.cursors.arrow)
+
+
 
     def update(self,dt):
         super().update(dt)
-        if self.effect > 0:
-            self.effect -= dt*60*self.effect_speed
-            self.build()
-            if self.effect <= 0:
-                self.is_hovered = False
-                self.effect = 0
-                self.click()
-                self.build()
+        if self.effect <= 0: return
+        self.effect -= dt*60*self.effect_speed
+        if self.is_clicking:
+            if self.effect < 1 : self.effect = 1
+        else:
+            if self.effect < 0 : self.effect = 0
+        self.build()
 
     def _build_effect(self)->None:
+        if self.effect < 1 : return
+        e = int(min(self.rect.w //3, self.rect.h//3,self.effect))
         pygame.draw.rect(
             self.surface,
             bf.color.CLOUD_WHITE,
             (0,0,*self.surface.get_size()),
-            int(self.effect),
+            #int(self.effect),
+            e,
             *self._border_radius
             )
-                
+    def _build_disabled(self)->None:
+        self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_SUB)
+
+    def _build_hovered(self)->None:
+        self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_ADD)
+
+        
     def build(self) -> None:
         super().build()
-        size = self.surface.get_size()
         if not self.enabled:
-            self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_SUB)
-            return
+            self._build_disabled()
+        elif self.is_hovered:
+            self._build_hovered()
         if self.effect:
-            if self.effect >= 1 : 
-                self._build_effect()
-            return
-        if self.is_hovered:
-            self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_ADD)
-
+            self._build_effect()
     def apply_contraints(self) -> None:
         super().apply_constraints()
-
+# 
+#     def draw(self,camera)->int:
+#         camera.surface.blit(self.get_surface_filter(),camera.transpose(self.rect.move(0,4)),special_flags = pygame.BLEND_RGBA_MULT)
+#         # camera.surface.blit(self.get_surface_filter(),(0,0),special_flags = pygame.BLEND_SUB)
+#         res = super().draw(camera)
+#         return res

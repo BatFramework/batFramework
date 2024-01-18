@@ -7,8 +7,6 @@ import pygame
 def convert_to_int(*args):
     return [int(arg) for arg in args]
 
-
-
 class Debugger(Label):
     def __init__(self) -> None:
         super().__init__("")
