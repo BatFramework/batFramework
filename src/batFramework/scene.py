@@ -18,18 +18,18 @@ class Scene:
             name: Name of the scene.
             enable_alpha (bool, optional): Enable alpha channel for the scene surfaces. Defaults to True.
         """
+        self.scene_index = 0
         self._name = name
+        self.manager: Manager | None = None
         self._active = False
         self._visible = False
         self._world_entities: list[bf.Entity] = []
         self._hud_entities: list[bf.Entity] = []
-        self.manager: Manager | None = None
         self.actions: bf.ActionContainer = bf.ActionContainer()
-        self.scene_index = 0
         self.camera: bf.Camera = bf.Camera(convert_alpha=enable_alpha)
-        self.hud_camera: bf.Camera = bf.Camera(convert_alpha=enable_alpha)
+        self.hud_camera: bf.Camera = bf.Camera(convert_alpha=True)
 
-        self.root: bf.Root = bf.Root()
+        self.root: bf.Root = bf.Root(self.hud_camera)
         self.root.set_center(*self.hud_camera.get_center())
         self.add_hud_entity(self.root)
         self.blit_calls = 0
@@ -40,7 +40,7 @@ class Scene:
 
 
     def get_hud_entity_count(self)->int:
-        return len(self._world_entities) + self.root.count_children_recursive() -1
+        return len(self._hud_entities) + self.root.count_children_recursive() -1
 
 
     def set_scene_index(self, index: int):
@@ -66,7 +66,7 @@ class Scene:
             return False
         return self.manager.set_sharedVar(name, value)
 
-    def get_sharedVar(self, name: str) -> Any:
+    def get_sharedVar(self, name: str,error_value=None) -> Any:
         """
         Get a shared variable from the manager.
 
@@ -77,8 +77,8 @@ class Scene:
             Any: Value of the shared variable.
         """
         if not self.manager:
-            return False
-        return self.manager.get_sharedVar(name)
+            return error_value
+        return self.manager.get_sharedVar(name,error_value)
 
     def do_when_added(self):
         pass
@@ -235,10 +235,8 @@ class Scene:
         pass
 
     def debug_entity(self, entity: bf.Entity, camera: bf.Camera):
-        # return
         if not entity.visible:
             return
-        # print(entity,entity.visible)
         for data in entity.get_bounding_box():
             if isinstance(data, pygame.FRect):
                 rect = data
@@ -246,8 +244,6 @@ class Scene:
             else:
                 rect = data[0]
                 color = data[1]
-            # if not isinstance(color, pygame.Color):
-            #     color = pygame.Color(color)
 
             pygame.draw.rect(camera.surface, color, camera.transpose(rect), 1)
 
@@ -300,10 +296,13 @@ class Scene:
     def on_enter(self):
         self.set_active(True)
         self.set_visible(True)
+        self.root.clear_hovered()
+        self.root.clear_focused()
         self.root.build()
 
     def on_exit(self):
-        self.root.reset()
+        self.root.clear_hovered()
+        self.root.clear_focused()
         self.set_active(False)
         self.set_visible(False)
         self.actions.hard_reset()

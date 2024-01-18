@@ -34,9 +34,9 @@ class SceneManager:
         self.sharedVarDict[name] = value
         return True
 
-    def get_sharedVar(self, name):
+    def get_sharedVar(self, name,error_value=None):
         if name not in self.sharedVarDict:
-            return None
+            return error_value
         return self.sharedVarDict[name]
 
     def get_current_scene_name(self) -> str:
