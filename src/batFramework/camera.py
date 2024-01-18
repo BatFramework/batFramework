@@ -5,7 +5,6 @@ import batFramework as bf
 
 
 class Camera:
-    _transform_cache = {}  # Cache for transformed surfaces
 
     def __init__(self, flags=0, size: tuple[int,int] | None = None,convert_alpha:bool=False) -> None:
         """
@@ -15,12 +14,11 @@ class Camera:
             flags (int): Flags for camera initialization.
             size (tuple): Optional size for camera (defaults to window size)
         """
-        # Initialize camera attributes
         size = size if size else bf.const.RESOLUTION
         self.rect = pygame.Rect(0, 0, *size)
         self.flags: int = flags
         self.blit_special_flags: int = pygame.BLEND_ALPHA_SDL2
-        self._clear_color: pygame.Color = pygame.Color(0, 0, 0, 0)
+        self._clear_color: pygame.Color = pygame.Color(0, 0, 0,0 if convert_alpha else 255)
         self.zoom_factor = 1
         self.cached_surfaces: dict[float, pygame.Surface] = {}
         self.surface: pygame.Surface = pygame.Surface((0, 0))
@@ -85,9 +83,18 @@ class Camera:
         Get the center of the camera's view.
 
         Returns:
-            Vector2: Returns the center coordinates.
+            tuple[float,float]: Returns the center coordinates.
         """
         return self.rect.center
+
+    def get_position(self) -> tuple[float,float]:
+        """
+        Get the center of the camera's view.
+
+        Returns:
+            tuple[float,float]: Returns the center coordinates.
+        """
+        return self.rect.topleft
 
     def move(self, x, y) -> "Camera":
         """
@@ -212,6 +219,21 @@ class Camera:
             pygame.FRect: Transposed rectangle.
         """
         return pygame.FRect(rect.x - self.rect.left, rect.y - self.rect.top, *rect.size)
+
+
+    def transpose_point(self, point: tuple[float,float] | tuple[int,int]) -> tuple[float,float]:
+        """
+        Transpose the given 2D point coordinates relative to the camera.
+
+        Args:
+            point (tuple[float,float] | tuple[int,int]): Point to transpose.
+
+        Returns:
+            tuple[float,float] : Transposed point.
+        """
+        return point[0]-self.rect.x,point[1]-self.rect.y
+
+
 
     def convert_screen_to_world(self, x, y):
         """
