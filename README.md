@@ -18,7 +18,7 @@ The `batFramework` is a Python game development framework based on pygame, desig
 
 ###  Explore batFramework
 
-1. Install Python (version 3.10 or higher) and the latest stable version of pygame-ce.
+1. Install Python (version 3.11 or higher) and the latest stable version of pygame-ce.
 2. Clone or download this repository.
 4. Explore the framework's modules in the `batFramework` directory and integrate them into your own game project.
 
