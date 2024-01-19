@@ -18,6 +18,7 @@ class Camera:
         self.rect = pygame.Rect(0, 0, *size)
         self.flags: int = flags
         self.blit_special_flags: int = pygame.BLEND_ALPHA_SDL2
+        self.should_convert_alpha :bool = convert_alpha
         self._clear_color: pygame.Color = pygame.Color(0, 0, 0,0 if convert_alpha else 255)
         self.zoom_factor = 1
         self.cached_surfaces: dict[float, pygame.Surface] = {}
@@ -107,7 +108,7 @@ class Camera:
         Returns:
             Camera: Returns the Camera object.
         """
-        self.rect.topleft += Vector2(x, y)
+        self.rect.move_ip(x, y)
         return self
 
     def set_position(self, x, y) -> "Camera":
@@ -184,8 +185,13 @@ class Camera:
         if factor not in self.cached_surfaces:
             self.cached_surfaces[factor] = pygame.Surface(
                 tuple(i / factor for i in bf.const.RESOLUTION), flags=self.flags
-            ).convert_alpha()
-            self.cached_surfaces[factor].fill((0, 0, 0, 0))
+            )
+            if self.should_convert_alpha :
+                self.cached_surfaces[factor].convert_alpha()
+            else:
+                self.cached_surfaces[factor].convert()
+                
+            self.cached_surfaces[factor].fill((self._clear_color))
 
         self.surface = self.cached_surfaces[self.zoom_factor]
         self.rect = self.surface.get_rect(center=self.rect.center)

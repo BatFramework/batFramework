@@ -76,7 +76,7 @@ class Root(InteractiveWidget):
     def update(self, dt: float) -> None:
         super().update(dt)
         old = self.hovered
-        transposed = self.drawing_camera.transpose_point(pygame.mouse.get_pos())
+        transposed = self.drawing_camera.convert_screen_to_world(*pygame.mouse.get_pos())
         self.hovered = (
             self.top_at(*transposed)
             if self.top_at(*transposed)
