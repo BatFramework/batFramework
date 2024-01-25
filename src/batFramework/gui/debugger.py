@@ -17,6 +17,8 @@ class Debugger(Label):
         self.render_order = 99
         self.set_uid("debugger")
 
+    def get_bounding_box(self):
+        yield None
     def to_string_id(self) -> str:
         return "Debugger"
 
@@ -24,13 +26,27 @@ class Debugger(Label):
         self.refresh_rate = value
         return self
 
-    def add_data(self, key: str, data):
+    def add_static(self, key: str, data):
         self.static_data[key] = str(data)
         self.update_text()
 
-    def add_dynamic_data(self, key: str, func) -> None:
+    def add_dynamic(self, key: str, func) -> None:
         self.dynamic_data[key] = func
         self.update_text()
+
+    def remove_static(self,key)->bool:
+        try:
+            self.static_data.pop(key)
+            return True
+        except KeyError:
+            return False
+
+    def remove_dynamic(self,key)->bool:
+        try:
+            self.dynamic_data.pop(key)
+            return True
+        except KeyError:
+            return False
 
     def set_parent_scene(self, scene) -> Self:
         super().set_parent_scene(scene)
@@ -73,23 +89,23 @@ class BasicDebugger(Debugger):
             return
         manager_link = self.parent_scene.manager
         parent_scene = self.parent_scene
-        self.add_data("Resolution", 'x'.join(str(i) for i in bf.const.RESOLUTION))
-        self.add_dynamic_data(
+        self.add_static("Resolution", 'x'.join(str(i) for i in bf.const.RESOLUTION))
+        self.add_dynamic(
             "FPS", lambda: str(round(manager_link.get_fps()))
         )
-        self.add_dynamic_data("Mouse", pygame.mouse.get_pos)
-        self.add_dynamic_data(
+        self.add_dynamic("Mouse", pygame.mouse.get_pos)
+        self.add_dynamic(
             "World",
             lambda: convert_to_int(*parent_scene.camera.convert_screen_to_world(
                 *pygame.mouse.get_pos())
             ),
         )
-        self.add_dynamic_data(
+        self.add_dynamic(
             "Hud",
             lambda: convert_to_int(*parent_scene.hud_camera.convert_screen_to_world(
                 *pygame.mouse.get_pos())
             ),
         )
-        self.add_dynamic_data("W. Ent.",lambda : parent_scene.get_world_entity_count())
-        self.add_dynamic_data("H. Ent.",lambda : parent_scene.get_hud_entity_count())
+        self.add_dynamic("W. Ent.",lambda : parent_scene.get_world_entity_count())
+        self.add_dynamic("H. Ent.",lambda : parent_scene.get_hud_entity_count())
         

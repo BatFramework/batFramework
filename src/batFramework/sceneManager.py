@@ -4,10 +4,10 @@ import pygame
 
 class SceneManager:
     def __init__(self, *initial_scenes: bf.Scene) -> None:
-        self._debugging = 0
-        self.sharedVarDict = {}
+        self._debugging :int = 0
+        self._sharedVarDict : dict = {}
 
-        self.transitions: list[bf.BaseTransition] = []
+        self._scene_transitions: list = []
         self.set_sharedVar("debugging_mode",self._debugging)
         self.set_sharedVar("in_cutscene", False)
 
@@ -21,23 +21,21 @@ class SceneManager:
 
     def print_status(self):
         print("-" * 40)
-        print([(s._name, s._active, s._visible, s.scene_index) for s in self._scenes])
+        print([(s._name, "Active" if s._active else "Inactive","Visible" if s._visible else "Invisible", f"index={s.scene_index}") for s in self._scenes])
         print(f"[Debugging] = {self._debugging}")
         print("---SHARED VARIABLES---")
-        _ = [
+        for name, value in self._sharedVarDict.items():
             print(f"[{str(name)} = {str(value)}]")
-            for name, value in self.sharedVarDict.items()
-        ]
         print("-" * 40)
 
     def set_sharedVar(self, name, value) -> bool:
-        self.sharedVarDict[name] = value
+        self._sharedVarDict[name] = value
         return True
 
     def get_sharedVar(self, name,error_value=None):
-        if name not in self.sharedVarDict:
+        if name not in self._sharedVarDict:
             return error_value
-        return self.sharedVarDict[name]
+        return self._sharedVarDict[name]
 
     def get_current_scene_name(self) -> str:
         return self._scenes[0].get_name()

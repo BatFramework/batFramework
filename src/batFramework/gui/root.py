@@ -86,7 +86,6 @@ class Root(InteractiveWidget):
             return
         new_is_interactive = isinstance(self.hovered,InteractiveWidget)
         old_is_interactive = isinstance(old,InteractiveWidget)
-        if old and old_is_interactive : old.on_exit()
-        if self.hovered and new_is_interactive:
-            self.hovered.on_enter()
+        if old          and old_is_interactive  :    old.on_exit()
+        if self.hovered and new_is_interactive  :    self.hovered.on_enter()
 

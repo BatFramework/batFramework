@@ -13,21 +13,25 @@ class Camera:
         Args:
             flags (int): Flags for camera initialization.
             size (tuple): Optional size for camera (defaults to window size)
+            convert_alpha (bool): Convert surface to support alpha values
         """
         size = size if size else bf.const.RESOLUTION
-        self.rect = pygame.Rect(0, 0, *size)
-        self.flags: int = flags
-        self.blit_special_flags: int = pygame.BLEND_ALPHA_SDL2
         self.should_convert_alpha :bool = convert_alpha
-        self._clear_color: pygame.Color = pygame.Color(0, 0, 0,0 if convert_alpha else 255)
-        self.zoom_factor = 1
+        self.rect = pygame.Rect(0, 0, *size)
+        self.vector_center = Vector2(0,0) 
+        
+        self.surface: pygame.Surface = pygame.Surface((0, 0)) #tmp dummy
+        self.flags: int = flags | (pygame.SRCALPHA if convert_alpha else 0)
+        self.blit_special_flags: int = pygame.BLEND_ALPHA_SDL2
+        
+        self._clear_color: pygame.Color = pygame.Color(0, 0, 0, 0 if convert_alpha else 255)
+        
         self.cached_surfaces: dict[float, pygame.Surface] = {}
-        self.surface: pygame.Surface = pygame.Surface((0, 0))
-        if convert_alpha : 
-            self.surface = self.surface.convert_alpha()
-        else:
-            self.surface = self.surface.convert()
+        
         self.follow_point_func = None
+        self.follow_speed :float= 0.1 
+        
+        self.zoom_factor = 1
         self.max_zoom = 2
         self.min_zoom = 0.1
         self.zoom(1)
@@ -97,7 +101,7 @@ class Camera:
         """
         return self.rect.topleft
 
-    def move(self, x, y) -> "Camera":
+    def move_by(self, x : float|int, y:float|int) -> "Camera":
         """
         Moves the camera rect by the given coordinates.
 
@@ -109,6 +113,7 @@ class Camera:
             Camera: Returns the Camera object.
         """
         self.rect.move_ip(x, y)
+        self.vector_center.update(self.rect.center)
         return self
 
     def set_position(self, x, y) -> "Camera":
@@ -123,6 +128,8 @@ class Camera:
             Camera: Returns the Camera object.
         """
         self.rect.topleft = (x, y)
+        self.vector_center.update(self.rect.center)
+
         return self
 
     def set_center(self, x, y) -> "Camera":
@@ -137,9 +144,10 @@ class Camera:
             Camera: Returns the Camera object.
         """
         self.rect.center = (x, y)
+        self.vector_center.update(self.rect.center)
         return self
 
-    def set_follow_point(self, func) -> "Camera":
+    def set_follow_point(self, func,follow_speed :float = 0.1) -> "Camera":
         """
         Set the following function (returns tuple x y).
         Camera will center its position to the center of the given coordinates.
@@ -151,6 +159,7 @@ class Camera:
             Camera: Returns the Camera object.
         """
         self.follow_point_func = func
+        self.follow_speed =  follow_speed if func else 0.1
         return self
 
     def zoom_by(self, amount: float) -> "Camera":
@@ -190,11 +199,11 @@ class Camera:
                 self.cached_surfaces[factor].convert_alpha()
             else:
                 self.cached_surfaces[factor].convert()
-                
-            self.cached_surfaces[factor].fill((self._clear_color))
+            # self.cached_surfaces[factor].fill((self._clear_color))
 
         self.surface = self.cached_surfaces[self.zoom_factor]
         self.rect = self.surface.get_rect(center=self.rect.center)
+        self.clear()
         return self
 
     def intersects(self, rect: pygame.Rect | pygame.FRect) -> bool:
@@ -207,12 +216,13 @@ class Camera:
         Returns:
             bool: True if intersection occurs, False otherwise.
         """
-        return (
-            self.rect.x < rect.right
-            and self.rect.right > rect.x
-            and self.rect.y < rect.bottom
-            and self.rect.bottom > rect.y
-        )
+        # return (
+        #     self.rect.x < rect.right
+        #     and self.rect.right > rect.x
+        #     and self.rect.y < rect.bottom
+        #     and self.rect.bottom > rect.y
+        # )
+        return self.rect.colliderect(rect)
 
     def transpose(self, rect: pygame.Rect | pygame.FRect) -> pygame.Rect | pygame.FRect:
         """
@@ -262,8 +272,9 @@ class Camera:
             dt: Time delta for updating the camera position.
         """
         if self.follow_point_func:
+            amount = ((dt * 60) * self.follow_speed)
             target = self.follow_point_func()
-            self.rect.center = Vector2(self.rect.center).lerp(target, ((dt * 60) * 0.1))
+            self.set_center(self.vector_center.lerp(target, amount))
 
     def draw(self, surface: pygame.Surface):
         """
@@ -274,6 +285,7 @@ class Camera:
         """
         if self.zoom_factor == 1:
             surface.blit(self.surface, (0, 0), special_flags=self.blit_special_flags)
+            # surface.blit(self.surface, (0, 0))
             return
 
         # Scale the surface to match the resolution

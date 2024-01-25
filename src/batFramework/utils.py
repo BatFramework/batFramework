@@ -38,10 +38,8 @@ class Utils:
 
 
     @staticmethod
-    def img_slice(file, cell_width, cell_height, flipX=False) -> list[pygame.Surface]:
-        src = pygame.image.load(
-            os.path.join(bf.const.RESOURCE_PATH, file)
-        ).convert_alpha()
+    def img_slice(file, cell_width, cell_height, flipX=False,convert_alpha=True) -> list[pygame.Surface]:
+        src = bf.ResourceManager().get_image(file,convert_alpha=convert_alpha)
         width, height = src.get_size()
         res = []
         for y in range(0, height, cell_height):

@@ -4,11 +4,11 @@ from typing import Self
 
 class Timer:
     _count :int = 0
-    def __init__(self,duration:int,end_callback,loop:bool=False)->None:
+    def __init__(self,duration:float|int,end_callback,loop:bool=False)->None:
         self.name = Timer._count
         Timer._count+=1
         self.end_callback = end_callback
-        self.duration : int = duration
+        self.duration : int|float = duration
         self.paused : bool = False
         self.elapsed_time : int = -1
         self.over : bool = False  
@@ -75,7 +75,8 @@ class TimeManager(metaclass=bf.Singleton):
 
     def update(self,dt):
         # Update all timers and remove completed ones
-        for timer in list(self.timers.values()):
+        timers = list(self.timers.values())
+        for timer in [t for t in timers if not t.paused]:
             timer.update(dt)
 
         to_remove = [name for name, timer in self.timers.items() if timer.has_ended()]

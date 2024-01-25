@@ -237,7 +237,10 @@ class Scene:
     def debug_entity(self, entity: bf.Entity, camera: bf.Camera):
         if not entity.visible:
             return
+        # bounding_box = entity.get_bounding_box()
+        # if bounding_box is None : return
         for data in entity.get_bounding_box():
+            if data is None : return
             if isinstance(data, pygame.FRect):
                 rect = data
                 color = entity.debug_color

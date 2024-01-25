@@ -7,7 +7,6 @@ from .utils import Singleton
 from .enums import *
 from .resourceManager import ResourceManager
 from .fontManager import FontManager
-# if const.BF_INITIALIZED:     
 from .utils import Utils as utils
 from .tileset import Tileset
 from .time import TimeManager, Timer
@@ -15,7 +14,7 @@ from .cutscene import Cutscene, CutsceneManager
 from .cutsceneBlocks import *
 from .easing import Easing, EasingAnimation
 from .audioManager import AudioManager
-# import batFramework.transition as transition
+import batFramework.transition as transition
 from .action import Action
 from .actionContainer import *
 from .camera import Camera
@@ -24,7 +23,6 @@ from .dynamicEntity import DynamicEntity
 from .sprite import Sprite
 from .animatedSprite import AnimatedSprite, AnimState
 from .stateMachine import State, StateMachine
-# from .debugger import Debugger
 from .scene import Scene
 from .gui import * 
 from .sceneManager import SceneManager

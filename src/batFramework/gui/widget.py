@@ -102,13 +102,14 @@ class Widget(bf.Entity):
         return self.gui_depth
         
     def top_at(self, x: float|int, y: float|int) -> "None|Widget":
-        if self.children:
-            for child in reversed(self.children):
-                r = child.top_at(x, y)
-                if r is not None:
-                    return r
-        if self.rect.collidepoint(x, y) and self.visible:
+        if self.visible and self.rect.collidepoint(x, y):
+            if self.children:
+                for child in reversed(self.children):
+                    r = child.top_at(x, y)
+                    if r is not None:
+                        return r
             return self
+
         return None
 
     def get_constraint(self, name: str) -> Constraint | None:

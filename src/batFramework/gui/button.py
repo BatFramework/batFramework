@@ -138,7 +138,6 @@ class Button(Label, InteractiveWidget):
     def _build_hovered(self)->None:
         self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_ADD)
 
-        
     def build(self) -> None:
         super().build()
         if not self.enabled:
@@ -147,11 +146,3 @@ class Button(Label, InteractiveWidget):
             self._build_hovered()
         if self.effect:
             self._build_effect()
-    def apply_contraints(self) -> None:
-        super().apply_constraints()
-# 
-#     def draw(self,camera)->int:
-#         camera.surface.blit(self.get_surface_filter(),camera.transpose(self.rect.move(0,4)),special_flags = pygame.BLEND_RGBA_MULT)
-#         # camera.surface.blit(self.get_surface_filter(),(0,0),special_flags = pygame.BLEND_SUB)
-#         res = super().draw(camera)
-#         return res
