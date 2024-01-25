@@ -50,6 +50,7 @@ class Manager(bf.SceneManager):
             self._timeManager.update(dt)
             self.update(dt)
             # render
+            self._screen.fill((0,0,0))
             self.draw(self._screen)
             pygame.display.flip()
         pygame.quit()
