@@ -26,6 +26,7 @@ class Scene:
         self._world_entities: list[bf.Entity] = []
         self._hud_entities: list[bf.Entity] = []
         self.actions: bf.ActionContainer = bf.ActionContainer()
+        self.early_actions: bf.ActionContainer = bf.ActionContainer()
         self.camera: bf.Camera = bf.Camera(convert_alpha=enable_alpha)
         self.hud_camera: bf.Camera = bf.Camera(convert_alpha=True)
 
@@ -155,6 +156,10 @@ class Scene:
         """Add actions to the scene."""
         self.actions.add_action(*action)
 
+    def add_early_action(self, *action):
+        """Add actions to the scene."""
+        self.early_actions.add_action(*action)
+
     def get_by_tags(self, *tags):
         """Get entities by their tags."""
         res = [
@@ -205,12 +210,13 @@ class Scene:
 
         if self.do_early_process_event(event):
             return
-        self.actions.process_event(event)
+        self.early_actions.process_event(event)
         self.do_handle_actions()
         self.do_handle_event(event)
         for entity in self._hud_entities + self._world_entities:
             if entity.process_event(event):
-                break
+                return
+        self.actions.process_event(event)
 
 
     def do_handle_actions(self) -> None:
@@ -229,6 +235,7 @@ class Scene:
         self.camera.update(dt)
         self.hud_camera.update(dt)
         self.actions.reset()
+        self.early_actions.reset()
 
     def do_update(self, dt):
         """Specific update within the scene."""
@@ -309,3 +316,4 @@ class Scene:
         self.set_active(False)
         self.set_visible(False)
         self.actions.hard_reset()
+        self.early_actions.hard_reset()
