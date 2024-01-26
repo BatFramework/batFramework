@@ -13,9 +13,13 @@ class TextInput(Label,InteractiveWidget):
         self.set_focusable(True)
         self.set_outline_color("black")
         self.old_key_repeat :tuple= (0,0)
-        self._cursor_timer = bf.Timer(0.3,self._cursor_toggle,loop=True)
+        self._cursor_timer = bf.Timer(0.3,self._cursor_toggle,loop=True).start()
+        self._cursor_timer.pause()
         self._show_cursor :bool = True
-        
+
+    def to_string_id(self) -> str:
+        return f"TextInput({self._text})"
+
     def _cursor_toggle(self):
         self._show_cursor = not self._show_cursor
         self.build()
@@ -34,9 +38,9 @@ class TextInput(Label,InteractiveWidget):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
     def do_on_get_focus(self):
-        self.set_outline_width(3)
+        self.set_outline_width(2)
         self.old_key_repeat = pygame.key.get_repeat()
-        self._cursor_timer.start()
+        self._cursor_timer.resume()
         pygame.key.set_repeat(200,100)
     def do_on_lose_focus(self):
         self.set_outline_width(0)
@@ -52,6 +56,7 @@ class TextInput(Label,InteractiveWidget):
 
     def do_handle_event(self,event)->bool:
         text = self.get_text()
+        if not self.is_focused : return False
         if event.type == pygame.TEXTINPUT:
             self.set_text(text[:self.cursor_position]+event.text+text[self.cursor_position:])
             self.set_cursor_position(self.cursor_position+1)

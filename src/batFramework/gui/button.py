@@ -6,7 +6,7 @@ import pygame
 
 
 class Button(Label, InteractiveWidget):
-    _cache = {}
+    _cache :dict = {}
 
     def __init__(self, text: str, callback: None| Callable = None) -> None:
         # Label.__init__(self,text)
@@ -19,6 +19,7 @@ class Button(Label, InteractiveWidget):
         self.enabled :bool = True
         super().__init__(text=text)
         self.set_debug_color("cyan")
+        self.focusable = True
 
     def get_surface_filter(self) -> pygame.Surface | None:
             if not self.surface:
@@ -85,6 +86,7 @@ class Button(Label, InteractiveWidget):
 
     def do_on_click_down(self,button)->None:
         if self.enabled and button == 1 and self.effect == 0:
+            if not self.get_focus():return
             self.is_clicking = True
             self.start_effect()
 

@@ -5,7 +5,7 @@ import pygame
 
 
 class Root(InteractiveWidget):
-    def __init__(self,camera):
+    def __init__(self,camera)->None:
         super().__init__()
         self.drawing_camera = camera
         self.surface = None
@@ -72,6 +72,8 @@ class Root(InteractiveWidget):
     def get_root(self) -> "Root" :
         return self
 
+    def do_on_click_down(self,button:int)->None:
+        if button == 1 : self.clear_focused()
 
     def update(self, dt: float) -> None:
         super().update(dt)
@@ -84,8 +86,8 @@ class Root(InteractiveWidget):
         )
         if old == self.hovered:
             return
-        new_is_interactive = isinstance(self.hovered,InteractiveWidget)
-        old_is_interactive = isinstance(old,InteractiveWidget)
-        if old          and old_is_interactive  :    old.on_exit()
-        if self.hovered and new_is_interactive  :    self.hovered.on_enter()
+        if old and isinstance(old,InteractiveWidget):    
+            old.on_exit()
+        if self.hovered and isinstance(self.hovered,InteractiveWidget) :
+            self.hovered.on_enter()
 

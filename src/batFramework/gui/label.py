@@ -143,7 +143,7 @@ class Label(Shape):
         self._text_rect = self._text_surface.get_frect(topleft = self.get_content_rect_rel().topleft)
 
     def _build_layout(self) -> None:
-        if not self._text_rect : return
+        if self._text_rect is None : return
         if self.autoresize:
             target_rect = self.inflate_rect_by_padding(self._text_rect)
             if self.rect.size != target_rect.size:

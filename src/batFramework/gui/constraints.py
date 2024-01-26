@@ -232,6 +232,21 @@ class ConstraintAnchorTopRight(Constraint):
                 parent_widget.get_content_top(),
             )
 
+class ConstraintAnchorBottomRight(Constraint):
+    def __init__(self):
+        super().__init__(name="anchor_bottomright")
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.bottomright == parent_widget.get_content_rect().bottomright
+
+    def apply_constraint(self, parent_widget, child_widget):
+        if not self.evaluate(parent_widget, child_widget):
+            child_widget.set_position(
+                parent_widget.get_content_right() - child_widget.rect.w,
+                parent_widget.get_content_bottom() - child_widget.rect.h,
+            )
+
+
 
 class ConstraintAnchorRight(Constraint):
     def __init__(self):
