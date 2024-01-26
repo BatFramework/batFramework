@@ -309,6 +309,7 @@ class Scene:
         self.root.clear_hovered()
         self.root.clear_focused()
         self.root.build()
+        self.do_on_enter()
 
     def on_exit(self):
         self.root.clear_hovered()
@@ -317,3 +318,10 @@ class Scene:
         self.set_visible(False)
         self.actions.hard_reset()
         self.early_actions.hard_reset()
+        self.do_on_exit()
+
+    def do_on_enter(self)->None:
+        pass
+
+    def do_on_exit(self)->None:
+        pass

@@ -6,6 +6,7 @@ from .root import Root
 from .shape import Shape
 from .frame import Frame
 from .label import Label
+from .dialogueBox import DialogueBox
 from .textInput import TextInput
 from .button import Button
 from .debugger import *
