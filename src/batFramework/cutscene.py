@@ -1,6 +1,5 @@
 import batFramework as bf
 
-
 class CutsceneBlock:
     ...
 
@@ -10,10 +9,13 @@ class Cutscene:
 
 
 class CutsceneManager(metaclass=bf.Singleton):
-    def __init__(self, manager) -> None:
+    def __init__(self) -> None:
         self.current_cutscene: Cutscene = None
         self.cutscenes: list[bf.Cutscene] = []
-        self.manager: bf.Manager = manager
+        self.manager = None
+        
+    def set_manager(self,manager):
+        self.manager = manager
 
     def get_flag(self, flag):
         return None
@@ -35,6 +37,11 @@ class CutsceneManager(metaclass=bf.Singleton):
             self.current_cutscene.play()
         self.manager.set_sharedVar("in_cutscene", True)
 
+    def enable_player_control(self)->None:
+        self.manager.set_sharedVar("player_has_control",True)
+    def disable_player_control(self)->None:
+        self.manager.set_sharedVar("player_has_control",False)
+
     def update(self, dt):
         if not self.current_cutscene is None:
             self.current_cutscene.update(dt)
@@ -50,8 +57,8 @@ class CutsceneManager(metaclass=bf.Singleton):
 
 
 class Cutscene:
-    def __init__(self, *blocks) -> None:
-        self.cutscene_blocks: list[CutsceneBlock] = list(blocks)
+    def __init__(self) -> None:
+        self.cutscene_blocks = []
         self.block_index = 0
         self.end_blocks: list[CutsceneBlock] = []
         self.ended = False
@@ -65,9 +72,12 @@ class Cutscene:
     def init_blocks(self):
         pass
 
-    def add_end_block(self, block):
-        block.set_parent_cutscene(self)
-        self.end_blocks.append(block)
+    def add_blocks(self,*blocks:CutsceneBlock):
+        self.cutscene_blocks.extend(blocks)
+
+    def add_end_blocks(self, *blocks:CutsceneBlock):
+        _ = [block.set_parent_cutscene(self) for block in blocks]
+        self.end_blocks.extend(blocks)
 
     def get_scene_at(self, index):
         return bf.CutsceneManager().manager._scenes[index]
@@ -81,7 +91,7 @@ class Cutscene:
     def get_scene(self, name):
         return bf.CutsceneManager().manager.get_scene(name)
 
-    def add_block(self, *blocks: list[CutsceneBlock]):
+    def add_block(self, *blocks: CutsceneBlock):
         for block in blocks:
             block.set_parent_cutscene(self)
             self.cutscene_blocks.append(block)
@@ -100,7 +110,6 @@ class Cutscene:
     def update(self, dt):
         if self.ended:
             return
-        # print("cutscene update",self.cutscene_blocks[self.block_index])
         self.cutscene_blocks[self.block_index].update(dt)
         if self.cutscene_blocks[self.block_index].has_ended():
             self.block_index += 1
@@ -113,7 +122,6 @@ class Cutscene:
                     self.end_blocks = []
             self.cutscene_blocks[self.block_index].start()
 
-            # print("NEXT BLOCK")
 
     def has_ended(self):
         return self.ended

@@ -89,18 +89,13 @@ class ParallelBlock(CutsceneBlock):
     """
     Represents a parallel execution block for multiple Cutscene blocks.
     """
-
-    # Constructor for ParallelBlock, taking a variable number of blocks as arguments
     def __init__(self, *blocks) -> None:
         super().__init__()
         # List of blocks to run in parallel
-        self.blocks: list[CutsceneBlock] = blocks
+        self.blocks: list[CutsceneBlock] = list(blocks)
 
     # Start the parallel block (override the base class method)
     def start(self):
-        """
-        Start the parallel execution block.
-        """
         super().start()
         # Start each block in parallel
         for block in self.blocks:
@@ -108,32 +103,14 @@ class ParallelBlock(CutsceneBlock):
 
     # Process an event for each block in parallel
     def process_event(self, event):
-        """
-        Process an event for each block in the parallel execution block.
-
-        Args:
-            event: The event to be processed.
-        """
         _ = [b.process_event(event) for b in self.blocks]
 
     # Update each block in parallel
     def update(self, dt):
-        """
-        Update each block in the parallel execution block.
-
-        Args:
-            dt: Time elapsed since the last update.
-        """
         _ = [b.update(dt) for b in self.blocks]
 
     # Check if all blocks have ended
     def has_ended(self):
-        """
-        Check if all blocks in the parallel execution block have ended.
-
-        Returns:
-            bool: True if all blocks have ended, False otherwise.
-        """
         return all(b.has_ended() for b in self.blocks)
 
 
@@ -152,9 +129,7 @@ class SceneTransitionBlock(CutsceneBlock):
         self.duration = duration
         self.kwargs = kwargs
         # Timer to handle the end of the transition
-        self.timer = bf.Timer(
-            name="scene_transition_block", duration=duration, end_callback=self.end
-        )
+        self.timer = bf.Timer(duration=duration, end_callback=self.end)
 
     # Start the scene transition block
     def start(self):
@@ -176,3 +151,23 @@ class SceneTransitionBlock(CutsceneBlock):
 
     def end(self):
         return super().end()
+
+
+
+class DelayBlock(CutsceneBlock):
+    def __init__(self, duration) -> None:
+        super().__init__()
+        self.timer = bf.Timer(duration=duration, end_callback=self.end)
+
+    def start(self):
+        super().start()
+        self.timer.start()
+
+class FunctionBlock(CutsceneBlock):
+    def __init__(self,func)->None:
+        self.function = func
+
+    def start(self):
+        super().start()
+        self.function()
+        self.end()
