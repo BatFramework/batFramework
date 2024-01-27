@@ -1,6 +1,6 @@
 import pygame
 from .utils import Utils
-
+from .resourceManager import ResourceManager
 
 class Tileset:
     _tilesets = {}
@@ -8,7 +8,7 @@ class Tileset:
 
     def __init__(self, source: pygame.Surface | str, tilesize) -> None:
         if isinstance(source, str):
-            source = pygame.image.load(Utils.get_path(source)).convert_alpha()
+            source = ResourceManager().get_image(source,convert_alpha=True)
 
         self.tile_dict = {}
         self.surface = source
@@ -52,7 +52,7 @@ class Tileset:
         if name in Tileset._tilesets:
             return Tileset._tilesets[name]
         else:
-            img = pygame.image.load(Utils.get_path(path)).convert_alpha()
+            img = ResourceManager().get_image(path,convert_alpha=True)
             tileset = Tileset(img, tilesize)
             Tileset._tilesets[name] = tileset
             return tileset
