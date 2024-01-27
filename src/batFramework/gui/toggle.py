@@ -17,6 +17,12 @@ class Toggle(Button):
         self.set_gap(int(max(4, self.get_content_width() / 3)))
         self.set_toggle_callback(callback)
 
+    def set_value(self,value:bool,do_callback=False)->Self:
+        self.value = value
+        self.build()
+
+        if do_callback and self.on_toggle is not None: self.on_toggle(self.value)
+        return self
     def set_gap(self, value: int | float) -> Self:
         if value < 0:
             return self
@@ -30,10 +36,8 @@ class Toggle(Button):
         return f"Toggle({self.value})"
 
     def toggle(self) -> None:
-        self.value = not self.value
-        self.build()
-        if self.on_toggle:
-            self.on_toggle(self.value)
+        self.set_value(not self.value,do_callback = True)
+
 
     def set_toggle_callback(self, callback) -> Self:
         self.on_toggle = callback

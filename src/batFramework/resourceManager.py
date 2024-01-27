@@ -2,6 +2,7 @@ import batFramework as bf
 import os
 import pygame
 import sys
+import json
 from .utils import Singleton
 if getattr(sys, "frozen", False):
     # If the application is run as a bundle, the PyInstaller bootloader
@@ -53,3 +54,20 @@ class ResourceManager(metaclass=Singleton):
     def get_sound(self,path):
         return None
 
+    
+    def load_json_from_file(self,path: str) -> dict|None:
+        try:
+            with open(self.get_path(path), "r") as file:
+                data = json.load(file)
+            return data
+        except FileNotFoundError:
+            print(f"File '{path}' not found")
+            return None
+
+    def save_json_to_file(self,path: str, data) -> bool:
+        try:
+            with open(self.get_path(path), "w") as file:
+                json.dump(data, file, indent=2)
+            return True
+        except FileNotFoundError:
+            return False
