@@ -20,5 +20,5 @@ class DynamicEntity(bf.Entity):
     def on_collideY(self, collider: Self):
         return False
 
-    def move_by_velocity(self) -> None:
-        self.set_position(self.rect.x + self.velocity.x, self.rect.y + self.velocity.y)
+    def move_by_velocity(self,dt) -> None:
+        self.set_position(self.rect.x + self.velocity.x * dt, self.rect.y + self.velocity.y * dt)
