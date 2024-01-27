@@ -248,7 +248,7 @@ class Scene:
         # if bounding_box is None : return
         for data in entity.get_bounding_box():
             if data is None : return
-            if isinstance(data, pygame.FRect):
+            if isinstance(data, pygame.FRect) or  isinstance(data, pygame.Rect):
                 rect = data
                 color = entity.debug_color
             else:
