@@ -152,11 +152,11 @@ class Scene:
                 e.parent_scene = None
                 self._hud_entities.remove(e)
 
-    def add_action(self, *action):
+    def add_actions(self, *action):
         """Add actions to the scene."""
         self.actions.add_action(*action)
 
-    def add_early_action(self, *action):
+    def add_early_actions(self, *action):
         """Add actions to the scene."""
         self.early_actions.add_action(*action)
 

@@ -68,6 +68,10 @@ class SceneManager:
             if scene._name == name:
                 return scene
 
+    def get_scene_at(self,index:int)->bf.Scene|None:
+        if index < 0 or index >= len(self._scenes) : return None
+        return self._scenes[index]
+
     def transition_to_scene(self, dest_scene_name, transition, **kwargs):
         self.set_scene(dest_scene_name)
 
