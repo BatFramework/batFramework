@@ -127,11 +127,11 @@ class AnimatedSprite(bf.DynamicEntity):
             self.lock()
         return True
 
-    def get_state(self)->AnimState|None:
+    def get_animState(self)->AnimState|None:
         return self.current_state
 
     def update(self, dt: float)->None:
-        s = self.get_state()
+        s = self.get_animState()
         if not self.animStates or s is None :
             return
         if not self.paused : 
