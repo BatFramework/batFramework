@@ -274,7 +274,7 @@ class Camera:
         if self.follow_point_func:
             amount = ((dt * 60) * self.follow_speed)
             target = self.follow_point_func()
-            self.set_center(self.vector_center.lerp(target, amount))
+            self.set_center(*self.vector_center.lerp(target, amount))
 
     def draw(self, surface: pygame.Surface):
         """
