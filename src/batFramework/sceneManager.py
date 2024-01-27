@@ -10,6 +10,7 @@ class SceneManager:
         self._scene_transitions: list = []
         self.set_sharedVar("debugging_mode",self._debugging)
         self.set_sharedVar("in_cutscene", False)
+        self.set_sharedVar("player_has_control", True)
 
         self._scenes: list[bf.Scene] = list(initial_scenes)
         for index, s in enumerate(self._scenes):

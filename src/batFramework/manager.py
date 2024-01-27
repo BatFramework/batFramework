@@ -8,7 +8,8 @@ class Manager(bf.SceneManager):
         # random.seed("random")
         self._screen: pygame.Surface|None = bf.const.SCREEN
         self._timeManager = bf.TimeManager()
-        self._cutsceneManager = bf.CutsceneManager(self)
+        self._cutsceneManager = bf.CutsceneManager()
+        self._cutsceneManager.set_manager(self)
         self._clock: pygame.Clock = pygame.Clock()
         self.do_pre_init()
         super().__init__(*initial_scene_list)
