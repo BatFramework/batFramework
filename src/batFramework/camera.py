@@ -17,7 +17,7 @@ class Camera:
         """
         size = size if size else bf.const.RESOLUTION
         self.should_convert_alpha :bool = convert_alpha
-        self.rect = pygame.Rect(0, 0, *size)
+        self.rect = pygame.FRect(0, 0, *size)
         self.vector_center = Vector2(0,0) 
         
         self.surface: pygame.Surface = pygame.Surface((0, 0)) #tmp dummy
