@@ -75,6 +75,14 @@ class Root(InteractiveWidget):
     def do_on_click_down(self,button:int)->None:
         if button == 1 : self.clear_focused()
 
+    def top_at(self, x: float|int, y: float|int) -> "None|Widget":
+        if self.children:
+            for child in reversed(self.children):
+                r = child.top_at(x, y)
+                if r is not None:
+                    return r
+        return self if self.rect.collidepoint(x,y) else None
+
     def update(self, dt: float) -> None:
         super().update(dt)
         old = self.hovered
