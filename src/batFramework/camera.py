@@ -202,7 +202,7 @@ class Camera:
             # self.cached_surfaces[factor].fill((self._clear_color))
 
         self.surface = self.cached_surfaces[self.zoom_factor]
-        self.rect = self.surface.get_rect(center=self.rect.center)
+        self.rect = self.surface.get_frect(center=self.rect.center)
         self.clear()
         return self
 
