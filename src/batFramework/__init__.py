@@ -53,7 +53,7 @@ def init(
         init_screen(resolution,flags,vsync)
         
         ResourceManager().set_resource_path(resource_path if resource_path is not None else ".")
-        ResourceManager().load_dir(ResourceManager().RESOURCE_PATH)
+        if resource_path is not None : ResourceManager().load_dir(ResourceManager().RESOURCE_PATH)
         if default_text_size is not None : FontManager().set_default_text_size(default_text_size)
         FontManager().init_font(default_font)
         const.BF_INITIALIZED = True
