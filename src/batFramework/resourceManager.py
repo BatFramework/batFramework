@@ -22,16 +22,21 @@ class ResourceManager(metaclass=Singleton):
 
     def load_dir(self,path)->None:
         for root, dirs, files in os.walk(path):
+
+            files = [f for f in files if not f[0] == '.']
+            dirs[:] = [d for d in dirs if not d[0] == '.']
+            
             for file in files:
                 file_path = os.path.join(root, file)
                 if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
                     self.load_image(file_path)
+                    
                 elif file.lower().endswith(('.mp3', '.wav')):
-                    self.load_sound(file_path)
-
+                    #AudioManager.load_sound(file_path)
+                    pass
     def set_resource_path(self,path: str):
         self.RESOURCE_PATH = os.path.join(application_path, path)
-        print(f"set resource path to '{self.RESOURCE_PATH}'")
+        print(f"Resource path : '{self.RESOURCE_PATH}'")
         
 
     def get_path(self,path: str):
@@ -42,18 +47,12 @@ class ResourceManager(metaclass=Singleton):
         if key in self.convert_image_cache : return
         self.convert_image_cache[key] = pygame.image.load(path).convert()
         self.convert_alpha_image_cache[key] = pygame.image.load(path).convert_alpha()
-        
-    def load_sound(self,path)->None:
-        pass
+        print(f"Loaded image : '{path}'")
         
     def get_image(self,path,convert_alpha:bool=False):   
         key = self.get_path(path)
         return self.convert_alpha_image_cache.get(key,None) if\
          convert_alpha else self.convert_image_cache.get(key,None)
-    
-    def get_sound(self,path):
-        return None
-
     
     def load_json_from_file(self,path: str) -> dict|None:
         try:
