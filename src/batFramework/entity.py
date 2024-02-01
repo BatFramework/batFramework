@@ -15,29 +15,35 @@ class Entity:
         surface_flags: int = 0,
         convert_alpha: bool = False,
     ) -> None:
-        self.convert_alpha = convert_alpha
-        if size is None:
+        size = (0,0)
+        if size is None and not no_surface:
             size = (10, 10)
-        if no_surface:
-            self.surface = None
-        else:
-            self.surface = pygame.Surface(size, surface_flags)
-            
-        if convert_alpha and self.surface is not None:
-            self.surface = self.surface.convert_alpha()
-            self.surface.fill((0, 0, 0, 0))
-
+        self.surface = None
+        self.convert_alpha = convert_alpha
+        self.blit_flags :int = 0#pygame.BLEND_PREMULTIPLIED if self.convert_alpha else 0
         self.rect = pygame.FRect(0, 0, *size)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
         self.visible: bool = True
         self.debug_color: tuple = bf.color.DARK_RED
         self.render_order: int = 0
-        self.uid: Any = Entity.__instance_count
+        self.uid: int = Entity.__instance_count
         Entity.__instance_count += 1
+        
+        if not no_surface:
+            self.surface = pygame.Surface(size, surface_flags).convert()
+            if convert_alpha and self.surface is not None:
+                self.surface = self.surface.convert_alpha()
+                self.surface.fill((0, 0, 0, 0))
+
+
+    def set_blit_flags(self,blit_flags:int)->Self:
+        self.blit_flags = blit_flags
+        return self
 
     def set_render_order(self, render_order: int) -> Self:
         self.render_order = render_order
+        if self.parent_scene: self.parent_scene.sort_entities()
         return self
 
     def get_bounding_box(self):
@@ -83,9 +89,12 @@ class Entity:
         self.rect.center = (x, y)
         return self
 
-    def set_uid(self, uid) -> Self:
+    def set_uid(self, uid:int) -> Self:
         self.uid = uid
         return self
+
+    def get_uid(self)->int:
+        return self.uid
 
     def add_tags(self, *tags) -> Self:
         for tag in tags:
@@ -108,12 +117,9 @@ class Entity:
         Returns bool : True if the method is blocking (no propagation to next children of the scene)
         """
         self.do_process_actions(event)
-        res = self.do_handle_actions()
-        res = res or self.do_handle_event(event)
+        res = self.do_handle_event(event)
         self.do_reset_actions()
         return res
-
-
 
     def do_process_actions(self, event: pygame.Event) -> None:
         """
@@ -125,25 +131,19 @@ class Entity:
             Reset entity actions you may have set
         """
 
-    def do_handle_actions(self) ->None:
-        """
-            Handle entity actions
-        """
-
     def do_handle_event(self, event: pygame.Event) -> bool:
         """
-            Handle specific
+            Handle specific events with no action support
         """
-
         return False
 
-    def update(self, dt: float):
+    def update(self, dt: float)->None:
         """
-            Update method to be overriden by subclasses of widget
+            Update method to be overriden by subclasses of entity
         """
         self.do_update(dt)
 
-    def do_update(self, dt: float):
+    def do_update(self, dt: float)->None:
         """
             Update method to be overriden for specific behavior by the end user
         """
@@ -152,9 +152,10 @@ class Entity:
         """
             Draw the entity onto the camera with coordinate transposing
         """
-        should_not_draw = not self.visible or not self.surface or not camera.intersects(self.rect)
-        if should_not_draw:
+        if not self.visible or not self.surface or not camera.intersects(self.rect):
             return 0
-        camera.surface.blit(self.surface, camera.transpose(self.rect))
-
+        camera.surface.blit(
+            self.surface,
+            camera.transpose(self.rect),
+            special_flags = self.blit_flags)
         return 1

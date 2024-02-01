@@ -19,6 +19,7 @@ from .action import Action
 from .actionContainer import *
 from .camera import Camera
 from .entity import Entity
+from .renderGroup import RenderGroup
 from .dynamicEntity import DynamicEntity
 from .sprite import Sprite
 from .animatedSprite import AnimatedSprite, AnimState

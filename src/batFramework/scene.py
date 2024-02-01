@@ -10,7 +10,7 @@ import batFramework as bf
 
 
 class Scene:
-    def __init__(self, name: str, enable_alpha: bool = True) -> None:
+    def __init__(self, name: str, hud_convert_alpha: bool = True,world_convert_alpha:bool=False) -> None:
         """
         Initialize the Scene object.
 
@@ -27,8 +27,8 @@ class Scene:
         self._hud_entities: list[bf.Entity] = []
         self.actions: bf.ActionContainer = bf.ActionContainer()
         self.early_actions: bf.ActionContainer = bf.ActionContainer()
-        self.camera: bf.Camera = bf.Camera(convert_alpha=enable_alpha)
-        self.hud_camera: bf.Camera = bf.Camera(convert_alpha=True)
+        self.camera: bf.Camera = bf.Camera(convert_alpha=world_convert_alpha)
+        self.hud_camera: bf.Camera = bf.Camera(convert_alpha=hud_convert_alpha)
 
         self.root: bf.Root = bf.Root(self.hud_camera)
         self.root.set_center(*self.hud_camera.get_center())
@@ -242,11 +242,7 @@ class Scene:
         pass
 
     def debug_entity(self, entity: bf.Entity, camera: bf.Camera):
-        if not entity.visible:
-            return
-        # bounding_box = entity.get_bounding_box()
-        # if bounding_box is None : return
-        for data in entity.get_bounding_box():
+        def draw_rect(data):
             if data is None : return
             if isinstance(data, pygame.FRect) or  isinstance(data, pygame.Rect):
                 rect = data
@@ -254,45 +250,53 @@ class Scene:
             else:
                 rect = data[0]
                 color = data[1]
-
             pygame.draw.rect(camera.surface, color, camera.transpose(rect), 1)
+
+        [draw_rect(data) for data in entity.get_bounding_box()]
+
 
     def sort_entities(self) -> None:
         """Sort entities within the scene based on their rendering order."""
         self._world_entities.sort(key=lambda e: e.render_order)
         self._hud_entities.sort(key=lambda e: e.render_order)
 
+
+    def _draw_camera(self,camera,entity_list,show_outlines:bool=False,show_only_visible_outlines:bool=False)->int:
+        res = sum(entity.draw(camera) for entity in entity_list)
+
+        # Draw outlines for world entities if required
+        if show_outlines:
+            if show_only_visible_outlines:
+                entity_list = filter(lambda entity : entity.visible,entity_list)
+            [self.debug_entity(e,camera) for e in entity_list]
+        return res
+
     def draw(self, surface: pygame.Surface):
         total_blit_calls = 0
-        if not self.manager : return
+        
         self.camera.clear()
         self.hud_camera.clear()
 
         show_outlines = self.manager._debugging in [2, 3]
-        show_only_visible_outlines = self.manager._debugging != 3
+        show_only_visible_outlines = self.manager._debugging == 2
+
+        # world_gen   = filter(lambda e: self.camera.intersects(self.camera.transpose(e.rect)),self._world_entities)
+        # hud_gen     = filter(lambda e: self.hud_camera.intersects(self.hud_camera.transpose(e.rect)),self._hud_entities)
 
 
-        #   draw all world entities
-        total_blit_calls += sum(entity.draw(self.camera) for entity in self._world_entities)
-
-        #   
-        if show_outlines:
-            [self.debug_entity(entity, self.camera) for entity\
-            in self._world_entities if not  show_only_visible_outlines\
-            or (show_only_visible_outlines and entity.visible)]
-
-        total_blit_calls += sum(entity.draw(self.hud_camera) for entity in self._hud_entities)
-
-        if show_outlines:
-            [self.debug_entity(entity, self.hud_camera) for entity\
-            in self._hud_entities if  not show_only_visible_outlines\
-            or (show_only_visible_outlines and entity.visible)]
+        
+        # Draw all world entities
+        total_blit_calls += self._draw_camera(self.camera,self._world_entities,show_outlines,show_only_visible_outlines)
+        # Draw all HUD entities
+        total_blit_calls += self._draw_camera(self.hud_camera,self._hud_entities,show_outlines,show_only_visible_outlines)
 
         self.do_early_draw(surface)
         self.camera.draw(surface)
+        self.do_post_world_draw(surface)
         self.hud_camera.draw(surface)
         self.do_final_draw(surface)
         self.blit_calls = total_blit_calls
+
 
     def do_early_draw(self, surface: pygame.Surface):
         pass

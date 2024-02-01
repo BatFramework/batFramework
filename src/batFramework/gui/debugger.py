@@ -108,4 +108,5 @@ class BasicDebugger(Debugger):
         )
         self.add_dynamic("W. Ent.",lambda : parent_scene.get_world_entity_count())
         self.add_dynamic("H. Ent.",lambda : parent_scene.get_hud_entity_count())
+        self.add_dynamic("Blits",lambda : parent_scene.blit_calls)
         

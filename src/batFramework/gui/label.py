@@ -11,7 +11,7 @@ class Label(Shape):
         self._resized_flag: bool = False
 
         # Enable/Disable antialiasing
-        self._antialias: bool = True
+        self._antialias: bool = bf.FontManager().DEFAULT_ANTIALIAS
 
         self._text_size = bf.FontManager().DEFAULT_TEXT_SIZE
 
@@ -121,7 +121,6 @@ class Label(Shape):
             print(f"No font for '{self.to_string_id()}' :(")
             return
         # render(text, antialias, color, bgcolor=None, wraplength=0) -> Surface
-
         params = {
             "font_name":self._font_object.name,
             "text":self._text,
@@ -133,15 +132,18 @@ class Label(Shape):
         
         key = tuple(params.values())
         cached_value =  Label._text_cache.get(key,None)
-        if cached_value != None:
-            self._text_surface = cached_value
-        else:
+        if cached_value is None:
+            if self._do_caching : 
+                Label._text_cache[key] = self._text_surface
             params.pop("font_name")
             self._text_surface = self._font_object.render(**params)
-            if self._do_caching:
-                Label._text_cache[key] = self._text_surface
+        else:
+            self._text_surface = cached_value
+
         self._text_rect = self._text_surface.get_frect(topleft = self.get_content_rect_rel().topleft)
 
+
+        
     def _build_layout(self) -> None:
         if self._text_rect is None : return
         if self.autoresize:

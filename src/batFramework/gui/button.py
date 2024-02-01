@@ -9,7 +9,6 @@ class Button(Label, InteractiveWidget):
     _cache :dict = {}
 
     def __init__(self, text: str, callback: None| Callable = None) -> None:
-        # Label.__init__(self,text)
         self.callback = callback
         self.is_hovered: bool = False
         self.effect_max :float= 20
@@ -24,24 +23,19 @@ class Button(Label, InteractiveWidget):
     def get_surface_filter(self) -> pygame.Surface | None:
             if not self.surface:
                 return None
-
             size = self.surface.get_size()
             surface_filter = Button._cache.get(size, None)
-
             if surface_filter is None:
                 # Create a mask from the original surface
                 mask = pygame.mask.from_surface(self.surface,threshold=0)
-
                 # Get the bounding box of the mask
                 silhouette_surface = mask.to_surface(
                     setcolor = (30,30,30),unsetcolor= (255,255,255)
                 ).convert_alpha()
-                
-
                 Button._cache[size] = silhouette_surface
                 surface_filter = silhouette_surface
-
             return surface_filter
+            
     def enable(self)->Self:
         self.enabled = True
         self.build()
