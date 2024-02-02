@@ -15,8 +15,11 @@ class Entity:
         surface_flags: int = 0,
         convert_alpha: bool = False,
     ) -> None:
-        if size is None and not no_surface:
-            size = (10, 10)
+        if size is None:
+            if no_surface:
+                size = (0,0)
+            else:
+                size = (10, 10)
         self.surface = None
         self.convert_alpha = convert_alpha
         self.blit_flags :int = 0#pygame.BLEND_PREMULTIPLIED if self.convert_alpha else 0

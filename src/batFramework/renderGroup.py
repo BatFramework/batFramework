@@ -17,13 +17,7 @@ class RenderGroup(bf.Entity):
         self.added:bool = False
         self.set_blit_flags(blit_flags)
         self.set_debug_color("white")
-
-    def set_blit_flags(self,blit_flags)->Self:
-        super().set_blit_flags(blit_flags)
-        for entity in self.entity_list : 
-            entity.set_bit_flags(blit_flags)
-        return self
-    
+        
     def add_entity(self,*entities)->Self:
         if not entities:return self
         if entities : self.entity_list.extend(list(entities))
@@ -33,8 +27,6 @@ class RenderGroup(bf.Entity):
             if self.added : e.do_when_added()
         self.sort_entity_list()
         self.rect = self.entity_list[0].rect.unionall_ip((e.rect for e in self.entity_list[1:]))
-        for entity in entities : 
-            entity.set_bit_flags(self.blit_flags)
         return self
 
     def remove_entity(self,*entity)->Self:
