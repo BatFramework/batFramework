@@ -14,6 +14,10 @@ class Timer:
         self.over : bool = False  
         self.do_delete:bool = False
         self.is_looping :bool = loop 
+        self.is_reusable:bool = False
+    def set_reusable(self,value:bool)->Self:
+        self.is_reusable = value
+        return self
 
     def stop(self)->Self:
         self.elapsed_time =-1
@@ -22,7 +26,7 @@ class Timer:
         return self
     
     def start(self)->Self:
-        if self.elapsed_time >= 0 : return self
+        if not self.is_over: return self
         self.elapsed_time = 0
         self.paused = False
         self.over = False
@@ -36,32 +40,36 @@ class Timer:
     def resume(self)->Self:
         self.paused = False
         return self
+        
     def delete(self)->Self:
         self.do_delete = True
         return self
+        
     def get_progression(self)->float:
         if self.elapsed_time < 0 : return 0
         if self.elapsed_time >= self.duration: return 1
         return  self.elapsed_time / self.duration
         
     def update(self,dt)->None:
-        if self.elapsed_time < 0 or self.paused: return
+        if self.elapsed_time < 0 or self.paused or self.over: return
         self.elapsed_time += dt
         # print("update :",self.elapsed_time,self.duration)
         if self.get_progression() == 1:
             self.end()
-            
+
     def end(self):
-        self.end_callback()
+        if self.end_callback : self.end_callback()
+        self.over = True
         if self.is_looping:
             self.elapsed_time = -1
             self.start()
             return
-            
-        self.over = True
 
-    def has_ended(self)->bool:
-        return self.over or self.do_delete
+    def is_over(self)->bool:
+        return self.over 
+
+    def should_delete(self)->bool:
+        return (self.over or self.do_delete) and not self.is_reusable
 
 
 class TimeManager(metaclass=bf.Singleton):
@@ -75,12 +83,10 @@ class TimeManager(metaclass=bf.Singleton):
 
     def update(self,dt):
         # Update all timers and remove completed ones
-        timers = list(self.timers.values())
-        for timer in [t for t in timers if not t.paused]:
+        for name, timer in {k: v for k, v in self.timers.items() if not v.paused}.items():
             timer.update(dt)
 
-        to_remove = [name for name, timer in self.timers.items() if timer.has_ended()]
+        to_remove = [name for name, timer in self.timers.items() if timer.should_delete()]
 
         for name in to_remove:
-            # print(self.timers.pop(name).name,"removed !")
             self.timers.pop(name)
