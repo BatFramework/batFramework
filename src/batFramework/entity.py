@@ -15,7 +15,6 @@ class Entity:
         surface_flags: int = 0,
         convert_alpha: bool = False,
     ) -> None:
-        size = (0,0)
         if size is None and not no_surface:
             size = (10, 10)
         self.surface = None
