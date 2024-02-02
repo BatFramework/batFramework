@@ -1,6 +1,7 @@
 from enum import Enum
 import pygame
 import batFramework as bf
+from functools import lru_cache
 
 
 class Easing(Enum):
@@ -15,62 +16,41 @@ class Easing(Enum):
         self.control_points = control_points
 
 
-class EasingAnimation(bf.Timer):
-    _cache = {}
+@lru_cache(maxsize=None)
+def process_value(progress,p0,p1,p2,p3)->float:
+    t = progress
+    t_inv = 1.0 - t
+    t2 = t * t
+    t3 = t * t2
+    t_inv2 = t_inv * t_inv
+    return 3 * t_inv2 * t * p1 + 3 * t_inv * t2 * p3 + t3
 
+class EasingAnimation(bf.Timer):
     def __init__(
         self,
-        name: str = '',
         easing_function: Easing = Easing.LINEAR,
-        duration: int = 100,
+        duration: float = 1,
         update_callback=None,
         end_callback=None,
         loop: bool = False,
-        reusable: bool = False,
     )->None:
         self.easing_function = easing_function
         self.update_callback = update_callback
-        self.value = 0.0
-        super().__init__(name, duration, loop, end_callback, reusable)
+        self.value :float = 0.0
+        super().__init__(duration, end_callback,loop)
 
-    def get_value(self):
+    def get_value(self)->float:
         return self.value
 
     def start(self):
+        super().start()
         self.value = 0
-        super().start()  # self.elapsed_progress set to 0 here
 
-    def update(self,dt) -> bool:
-        if super().update(dt):
-            return True  # If timer ended now, end() is called. So don't process value.
-        self._process_value()
-        # if self.name == 0: print("UPDATING (callback) in easing")
-        if self.update_callback:
-            self.update_callback(self.value)
-        return False
+    def update(self,dt:float)->None:
+        if self.get_progression() == 1 : return
+        super().update(dt)
+        self.value = process_value(self.get_progression(),*self.easing_function.control_points)
+        if self.update_callback: self.update_callback(self.value)
 
-    def end(self):
-        # Call update 1 last time with the last value
 
-        self.elapsed_progress = 1
-        self._process_value()
-        if self.update_callback:
-            self.update_callback(self.value)
-        self.value = 0
-        super().end()  # sets elapsed_progress to 0
 
-    def _process_value(self):
-        p0, p1, p2, p3 = self.easing_function.control_points
-        cache_key = (self.easing_function,self.elapsed_progress, p0, p1, p2, p3)
-        if cache_key in EasingAnimation._cache:
-            y = EasingAnimation._cache[cache_key]
-        else:
-            t = self.elapsed_progress
-            t_inv = 1.0 - t
-            t2 = t * t
-            t3 = t * t2
-            t_inv2 = t_inv * t_inv
-
-            y = 3 * t_inv2 * t * p1 + 3 * t_inv * t2 * p3 + t3
-            EasingAnimation._cache[cache_key] = y
-        self.value = y
