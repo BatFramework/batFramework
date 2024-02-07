@@ -25,7 +25,7 @@ class Constraint:
     def apply_constraint(self, parent_widget: Widget, child_widget: Widget):
         raise NotImplementedError("Subclasses must implement apply_constraint method")
 
-class ConstraintMinWidth(Constraint):
+class MinWidth(Constraint):
     def __init__(self, width):
         super().__init__(name="min_width")
         self.min_width = width
@@ -38,7 +38,7 @@ class ConstraintMinWidth(Constraint):
             child_widget.set_size(self.min_width, child_widget.rect.h)
 
 
-class ConstraintCenterX(Constraint):
+class CenterX(Constraint):
     def __init__(self):
         super().__init__(name="centerx")
 
@@ -52,7 +52,7 @@ class ConstraintCenterX(Constraint):
             )
 
 
-class ConstraintCenterY(Constraint):
+class CenterY(Constraint):
     def __init__(self):
         super().__init__(name="centery")
 
@@ -66,7 +66,7 @@ class ConstraintCenterY(Constraint):
             )
 
 
-class ConstraintCenter(Constraint):
+class Center(Constraint):
     def __init__(self):
         super().__init__(name="center")
 
@@ -78,7 +78,7 @@ class ConstraintCenter(Constraint):
             child_widget.set_center(*parent_widget.get_content_center())
 
 
-class ConstraintPercentageWidth(Constraint):
+class PercentageWidth(Constraint):
     def __init__(self, percentage: float, keep_autoresize: bool = True):
         super().__init__(name="percentage_width")
         self.percentage: float = percentage
@@ -107,7 +107,7 @@ class ConstraintPercentageWidth(Constraint):
             )
 
 
-class ConstraintPercentageHeight(Constraint):
+class PercentageHeight(Constraint):
     def __init__(self, percentage: float, keep_autoresize: bool = True):
         super().__init__(name="percentage_height")
         self.percentage: float = percentage
@@ -136,7 +136,7 @@ class ConstraintPercentageHeight(Constraint):
             )
 
 
-class ConstraintHeight(Constraint):
+class Height(Constraint):
     def __init__(self, height: float, keep_autoresize: bool = True):
         if height < 0:
             raise ValueError("height can't be negative")
@@ -162,7 +162,7 @@ class ConstraintHeight(Constraint):
             child_widget.set_size(child_widget.rect.w, self.height)
 
 
-class ConstraintWidth(Constraint):
+class Width(Constraint):
     def __init__(self, width: float, keep_autoresize: bool = True):
         if width < 0:
             raise ValueError("width can't be negative")
@@ -188,7 +188,7 @@ class ConstraintWidth(Constraint):
             child_widget.set_size(self.width, child_widget.rect.h)
 
 
-class ConstraintAspectRatio(Constraint):
+class AspectRatio(Constraint):
     def __init__(self, ratio: int | float = 1):
         super().__init__(name="aspect_ratio")
         if isinstance(ratio, float | int):
@@ -206,7 +206,7 @@ class ConstraintAspectRatio(Constraint):
             return  # TODO
 
 
-class ConstraintAnchorBottom(Constraint):
+class AnchorBottom(Constraint):
     def __init__(self):
         super().__init__(name="anchor_bottom")
 
@@ -218,7 +218,7 @@ class ConstraintAnchorBottom(Constraint):
             child_widget.set_y(parent_widget.get_content_bottom() - child_widget.rect.h)
 
 
-class ConstraintAnchorTopRight(Constraint):
+class AnchorTopRight(Constraint):
     def __init__(self):
         super().__init__(name="anchor_topright")
 
@@ -232,7 +232,7 @@ class ConstraintAnchorTopRight(Constraint):
                 parent_widget.get_content_top(),
             )
 
-class ConstraintAnchorBottomRight(Constraint):
+class AnchorBottomRight(Constraint):
     def __init__(self):
         super().__init__(name="anchor_bottomright")
 
@@ -248,7 +248,7 @@ class ConstraintAnchorBottomRight(Constraint):
 
 
 
-class ConstraintAnchorRight(Constraint):
+class AnchorRight(Constraint):
     def __init__(self):
         super().__init__(name="anchor_right")
 
@@ -263,7 +263,7 @@ class ConstraintAnchorRight(Constraint):
             )
 
 
-class ConstraintAnchorLeft(Constraint):
+class AnchorLeft(Constraint):
     def __init__(self):
         super().__init__(name="anchor_left")
 
