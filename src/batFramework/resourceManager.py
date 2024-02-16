@@ -30,10 +30,16 @@ class ResourceManager(metaclass=Singleton):
                 file_path = os.path.join(root, file)
                 if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
                     self.load_image(file_path)
-                    
+                    print(f"Loaded image : '{file_path}'")
+
                 elif file.lower().endswith(('.mp3', '.wav')):
-                    #AudioManager.load_sound(file_path)
-                    pass
+                    bf.AudioManager.load_sound(file.lower().split('.')[0],file_path)
+                    print(f"Loaded sound : '{file_path}'")
+
+                elif file.lower().endswith((".ttf", ".otf")):
+                    bf.FontManager().load_font(file_path,file.lower().split('.')[0])
+                    print(f"Loaded font : '{file_path}'")
+                    
     def set_resource_path(self,path: str):
         self.RESOURCE_PATH = os.path.join(application_path, path)
         print(f"Resource path : '{self.RESOURCE_PATH}'")
@@ -47,7 +53,6 @@ class ResourceManager(metaclass=Singleton):
         if key in self.convert_image_cache : return
         self.convert_image_cache[key] = pygame.image.load(path).convert()
         self.convert_alpha_image_cache[key] = pygame.image.load(path).convert_alpha()
-        print(f"Loaded image : '{path}'")
         
     def get_image(self,path,convert_alpha:bool=False):   
         key = self.get_path(path)

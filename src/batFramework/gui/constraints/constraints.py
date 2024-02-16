@@ -1,4 +1,4 @@
-from .widget import Widget
+from ..widget import Widget
 import batFramework as bf
 
 class Constraint:

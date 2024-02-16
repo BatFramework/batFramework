@@ -20,7 +20,7 @@ class Action:
         self._gamepad_button_control :set = set()
         self._gamepad_axis_control :set = set()
         self._holding = set()
-        self._unique = True
+        self._unique = False
         self.data: Any = None
 
     def set_unique(self, val: bool) -> None:

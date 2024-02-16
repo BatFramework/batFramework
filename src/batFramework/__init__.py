@@ -2,7 +2,6 @@ import pygame
 import batFramework as bf
 import sys
 from .constants import Constants as const
-from .constants import Colors as color
 from .utils import Singleton
 from .enums import *
 from .resourceManager import ResourceManager
@@ -10,9 +9,9 @@ from .fontManager import FontManager
 from .utils import Utils as utils
 from .tileset import Tileset
 from .time import TimeManager, Timer
+from .easingController import EasingController
 from .cutscene import Cutscene, CutsceneManager
 from .cutsceneBlocks import *
-from .easing import Easing, EasingAnimation
 from .audioManager import AudioManager
 import batFramework.transition as transition
 from .action import Action
@@ -22,6 +21,7 @@ from .entity import Entity
 from .renderGroup import RenderGroup
 from .dynamicEntity import DynamicEntity
 from .sprite import Sprite
+from .particle import *
 from .animatedSprite import AnimatedSprite, AnimState
 from .stateMachine import State, StateMachine
 from .scene import Scene

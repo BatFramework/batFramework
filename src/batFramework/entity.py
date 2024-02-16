@@ -27,7 +27,7 @@ class Entity:
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
         self.visible: bool = True
-        self.debug_color: tuple = bf.color.DARK_RED
+        self.debug_color: tuple | str= "red"
         self.render_order: int = 0
         self.uid: int = Entity.__instance_count
         Entity.__instance_count += 1
@@ -120,7 +120,6 @@ class Entity:
         """
         self.do_process_actions(event)
         res = self.do_handle_event(event)
-        self.do_reset_actions()
         return res
 
     def do_process_actions(self, event: pygame.Event) -> None:
@@ -144,6 +143,8 @@ class Entity:
             Update method to be overriden by subclasses of entity
         """
         self.do_update(dt)
+        self.do_reset_actions()
+
 
     def do_update(self, dt: float)->None:
         """

@@ -8,6 +8,8 @@ class Particle:
         self.dead = False
         self.surface = None
 
+    def update(self,dt):pass
+    
     def kill(self):
         self.dead = True
 
@@ -18,16 +20,7 @@ class Particle:
 class TimedParticle(Particle):
     def __init__(self, duration):
         super().__init__()
-        self.start_time = pygame.time.get_ticks()
-        self.duration = duration
-        self.progression = 0
-
-    def update(self, dt):
-        if self.dead:
-            return
-        elapsed_time = pygame.time.get_ticks() - self.start_time
-        self.progression = elapsed_time / self.duration
-        self.dead = elapsed_time >= self.duration
+        self.timer = bf.Timer(duration,end_callback = self.kill).start()
 
 
 class BasicParticle(TimedParticle):
@@ -35,16 +28,16 @@ class BasicParticle(TimedParticle):
         self,
         start_pos: tuple[float, float],
         start_vel: tuple[float, float],
-        duration=1000,
+        duration=1,
         color=None,
         size=(4, 4),
     ):
-        super().__init__()
+        super().__init__(duration)
         self.rect = pygame.FRect(*start_pos, 0, 0)
         self.surface = pygame.Surface(size).convert()
         if color:
             self.surface.fill(color)
-        self.z_depth = 1
+        self.velocity = Vector2(start_vel)
 
     def update(self, dt):
         super().update(dt)
@@ -52,10 +45,10 @@ class BasicParticle(TimedParticle):
         self.update_surface()
 
     def update_surface(self):
-        self.surface.set_alpha(255 - int(self.progression * 255))
+        self.surface.set_alpha(255 - int(self.timer.get_progression() * 255))
 
 
-class ParticleManager(bf.Entity):
+class ParticleGenerator(bf.Entity):
     def __init__(self) -> None:
         super().__init__(size=bf.const.RESOLUTION)
         self.particles: list[Particle] = []
@@ -63,6 +56,7 @@ class ParticleManager(bf.Entity):
     def get_bounding_box(self):
         for particle in self.particles:
             yield particle.rect
+        yield self.rect
 
     def add_particle(self, particle=Particle):
         self.particles.append(particle)
@@ -80,19 +74,10 @@ class ParticleManager(bf.Entity):
             self.particles.remove(p)
 
     def draw(self, camera) -> bool:
-        for p in self.particles:
-            p.update_surface()
         camera.surface.fblits(
             [
-                (
-                    p.surface,
-                    tuple(
-                        round(i * self.z_depth)
-                        for i in camera.transpose(self.rect).topleft
-                    ),
-                )
+                (p.surface,camera.transpose(p.rect).topleft)
                 for p in self.particles
-                if p.surface
             ]
         )
         return len(self.particles)

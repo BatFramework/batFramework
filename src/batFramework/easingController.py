@@ -1,23 +1,12 @@
-from enum import Enum
 import pygame
 import batFramework as bf
 from functools import lru_cache
-
-
-class Easing(Enum):
-    EASE_IN = (0.12, 0, 0.39, 0)
-    EASE_OUT = (0.61, 1, 0.88, 1)
-    EASE_IN_OUT = (0.37, 0, 0.63, 1)
-    EASE_IN_OUT_ELASTIC = (0.7, -0.5, 0.3, 1.5)
-    LINEAR = (1, 1, 0, 0)
-    # Add more easing functions as needed
-
-    def __init__(self, *control_points):
-        self.control_points = control_points
-
+from .enums import easing
 
 @lru_cache(maxsize=None)
-def process_value(progress,p0,p1,p2,p3)->float:
+def process_value(progress:float,p0:float,p1:float,p2:float,p3:float)->float:
+    if p0 == 0 and p1 == 0 and p2 == 1 and p3 == 1:  # Linear easing control points
+        return progress
     t = progress
     t_inv = 1.0 - t
     t2 = t * t
@@ -25,10 +14,10 @@ def process_value(progress,p0,p1,p2,p3)->float:
     t_inv2 = t_inv * t_inv
     return 3 * t_inv2 * t * p1 + 3 * t_inv * t2 * p3 + t3
 
-class EasingAnimation(bf.Timer):
+class EasingController(bf.Timer):
     def __init__(
         self,
-        easing_function: Easing = Easing.LINEAR,
+        easing_function: easing = easing.LINEAR,
         duration: float = 1,
         update_callback=None,
         end_callback=None,
@@ -42,8 +31,8 @@ class EasingAnimation(bf.Timer):
     def get_value(self)->float:
         return self.value
 
-    def start(self):
-        super().start()
+    def start(self,force:bool=False):
+        super().start(force)
         self.value = 0
 
     def update(self,dt:float)->None:

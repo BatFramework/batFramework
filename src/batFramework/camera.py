@@ -1,10 +1,9 @@
 import pygame
 from pygame.math import Vector2
 import batFramework as bf
-
+from typing import Self
 
 class Camera:
-
     def __init__(self, flags=0, size: tuple[int,int] | None = None,convert_alpha:bool=False) -> None:
         """
         Initialize the Camera object.
@@ -14,9 +13,11 @@ class Camera:
             size (tuple): Optional size for camera (defaults to window size)
             convert_alpha (bool): Convert surface to support alpha values
         """
-        size = size if size else bf.const.RESOLUTION
+        self.cached_surfaces: dict[tuple[int,int], pygame.Surface] = {}
+        
+        self.target_size = size if size else bf.const.RESOLUTION
         self.should_convert_alpha :bool = convert_alpha
-        self.rect = pygame.FRect(0, 0, *size)
+        self.rect = pygame.FRect(0, 0, *self.target_size)
         self.vector_center = Vector2(0,0)
         
         self.surface: pygame.Surface = pygame.Surface((0, 0)) #tmp dummy
@@ -25,7 +26,6 @@ class Camera:
         
         self._clear_color: pygame.Color = pygame.Color(0, 0, 0, 0)
         if not convert_alpha: pygame.Color(0, 0, 0)
-        self.cached_surfaces: dict[float, pygame.Surface] = {}
         
         self.follow_point_func = None
         self.follow_speed :float= 0.1 
@@ -34,8 +34,8 @@ class Camera:
         self.max_zoom = 2
         self.min_zoom = 0.1
         self.zoom(1)
-
-    def set_clear_color(self, color: pygame.Color | tuple | str) -> "Camera":
+        
+    def set_clear_color(self, color: pygame.Color | tuple | str) -> Self:
         """
         Set the clear color for the camera surface.
 
@@ -48,7 +48,7 @@ class Camera:
         self._clear_color = color
         return self
 
-    def set_max_zoom(self, value: float) -> "Camera":
+    def set_max_zoom(self, value: float) -> Self:
         """
         Set the maximum zoom value for the camera.
 
@@ -61,7 +61,7 @@ class Camera:
         self.max_zoom = value
         return self
 
-    def set_min_zoom(self, value: float) -> "Camera":
+    def set_min_zoom(self, value: float) -> Self:
         """
         Set the minimum zoom value for the camera.
 
@@ -98,7 +98,7 @@ class Camera:
         """
         return self.rect.topleft
 
-    def move_by(self, x : float|int, y:float|int) -> "Camera":
+    def move_by(self, x : float|int, y:float|int) -> Self:
         """
         Moves the camera rect by the given coordinates.
 
@@ -112,7 +112,7 @@ class Camera:
         self.rect.move_ip(x, y)
         return self
 
-    def set_position(self, x, y) -> "Camera":
+    def set_position(self, x, y) -> Self:
         """
         Set the camera rect top-left position.
 
@@ -127,7 +127,7 @@ class Camera:
 
         return self
 
-    def set_center(self, x, y) -> "Camera":
+    def set_center(self, x, y) -> Self:
         """
         Set the camera rect center position.
 
@@ -141,7 +141,7 @@ class Camera:
         self.rect.center = (x, y)
         return self
 
-    def set_follow_point(self, func,follow_speed :float = 0.1) -> "Camera":
+    def set_follow_point(self, func,follow_speed :float = 0.1) -> Self:
         """
         Set the following function (returns tuple x y).
         Camera will center its position to the center of the given coordinates.
@@ -156,7 +156,7 @@ class Camera:
         self.follow_speed =  follow_speed if func else 0.1
         return self
 
-    def zoom_by(self, amount: float) -> "Camera":
+    def zoom_by(self, amount: float) -> Self:
         """
         Zooms the camera by the given amount.
 
@@ -169,7 +169,7 @@ class Camera:
         self.zoom(max(self.min_zoom, min(self.max_zoom, self.zoom_factor + amount)))
         return self
 
-    def zoom(self, factor:float) -> "Camera":
+    def zoom(self, factor:float) -> Self:
         """
         Zooms the camera to the given factor.
 
@@ -185,21 +185,33 @@ class Camera:
 
         factor = round(factor,2) 
         self.zoom_factor = factor
-        new_res = tuple(round((i/factor)/2)*2 for i in bf.const.RESOLUTION)
-        self.surface = self.cached_surfaces.get(self.zoom_factor,None)
-        
-        if self.surface is None:
-            self.surface = pygame.Surface(new_res,flags=self.flags)
-            # print(f"New Camera Surface : {new_res} [alpha={self.should_convert_alpha}]")
-            if self.should_convert_alpha :
-                self.surface.convert_alpha()
-            else:
-                self.surface.convert()
-            self.cached_surfaces[factor] = self.surface
+        new_res = tuple(round((i/factor)/2)*2 for i in self.target_size)
+        self.surface = self._get_cached_surface(new_res)
         self.rect = self.surface.get_frect(center=self.rect.center)
         self.clear()
         return self
 
+    def _free_cache(self):
+        self.cached_surfaces = {}
+
+    def _get_cached_surface(self,new_size:tuple[int,int]):
+        surface = self.cached_surfaces.get(new_size,None)
+        if surface is None:
+            surface = pygame.Surface(new_size,flags=self.flags)
+            self.cached_surfaces[new_size] = surface
+
+        return surface
+
+        
+    def resize(self,size:tuple[int,int] | None=None)->Self:
+        if size is None: size = bf.const.RESOLUTION
+        self.target_size = size
+        self.rect.center = (size[0]/2,size[1]/2)
+        self.zoom(self.zoom_factor)
+
+        return self
+        
+    
     def intersects(self, rect: pygame.Rect | pygame.FRect) -> bool:
         """
         Check if the camera view intersects with the given rectangle.
@@ -275,5 +287,5 @@ class Camera:
             return
 
         # Scale the surface to match the resolution
-        scaled_surface = pygame.transform.scale(self.surface, bf.const.RESOLUTION)
+        scaled_surface = pygame.transform.scale(self.surface, self.target_size)
         surface.blit(scaled_surface, (0, 0), special_flags=self.blit_special_flags)

@@ -15,8 +15,8 @@ class Debugger(Label):
         self.refresh_rate = 10
         self.refresh_counter : float = 0
         self.render_order = 99
-        self.set_uid("debugger")
-
+        self.add_tags("debugger")
+        self.set_visible(False)
     def get_bounding_box(self):
         yield None
     def to_string_id(self) -> str:
@@ -89,7 +89,7 @@ class BasicDebugger(Debugger):
             return
         manager_link = self.parent_scene.manager
         parent_scene = self.parent_scene
-        self.add_static("Resolution", 'x'.join(str(i) for i in bf.const.RESOLUTION))
+        self.add_dynamic("Resolution",lambda :  'x'.join(str(i) for i in bf.const.RESOLUTION))
         self.add_dynamic(
             "FPS", lambda: str(round(manager_link.get_fps()))
         )

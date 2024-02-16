@@ -1,6 +1,9 @@
 import batFramework as bf
 import pygame
 
+def swap(lst,index1,index2):
+    lst[index1],lst[index2] = lst[index2],lst[index1]  
+
 
 class SceneManager:
     def __init__(self, *initial_scenes: bf.Scene) -> None:
@@ -10,15 +13,20 @@ class SceneManager:
         self._scene_transitions: list = []
         self.set_sharedVar("debugging_mode",self._debugging)
         self.set_sharedVar("in_cutscene", False)
+        self.current_transition = None
         self.set_sharedVar("player_has_control", True)
+        self.last_frame = None
 
         self._scenes: list[bf.Scene] = list(initial_scenes)
         for index, s in enumerate(self._scenes):
             s.set_manager(self)
             s.set_scene_index(index)
             s.do_when_added()
-        self.set_scene(self._scenes[0]._name)
+        self.set_scene(initial_scenes[0].get_name())
         self.update_scene_states()
+
+        self.shared_events = [pygame.WINDOWRESIZED]
+
 
     def print_status(self):
         print("-" * 40)
@@ -72,11 +80,8 @@ class SceneManager:
         if index < 0 or index >= len(self._scenes) : return None
         return self._scenes[index]
 
-    def transition_to_scene(self, dest_scene_name, transition, **kwargs):
-        self.set_scene(dest_scene_name)
-
-    def set_scene(self, name, index=0):
-        target_scene = self.get_scene(name)
+    def transition_to_scene(self,scene_name,transition,index=0):
+        target_scene = self.get_scene(scene_name)
         if (
             len(self._scenes) == 0
             or not target_scene
@@ -85,33 +90,58 @@ class SceneManager:
         ):
             return
 
-        old_scene = self._scenes[index]
+        source_surface = bf.const.SCREEN.copy()
+        dest_surface = bf.const.SCREEN.copy()
+
+        # self.draw(source_surface)
+        target_scene.draw(dest_surface)
+        
+        self.current_transition = [scene_name,transition]
+                
+        transition.set_start_callback(lambda : self._start_transition(target_scene))
+        transition.set_end_callback(lambda : self._end_transition(scene_name,index))
+        transition.set_source(source_surface)
+        transition.set_dest(dest_surface)
+        transition.start()
+
+    def _start_transition(self,target_scene):
+        target_scene.set_active(True)
+        target_scene.set_visible(True)
+        self.set_sharedVar("player_has_control",False)
+
+    def _end_transition(self,scene_name,index):
+        self.set_scene(scene_name,index)
+        self.set_sharedVar("player_has_control",True)
+        self.current_transition = None
+        
+    def set_scene(self, scene_name, index=0):
+        if (len(self._scenes) == 0
+            or (target_scene := self.get_scene(scene_name) ) is None
+            or index >= len(self._scenes) or index < 0):
+            return
+            
         # switch
-        old_scene.on_exit()
-        self.remove_scene(name)
-        self._scenes.insert(index, target_scene)
+        self._scenes[index].on_exit()
+        swap(self._scenes, target_scene.get_scene_index(),index)
         _ = [s.set_scene_index(i) for i, s in enumerate(self._scenes)]
         target_scene.on_enter()
 
+
     def process_event(self, event: pygame.Event):
         keys = pygame.key.get_pressed()
-        if (
-            keys[pygame.K_LCTRL]
-            and event.type == pygame.KEYDOWN
-            and event.key == pygame.K_d
-        ):
-            self._debugging = (self._debugging + 1) % 4
-            self.set_sharedVar("debugging_mode",self._debugging)
-            return
-        if (
-            keys[pygame.K_LCTRL]
-            and event.type == pygame.KEYDOWN
-            and event.key == pygame.K_p
-        ):
-            self.print_status()
-            return
-        self._scenes[0].process_event(event)
-
+        if (keys[pygame.K_LCTRL] and event.type == pygame.KEYDOWN):
+            if (event.key == pygame.K_d):
+                self._debugging = (self._debugging + 1) % 4
+                self.set_sharedVar("debugging_mode",self._debugging)
+                return
+            if (event.key == pygame.K_p):
+                self.print_status()
+                return
+        if event.type in self.shared_events:
+            [s.process_event(event) for s in self._scenes]
+        else:
+            self._scenes[0].process_event(event)
+        
     def update(self, dt: float) -> None:
         for scene in self.active_scenes:
             scene.update(dt)
@@ -123,3 +153,12 @@ class SceneManager:
     def draw(self, surface) -> None:
         for scene in self.visible_scenes:
             scene.draw(surface)
+        if self.current_transition:
+            self._draw_transition(surface)
+    def _draw_transition(self,surface):
+        self.current_transition[1].set_source(surface)
+        tmp = bf.const.SCREEN.copy()
+        self.get_scene(self.current_transition[0]).draw(tmp)
+        self.current_transition[1].set_dest(tmp)
+        self.current_transition[1].draw(surface)
+        return

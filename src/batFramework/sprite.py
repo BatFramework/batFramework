@@ -19,6 +19,7 @@ class Sprite(bf.DynamicEntity):
     ):
         if isinstance(data, str):
             tmp = bf.ResourceManager().get_image(data,self.convert_alpha)
+            if tmp == None : print(f"Image file at '{data}' was not found :(")
             self.original_surface = tmp
         elif isinstance(data, pygame.Surface):
             self.original_surface = data

@@ -15,6 +15,7 @@ class Button(Label, InteractiveWidget):
         self.effect_speed :float= 1.8
         self.is_clicking : bool = False
         self.effect :float = 0
+        self.effect_color = "white"
         self.enabled :bool = True
         super().__init__(text=text)
         self.set_debug_color("cyan")
@@ -62,7 +63,7 @@ class Button(Label, InteractiveWidget):
         self.build()
 
     def to_string_id(self) -> str:
-        return f"Button({self._text}){'' if self.enabled else '[disabled]'}"
+        return f"Button({self.text}){'' if self.enabled else '[disabled]'}"
 
     def click(self) -> None:
         if self.callback is not None:
@@ -122,11 +123,11 @@ class Button(Label, InteractiveWidget):
         e = int(min(self.rect.w //3, self.rect.h//3,self.effect))
         pygame.draw.rect(
             self.surface,
-            bf.color.CLOUD_WHITE,
+            self.effect_color,
             (0,0,*self.surface.get_size()),
             #int(self.effect),
             e,
-            *self._border_radius
+            *self.border_radius
             )
     def _build_disabled(self)->None:
         self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_SUB)

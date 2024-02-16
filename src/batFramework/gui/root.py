@@ -57,9 +57,9 @@ class Root(InteractiveWidget):
             child.build()
 
     def do_handle_event(self, event):
-        if event.type == pygame.VIDEORESIZE:
-            self.set_size(event.w, event.h, force=True)
-            return True
+        # if event.type == pygame.VIDEORESIZE:
+        #     self.set_size(event.w, event.h, force=True)
+        #     return True
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.hovered and isinstance(self.hovered,InteractiveWidget) :
                 self.hovered.on_click_down(event.button)

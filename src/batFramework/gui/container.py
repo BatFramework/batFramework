@@ -1,7 +1,7 @@
 import batFramework as bf
 from .widget import Widget
 from .layout import Layout,Column
-from .constraints import Constraint
+from .constraints.constraints import Constraint
 from typing import Self
 
 class Container(Widget):
