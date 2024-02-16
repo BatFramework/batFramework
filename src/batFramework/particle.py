@@ -28,16 +28,19 @@ class BasicParticle(TimedParticle):
         self,
         start_pos: tuple[float, float],
         start_vel: tuple[float, float],
-        duration=1,
-        color=None,
-        size=(4, 4),
+        duration=1,color=None,
+        size: tuple[int,int]=(4, 4),*args,**kwargs
     ):
         super().__init__(duration)
-        self.rect = pygame.FRect(*start_pos, 0, 0)
+        self.rect = pygame.FRect(*start_pos, *size)
         self.surface = pygame.Surface(size).convert()
+        self.velocity = Vector2(start_vel)
         if color:
             self.surface.fill(color)
-        self.velocity = Vector2(start_vel)
+        self.start()
+        
+    def start(self):
+        pass
 
     def update(self, dt):
         super().update(dt)
@@ -47,6 +50,15 @@ class BasicParticle(TimedParticle):
     def update_surface(self):
         self.surface.set_alpha(255 - int(self.timer.get_progression() * 255))
 
+class DirectionalParticle(BasicParticle):
+    def start(self):
+        self.surface = self.surface.convert_alpha()
+        self.original_surface = self.surface.copy()
+
+    def update_surface(self):
+        angle = self.velocity.angle_to(Vector2(1,0))
+        self.surface = pygame.transform.rotate(self.original_surface,angle)
+        super().update_surface()
 
 class ParticleGenerator(bf.Entity):
     def __init__(self) -> None:
@@ -55,8 +67,8 @@ class ParticleGenerator(bf.Entity):
 
     def get_bounding_box(self):
         for particle in self.particles:
-            yield particle.rect
-        yield self.rect
+            yield (particle.rect,"blue")
+        yield (self.rect,"cyan")
 
     def add_particle(self, particle=Particle):
         self.particles.append(particle)
@@ -76,7 +88,7 @@ class ParticleGenerator(bf.Entity):
     def draw(self, camera) -> bool:
         camera.surface.fblits(
             [
-                (p.surface,camera.transpose(p.rect).topleft)
+                (p.surface,camera.transpose(p.rect).center)
                 for p in self.particles
             ]
         )
