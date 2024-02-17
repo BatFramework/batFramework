@@ -9,9 +9,13 @@ dist/
 build/
 project/
 test/
-HalloweenGamejam/
 src/batframework.egg-info
 new/
 build_version.sh
 notes.txt
 gamejam/
+/game
+/testing
+/HalloweenGamejam
+/HalloweenGamejam/data
+/src/p2p.ttf
