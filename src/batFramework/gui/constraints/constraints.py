@@ -37,6 +37,19 @@ class MinWidth(Constraint):
         if not self.evaluate(parent_widget, child_widget):
             child_widget.set_size(self.min_width, child_widget.rect.h)
 
+class MinHeight(Constraint):
+    def __init__(self, height):
+        super().__init__(name="min_height")
+        self.min_height = height
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.h >= self.min_height
+
+    def apply_constraint(self, parent_widget, child_widget):
+        if not self.evaluate(parent_widget, child_widget):
+            child_widget.set_size(child_widget.rect.w,self.min_height)
+
+
 
 class CenterX(Constraint):
     def __init__(self):

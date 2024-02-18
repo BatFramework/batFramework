@@ -67,7 +67,7 @@ class ParticleGenerator(bf.Entity):
 
     def get_bounding_box(self):
         for particle in self.particles:
-            yield (particle.rect,"blue")
+            yield (particle.rect.move(particle.rect.w//2,particle.rect.h//2),"blue")
         yield (self.rect,"cyan")
 
     def add_particle(self, particle=Particle):

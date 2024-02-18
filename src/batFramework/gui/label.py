@@ -126,19 +126,20 @@ class Label(Shape):
             "text":self.text,
             "antialias":self.antialias,
             "color":self.text_color,
-            "bgcolor":None if self.has_alpha_color() else self.color,
+            "bgcolor":None if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
             "wraplength":int(self.get_content_width()) if self.auto_wraplength else 0
             }
         
         key = tuple(params.values())
         cached_value =  Label._text_cache.get(key,None)
-        if cached_value is None:
-            if self.do_caching : 
-                Label._text_cache[key] = self.text_surface
-            params.pop("font_name")
-            self.text_surface = self.font_object.render(**params)
-        else:
-            self.text_surface = cached_value
+        if self.draw_mode == bf.drawMode.SOLID:
+            if cached_value is None:
+                if self.do_caching : 
+                    Label._text_cache[key] = self.text_surface
+                params.pop("font_name")
+                self.text_surface = self.font_object.render(**params)
+            else:
+                self.text_surface = cached_value
 
         self.text_rect = self.text_surface.get_frect(topleft = self.get_content_rect_rel().topleft)
 

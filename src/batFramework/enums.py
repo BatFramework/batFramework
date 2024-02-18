@@ -72,3 +72,6 @@ class alignment(Enum):
     TOP     = "top"
     BOTTOM  = "bottom"
 
+class drawMode(Enum):
+    SOLID = 0
+    TEXTURED = 1

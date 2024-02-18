@@ -8,6 +8,9 @@ class ActionContainer:
         if actions:
             self.add_action(*actions)
 
+    def __iter__(self):
+        return iter(self._actions.values())
+    
     def clear(self):
         self._actions = {}
 
