@@ -13,16 +13,15 @@ def search_index(target, lst):
 
 class AnimState:
     def __init__(
-        self, name: str, file, width, height, duration_list: list | int,convert_alpha:bool=True
-    ) -> None:
-        self.frames: list[pygame.Surface] =bf.utils.img_slice(
-            file, width, height,
+        self, name: str, surface:pygame.Surface, width, height, duration_list: list | int) -> None:
+        self.frames: list[pygame.Surface] =list(bf.utils.split_surface(
+            surface, width, height,
             False,convert_alpha
-        )
-        self.frames_flipX: list[pygame.Surface] = bf.utils.img_slice(
-            file, width, height,
+        ).values())
+        self.frames_flipX: list[pygame.Surface] = list(bf.utils.split_surface(
+            surface, width, height,
             True,convert_alpha
-        )
+        ).values())
         
         self.name = name
         self.duration_list :list[int]= []
@@ -102,12 +101,12 @@ class AnimatedSprite(bf.DynamicEntity):
         return True
         
     def add_animState(
-        self, name: str, file: str, size: tuple[int, int], duration_list: list[int],
+        self, name: str, surface: pygame.Surface, size: tuple[int, int], duration_list: list[int],
         convert_alpha:bool=True
     )->bool:
         if name in self.animStates:
             return False
-        self.animStates[name] = AnimState(name, file, *size, duration_list,convert_alpha)
+        self.animStates[name] = AnimState(name, surface, *size, duration_list)
         if len(self.animStates) == 1:
             self.set_animState(name)
         return True

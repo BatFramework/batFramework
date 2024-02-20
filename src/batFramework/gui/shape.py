@@ -17,17 +17,11 @@ class Shape(Widget):
         super().__init__(convert_alpha=True)
         self.set_size(width, height)
 
-    def _set_texture_surface(self,surface:pygame.SurfaceType,subsize:tuple[int,int]|None=None)->None:
+    def set_texture(self,surface:pygame.SurfaceType,subsize: tuple[int,int]|None=None)->Self:
         self.texture_surface = surface
         if subsize is None:
             subsize = (ceil(surface.get_width()/3),ceil(surface.get_height()/3))
         self.texture_subsize = subsize
-
-
-    def set_texture(self,texture:str|pygame.SurfaceType,subsize: tuple[int,int]|None=None)->Self:
-        if isinstance(texture,str):
-            texture = bf.ResourceManager().get_image(texture,True)
-        if texture is not None : self._set_texture_surface(texture,subsize)
         self.build()
         return self
 

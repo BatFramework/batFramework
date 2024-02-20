@@ -15,23 +15,17 @@ class Singleton(type):
 
 class Utils:
     @staticmethod
-    def img_slice(file, cell_width, cell_height, flipX=False,convert_alpha=True) -> list[pygame.Surface]:
-        src = bf.ResourceManager().get_image(file,convert_alpha=convert_alpha)
-        if src is None : exit(1)
-        width, height = src.get_size()
-        res = []
-        for y in range(0, height, cell_height):
-            for x in range(0, width, cell_width):
-                sub = src.subsurface((x, y, cell_width, cell_height))
-                if flipX:
-                    sub = pygame.transform.flip(sub, True, False)
+    def split_surface(surface,split_size:tuple[int,int],func=None) -> dict[tuple[int,int],pygame.Surface]:
+        if surface is None : return None
+        width, height = surface.get_size()
+        res = {}
+        for iy,y in enumerate(range(0, height, split_size[1])):
+            for ix,x in enumerate(range(0, width, split_size[0])):
+                sub = surface.subsurface((x, y, split_size[0], split_size[1]))
 
-                res.append(sub)
+                if func is not None: sub = func(sub)
+                
+                res[(ix,iy)]=sub
+                
         return res
-
-
-def move_points(delta, *points):
-    res = []
-    for point in points:
-        res.append((point[0] + delta[0], point[1] + delta[1]))
-    return res
+        
