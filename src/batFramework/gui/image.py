@@ -1,7 +1,7 @@
 import batFramework as bf
 from .widget import Widget
 import pygame
-
+from typing import Self
 
 class Image(Widget):
     def __init__(
@@ -28,15 +28,20 @@ class Image(Widget):
 
     def set_image(
         self, data: pygame.Surface | str, size: None | tuple[int, int] = None
-    ):
+    )->Self:
         if isinstance(data, str):
             tmp = bf.ResourceManager().get_image(data,self.convert_alpha)
         elif isinstance(data, pygame.Surface):
             tmp= data
             if self.convert_alpha:
                 tmp = tmp.convert_alpha()
+        else :
+            tmp is None
+        if tmp is None : return Self
+
         if tmp != self.original_surface: self.dirty = True
         self.original_surface = tmp
-        if not size and self.original_surface:
+        if size is None and self.original_surface:
             size = self.original_surface.get_size()
         self.set_size(*size)
+        return Self

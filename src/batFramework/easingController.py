@@ -38,6 +38,7 @@ class EasingController(bf.Timer):
     def update(self,dt:float)->None:
         if self.get_progression() == 1 : return
         super().update(dt)
+        if self.get_progression() == 0 : return
         self.value = process_value(self.get_progression(),*self.easing_function.control_points)
         if self.update_callback: self.update_callback(self.value)
 
