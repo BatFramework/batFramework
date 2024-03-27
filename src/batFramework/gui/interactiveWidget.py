@@ -71,3 +71,5 @@ class InteractiveWidget(Widget):
         pass
 
 
+    def on_mouse_motion(self,x,y)->None:
+        pass

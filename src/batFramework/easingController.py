@@ -43,4 +43,7 @@ class EasingController(bf.Timer):
         if self.update_callback: self.update_callback(self.value)
 
 
-
+    def end(self):
+        if self.update_callback :
+            self.update_callback(1)
+        super().end()

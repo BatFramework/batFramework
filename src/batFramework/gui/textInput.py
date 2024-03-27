@@ -68,6 +68,10 @@ class TextInput(Label,InteractiveWidget):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
             self.set_cursor_position(self.cursor_position-1)
             return True
+
+        if event.type == pygame.KEYDOWN and event.key in [pygame.K_UP,pygame.K_DOWN]:
+            return True
+        
         return False
 
     def _build_cursor(self)->None:

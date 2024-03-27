@@ -46,7 +46,7 @@ class Column(Layout):
             parent_height,
         )
         if self.fit_children:
-            self.parent.set_size(parent_width,parent_height)
+            self.parent.set_size((parent_width,parent_height))
         if self.center:
             self.children_rect.center = self.parent.rect.center
 
@@ -85,7 +85,7 @@ class Row(Layout):
         if self.center:
             self.children_rect.center = self.parent.get_content_center()
         if self.fit_children:
-            self.parent.set_size(parent_width,parent_height)
+            self.parent.set_size((parent_width,parent_height))
             
         current_x = self.children_rect.left
 

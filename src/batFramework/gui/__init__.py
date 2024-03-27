@@ -4,6 +4,7 @@ from .image import Image
 from .interactiveWidget import InteractiveWidget
 from .root import Root
 from .shape import Shape
+from .meter import Meter
 from .frame import Frame
 from .label import Label
 from .dialogueBox import DialogueBox
@@ -14,3 +15,4 @@ from .layout import *
 from .container import Container
 from .indicator import *
 from .toggle import Toggle
+from .slider import Slider

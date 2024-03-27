@@ -43,7 +43,7 @@ class Root(InteractiveWidget):
         self.focused = widget
         self.focused.on_get_focus()
 
-    def set_size(self, width: float, height: float, force: bool = False) -> "Root":
+    def set_size(self, size : tuple[float,float], force: bool = False) -> "Root":
         if not force:
             return self
         self.rect.size = width, height
@@ -92,10 +92,10 @@ class Root(InteractiveWidget):
             if self.top_at(*transposed)
             else None
         )
-        if old == self.hovered:
+        if old == self.hovered and isinstance(self.hovered,InteractiveWidget):
+            self.hovered.on_mouse_motion(*transposed)
             return
         if old and isinstance(old,InteractiveWidget):    
             old.on_exit()
         if self.hovered and isinstance(self.hovered,InteractiveWidget) :
             self.hovered.on_enter()
-

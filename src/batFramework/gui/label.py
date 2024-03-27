@@ -27,10 +27,9 @@ class Label(Shape):
         # Rect containing the text of the label
         self.text_rect = None
         # text surface (result of font.render)
-        self.text_surface: pygame.Surface | None = None
-
+        self.text_surface: pygame.Surface = pygame.Surface((0,0))
         self.do_caching : bool = False
-        super().__init__(width=0, height=0)
+        super().__init__((0,0))
         self.set_padding((10, 4))
         self.set_debug_color("blue")
         self.set_color("white")
@@ -152,7 +151,7 @@ class Label(Shape):
             target_rect = self.inflate_rect_by_padding(self.text_rect)
             if self.rect.size != target_rect.size:
                 self.resized_flag = True
-                self.set_size(* target_rect.size)
+                self.set_size(target_rect.size)
                 return
         if self.alignment == bf.alignment.CENTER:
             self.text_rect.center = self.get_content_rect_rel().center

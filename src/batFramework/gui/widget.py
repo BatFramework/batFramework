@@ -45,10 +45,10 @@ class Widget(bf.Entity):
         else:
             self.padding = (value,) * 4
 
-        self.set_size(
+        self.set_size((
             old_raw_size[0] + self.padding[0] + self.padding[2],
-            old_raw_size[1] + self.padding[1] + self.padding[3],
-        )
+            old_raw_size[1] + self.padding[1] + self.padding[3]
+        ))
         return self
 
 
@@ -253,7 +253,8 @@ class Widget(bf.Entity):
         self.apply_constraints()
         return self
 
-    def set_size(self, width: float, height: float) -> Self:
+    def set_size(self, size : tuple[float|None,float|None]) -> Self:
+        width,height = size
         if width is None : width = self.rect.w
         if height is None : height = self.rect.h
         if self.rect.size == (width,height) : return self

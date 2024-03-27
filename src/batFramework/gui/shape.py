@@ -3,10 +3,11 @@ from .widget import Widget
 import pygame
 from typing import Self
 from math import ceil
+import numba
 
 
 class Shape(Widget):
-    def __init__(self, width: float, height: float):
+    def __init__(self, size : tuple[float,float]):
         self.color = (0, 0, 0, 0)
         self.border_radius: list[int] = [0]
         self.outline: int = 0
@@ -15,7 +16,7 @@ class Shape(Widget):
         self.texture_subsize = (0,0)
         self.draw_mode = bf.drawMode.SOLID
         super().__init__(convert_alpha=True)
-        self.set_size(width, height)
+        self.set_size(size)
 
     def set_texture(self,surface:pygame.SurfaceType,subsize: tuple[int,int]|None=None)->Self:
         self.texture_surface = surface
@@ -60,7 +61,6 @@ class Shape(Widget):
         return self
 
     def build(self) -> None:
-
         if self.surface.get_size() != self.get_size_int():
             self.surface = pygame.Surface(self.get_size_int())
             if self.convert_alpha:
@@ -99,74 +99,63 @@ class Shape(Widget):
             for x in range(sub[0],w+1-sub[0]*2,sub[0]):
                 lst.append((center_surface,(x,y)))
         
-        w_remainder = h_remainder = 0
-        fix_x = fix_y = 0
+        w_remainder = w % sub[0]
+        h_remainder = h % sub[1]
+        fix_x = ((w//sub[0])-1)*sub[0]
+        fix_y = ((h//sub[1])-1)*sub[1]
 
-        if w > sub[0]:
-            fix_x = ((w//sub[0])-1)*sub[0]
-            w_remainder = w % sub[0]
-            # Center : Fix holes on the x axis
-            if (w_remainder > 0):
-                h_portion = center_surface.subsurface(0, 0, w_remainder, sub[1])
-                for y in range(sub[1], h - sub[1]*2, sub[1]):
-                    lst.append((h_portion,  (fix_x,y)))
+        if (w > sub[0]) and (w_remainder > 0):
+        
+            # Center : Fix gaps on the x axis
+            h_portion = center_surface.subsurface(0, 0, w_remainder, sub[1])
+            for y in range(sub[1], h - sub[1]*2, sub[1]):
+                lst.append((h_portion,  (fix_x,y)))
 
-            # Fix partial holes on the top
-            if (w_remainder> 0):
-                t_portion = top_surface.subsurface(0, 0, w_remainder, sub[1])
-                lst.append((t_portion, (fix_x, 0)))
+            # Fix partial gaps on the top
+            
+            t_portion = top_surface.subsurface(0, 0, w_remainder, sub[1])
+            lst.append((t_portion, (fix_x, 0)))
 
-            # Fix partial holes on the bottom
-            if (w_remainder> 0):
-                b_portion = bottom_surface.subsurface(0, 0, w_remainder, sub[1])
-                lst.append((b_portion, (fix_x, h - sub[1]-1)))
+            # Fix partial gaps on the bottom
+            b_portion = bottom_surface.subsurface(0, 0, w_remainder, sub[1])
+            lst.append((b_portion, (fix_x, h - sub[1]-1)))
 
-        if h > sub[1]:
-            fix_y = ((h//sub[1])-1)*sub[1]
-            h_remainder = h % sub[1]
-            # Center : Fix holes on the y axis
-            if (v_remainder := h % sub[1]) > 0:
-                v_portion = center_surface.subsurface(0, 0, sub[0], v_remainder)
-                for x in range(sub[0], w - sub[0]*2, sub[0]):
-                    lst.append((v_portion, (x, fix_y)))
+        if (h > sub[1]) and (h_remainder > 0):
+            # Center : Fix gaps on the y axis
+            v_portion = center_surface.subsurface(0, 0, sub[0], h_remainder)
+            for x in range(sub[0], w - sub[0]*2, sub[0]):
+                lst.append((v_portion, (x, fix_y)))
 
-            # Fix partial holes on the left
-            if (h_remainder>0):
-                l_portion = left_surface.subsurface(0, 0, sub[0], h_remainder)
-                lst.append((l_portion, (0, fix_y)))
+            # Fix partial gaps on the left
+            l_portion = left_surface.subsurface(0, 0, sub[0], h_remainder)
+            lst.append((l_portion, (0, fix_y)))
 
-            # Fix partial holes on the right
-            if (h_remainder>0):
-                r_portion = right_surface.subsurface(0, 0, sub[0], h_remainder)
-                lst.append((r_portion, (w - sub[0]-1,fix_y)))
+            # Fix partial gaps on the right
+            r_portion = right_surface.subsurface(0, 0, sub[0], h_remainder)
+            lst.append((r_portion, (w - sub[0]-1,fix_y)))
 
+        # fix corner gap
         if h > sub[1] or w > sub[0]:
             corner_portion = center_surface.subsurface(0,0,w_remainder if w_remainder else sub[0],h_remainder if h_remainder else sub[1])
             if w_remainder == 0: fix_x -= sub[0] 
             if h_remainder == 0: fix_y -= sub[1] 
             lst.append((corner_portion,(fix_x-1,fix_y-1)))
 
-        self.surface.fblits(lst)
         
-        # top
-        self.surface.fblits([(top_surface,(x,0)) for x in range(sub[0],w+1-sub[0]*2,sub[0])])
-
-        # bottom
-        self.surface.fblits([(bottom_surface, (x, h - sub[1]-1)) for x in range(sub[0], w+1-sub[0]*2, sub[0])])
-
-        # left
-        self.surface.fblits([(left_surface, (0, y)) for y in range(sub[1], h+1-sub[1]*2 , sub[1])])
-
-        # right
-        self.surface.fblits([(right_surface, (w - sub[0]-1, y)) for y in range(sub[1], h+1-sub[1]*2 , sub[1])])
-
-        # corners
-        self.surface.fblits([
-            (self.texture_surface.subsurface((0,0,*sub)),(0,0)),
-            (self.texture_surface.subsurface((sw-sub[0],0,*sub)),(w-sub[0]-1,0)),
-            (self.texture_surface.subsurface((0,sh-sub[1],*sub)),(0,h-sub[1]-1)),
-            (self.texture_surface.subsurface((sw-sub[0],sh-sub[1],*sub)),(w-sub[0]-1,h-sub[1]-1)),
-        ])
+        # borders
+        lst.extend(
+            [(top_surface,(x,0)) for x in range(sub[0],w+1-sub[0]*2,sub[0])] +
+            [(bottom_surface, (x, h - sub[1]-1)) for x in range(sub[0], w+1-sub[0]*2, sub[0])] +
+            [(left_surface, (0, y)) for y in range(sub[1], h+1-sub[1]*2 , sub[1])] + 
+            [(right_surface, (w - sub[0]-1, y)) for y in range(sub[1], h+1-sub[1]*2 , sub[1])]+
+            [
+                (self.texture_surface.subsurface((0,0,*sub)),(0,0)),
+                (self.texture_surface.subsurface((sw-sub[0],0,*sub)),(w-sub[0]-1,0)),
+                (self.texture_surface.subsurface((0,sh-sub[1],*sub)),(0,h-sub[1]-1)),
+                (self.texture_surface.subsurface((sw-sub[0],sh-sub[1],*sub)),(w-sub[0]-1,h-sub[1]-1)),
+            ])
+        
+        self.surface.fblits(lst)
 
     def _build_shape(self) -> None:
         self.surface.fill(self.color)
