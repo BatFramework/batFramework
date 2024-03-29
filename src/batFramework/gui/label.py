@@ -117,7 +117,7 @@ class Label(Shape):
 
     def _build_text(self) -> None:
         if self.font_object is None:
-            print(f"No font for '{self.to_string_id()}' :(")
+            print(f"No font for widget with text : '{self.to_string_id()}' :(")
             return
         # render(text, antialias, color, bgcolor=None, wraplength=0) -> Surface
         params = {
@@ -139,11 +139,10 @@ class Label(Shape):
                 self.text_surface = self.font_object.render(**params)
             else:
                 self.text_surface = cached_value
-
+        else:
+            params.pop("font_name")
+            self.text_surface = self.font_object.render(**params)
         self.text_rect = self.text_surface.get_frect(topleft = self.get_content_rect_rel().topleft)
-
-
-
 
     def _build_layout(self) -> None:
         if self.text_rect is None : return
@@ -162,15 +161,12 @@ class Label(Shape):
         if self.resized_flag:
             self.resized_flag = False
             if self.parent:
-                # print("Children modified call")
                 self.parent.children_modified()
-
         self.surface.fblits([(self.text_surface, self.text_rect)])
 
     def build(self) -> None:
         super().build()
-        if not self.font_object:
-            return
-        self._build_text()
-        self._build_layout()
+        if self.font_object:
+            self._build_text()
+            self._build_layout()
         self.apply_constraints()

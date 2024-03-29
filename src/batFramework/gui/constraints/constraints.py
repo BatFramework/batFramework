@@ -35,7 +35,7 @@ class MinWidth(Constraint):
 
     def apply_constraint(self, parent_widget, child_widget):
         if not self.evaluate(parent_widget, child_widget):
-            child_widget.set_size(self.min_width, child_widget.rect.h)
+            child_widget.set_size((self.min_width, child_widget.rect.h))
 
 class MinHeight(Constraint):
     def __init__(self, height):
@@ -47,7 +47,7 @@ class MinHeight(Constraint):
 
     def apply_constraint(self, parent_widget, child_widget):
         if not self.evaluate(parent_widget, child_widget):
-            child_widget.set_size(child_widget.rect.w,self.min_height)
+            child_widget.set_size((child_widget.rect.w,self.min_height))
 
 
 
@@ -114,10 +114,10 @@ class PercentageWidth(Constraint):
                     )
                     return
                 child_widget.set_autoresize(False)
-            child_widget.set_size(
+            child_widget.set_size((
                 round(parent_widget.get_content_width() * self.percentage),
                 child_widget.rect.h,
-            )
+            ))
 
 
 class PercentageHeight(Constraint):
@@ -143,10 +143,10 @@ class PercentageHeight(Constraint):
                     )
                     return
                 child_widget.set_autoresize(False)
-            child_widget.set_size(
+            child_widget.set_size((
                 child_widget.rect.w,
                 round(parent_widget.get_content_height() * self.percentage),
-            )
+            ))
 
 
 class Height(Constraint):
@@ -172,7 +172,7 @@ class Height(Constraint):
                     )
                     return
                 child_widget.set_autoresize(False)
-            child_widget.set_size(child_widget.rect.w, self.height)
+            child_widget.set_size((child_widget.rect.w, self.height))
 
 
 class Width(Constraint):
@@ -198,7 +198,7 @@ class Width(Constraint):
                     )
                     return
                 child_widget.set_autoresize(False)
-            child_widget.set_size(self.width, child_widget.rect.h)
+            child_widget.set_size((self.width, child_widget.rect.h))
 
 
 class AspectRatio(Constraint):

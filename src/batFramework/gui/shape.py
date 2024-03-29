@@ -3,7 +3,6 @@ from .widget import Widget
 import pygame
 from typing import Self
 from math import ceil
-import numba
 
 
 class Shape(Widget):
@@ -30,6 +29,9 @@ class Shape(Widget):
         self.draw_mode = mode
         self.build()
         return self
+
+    def get_draw_mode(self)->bf.drawMode:
+        return self.draw_mode
 
     def has_alpha_color(self)->bool:
         return (pygame.Color(self.color).a != 255) or (pygame.Color(self.outline_color).a!=255)

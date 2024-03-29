@@ -18,9 +18,7 @@ class DialogueBox(Label):
 
     def cut_text_to_width(self,text:str)->list[str]:
         if text == '' or self.get_content_width() < 1 or not self.font_object : return ['']
-        
         for index in range(len(text)):
-            
             width = self.font_object.size(text[:index])[0]
             if width > self.get_content_width():
                 cut_point_start = index-1
@@ -28,8 +26,7 @@ class DialogueBox(Label):
                 last_space = text.rfind(' ',0,cut_point_start)
                 if last_space != -1 : # space was found !:
                     cut_point_start = last_space
-                    cut_point_end = last_space+1
-                    
+                    cut_point_end = last_space+1     
                 res = [text[:cut_point_start].strip()]
                 res.extend(self.cut_text_to_width(text[cut_point_end:].strip()))  
                 return res 
@@ -38,7 +35,6 @@ class DialogueBox(Label):
     def say(self,message:str):
         message = '\n'.join(self.cut_text_to_width(message))
         self.message_queue.append(message)
-
         self.is_over = False
 
     def is_queue_empty(self)->bool:
