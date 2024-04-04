@@ -3,7 +3,7 @@ import batFramework as bf
 from typing import Self,Callable
 from .interactiveWidget import InteractiveWidget
 import pygame
-
+from math import ceil
 
 class Button(Label, InteractiveWidget):
     _cache :dict = {}
@@ -12,14 +12,42 @@ class Button(Label, InteractiveWidget):
         self.callback = callback
         self.is_hovered: bool = False
         self.effect_max :float= 20
+        self.use_effect :bool = False 
         self.effect_speed :float= 1.8
         self.is_clicking : bool = False
         self.effect :float = 0
-        self.effect_color = "white"
+        self.effect_color  : tuple[int, int, int] | str  = "white"
         self.enabled :bool = True
+        self.hover_cursor = bf.const.DEFAULT_HOVER_CURSOR
+        self.click_cursor = bf.const.DEFAULT_CLICK_CURSOR
         super().__init__(text=text)
         self.set_debug_color("cyan")
         self.focusable = True
+
+    def set_hover_cursor(self,cursor : pygame.Cursor)->Self:
+        self.hover_cursor = cursor
+        return self
+    
+    def set_click_cursor(self,cursor : pygame.Cursor)->Self:
+        self.click_cursor = cursor
+        return self
+
+    def enable_effect(self)->Self:
+        self.use_effect = True
+        return self
+
+    def disable_effect(self)->Self:
+        self.use_effect = False
+        self.effect = 0
+        return self
+
+    def set_effect_color(self,color :  tuple[int, int, int] | str ):
+        self.effect_color = color
+        return self
+
+    def get_relief(self)->int:
+        if not self.relief : return 0 
+        return self.relief if not self.is_clicking else max(1,ceil(self.relief/4))
 
     def get_surface_filter(self) -> pygame.Surface | None:
             if not self.surface:
@@ -68,7 +96,7 @@ class Button(Label, InteractiveWidget):
     def click(self) -> None:
         if self.callback is not None:
             self.callback()
-            bf.Timer(duration=0.3,end_callback=self._safety_effect_end).start()
+            bf.Timer(duration=0.1,end_callback=self._safety_effect_end).start()
 
     def _safety_effect_end(self)->None:
         if self.effect > 0:
@@ -83,11 +111,13 @@ class Button(Label, InteractiveWidget):
         if self.enabled and button == 1 and self.effect == 0:
             if not self.get_focus():return
             self.is_clicking = True
-            self.start_effect()
-
+            pygame.mouse.set_cursor(self.click_cursor)
+            if self.use_effect : 
+                self.start_effect()
+            else: 
+                self.build()
     def do_on_click_up(self,button)->None:
         if self.enabled and button == 1 and self.is_clicking: 
-            # self.effect = 0
             self.is_clicking = False
             self.build()
             self.click()
@@ -97,20 +127,19 @@ class Button(Label, InteractiveWidget):
         super().on_enter()
         self.effect = 0
         self.build()
-        pygame.mouse.set_cursor(*pygame.cursors.tri_left)
+        pygame.mouse.set_cursor(self.hover_cursor)
 
     def on_exit(self)->None:
         super().on_exit()
         # self.effect = 0
         self.is_clicking = False
         self.build()
-        pygame.mouse.set_cursor(pygame.cursors.arrow)
-
+        pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
 
 
     def update(self,dt):
         super().update(dt)
-        if self.effect <= 0: return
+        if self.effect <= 0 or (not self.use_effect): return
         self.effect -= dt*60*self.effect_speed
         if self.is_clicking:
             if self.effect < 1 : self.effect = 1
@@ -124,7 +153,7 @@ class Button(Label, InteractiveWidget):
         pygame.draw.rect(
             self.surface,
             self.effect_color,
-            (0,0,*self.surface.get_size()),
+            (0,self.relief - self.get_relief(),self.rect.w,self.rect.h-self.relief),
             #int(self.effect),
             e,
             *self.border_radius
@@ -141,5 +170,5 @@ class Button(Label, InteractiveWidget):
             self._build_disabled()
         elif self.is_hovered:
             self._build_hovered()
-        if self.effect:
+        if self.use_effect and self.effect:
             self._build_effect()

@@ -215,6 +215,7 @@ class Widget(bf.Entity):
         for child in self.children:
             child.set_parent_scene(scene)
         return self
+    
     def set_x(self, x: float) -> Self:
         if x == self.rect.x : return self
         delta = x - self.rect.x
@@ -261,7 +262,7 @@ class Widget(bf.Entity):
         self.rect.size = (width, height)
         self.build()
         self.apply_constraints()
-        self.children_modified()
+        self.notify()
         return self
 
     # Other Methods
@@ -291,7 +292,7 @@ class Widget(bf.Entity):
             c.do_when_added()
         self._sort_children()
         self.apply_all_constraints()
-        self.children_modified()
+        self.notify()
 
     def remove_child(self, child: "Widget") -> None:
         try : 
@@ -303,7 +304,7 @@ class Widget(bf.Entity):
         child.set_parent_scene(None)
         self._sort_children()
         self.apply_all_constraints()
-        self.children_modified()
+        self.notify()
 
     def _sort_children(self):
         self.children.sort(key=lambda child : child.render_order)
@@ -344,8 +345,8 @@ class Widget(bf.Entity):
         for child in self.children:
             child.build_all()
 
-    def children_modified(self) -> None:
+    def notify(self) -> None:
         if self.parent and not self.is_root:
-            self.parent.children_modified()
+            self.parent.notify()
 
 

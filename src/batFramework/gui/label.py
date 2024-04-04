@@ -161,8 +161,8 @@ class Label(Shape):
         if self.resized_flag:
             self.resized_flag = False
             if self.parent:
-                self.parent.children_modified()
-        self.surface.fblits([(self.text_surface, self.text_rect)])
+                self.parent.notify()
+        self.surface.fblits([(self.text_surface, self.text_rect.move(0,self.relief - self.get_relief()))])
 
     def build(self) -> None:
         super().build()

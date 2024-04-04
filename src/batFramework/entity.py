@@ -37,8 +37,12 @@ class Entity:
             if convert_alpha and self.surface is not None:
                 self.surface = self.surface.convert_alpha()
                 self.surface.fill((0, 0, 0, 0))
-
-
+    
+    @staticmethod
+    def new_uid()->int: 
+        i = Entity.__instance_count
+        Entity.__instance_count += 1
+        return i
     def set_blit_flags(self,blit_flags:int)->Self:
         self.blit_flags = blit_flags
         return self

@@ -55,6 +55,6 @@ class Container(Widget):
     def to_string_id(self) -> str:
         return f"Container({self.uid},{len(self.children)},{[c.to_string() for c in self.constraints]})"
 
-    def children_modified(self)->None:
+    def notify(self)->None:
         self.apply_all_constraints()
-        super().children_modified()
+        super().notify()

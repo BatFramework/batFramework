@@ -33,7 +33,7 @@ class Toggle(Button):
         self.gap = value
         self.build()
         if self.parent:
-            self.parent.children_modified()
+            self.parent.notify()
         return self
 
     def to_string_id(self) -> str:

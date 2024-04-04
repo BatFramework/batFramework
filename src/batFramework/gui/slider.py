@@ -1,11 +1,11 @@
 import batFramework as bf
 from .button import Button
-from .indicator import ToggleIndicator
+from .indicator import Indicator
 
 class Slider(Button):
     def __init__(self, text: str, default_value: float = 1.0 ,callback=None) -> None:
         self.value: float = min(1.0,max(0.0,default_value))
-        self.indicator: Indicator = bf.Shape(0,0)
+        self.indicator: Indicator = bf.Shape((0,0))
         self.gap: float | int = 0
         super().__init__(text, callback)
         self.add_child(self.indicator)

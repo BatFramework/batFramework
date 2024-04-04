@@ -33,7 +33,7 @@ class ResourceManager(metaclass=Singleton):
                     print(f"Loaded image : '{file_path}'")
 
                 elif file.lower().endswith(('.mp3', '.wav')):
-                    bf.AudioManager.load_sound(file.lower().split('.')[0],file_path)
+                    bf.AudioManager().load_sound(file.lower().split('.')[0],file_path)
                     print(f"Loaded sound : '{file_path}'")
 
                 elif file.lower().endswith((".ttf", ".otf")):
@@ -44,9 +44,10 @@ class ResourceManager(metaclass=Singleton):
         self.RESOURCE_PATH = os.path.join(application_path, path)
         print(f"Resource path : '{self.RESOURCE_PATH}'")
         
-
-    def get_path(self,path: str):
-        return os.path.join(self.RESOURCE_PATH, path)
+    def get_path(self, path: str) -> str:
+        # Normalize path separators
+        normalized_path = path.replace('/', os.sep).replace('\\', os.sep)
+        return os.path.join(self.RESOURCE_PATH, normalized_path)
         
     def load_image(self,path)->None:
         key = self.get_path(path)
@@ -54,7 +55,7 @@ class ResourceManager(metaclass=Singleton):
         self.convert_image_cache[key] = pygame.image.load(path).convert()
         self.convert_alpha_image_cache[key] = pygame.image.load(path).convert_alpha()
         
-    def get_image(self,path,convert_alpha:bool=False):   
+    def get_image(self,path,convert_alpha:bool=False)->pygame.Surface | None:   
         key = self.get_path(path)
         return self.convert_alpha_image_cache.get(key,None) if\
          convert_alpha else self.convert_image_cache.get(key,None)

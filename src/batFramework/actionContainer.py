@@ -6,7 +6,7 @@ class ActionContainer:
     def __init__(self, *actions: list[bf.Action]) -> None:
         self._actions: dict[str, bf.Action] = {}
         if actions:
-            self.add_action(*actions)
+            self.add_actions(*actions)
 
     def __iter__(self):
         return iter(self._actions.values())
@@ -14,7 +14,7 @@ class ActionContainer:
     def clear(self):
         self._actions = {}
 
-    def add_action(self, *actions: bf.Action):
+    def add_actions(self, *actions: bf.Action):
         for action in actions:
             self._actions[action.get_name()] = action
 

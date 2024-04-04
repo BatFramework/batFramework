@@ -6,8 +6,8 @@ import pygame
 
 
 class Indicator(Shape):
-    def __init__(self, width: int | float = 10, height: int | float = 10) -> None:
-        super().__init__(width, height)
+    def __init__(self, size : tuple[int | float] = (10,10)) -> None:
+        super().__init__(size)
 
     def to_string_id(self) -> str:
         return "Indicator"
@@ -29,7 +29,7 @@ class Indicator(Shape):
 class ToggleIndicator(Indicator):
     def __init__(self, default_value: bool) -> None:
         self.value: bool = default_value
-        super().__init__(20, 20)
+        super().__init__((20, 20))
 
         #TODO aspect ratio would be good right about here
         # self.add_constraint(ConstraintAspectRatio(1))

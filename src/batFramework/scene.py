@@ -154,11 +154,11 @@ class Scene:
 
     def add_actions(self, *action):
         """Add actions to the scene."""
-        self.actions.add_action(*action)
+        self.actions.add_actions(*action)
 
-    def add_early_actions(self, *action):
+    def add_early_actionss(self, *action):
         """Add actions to the scene."""
-        self.early_actions.add_action(*action)
+        self.early_actions.add_actions(*action)
 
     def get_by_tags(self, *tags):
         """Get entities by their tags."""
