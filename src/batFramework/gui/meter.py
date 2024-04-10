@@ -4,18 +4,30 @@ from typing import Self
 from math import ceil
 class Meter(Shape):
 
-    def __init__(self,size:tuple[float,float],min_value:float=0,max_value:float=1,step:float=0.1):
-        if min_value > max_value:
-            min_value = max_value
-            print(f"[Warning] : minimum value {min_value} is greater than maximum value {max_value}")
-        self.min_value, self.max_value = min_value,max_value
-        self.step = step
+    def __init__(self):
+
+        self.min_value, self.max_value = 0,1
+        self.step = 0.1
         self.snap:bool=False
-        self.value = max_value
+        self.value = self.max_value
         self.content = Shape((0,0))
-        super().__init__(size)
+        Shape.__init__(self,(100,30))
         self.set_outline_width(1)
         self.set_outline_color(bf.color.BLACK)
+        self.content.set_outline_width(1)
+        self.content.set_color(bf.color.BLACK)
+        
+    def set_range(self,min_val:float,max_val:float)->Self:
+        self.max_value = max_val
+        self.min_value = min_val
+        self.set_value(self.value)
+        return self
+
+    def set_step(self,step:float)->Self:
+        self.step = step
+        self.set_value(self.value)
+        return self        
+    
     def get_bounding_box(self):
         yield from super().get_bounding_box()
         yield from self.content.get_bounding_box()

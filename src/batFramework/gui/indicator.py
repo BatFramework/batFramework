@@ -1,11 +1,12 @@
 from .shape import Shape
+from .interactiveWidget import InteractiveWidget
 from typing import Any
 import pygame
 
 # from .constraints import ConstraintAspectRatio
 
 
-class Indicator(Shape):
+class Indicator(Shape,InteractiveWidget):
     def __init__(self, size : tuple[int | float] = (10,10)) -> None:
         super().__init__(size)
 
@@ -24,6 +25,8 @@ class Indicator(Shape):
     def build(self) -> None:
         super().build()
         self._build_indicator()
+
+    def top_at(self,x,y):return None
 
 
 class ToggleIndicator(Indicator):

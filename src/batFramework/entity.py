@@ -43,6 +43,11 @@ class Entity:
         i = Entity.__instance_count
         Entity.__instance_count += 1
         return i
+
+    def set_alpha(self,alpha:int)->Self:
+        if self.surface : self.surface.set_alpha(min(max(0,alpha),255))
+        return self
+        
     def set_blit_flags(self,blit_flags:int)->Self:
         self.blit_flags = blit_flags
         return self

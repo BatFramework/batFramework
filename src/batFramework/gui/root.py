@@ -16,10 +16,10 @@ class Root(InteractiveWidget):
         self.set_debug_color("purple")
 
     def to_string(self) -> str:
-        return "ROOT"
+        return "Root"
 
     def to_string_id(self) -> str:
-        return "ROOT"
+        return "Root"
         
     def get_focused(self) -> Widget | None:
         return self.focused

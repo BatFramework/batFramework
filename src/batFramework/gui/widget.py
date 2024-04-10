@@ -16,13 +16,14 @@ MAX_CONSTRAINT_ITERATION = 10
 class Widget(bf.Entity):
     def __init__(self, convert_alpha=True) -> None:
         super().__init__(convert_alpha=convert_alpha)
-        self.autoresize = False
+        self.autoresize = False # resize by internal methods (such as set_text) allowed
         self.parent: None | Self = None
         self.is_root: bool = False
         self.children: list["Widget"] = []
-        self.focusable: bool = False
+        self.focusable: bool = False # can get focus
         self.constraints: list[Constraint] = []
-        self.gui_depth: int = 0
+        self.gui_depth: int = 0 # depth in the gui tree
+        
         if self.surface:
             self.surface.fill("white")
         self.set_debug_color("red")
