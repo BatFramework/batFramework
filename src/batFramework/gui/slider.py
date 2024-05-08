@@ -1,4 +1,5 @@
 import batFramework as bf
+from .meter import Meter
 from .button import Button
 from .indicator import *
 from .meter import Meter

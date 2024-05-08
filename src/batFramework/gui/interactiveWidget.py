@@ -80,6 +80,7 @@ class InteractiveWidget(Widget):
         self.do_on_click_down(button)
 
     def on_click_up(self,button:int)->None:
+        self.is_clicked_down = False
         self.do_on_click_up(button)
 
     def do_on_click_down(self,button:int)->None:    

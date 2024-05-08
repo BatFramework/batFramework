@@ -27,6 +27,8 @@ class Indicator(Shape):
         super().build()
         self._build_indicator()
 
+    def top_at(self,x,y):return None
+
 
 class ToggleIndicator(Indicator):
     def __init__(self, default_value: bool) -> None:

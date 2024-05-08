@@ -11,7 +11,7 @@ class Meter(Shape):
         self.min_value, self.max_value = 0,1
         self.step = step
         self.snap:bool=False
-        self.value = max_value
+        self.value = self.max_value
         self.content = Shape((0,0))
         self.content.top_at = lambda x,y: custom_top_at(self.content,x,y)
         super().__init__(size)

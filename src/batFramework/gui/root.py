@@ -18,10 +18,10 @@ class Root(InteractiveWidget):
         self.disable_clip_to_parent()
 
     def to_string(self) -> str:
-        return "ROOT"
+        return "Root"
 
     def to_string_id(self) -> str:
-        return "ROOT"
+        return "Root"
         
     def get_focused(self) -> Widget | None:
         return self.focused
