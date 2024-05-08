@@ -1,6 +1,6 @@
 import batFramework as bf
 from .cutscene import Cutscene, CutsceneManager
-
+from .transition import *
 
 # Define the base CutsceneBlock class
 class CutsceneBlock:
@@ -121,15 +121,14 @@ class SceneTransitionBlock(CutsceneBlock):
     """
 
     # Constructor for SceneTransitionBlock
-    def __init__(self, scene, transition, duration, **kwargs) -> None:
+    def __init__(self, scene, transition : Transition = Fade(0.1),index :int= 0) -> None:
         super().__init__()
         # Target scene, transition type, duration, and additional keyword arguments
         self.target_scene = scene
         self.transition = transition
-        self.duration = duration
-        self.kwargs = kwargs
+        self.index = index
         # Timer to handle the end of the transition
-        self.timer = bf.Timer(duration=duration, end_callback=self.end)
+        self.timer = bf.Timer(transition.duration,self.end)
 
     # Start the scene transition block
     def start(self):
@@ -137,20 +136,13 @@ class SceneTransitionBlock(CutsceneBlock):
         Start the scene transition block.
         """
         super().start()
-        print(f"transition to {scene}")
-
         # Initiate the scene transition
         if self.get_current_scene()._name == self.target_scene:
             self.end()
             return
-        CutsceneManager().manager.transition_to_scene(
-            self.target_scene, self.transition, duration=self.duration, **self.kwargs
-        )
+        CutsceneManager().manager.transition_to_scene(self.target_scene, self.transition,self.index)
         # Start the timer to handle the end of the transition
         self.timer.start()
-
-    def end(self):
-        return super().end()
 
 
 

@@ -7,13 +7,15 @@ import pygame
 class Root(InteractiveWidget):
     def __init__(self,camera)->None:
         super().__init__()
-        self.drawing_camera = camera
+        self.drawing_camera : bf.Camera = camera
         self.surface = None
         self.set_root()
         self.rect.size = pygame.display.get_surface().get_size()
         self.focused: InteractiveWidget |None= self
         self.hovered: Widget | None = self
-        self.set_debug_color("purple")
+        self.set_debug_color("yellow")
+        self.set_render_order(999)
+        self.disable_clip_to_parent()
 
     def to_string(self) -> str:
         return "ROOT"
@@ -35,6 +37,7 @@ class Root(InteractiveWidget):
         self.hovered = None
 
     def focus_on(self, widget: InteractiveWidget|None) -> None:
+        if widget and not widget.allow_focus_to_self():return
         if self.focused is not None:
             self.focused.on_lose_focus()
         if widget is None:
@@ -46,7 +49,7 @@ class Root(InteractiveWidget):
     def set_size(self, size : tuple[float,float], force: bool = False) -> "Root":
         if not force:
             return self
-        self.rect.size = width, height
+        self.rect.size = size
         self.build(apply_constraints=True)
         return self
 
@@ -60,13 +63,17 @@ class Root(InteractiveWidget):
         # if event.type == pygame.VIDEORESIZE:
         #     self.set_size(event.w, event.h, force=True)
         #     return True
+        if self.focused:
+            if event.type == pygame.KEYDOWN:
+                self.focused.on_key_down(event.key)
+            if event.type == pygame.KEYUP:
+                self.focused.on_key_up(event.key)
+        if not self.hovered or not isinstance(self.hovered,InteractiveWidget) : return False
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.hovered and isinstance(self.hovered,InteractiveWidget) :
-                self.hovered.on_click_down(event.button)
-        if event.type == pygame.MOUSEBUTTONUP:
-            if self.hovered and isinstance(self.hovered,InteractiveWidget) :
-                self.hovered.on_click_up(event.button)            
-
+            self.hovered.on_click_down(event.button)
+        if event.type == pygame.MOUSEBUTTONUP:    
+            self.hovered.on_click_up(event.button)            
+        
         return False
 
     def get_root(self) -> "Root" :

@@ -20,9 +20,30 @@ class Button(Label, InteractiveWidget):
         self.enabled :bool = True
         self.hover_cursor = bf.const.DEFAULT_HOVER_CURSOR
         self.click_cursor = bf.const.DEFAULT_CLICK_CURSOR
+        self.click_down_sound = None
+        self.click_up_sound = None
+
+        self.get_focus_sound = None
+        self.lose_focus_sound = None
         super().__init__(text=text)
         self.set_debug_color("cyan")
         self.focusable = True
+
+    def set_click_down_sound(self,sound_name:str)->Self:
+        self.click_down_sound = sound_name
+        return self
+
+    def set_click_up_sound(self,sound_name:str)->Self:
+        self.click_up_sound = sound_name
+        return self
+
+    def set_get_focus_sound(self,sound_name:str)->Self:
+        self.get_focus_sound = sound_name
+        return self
+
+    def set_lose_focus_sound(self,sound_name:str)->Self:
+        self.lose_focus_sound = sound_name
+        return self
 
     def set_hover_cursor(self,cursor : pygame.Cursor)->Self:
         self.hover_cursor = cursor
@@ -53,16 +74,17 @@ class Button(Label, InteractiveWidget):
             if not self.surface:
                 return None
             size = self.surface.get_size()
-            surface_filter = Button._cache.get(size, None)
+            surface_filter = Button._cache.get((size,*self.border_radius), None)
             if surface_filter is None:
                 # Create a mask from the original surface
                 mask = pygame.mask.from_surface(self.surface,threshold=0)
-                # Get the bounding box of the mask
-                silhouette_surface = mask.to_surface(
-                    setcolor = (30,30,30),unsetcolor= (255,255,255)
-                ).convert_alpha()
-                Button._cache[size] = silhouette_surface
+
+                silhouette_surface = mask.to_surface(setcolor = (30,30,30),unsetcolor= (255,255,255))
+                
+                Button._cache[(size,*self.border_radius)] = silhouette_surface
+                
                 surface_filter = silhouette_surface
+            
             return surface_filter
             
     def enable(self)->Self:
@@ -84,16 +106,19 @@ class Button(Label, InteractiveWidget):
 
     def on_get_focus(self):
         super().on_get_focus()
+        bf.AudioManager().play_sound(self.get_focus_sound)
         self.build()
 
     def on_lose_focus(self):
         super().on_lose_focus()
+        bf.AudioManager().play_sound(self.lose_focus_sound)
         self.build()
 
     def to_string_id(self) -> str:
         return f"Button({self.text}){'' if self.enabled else '[disabled]'}"
 
-    def click(self) -> None:
+    def click(self,force=False) -> None:
+        if not self.enabled and not force:return
         if self.callback is not None:
             self.callback()
             bf.Timer(duration=0.1,end_callback=self._safety_effect_end).start()
@@ -111,14 +136,21 @@ class Button(Label, InteractiveWidget):
         if self.enabled and button == 1 and self.effect == 0:
             if not self.get_focus():return
             self.is_clicking = True
+            bf.AudioManager().play_sound(self.click_down_sound)
+
             pygame.mouse.set_cursor(self.click_cursor)
+
             if self.use_effect : 
                 self.start_effect()
             else: 
                 self.build()
+
+
     def do_on_click_up(self,button)->None:
         if self.enabled and button == 1 and self.is_clicking: 
             self.is_clicking = False
+            bf.AudioManager().play_sound(self.click_up_sound)
+
             self.build()
             self.click()
     
@@ -131,11 +163,23 @@ class Button(Label, InteractiveWidget):
 
     def on_exit(self)->None:
         super().on_exit()
-        # self.effect = 0
         self.is_clicking = False
         self.build()
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
 
+    def on_lose_focus(self):
+        super().on_lose_focus()
+        self.on_exit()
+
+    def on_key_down(self,key):
+        if key == pygame.K_SPACE:
+            self.on_click_down(1)
+        super().on_key_down(key)
+
+    def on_key_up(self,key):
+        if key == pygame.K_SPACE:
+            self.on_click_up(1)
+        super().on_key_up(key)
 
     def update(self,dt):
         super().update(dt)
@@ -159,16 +203,17 @@ class Button(Label, InteractiveWidget):
             *self.border_radius
             )
     def _build_disabled(self)->None:
-        self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_SUB)
+        self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_RGB_SUB)
 
     def _build_hovered(self)->None:
-        self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_ADD)
+        self.surface.blit(self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_RGB_ADD)
 
     def build(self) -> None:
         super().build()
         if not self.enabled:
             self._build_disabled()
         elif self.is_hovered:
+            #pass
             self._build_hovered()
         if self.use_effect and self.effect:
             self._build_effect()

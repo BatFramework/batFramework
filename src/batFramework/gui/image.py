@@ -43,5 +43,5 @@ class Image(Widget):
         self.original_surface = tmp
         if size is None and self.original_surface:
             size = self.original_surface.get_size()
-        self.set_size(*size)
+        self.set_size(size)
         return Self

@@ -21,6 +21,7 @@ from .entity import Entity
 from .renderGroup import RenderGroup
 from .dynamicEntity import DynamicEntity
 from .sprite import Sprite
+from .scrollingSprite import ScrollingSprite
 from .particle import *
 from .animatedSprite import AnimatedSprite, AnimState
 from .stateMachine import State, StateMachine

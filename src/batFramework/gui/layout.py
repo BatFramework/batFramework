@@ -1,6 +1,6 @@
 import batFramework as bf
 from .widget import Widget
-from .constraints import *
+from .constraints.constraints import *
 from typing import Self
 import pygame
 
@@ -20,6 +20,9 @@ class Layout:
         self.parent = parent
         self.arrange()
 
+    def notify_parent(self)->None:
+        if self.parent: self.parent.notify()
+
     def arrange(self) -> None:
         raise NotImplementedError("Subclasses must implement arrange  method")
 
@@ -30,6 +33,11 @@ class Column(Layout):
         self.gap = gap
         self.fit_children: bool = fit_children
         self.center = center
+    
+    def set_gap(self,value:float)->Self:
+        self.gap = value
+        self.notify_parent()
+        return self
 
     def arrange(self) -> None:
         if not self.parent or not self.parent.children:
@@ -40,8 +48,8 @@ class Column(Layout):
         if self.gap:
             parent_height += (len_children - 1) * self.gap
         self.children_rect.update(
-            self.parent.get_content_left(),
-            self.parent.get_content_top(),
+            self.parent.get_padded_left(),
+            self.parent.get_padded_top(),
             parent_width,
             parent_height,
         )
@@ -66,6 +74,12 @@ class Row(Layout):
         self.fit_children: bool = fit_children
         self.center = center
 
+    def set_gap(self,value:float)->Self:
+        self.gap = value
+        self.notify_parent()
+        return self
+
+
     def arrange(self) -> None:
         if not self.parent or not self.parent.children:
             return
@@ -77,13 +91,13 @@ class Row(Layout):
         if self.gap:
             parent_width += (len_children - 1) * self.gap
         self.children_rect.update(
-            self.parent.get_content_left(),
-            self.parent.get_content_top(),
+            self.parent.get_padded_left(),
+            self.parent.get_padded_top(),
             parent_width,
             parent_height,
         )
         if self.center:
-            self.children_rect.center = self.parent.get_content_center()
+            self.children_rect.center = self.parent.get_padded_center()
         if self.fit_children:
             self.parent.set_size((parent_width,parent_height))
             

@@ -2,6 +2,7 @@ from .constraints  import *
 from .widget import Widget
 from .image import Image
 from .interactiveWidget import InteractiveWidget
+from .draggableWidget import DraggableWidget
 from .root import Root
 from .shape import Shape
 from .meter import Meter

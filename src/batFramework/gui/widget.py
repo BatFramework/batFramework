@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .constraints import Constraint
+    from .constraints.constraints import Constraint
     from .root import Root
     from .interactiveWidget import InteractiveWidget
 from typing import Self
@@ -17,16 +17,43 @@ class Widget(bf.Entity):
     def __init__(self, convert_alpha=True) -> None:
         super().__init__(convert_alpha=convert_alpha)
         self.autoresize = False
-        self.parent: None | Self = None
+        self.parent: None | "Widget" = None
         self.is_root: bool = False
         self.children: list["Widget"] = []
         self.focusable: bool = False
         self.constraints: list[Constraint] = []
         self.gui_depth: int = 0
+        self.clip_to_parent : bool = True
+        self.alpha : int = 255
         if self.surface:
             self.surface.fill("white")
         self.set_debug_color("red")
         self.padding: tuple[float | int, ...] = (0, 0, 0, 0)
+        self.__recursive_constraint_count = 0
+
+    def enable_clip_to_parent(self)->Self:
+        self.clip_to_parent = True
+        self.build()
+        return self
+    def disable_clip_to_parent(self)->Self:
+        self.clip_to_parent = False
+        self.build()
+        return self
+
+    def set_alpha(self,value: int,propagate:bool = True)->Self:
+        self.alpha = value
+        if self.surface : self.surface.set_alpha(value)
+        if propagate and self.children:
+            for c in self.children : c.propagate_function(lambda e : e.set_alpha(value))
+        return self
+
+    def get_alpha(self)->int:
+        return self.surface.get_alpha()
+
+    def set_visible(self,value : bool,propagate:bool=True)->Self:
+        super().set_visible(value)
+        if propagate: _ = [c.set_visible(value,propagate) for c in self.children]
+        return self
 
     def set_padding(self, value: float | int | tuple | list) -> Self:
         old_raw_size = (
@@ -62,37 +89,37 @@ class Widget(bf.Entity):
     def get_min_required_size(self)->tuple[float,float]:
         return self.rect.size
 
-    def get_content_left(self) -> float:
+    def get_padded_left(self) -> float:
         return self.rect.left + self.padding[0]
 
-    def get_content_top(self) -> float:
+    def get_padded_top(self) -> float:
         return self.rect.top + self.padding[1]
 
-    def get_content_right(self) -> float:
+    def get_padded_right(self) -> float:
         return self.rect.right - self.padding[2]
 
-    def get_content_bottom(self) -> float:
+    def get_padded_bottom(self) -> float:
         return self.rect.bottom - self.padding[3]
 
-    def get_content_width(self) -> float:
+    def get_padded_width(self) -> float:
         return self.rect.w - self.padding[0] - self.padding[2]
 
-    def get_content_height(self) -> float:
+    def get_padded_height(self) -> float:
         return self.rect.h - self.padding[1] - self.padding[3]
 
-    def get_content_rect(self) -> pygame.FRect:
+    def get_padded_rect(self) -> pygame.FRect:
         return pygame.FRect(
             self.rect.left + self.padding[0],
             self.rect.top + self.padding[1],
-            self.get_content_width(),
-            self.get_content_height(),
+            self.get_padded_width(),
+            self.get_padded_height(),
         )
 
-    def get_content_rect_rel(self) -> pygame.FRect:
-        return self.get_content_rect().move(-self.rect.left, -self.rect.top)
+    def get_padded_rect_rel(self) -> pygame.FRect:
+        return self.get_padded_rect().move(-self.rect.left, -self.rect.top)
 
-    def get_content_center(self) -> tuple[float, float]:
-        return self.get_content_rect().center
+    def get_padded_center(self) -> tuple[float, float]:
+        return self.get_padded_rect().center
 
     def get_depth(self) -> int:
         if self.is_root or self.parent is None:
@@ -109,7 +136,6 @@ class Widget(bf.Entity):
                     if r is not None:
                         return r
             return self
-
         return None
 
     def get_constraint(self, name: str) -> Constraint | None:
@@ -133,6 +159,7 @@ class Widget(bf.Entity):
         self.apply_constraints()
 
     def apply_constraints(self) -> None:
+        self.__recursive_constraint_count += 1
         if not self.parent:
             # print(f"Warning : can't apply constraints on {self.to_string()} without parent widget")
             return
@@ -151,9 +178,10 @@ class Widget(bf.Entity):
             if not unsatisfied:
                 #     data = ''.join(f"\n\t->{c.to_string()}" for c in self.constraints)
                 #     print(self.get_depth()*'\t'+f"Following constraints of {self.to_string()} were all satisfied :{data}")
+                self.__recursive_constraint_count = 0
                 break
             # print(f"pass {iteration}/{max_iterations} : unsatisfied = {';'.join(c.to_string() for c in unsatisfied)}")
-            if iteration == MAX_CONSTRAINT_ITERATION - 1:
+            if iteration >= MAX_CONSTRAINT_ITERATION - 1 or self.__recursive_constraint_count >= MAX_CONSTRAINT_ITERATION -1 :
                 unsatisfied_constraints = '\n\t'.join([c.to_string() for c in unsatisfied])
                 raise ValueError(
                     f"[WARNING] Following constraints for {self.to_string()} were not satisfied : \n{unsatisfied_constraints}"
@@ -170,11 +198,12 @@ class Widget(bf.Entity):
         return 1 + sum(child.count_children_recursive() for child in self.children)
 
 
-    def propagate_function(self,function):
-        function(self)
+    def propagate_function(self,function,bottom_up:bool = False):
+        if not bottom_up : function(self)
         for child in self.children:
             child.propagate_function(function)
-
+        if bottom_up: function(self)
+        
     def get_root(self) -> Root | None:
         if self.parent_scene is not None:
             return self.parent_scene.root
@@ -186,9 +215,9 @@ class Widget(bf.Entity):
     def get_center(self) -> tuple[float, float]:
         return self.rect.center
 
-    def get_bounding_box(self):
+    def get_bounding_box(self):            
         yield (self.rect, self.debug_color)
-        yield (self.get_content_rect(), "yellow")
+        yield (self.get_padded_rect(), "gray20")
         for child in self.children:
             yield from child.get_bounding_box()
 
@@ -284,7 +313,7 @@ class Widget(bf.Entity):
 
     # Methods on children
 
-    def add_child(self, *child: "Widget") -> None:
+    def add_child(self, *child: "Widget") -> Self:
         for c in child:
             self.children.append(c)
             c.set_parent(self)
@@ -293,8 +322,9 @@ class Widget(bf.Entity):
         self._sort_children()
         self.apply_all_constraints()
         self.notify()
+        return self
 
-    def remove_child(self, child: "Widget") -> None:
+    def remove_child(self, child: "Widget") -> Self:
         try : 
             self.children.remove(child)
         except ValueError:
@@ -305,7 +335,7 @@ class Widget(bf.Entity):
         self._sort_children()
         self.apply_all_constraints()
         self.notify()
-
+        return self
     def _sort_children(self):
         self.children.sort(key=lambda child : child.render_order)
 
@@ -324,10 +354,33 @@ class Widget(bf.Entity):
             child.update(dt)
         self.do_update(dt)
 
+    def _get_clipped_rect_and_area(self,camera: bf.Camera)->tuple[pygame.FRect,pygame.FRect]:
+        transposed_rect = camera.transpose(self.rect)
+        clipped_rect = transposed_rect.clip(self.parent.get_padded_rect())
+        # We only need to adjust the source rectangle to match the portion within the clipped_rect.
+        source_area = clipped_rect.move(-transposed_rect.x, -transposed_rect.y)
+        return clipped_rect,source_area
+
+
+
     def draw(self, camera: bf.Camera) -> int:
-        return super().draw(camera) + sum(
-            [child.draw(camera) for child in self.children]
-        )
+        if not self.visible or not self.surface or not camera.intersects(self.rect):
+            return sum([child.draw(camera) for child in self.rect.collideobjectsall(self.children)])
+        
+        if self.parent and self.clip_to_parent and self.parent:
+            clipped_rect,source_area = self._get_clipped_rect_and_area(camera)
+            camera.surface.blit(
+                self.surface,
+                clipped_rect.topleft,
+                source_area,
+                special_flags=self.blit_flags
+            )
+        else:
+            camera.surface.blit(
+                self.surface, camera.transpose(self.rect),  
+                special_flags = self.blit_flags
+            )
+        return 1 + sum([child.draw(camera) for child in self.rect.collideobjectsall(self.children)])
 
     def build(self) -> None:
         """
@@ -338,7 +391,7 @@ class Widget(bf.Entity):
             return
         if self.surface.get_size() != self.get_size_int():
             self.surface = pygame.Surface(self.get_size_int())
-
+        self.surface.set_alpha(self.alpha)
 
     def build_all(self) -> None:
         self.build()
@@ -348,5 +401,4 @@ class Widget(bf.Entity):
     def notify(self) -> None:
         if self.parent and not self.is_root:
             self.parent.notify()
-
 

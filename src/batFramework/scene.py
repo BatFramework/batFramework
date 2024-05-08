@@ -305,13 +305,13 @@ class Scene:
         self.set_active(True)
         self.set_visible(True)
         self.root.clear_hovered()
-        self.root.clear_focused()
+        #self.root.clear_focused()
         self.root.build()
         self.do_on_enter()
 
     def on_exit(self):
         self.root.clear_hovered()
-        self.root.clear_focused()
+        #self.root.clear_focused()
         self.set_active(False)
         self.set_visible(False)
         self.actions.hard_reset()

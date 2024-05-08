@@ -17,10 +17,10 @@ class DialogueBox(Label):
         return self
 
     def cut_text_to_width(self,text:str)->list[str]:
-        if text == '' or self.get_content_width() < 1 or not self.font_object : return ['']
+        if text == '' or self.get_padded_width() < 1 or not self.font_object : return ['']
         for index in range(len(text)):
             width = self.font_object.size(text[:index])[0]
-            if width > self.get_content_width():
+            if width > self.get_padded_width():
                 cut_point_start = index-1
                 cut_point_end = index-1
                 last_space = text.rfind(' ',0,cut_point_start)

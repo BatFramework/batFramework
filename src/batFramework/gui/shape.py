@@ -19,14 +19,15 @@ class Shape(Widget):
         super().__init__(convert_alpha=True)
         self.set_size(size)
 
-    def get_content_bottom(self) -> float:
+    def get_padded_bottom(self) -> float:
         return self.rect.bottom - self.padding[3] - self.relief
 
-    def get_content_height(self) -> float:
+    def get_padded_height(self) -> float:
         return self.rect.h - self.padding[1] - self.padding[3] - self.relief
 
     def set_shadow_color(self,color : tuple[int, int, int] | str )->Self:
         self.shadow_color = color
+        self.build()
         return self
 
     def set_relief(self,relief:int)->Self:
@@ -194,8 +195,10 @@ class Shape(Widget):
 
     def _build_rounded_shape(self) -> None:
         self.surface.fill((0, 0, 0, 0))
+        r = self._get_elevated_rect()
+        r.bottom = self.rect.h        
         pygame.draw.rect(
-            self.surface, self.shadow_color, self._get_elevated_rect().move(0,self.relief), 0, *self.border_radius
+            self.surface, self.shadow_color, r, 0, *self.border_radius
         )
         
         pygame.draw.rect(

@@ -155,11 +155,15 @@ class Entity:
             Update method to be overriden for specific behavior by the end user
         """
 
+
+    def should_draw(self,camera)->bool:
+        return   self.visible and  (self.surface is not None) and camera.intersects(self.rect)
+
     def draw(self, camera: bf.Camera) -> int:
         """
             Draw the entity onto the camera with coordinate transposing
         """
-        if not self.visible or not self.surface or not camera.intersects(self.rect):
+        if not self.should_draw(camera):
             return 0
         camera.surface.blit(
             self.surface,

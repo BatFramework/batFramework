@@ -21,6 +21,15 @@ class Manager(bf.SceneManager):
         surf = pygame.image.load(bf.ResourceManager().get_path(path)).convert_alpha()
         pygame.display.set_icon(surf)
 
+    def print_status(self):
+        super().print_status()
+        print("TIMERS : ")
+        for r in self._timeManager.get_active_registers():
+            # print(r["timers"])
+            print("\n".join(str(t) for t in r))
+        print("-" * 40)
+
+
     def get_fps(self)->float:
         return self._clock.get_fps()
 

@@ -1,11 +1,10 @@
-import pygame
 import batFramework as bf
 from typing import Self
 
 class Timer:
     _count :int = 0
     def __init__(self,duration:float|int,end_callback,loop:bool=False)->None:
-        self.name = Timer._count
+        self.name : int = Timer._count
         Timer._count+=1
         
         self.duration : int|float = duration
@@ -17,6 +16,9 @@ class Timer:
         self.is_paused : bool = False
         self.do_delete:bool = False
         
+    def __repr__(self) -> str:
+        return f"Timer ({self.name}) {self.elapsed_time}/{self.duration} | {'loop ' if self.is_looping else ''} {'(D) ' if self.do_delete else ''}"
+
     def stop(self)->Self:
         self.elapsed_time =-1
         self.is_over = False
@@ -59,7 +61,8 @@ class Timer:
             self.end()
 
     def end(self):
-        if self.end_callback : self.end_callback()
+        if self.end_callback : 
+            self.end_callback()
         self.elapsed_time = -1
         self.is_over = True
         if self.is_looping:
@@ -69,39 +72,56 @@ class Timer:
     def should_delete(self)->bool:
         return self.is_over or self.do_delete
 
+class TimerRegister:
+    def __init__(self, active=True):
+        self.active = active
+        self.timers : dict[int|str, Timer]= {}
 
-class TimeManager(metaclass=bf.Singleton):
-    def __init__(self):
-        # Initialize the TimeManager class with a dictionary of timers
-        self.registers = {
-            "global":{"active":True,"timers":{}}
-        }
+    def __iter__(self):
+        return iter(self.timers.values())
 
-    def add_register(self,register:str):
-        self.registers[registers] = {"active":True,"timers":{}}
+    def add_timer(self, timer : Timer):
+        self.timers[timer.name] = timer
 
-    def add_timer(self, timer,register:str="global")->bool:
-        # Add a timer to the dictionary
-        reg = self.registers.get(register,None)
-        if reg is None : 
-            print(f"Register 'register' does not exist !")
-            return False
-        self.registers[register]["timers"][timer.name] = timer
-        # print("added")
-        return True
 
-    def get_active_registers(self):
-        for reg in self.registers.values():
-            if reg["active"] : 
-                yield reg
-    
-    def update(self,dt):
-        # Update all timers and remove completed ones
-        for reg in self.get_active_registers():
-            for name, timer in {k: v for k, v in reg["timers"].items() if not v.is_paused}.items():
+    def update(self, dt):
+        expired_timers = []
+        for timer in list(self.timers.values()):
+            if not timer.is_paused:
                 timer.update(dt)
+            if timer.should_delete():
+                expired_timers.append(timer.name)
+        for name in expired_timers:
+            del self.timers[name]
 
-            to_remove = [name for name, timer in reg["timers"].items() if timer.should_delete()]
+class TimeManager(metaclass = bf.Singleton):
+    def __init__(self):
+        self.registers = {'global': TimerRegister()}
 
-            for name in to_remove:
-                reg["timers"].pop(name)
+    def add_register(self, name, active=True):
+        if name not in self.registers:
+            self.registers[name] = TimerRegister(active)
+
+    def add_timer(self, timer, register='global')->bool:
+        if register in self.registers:
+            self.registers[register].add_timer(timer)
+            return True            
+        print(f"Register '{register}' does not exist.")
+        return False
+    
+    def get_active_registers(self)->list[TimerRegister]:
+        return [t for t in self.registers.values() if t.active]
+
+    def update(self, dt):
+        for register_name ,register in self.registers.items():
+            if register.active:
+                register.update(dt)
+
+    def activate_register(self, name, active=True):
+        if name in self.registers:
+            self.registers[name].active = active
+        else:
+            print(f"Register '{name}' does not exist.")
+
+    def deactivate_register(self, name):
+        self.activate_register(name, active=False)

@@ -12,7 +12,7 @@ class CutsceneManager(metaclass=bf.Singleton):
     def __init__(self) -> None:
         self.current_cutscene: Cutscene = None
         self.cutscenes: list[bf.Cutscene] = []
-        self.manager = None
+        self.manager : bf.Manager = None
         
     def set_manager(self,manager):
         self.manager = manager

@@ -10,10 +10,10 @@ class SceneManager:
         self._debugging :int = 0
         self._sharedVarDict : dict = {}
 
-        self._scene_transitions: list = []
+        self._scene_transitions: list[bf.transition.Transition] = []
         self.set_sharedVar("debugging_mode",self._debugging)
         self.set_sharedVar("in_cutscene", False)
-        self.current_transition = None
+        self.current_transition : dict[str,bf.transition.Transition]= {}
         self.set_sharedVar("player_has_control", True)
         self.last_frame = None
 
@@ -80,7 +80,7 @@ class SceneManager:
         if index < 0 or index >= len(self._scenes) : return None
         return self._scenes[index]
 
-    def transition_to_scene(self,scene_name,transition,index=0):
+    def transition_to_scene(self,scene_name: str,transition : bf.transition.Transition = bf.transition.Fade(0.1) ,index: int=0):
         target_scene = self.get_scene(scene_name)
         if (
             len(self._scenes) == 0
@@ -89,15 +89,13 @@ class SceneManager:
             or index < 0
         ):
             return
-
         source_surface = bf.const.SCREEN.copy()
         dest_surface = bf.const.SCREEN.copy()
 
         # self.draw(source_surface)
         target_scene.draw(dest_surface)
         
-        self.current_transition = [scene_name,transition]
-                
+        self.current_transition = {"scene_name":scene_name,"transition":transition}
         transition.set_start_callback(lambda : self._start_transition(target_scene))
         transition.set_end_callback(lambda : self._end_transition(scene_name,index))
         transition.set_source(source_surface)
@@ -112,7 +110,7 @@ class SceneManager:
     def _end_transition(self,scene_name,index):
         self.set_scene(scene_name,index)
         self.set_sharedVar("player_has_control",True)
-        self.current_transition = None
+        self.current_transition.clear()
         
     def set_scene(self, scene_name, index=0):
         if (len(self._scenes) == 0
@@ -122,7 +120,9 @@ class SceneManager:
             
         # switch
         self._scenes[index].on_exit()
-        swap(self._scenes, target_scene.get_scene_index(),index)
+        #re-insert scene at index 0
+        self._scenes.remove(target_scene)
+        self._scenes.insert(index,target_scene)
         _ = [s.set_scene_index(i) for i, s in enumerate(self._scenes)]
         target_scene.on_enter()
 
@@ -148,17 +148,18 @@ class SceneManager:
         self.do_update(dt)
 
     def do_update(self, dt: float):
-        return
+        pass
 
     def draw(self, surface) -> None:
         for scene in self.visible_scenes:
             scene.draw(surface)
         if self.current_transition:
             self._draw_transition(surface)
+
     def _draw_transition(self,surface):
-        self.current_transition[1].set_source(surface)
+        self.current_transition["transition"].set_source(surface)
         tmp = bf.const.SCREEN.copy()
-        self.get_scene(self.current_transition[0]).draw(tmp)
-        self.current_transition[1].set_dest(tmp)
-        self.current_transition[1].draw(surface)
+        self.get_scene(self.current_transition["scene_name"]).draw(tmp)
+        self.current_transition["transition"].set_dest(tmp)
+        self.current_transition["transition"].draw(surface)
         return

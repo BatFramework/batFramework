@@ -25,7 +25,7 @@ class Camera:
         self.blit_special_flags: int = pygame.BLEND_ALPHA_SDL2
         
         self._clear_color: pygame.Color = pygame.Color(0, 0, 0, 0)
-        if not convert_alpha: pygame.Color(0, 0, 0)
+        if not convert_alpha: self._clear_color = pygame.Color(0, 0, 0)
         
         self.follow_point_func = None
         self.follow_speed :float= 0.1 
