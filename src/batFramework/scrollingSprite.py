@@ -7,13 +7,23 @@ class ScrollingSprite(bf.Sprite):
     def __init__(self, data: pygame.Surface | str, size: None | tuple[int, int] = None, convert_alpha: bool = True):
         self.scroll_value = Vector2(0,0)
         self.auto_scroll = Vector2(0,0)
+
+        # Use integer values for the starting points, converted from floating point scroll values
+
         super().__init__(data, size, convert_alpha)
-        self.internal_surface = self.surface.copy()
+        self.original_width, self.original_height = self.original_surface.get_size()
 
     def get_bounding_box(self):
         yield from super().get_bounding_box()
         for r in self._get_mosaic_rect_list():
             yield r.move(*self.rect.topleft)
+
+    def set_image(self, data: pygame.Surface | str, size: None | tuple[int, int] = None) -> Self:
+        super().set_image(data, size)
+        self.original_width, self.original_height = self.original_surface.get_size()
+        return self
+
+
     def set_autoscroll(self,x:float,y:float)->Self:
         self.auto_scroll.update(x,y)
         return self
@@ -28,6 +38,15 @@ class ScrollingSprite(bf.Sprite):
 
     def update(self, dt: float) -> None:
         if self.auto_scroll : self.scroll(*self.auto_scroll * dt)
+        original_width, original_height = self.original_surface.get_size()
+
+        # Use integer values for the starting points, converted from floating point scroll values
+
+
+        if self.scroll_value.x > self.original_width : self.scroll_value.x -= self.original_width
+        if self.scroll_value.y > self.original_height : self.scroll_value.y -= self.original_height
+
+
         super().update(dt)
 
 
@@ -37,17 +56,16 @@ class ScrollingSprite(bf.Sprite):
         return self
 
     def _get_mosaic_rect_list(self) -> Iterator[pygame.Rect]:
-        original_width, original_height = self.original_surface.get_size()
 
         # Use integer values for the starting points, converted from floating point scroll values
-        start_x = int(self.scroll_value.x % original_width)
-        start_y = int(self.scroll_value.y % original_height)
+        start_x = int(self.scroll_value.x % self.original_width)
+        start_y = int(self.scroll_value.y % self.original_height)
 
         # Adjust start_x and start_y to begin tiling off-screen to the top-left, covering all visible area
         if start_x != 0:
-            start_x -= original_width
+            start_x -= self.original_width
         if start_y != 0:
-            start_y -= original_height
+            start_y -= self.original_height
 
         # Set the region in which to tile
         end_x = self.rect.w
@@ -62,9 +80,9 @@ class ScrollingSprite(bf.Sprite):
         while x < end_x:
             y = y_position
             while y < end_y:
-                yield pygame.Rect(x, y, original_width, original_height)
-                y += original_height
-            x += original_width
+                yield pygame.Rect(x, y, self.original_width, self.original_height)
+                y += self.original_height
+            x += self.original_width
         return self
 
     def draw(self,camera:bf.Camera)->int:
@@ -72,5 +90,5 @@ class ScrollingSprite(bf.Sprite):
         self.surface.fill((0,0,0,0))
         self.surface.fblits([(self.original_surface,r) for r in self._get_mosaic_rect_list()])
         # pygame.draw.rect(camera.surface,"green",next(self._get_mosaic_rect_list()).move(*self.rect.topleft),1)
-        camera.surface.blit(self.surface,camera.transpose(self.rect))
+        camera.surface.blit(self.surface,camera.world_to_screen(self.rect))
         return 1
