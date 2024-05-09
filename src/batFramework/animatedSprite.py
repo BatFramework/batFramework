@@ -144,6 +144,6 @@ class AnimatedSprite(bf.DynamicEntity):
             return 0
         camera.surface.blit(
             self.current_state.get_frame(self.float_counter, self.flipX),
-            camera.transpose(self.rect),
+            camera.world_to_screen(self.rect),
         )
         return 1

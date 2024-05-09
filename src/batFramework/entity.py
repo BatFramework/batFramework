@@ -172,6 +172,6 @@ class Entity:
             return 0
         camera.surface.blit(
             self.surface,
-            camera.transpose(self.rect),
+            camera.world_to_screen(self.rect),
             special_flags = self.blit_flags)
         return 1

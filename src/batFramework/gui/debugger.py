@@ -106,14 +106,14 @@ class BasicDebugger(FPSDebugger):
         self.add_dynamic("Mouse", pygame.mouse.get_pos)
         self.add_dynamic(
             "World",
-            lambda: convert_to_int(*parent_scene.camera.convert_screen_to_world(
-                *pygame.mouse.get_pos())
+            lambda: convert_to_int(*parent_scene.camera.screen_to_world(
+                pygame.mouse.get_pos())
             ),
         )
         self.add_dynamic(
             "Hud",
-            lambda: convert_to_int(*parent_scene.hud_camera.convert_screen_to_world(
-                *pygame.mouse.get_pos())
+            lambda: convert_to_int(*parent_scene.hud_camera.screen_to_world(
+                pygame.mouse.get_pos())
             ),
         )
         self.add_dynamic("W. Ent.",lambda : parent_scene.get_world_entity_count())

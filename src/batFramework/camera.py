@@ -224,12 +224,12 @@ class Camera:
         """
         return self.rect.colliderect(rect)
 
-    def transpose(self, rect: pygame.Rect | pygame.FRect) -> pygame.Rect | pygame.FRect:
+    def world_to_screen(self, rect: pygame.Rect | pygame.FRect) -> pygame.Rect | pygame.FRect:
         """
-        Transpose the given rectangle coordinates relative to the camera.
+        world_to_screen the given rectangle coordinates relative to the camera.
 
         Args:
-            rect (pygame.Rect | pygame.FRect): Rectangle to transpose.
+            rect (pygame.Rect | pygame.FRect): Rectangle to world_to_screen.
 
         Returns:
             pygame.FRect: Transposed rectangle.
@@ -237,30 +237,28 @@ class Camera:
         return pygame.FRect(rect.x - self.rect.left, rect.y - self.rect.top, *rect.size)
 
 
-    def transpose_point(self, point: tuple[float,float] | tuple[int,int]) -> tuple[float,float]:
+    def world_to_screen_point(self, point: tuple[float,float] | tuple[int,int]) -> tuple[float,float]:
         """
-        Transpose the given 2D point coordinates relative to the camera.
+        world_to_screen the given 2D point coordinates relative to the camera.
 
         Args:
-            point (tuple[float,float] | tuple[int,int]): Point to transpose.
+            point (tuple[float,float] | tuple[int,int]): Point to world_to_screen.
 
         Returns:
             tuple[float,float] : Transposed point.
         """
         return point[0]-self.rect.x,point[1]-self.rect.y
 
-    def convert_screen_to_world(self, x, y):
+    def screen_to_world(self, point: tuple[float,float] | tuple[int,int])->tuple[float,float]:
         """
         Convert screen coordinates to world coordinates based on camera settings.
 
         Args:
-            x: X-coordinate in screen space.
-            y: Y-coordinate in screen space.
-
+            point (tuple[float,float] | tuple[int,int]): Point to screen_to_world.
         Returns:
             tuple: Converted world coordinates.
         """
-        return x / self.zoom_factor + self.rect.x, y / self.zoom_factor + self.rect.y
+        return point[0] / self.zoom_factor + self.rect.x, point[1] / self.zoom_factor + self.rect.y
 
     def update(self, dt):
         """

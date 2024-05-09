@@ -112,7 +112,7 @@ class InteractiveWidget(Widget):
         pass
 
     def draw_focused(self,camera: bf.Camera)->None:
-        pygame.draw.rect(camera.surface,"white",camera.transpose(pygame.FRect(self.rect.x,self.rect.centery-4,8,8)))
+        pygame.draw.rect(camera.surface,"white",camera.world_to_screen(pygame.FRect(self.rect.x,self.rect.centery-4,8,8)))
 
 
     def draw(self, camera: bf.Camera) -> int:
@@ -129,7 +129,7 @@ class InteractiveWidget(Widget):
             )
         else:
             camera.surface.blit(
-                self.surface, camera.transpose(self.rect),  
+                self.surface, camera.world_to_screen(self.rect),  
                 special_flags = self.blit_flags
             )
         if self.focusable and self.is_focused : self.draw_focused(camera)

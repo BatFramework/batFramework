@@ -73,7 +73,7 @@ class RenderGroup(bf.Entity):
         """
         if not self.visible or not camera.intersects(self.rect):return 0
         # gen = filter(lambda e,camera=camera: self.should_draw(e,camera),self.entity_list)
-        fblits_data = map(lambda e : (e.surface,camera.transpose(e.rect)),self.iterator())
+        fblits_data = map(lambda e : (e.surface,camera.world_to_screen(e.rect)),self.iterator())
         camera.surface.fblits(fblits_data,self.blit_flags)    
         return 1
 

@@ -249,7 +249,7 @@ class Scene:
             else:
                 rect = data[0]
                 color = data[1]
-            pygame.draw.rect(camera.surface, color, camera.transpose(rect), 1)
+            pygame.draw.rect(camera.surface, color, camera.world_to_screen(rect), 1)
 
         [draw_rect(data) for data in entity.get_bounding_box()]
 

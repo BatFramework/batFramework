@@ -88,7 +88,7 @@ class ParticleGenerator(bf.Entity):
     def draw(self, camera) -> bool:
         camera.surface.fblits(
             [
-                (p.surface,camera.transpose(p.rect).center)
+                (p.surface,camera.world_to_screen(p.rect).center)
                 for p in self.particles
             ]
         )
