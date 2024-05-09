@@ -49,7 +49,7 @@ class Manager(bf.SceneManager):
                 if event.type == pygame.QUIT:
                     self._running = False
                     break
-                if event.type == pygame.VIDEORESIZE:
+                if event.type == pygame.VIDEORESIZE and not (bf.const.FLAGS & pygame.SCALED):
                     bf.const.set_resolution((event.w, event.h))
                 self.process_event(event)
             # update
