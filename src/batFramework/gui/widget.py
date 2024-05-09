@@ -357,8 +357,8 @@ class Widget(bf.Entity):
         self.do_update(dt)
 
     def _get_clipped_rect_and_area(self,camera: bf.Camera)->tuple[pygame.FRect,pygame.FRect]:
-        transposed_rect = camera.transpose(self.rect)
-        clipped_rect = transposed_rect.clip(self.parent.get_padded_rect())
+        transposed_rect = camera.world_to_screen(self.rect)
+        clipped_rect = transposed_rect.clip(camera.world_to_screen(self.parent.get_padded_rect()))
         # We only need to adjust the source rectangle to match the portion within the clipped_rect.
         source_area = clipped_rect.move(-transposed_rect.x, -transposed_rect.y)
         return clipped_rect,source_area
@@ -379,7 +379,7 @@ class Widget(bf.Entity):
             )
         else:
             camera.surface.blit(
-                self.surface, camera.transpose(self.rect),  
+                self.surface, camera.world_to_screen(self.rect),  
                 special_flags = self.blit_flags
             )
         return 1 + sum([child.draw(camera) for child in self.rect.collideobjectsall(self.children)])
