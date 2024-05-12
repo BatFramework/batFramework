@@ -1,7 +1,9 @@
 from typing import Any, Self
 import pygame
 import batFramework as bf
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .camera import Camera
 class Entity:
     """
         Basic entity class
@@ -161,14 +163,12 @@ class Entity:
         """
 
 
-    def should_draw(self,camera)->bool:
-        return   self.visible and  (self.surface is not None) and camera.intersects(self.rect)
 
     def draw(self, camera: bf.Camera) -> int:
         """
             Draw the entity onto the camera with coordinate transposing
         """
-        if not self.should_draw(camera):
+        if not (self.visible and  (self.surface is not None) and camera.rect.colliderect(self.rect)):
             return 0
         camera.surface.blit(
             self.surface,

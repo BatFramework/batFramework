@@ -86,7 +86,7 @@ class ScrollingSprite(bf.Sprite):
         return self
 
     def draw(self,camera:bf.Camera)->int:
-        if not self.should_draw(camera) : return 0
+        if not (self.visible and  (self.surface is not None) and camera.rect.colliderect(self.rect)): return 0
         self.surface.fill((0,0,0,0))
         self.surface.fblits([(self.original_surface,r) for r in self._get_mosaic_rect_list()])
         # pygame.draw.rect(camera.surface,"green",next(self._get_mosaic_rect_list()).move(*self.rect.topleft),1)

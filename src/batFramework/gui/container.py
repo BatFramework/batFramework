@@ -26,15 +26,15 @@ class Container(InteractiveWidget):
         self.scroll.update(value)
         return self
 
-    def scrollX_by(self,x)->Self:
+    def scrollX_by(self,x:float|int)->Self:
         self.scroll.x += x 
         return self
 
-    def scrollY_by(self,y)->Self:
+    def scrollY_by(self,y: float|int)->Self:
         self.scroll.y += y 
         return self
     
-    def scroll_by(self,value)->Self:
+    def scroll_by(self,value : tuple[float|int,float|int])->Self:
         self.scroll += value
         return self
     
@@ -96,16 +96,20 @@ class Container(InteractiveWidget):
         return f"Container({self.uid},{len(self.children)},{[c.to_string() for c in self.constraints]})"
 
     def notify(self)->None:
+        print("notified")
         self.apply_all_constraints()
+        r = self.get_root()
+        if r and (w := r.get_focused()) in self.children:
+            moved = w.rect.clamp(self.get_padded_rect())
+            self.scroll_by((moved.x - w.rect.x,moved.y-w.rect.y))
         super().notify()
 
 
     def draw(self, camera: bf.Camera) -> int:
         i = bf.Entity.draw(self,camera)
         camera.move_by(*self.scroll)
-        j = sum(
-            [child.draw(camera) for child in self.rect.collideobjectsall(self.children) ]
-        )
+        j = sum((child.draw(camera) for child in self.children))
+
         camera.move_by(*(-self.scroll))
         return i + j
     
@@ -115,7 +119,7 @@ class Container(InteractiveWidget):
             if self.children:
                 for child in reversed(self.children):
                     r = child.top_at(x+self.scroll.x, y+self.scroll.y)
-                    if r is not None:
+                    if r is not None:     
                         return r
             return self
         return None

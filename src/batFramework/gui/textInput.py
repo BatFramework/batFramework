@@ -46,6 +46,7 @@ class TextInput(Label,InteractiveWidget):
         if position < 0 : position = 0
         elif position > len(self.get_text()): position = len(self.get_text())
         self.cursor_position = position
+        self.show_cursor = True
         self.build()
         return self
 
@@ -79,7 +80,11 @@ class TextInput(Label,InteractiveWidget):
         if not self.show_cursor : return
         partial_text_size = self.font_object.size(self.get_text()[:self.cursor_position])
         cursor_rect = pygame.Rect(0,0,2,partial_text_size[1]+2)
-        cursor_rect.midleft = self.text_rect.move(partial_text_size[0],0).midleft
+        if self.cursor_position != 0:#align left properly
+            cursor_rect.midleft = self.text_rect.move(partial_text_size[0],0).midleft
+        else:
+            cursor_rect.midright = self.text_rect.midleft
+
         pygame.draw.rect(self.surface, self.text_color, cursor_rect)
 
     def build(self)->None:

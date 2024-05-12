@@ -53,11 +53,10 @@ class Manager(bf.SceneManager):
                     bf.const.set_resolution((event.w, event.h))
                 self.process_event(event)
             # update
-            # dt = self._clock.tick(bf.const.FPS if not bf.const.VSYNC else 0) / 1000
-            dt = self._clock.tick(0 if  bf.const.VSYNC else bf.const.FPS) / 1000
+            dt = self._clock.tick(bf.const.FPS) / 1000
             # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time
-            self._cutsceneManager.update(dt)
             self._timeManager.update(dt)
+            self._cutsceneManager.update(dt)
             self.update(dt)
             # render
             self._screen.fill((0,0,0))

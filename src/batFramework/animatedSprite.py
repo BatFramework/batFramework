@@ -140,7 +140,7 @@ class AnimatedSprite(bf.DynamicEntity):
         self.do_update(dt)
 
     def draw(self, camera: bf.Camera) -> int:
-        if not self.visible or not camera.intersects(self.rect) or not self.current_state:
+        if not self.visible or not camera.rect.colliderect(self.rect) or not self.current_state:
             return 0
         camera.surface.blit(
             self.current_state.get_frame(self.float_counter, self.flipX),

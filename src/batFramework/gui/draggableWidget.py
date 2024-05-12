@@ -17,7 +17,7 @@ class DraggableWidget(InteractiveWidget):
     def update(self, dt: float):
         if self.drag_action.is_active()  and self.is_clicked_down:
             r = self.get_root()
-            x,y = r.drawing_camera.screen_to_world(*pygame.mouse.get_pos())
+            x,y = r.drawing_camera.screen_to_world(pygame.mouse.get_pos())
             if self.offset == None and self.drag_action.is_active():
                 self.offset = x-self.rect.x,y-self.rect.y
                 return

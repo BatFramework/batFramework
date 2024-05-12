@@ -16,11 +16,7 @@ class SliderMeter(Meter,InteractiveWidget):
         if pygame.mouse.get_pressed()[0] :
             centerx = x- self.get_padded_left() - self.parent.handle.rect.w//2
             self.parent.set_value((centerx / self.parent.get_meter_active_width())* self.parent.meter.get_range())
-            # self.build()
 
-    # def top_at(self, x: float | int, y: float | int):
-    #     res = super().top_at(x, y)
-    #     if res == self.content : return self
 class Slider(Button):
     def __init__(self, text: str, default_value: float = 1.0 ,callback=None) -> None:
         self.modified_callback = None

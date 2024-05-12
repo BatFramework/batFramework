@@ -75,3 +75,8 @@ class alignment(Enum):
 class drawMode(Enum):
     SOLID = 0
     TEXTURED = 1
+
+class DebugMode(Enum):
+    HIDDEN      = 0
+    DEBUGGER    = 1
+    OUTLINES    = 2

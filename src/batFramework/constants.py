@@ -3,7 +3,7 @@ from enum import Enum
 import sys, os
 
 class Constants:
-    SCREEN = None
+    SCREEN : pygame.Surface = None
     RESOLUTION: tuple[int, int] = (1280, 720)
     VSYNC = 0
     FLAGS: int = pygame.SCALED | pygame.RESIZABLE

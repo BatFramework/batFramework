@@ -23,6 +23,7 @@ class Widget(bf.Entity):
         self.focusable: bool = False # can get focus
         self.constraints: list[Constraint] = []
         self.gui_depth: int = 0 # depth in the gui tree
+        self.dirty : bool = True
         
         self.gui_depth: int = 0
         self.clip_to_parent : bool = True
@@ -56,6 +57,8 @@ class Widget(bf.Entity):
         super().set_visible(value)
         if propagate: _ = [c.set_visible(value,propagate) for c in self.children]
         return self
+
+
 
     def set_padding(self, value: float | int | tuple | list) -> Self:
         old_raw_size = (
@@ -338,6 +341,12 @@ class Widget(bf.Entity):
         self.apply_all_constraints()
         self.notify()
         return self
+
+    def clear(self)->Self:
+        self.children.clear()
+        return self
+
+
     def _sort_children(self):
         self.children.sort(key=lambda child : child.render_order)
 
@@ -366,8 +375,12 @@ class Widget(bf.Entity):
 
 
     def draw(self, camera: bf.Camera) -> int:
-        if not self.visible or not self.surface or not camera.intersects(self.rect):
-            return sum([child.draw(camera) for child in self.rect.collideobjectsall(self.children)])
+        if not self.visible or not self.surface or not camera.rect.colliderect(self.rect):
+            return sum((child.draw(camera) for child in self.rect.collideobjectsall(self.children)))
+        if self.dirty : 
+            self.build()
+            self.dirty = False
+ 
         
         if self.parent and self.clip_to_parent and self.parent:
             clipped_rect,source_area = self._get_clipped_rect_and_area(camera)
@@ -382,7 +395,7 @@ class Widget(bf.Entity):
                 self.surface, camera.world_to_screen(self.rect),  
                 special_flags = self.blit_flags
             )
-        return 1 + sum([child.draw(camera) for child in self.rect.collideobjectsall(self.children)])
+        return 1 + sum((child.draw(camera) for child in self.rect.collideobjectsall(self.children)))
 
     def build(self) -> None:
         """

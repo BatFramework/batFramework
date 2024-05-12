@@ -7,11 +7,11 @@ def swap(lst,index1,index2):
 
 class SceneManager:
     def __init__(self, *initial_scenes: bf.Scene) -> None:
-        self._debugging :int = 0
+        self.debug_mode :bf.enums.DebugMode = bf.DebugMode.HIDDEN
         self._sharedVarDict : dict = {}
 
         self._scene_transitions: list[bf.transition.Transition] = []
-        self.set_sharedVar("debugging_mode",self._debugging)
+
         self.set_sharedVar("in_cutscene", False)
         self.current_transition : dict[str,bf.transition.Transition]= {}
         self.set_sharedVar("player_has_control", True)
@@ -31,7 +31,7 @@ class SceneManager:
     def print_status(self):
         print("-" * 40)
         print([(s._name, "Active" if s._active else "Inactive","Visible" if s._visible else "Invisible", f"index={s.scene_index}") for s in self._scenes])
-        print(f"[Debugging] = {self._debugging}")
+        print(f"[Debugging] = {self.debug_mode}")
         print("---SHARED VARIABLES---")
         for name, value in self._sharedVarDict.items():
             print(f"[{str(name)} = {str(value)}]")
@@ -94,7 +94,8 @@ class SceneManager:
 
         # self.draw(source_surface)
         target_scene.draw(dest_surface)
-        
+        target_scene.do_on_enter_early()
+        self.get_scene_at(index).do_on_exit_early()
         self.current_transition = {"scene_name":scene_name,"transition":transition}
         transition.set_start_callback(lambda : self._start_transition(target_scene))
         transition.set_end_callback(lambda : self._end_transition(scene_name,index))
@@ -102,7 +103,8 @@ class SceneManager:
         transition.set_dest(dest_surface)
         transition.start()
 
-    def _start_transition(self,target_scene):
+
+    def _start_transition(self,target_scene:bf.Scene):
         target_scene.set_active(True)
         target_scene.set_visible(True)
         self.set_sharedVar("player_has_control",False)
@@ -126,13 +128,17 @@ class SceneManager:
         _ = [s.set_scene_index(i) for i, s in enumerate(self._scenes)]
         target_scene.on_enter()
 
+    def cycle_debug_mode(self):
+        current_index = self.debug_mode.value
+        next_index = (current_index + 1) % len(bf.DebugMode) 
+        return bf.DebugMode(next_index)
 
     def process_event(self, event: pygame.Event):
         keys = pygame.key.get_pressed()
-        if (keys[pygame.K_LCTRL] and event.type == pygame.KEYDOWN):
+        if (keys[pygame.K_LCTRL] and keys[pygame.K_LSHIFT] and event.type == pygame.KEYDOWN):
             if (event.key == pygame.K_d):
-                self._debugging = (self._debugging + 1) % 4
-                self.set_sharedVar("debugging_mode",self._debugging)
+                self.debug_mode = self.cycle_debug_mode()
+                self.set_sharedVar("debug_mode",self.debug_mode)
                 return
             if (event.key == pygame.K_p):
                 self.print_status()

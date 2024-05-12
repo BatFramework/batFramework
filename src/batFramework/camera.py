@@ -198,6 +198,7 @@ class Camera:
         surface = self.cached_surfaces.get(new_size,None)
         if surface is None:
             surface = pygame.Surface(new_size,flags=self.flags)
+            if self.flags & pygame.SRCALPHA : surface = surface.convert_alpha()
             self.cached_surfaces[new_size] = surface
 
         return surface

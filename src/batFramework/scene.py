@@ -260,13 +260,11 @@ class Scene:
         self.hud_entities.sort(key=lambda e: e.render_order)
 
 
-    def _draw_camera(self,camera,entity_list,show_outlines:bool=False,show_only_visible_outlines:bool=False)->int:
+    def _draw_camera(self,camera: bf.Camera,entity_list:list[bf.Entity])->int:
         res = sum(entity.draw(camera) for entity in entity_list)
-
+        debugMode = self.manager.debug_mode
         # Draw outlines for world entities if required
-        if show_outlines:
-            if show_only_visible_outlines:
-                entity_list = filter(lambda entity : entity.visible,entity_list)
+        if debugMode == bf.DebugMode.OUTLINES:
             [self.debug_entity(e,camera) for e in entity_list]
         return res
 
@@ -276,13 +274,10 @@ class Scene:
         self.camera.clear()
         self.hud_camera.clear()
 
-        show_outlines = self.manager._debugging in [2, 3]
-        show_only_visible_outlines = self.manager._debugging == 2
-
         # Draw all world entities
-        total_blit_calls += self._draw_camera(self.camera,self.world_entities,show_outlines,show_only_visible_outlines)
+        total_blit_calls += self._draw_camera(self.camera,self.world_entities)
         # Draw all HUD entities
-        total_blit_calls += self._draw_camera(self.hud_camera,self.hud_entities,show_outlines,show_only_visible_outlines)
+        total_blit_calls += self._draw_camera(self.hud_camera,self.hud_entities)
 
         self.do_early_draw(surface)
         self.camera.draw(surface)
@@ -322,4 +317,10 @@ class Scene:
         pass
 
     def do_on_exit(self)->None:
+        pass
+
+    def do_on_enter_early(self)->None:
+        pass
+
+    def do_on_exit_early(self)->None:
         pass

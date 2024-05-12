@@ -116,8 +116,8 @@ class InteractiveWidget(Widget):
 
 
     def draw(self, camera: bf.Camera) -> int:
-        if not self.visible or not self.surface or not camera.intersects(self.rect):
-            return sum([child.draw(camera) for child in self.rect.collideobjectsall(self.children)])
+        if not self.visible or not self.surface or not camera.rect.colliderect(self.rect):
+            return sum((child.draw(camera) for child in self.rect.collideobjectsall(self.children)))
         
         if self.parent and self.clip_to_parent :
             clipped_rect,source_area = self._get_clipped_rect_and_area(camera)
@@ -133,4 +133,4 @@ class InteractiveWidget(Widget):
                 special_flags = self.blit_flags
             )
         if self.focusable and self.is_focused : self.draw_focused(camera)
-        return 1 + sum([child.draw(camera) for child in self.rect.collideobjectsall(self.children)])
+        return 1 + sum((child.draw(camera) for child in self.rect.collideobjectsall(self.children)))
