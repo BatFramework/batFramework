@@ -12,7 +12,8 @@ class InteractiveWidget(Widget):
         self.is_hovered: bool = False
         self.is_clicked_down:bool = False
         self.focused_index = 0
-        super().__init__(convert_alpha=True)
+        kwargs["convert_alpha"] = True
+        super().__init__(*args,**kwargs)
         self.focusable = True
 
     def set_focusable(self,value:bool)->Self:
@@ -116,21 +117,26 @@ class InteractiveWidget(Widget):
 
 
     def draw(self, camera: bf.Camera) -> int:
-        if not self.visible or not self.surface or not camera.rect.colliderect(self.rect):
-            return sum((child.draw(camera) for child in self.rect.collideobjectsall(self.children)))
-        
-        if self.parent and self.clip_to_parent :
-            clipped_rect,source_area = self._get_clipped_rect_and_area(camera)
-            camera.surface.blit(
-                self.surface,
-                clipped_rect.topleft,
-                source_area,
-                special_flags=self.blit_flags
-            )
-        else:
-            camera.surface.blit(
-                self.surface, camera.world_to_screen(self.rect),  
-                special_flags = self.blit_flags
-            )
+        i = super().draw(camera)
         if self.focusable and self.is_focused : self.draw_focused(camera)
-        return 1 + sum((child.draw(camera) for child in self.rect.collideobjectsall(self.children)))
+
+        return i
+        # if not self.visible or not self.surface or not camera.rect.colliderect(self.rect):
+        #     return sum((child.draw(camera) for child in self.rect.collideobjectsall(self.children))) 
+        
+        # if self.parent :#and self.clip_to_parent:
+        #     clipped_rect,source_area = self._get_clipped_rect_and_area(camera)
+        #     if clipped_rect.w == 0 or clipped_rect.h == 0: return 0
+        #     camera.surface.blit(
+        #         self.surface,clipped_rect.topleft,
+        #         source_area,special_flags=self.blit_flags
+        #     )
+        #     if self.focusable and self.is_focused : self.draw_focused(camera)
+        #     return 1 + sum(child.draw(camera) for child in self.children)
+
+        # camera.surface.blit(
+        #     self.surface, camera.world_to_screen(self.rect),  
+        #     special_flags = self.blit_flags
+        # )
+        # if self.focusable and self.is_focused : self.draw_focused(camera)
+        # return 1 + sum((child.draw(camera) for child in self.children))

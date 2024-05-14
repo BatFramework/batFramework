@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .constraints.constraints import Constraint
     from .root import Root
-    from .interactiveWidget import InteractiveWidget
 from typing import Self
 
 import batFramework as bf
@@ -14,7 +13,7 @@ from math import ceil
 MAX_CONSTRAINT_ITERATION = 10
 
 class Widget(bf.Entity):
-    def __init__(self, convert_alpha=True) -> None:
+    def __init__(self, convert_alpha=True,*args,**kwargs) -> None:
         super().__init__(convert_alpha=convert_alpha)
         self.autoresize = False # resize by internal methods (such as set_text) allowed
         self.parent: None | Self = None
@@ -22,22 +21,18 @@ class Widget(bf.Entity):
         self.children: list["Widget"] = []
         self.focusable: bool = False # can get focus
         self.constraints: list[Constraint] = []
-        self.gui_depth: int = 0 # depth in the gui tree
-        self.dirty : bool = True
-        
-        self.gui_depth: int = 0
         self.clip_to_parent : bool = True
         self.alpha : int = 255
-        if self.surface:
-            self.surface.fill("white")
+        self.surface.fill("white")
         self.set_debug_color("red")
-        self.padding: tuple[float | int, ...] = (0, 0, 0, 0)
+        self.padding: tuple[float | int] = (0, 0, 0, 0)
         self.__recursive_constraint_count = 0
 
     def enable_clip_to_parent(self)->Self:
         self.clip_to_parent = True
         self.build()
         return self
+    
     def disable_clip_to_parent(self)->Self:
         self.clip_to_parent = False
         self.build()
@@ -45,7 +40,7 @@ class Widget(bf.Entity):
 
     def set_alpha(self,value: int,propagate:bool = True)->Self:
         self.alpha = value
-        if self.surface : self.surface.set_alpha(value)
+        self.surface.set_alpha(value)
         if propagate and self.children:
             for c in self.children : c.propagate_function(lambda e : e.set_alpha(value))
         return self
@@ -128,10 +123,8 @@ class Widget(bf.Entity):
 
     def get_depth(self) -> int:
         if self.is_root or self.parent is None:
-            self.gui_depth = 0
-        else:
-            self.gui_depth = self.parent.get_depth() + 1
-        return self.gui_depth
+            return 0
+        return self.parent.get_depth() + 1
         
     def top_at(self, x: float|int, y: float|int) -> "None|Widget":
         if self.visible and self.rect.collidepoint(x, y):
@@ -215,7 +208,7 @@ class Widget(bf.Entity):
         return None if self.parent is None else self.parent.get_root()
 
     def get_size_int(self) -> tuple[int, int]:
-        return (ceil(self.rect.width), ceil(self.rect.height))
+        return (max(0,ceil(self.rect.width)), max(0,ceil(self.rect.height)))
 
     def get_center(self) -> tuple[float, float]:
         return self.rect.center
@@ -367,7 +360,12 @@ class Widget(bf.Entity):
 
     def _get_clipped_rect_and_area(self,camera: bf.Camera)->tuple[pygame.FRect,pygame.FRect]:
         transposed_rect = camera.world_to_screen(self.rect)
-        clipped_rect = transposed_rect.clip(camera.world_to_screen(self.parent.get_padded_rect()))
+        # transposed_rect = self.rect.copy()
+        # transposed_rect.topleft -= camera.rect.topleft
+        parent_rect = self.parent.get_padded_rect()
+        if isinstance(self.parent,bf.Container):
+            parent_rect.move_ip(self.parent.scroll)
+        clipped_rect = transposed_rect.clip(camera.world_to_screen(parent_rect))
         # We only need to adjust the source rectangle to match the portion within the clipped_rect.
         source_area = clipped_rect.move(-transposed_rect.x, -transposed_rect.y)
         return clipped_rect,source_area
@@ -375,21 +373,20 @@ class Widget(bf.Entity):
 
 
     def draw(self, camera: bf.Camera) -> int:
-        if not self.visible or not self.surface or not camera.rect.colliderect(self.rect):
-            return sum((child.draw(camera) for child in self.rect.collideobjectsall(self.children)))
-        if self.dirty : 
-            self.build()
-            self.dirty = False
- 
+        if not self.visible  or not camera.rect.colliderect(self.rect):
+            return sum((child.draw(camera) for child in self.rect.collideobjectsall(self.children))) 
         
-        if self.parent and self.clip_to_parent and self.parent:
+        if self.parent and self.clip_to_parent:
             clipped_rect,source_area = self._get_clipped_rect_and_area(camera)
-            camera.surface.blit(
-                self.surface,
-                clipped_rect.topleft,
-                source_area,
-                special_flags=self.blit_flags
-            )
+            if clipped_rect.size == (0,0):
+                return 0 
+            else:
+                camera.surface.blit(
+                    self.surface,
+                    clipped_rect.topleft,
+                    source_area,
+                    special_flags=self.blit_flags
+                )
         else:
             camera.surface.blit(
                 self.surface, camera.world_to_screen(self.rect),  
@@ -402,8 +399,6 @@ class Widget(bf.Entity):
         This function is called each time the widget's surface has to be updated
         It usually has to be overriden if inherited to suit the needs of the new class
         """
-        if not self.surface:
-            return
         if self.surface.get_size() != self.get_size_int():
             self.surface = pygame.Surface(self.get_size_int())
         self.surface.set_alpha(self.alpha)

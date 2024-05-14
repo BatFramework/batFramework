@@ -8,7 +8,7 @@ class Root(InteractiveWidget):
     def __init__(self,camera)->None:
         super().__init__()
         self.drawing_camera : bf.Camera = camera
-        self.surface = None
+        self.visible = False
         self.set_root()
         self.rect.size = pygame.display.get_surface().get_size()
         self.focused: InteractiveWidget |None= self

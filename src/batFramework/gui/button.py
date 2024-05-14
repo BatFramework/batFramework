@@ -71,8 +71,6 @@ class Button(Label, InteractiveWidget):
         return self.relief if not self.is_clicking else max(1,ceil(self.relief/4))
 
     def get_surface_filter(self) -> pygame.Surface | None:
-            if not self.surface:
-                return None
             size = self.surface.get_size()
             surface_filter = Button._cache.get((size,*self.border_radius), None)
             if surface_filter is None:
@@ -105,13 +103,15 @@ class Button(Label, InteractiveWidget):
         return self
 
     def on_get_focus(self):
+        v = self.is_focused
         super().on_get_focus()
-        bf.AudioManager().play_sound(self.get_focus_sound)
+        if self.is_focused != v : bf.AudioManager().play_sound(self.get_focus_sound)
         self.build()
 
     def on_lose_focus(self):
+        v = self.is_focused
         super().on_lose_focus()
-        bf.AudioManager().play_sound(self.lose_focus_sound)
+        if self.is_focused != v : bf.AudioManager().play_sound(self.lose_focus_sound)
         self.build()
 
     def to_string_id(self) -> str:

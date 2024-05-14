@@ -249,6 +249,7 @@ class Label(Shape):
 
     def build(self) -> None:
         super().build()
+
         if self.font_object:
             self._build_text()
             self._build_layout()

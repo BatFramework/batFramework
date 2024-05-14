@@ -1,22 +1,22 @@
 import batFramework as bf
 from .widget import Widget
-
+from .shape import Shape
 from .interactiveWidget import InteractiveWidget
 from .layout import Layout,Column
-from .constraints.constraints import Constraint
 from typing import Self
 from pygame.math import Vector2
-class Container(InteractiveWidget):
+
+
+
+class Container(Shape,InteractiveWidget):
     def __init__(self, layout: Layout = Column(), *children: Widget)->None:
         super().__init__()
         self.set_debug_color("green")
-        self.surface = None
         self.layout: Layout = layout
         self.scroll = Vector2(0,0)
         if self.layout:
             self.layout.set_parent(self)
-        for child in children:
-            self.add_child(child)
+        self.add_child(*children)
 
     def reset_scroll(self)->Self:
         self.scroll.update(0,0)
@@ -38,8 +38,8 @@ class Container(InteractiveWidget):
         self.scroll += value
         return self
     
-    def set_padding(self,value)->Self:
-        return self
+    # def set_padding(self,value)->Self:
+    #     return self
 
     def set_layout(self, layout: Layout) -> Self:
         self.layout = layout
@@ -60,11 +60,16 @@ class Container(InteractiveWidget):
         l = self.get_interactive_children()
         self.focused_index = min(self.focused_index + 1,len(l)-1)
         l[self.focused_index].get_focus()
+        # moved = l[self.focused_index].rect.clamp(self.get_padded_rect())
+        # self.set_scroll((moved.x - l[self.focused_index].rect.x,moved.y-l[self.focused_index].rect.y))
+
 
     def focus_prev_child(self)->None:
         l = self.get_interactive_children()
         self.focused_index = max(self.focused_index - 1,0)
         l[self.focused_index].get_focus()
+        # moved = l[self.focused_index].rect.clamp(self.get_padded_rect())
+        # self.set_scroll((moved.x - l[self.focused_index].rect.x,moved.y-l[self.focused_index].rect.y))
 
     def clear_children(self) -> None:
         self.children.clear()
@@ -83,9 +88,9 @@ class Container(InteractiveWidget):
         return self
 
     def build(self) -> None:
-        super().build()
         if self.layout:
             self.layout.arrange()
+        super().build()
 
     def apply_constraints(self) -> None:
         super().apply_constraints()
@@ -96,22 +101,9 @@ class Container(InteractiveWidget):
         return f"Container({self.uid},{len(self.children)},{[c.to_string() for c in self.constraints]})"
 
     def notify(self)->None:
-        print("notified")
         self.apply_all_constraints()
-        r = self.get_root()
-        if r and (w := r.get_focused()) in self.children:
-            moved = w.rect.clamp(self.get_padded_rect())
-            self.scroll_by((moved.x - w.rect.x,moved.y-w.rect.y))
         super().notify()
 
-
-    def draw(self, camera: bf.Camera) -> int:
-        i = bf.Entity.draw(self,camera)
-        camera.move_by(*self.scroll)
-        j = sum((child.draw(camera) for child in self.children))
-
-        camera.move_by(*(-self.scroll))
-        return i + j
     
 
     def top_at(self, x: float|int, y: float|int) -> "None|Widget":
@@ -143,3 +135,11 @@ class Container(InteractiveWidget):
 
     def allow_focus_to_self(self) -> bool:
         return len(self.get_interactive_children())>0
+
+    def draw(self, camera: bf.Camera) -> int:
+        i = super().draw(camera)
+        if i == 0 : return 0 
+        camera.move_by(*self.scroll)
+        j = sum((child.draw(camera) for child in self.children))
+        camera.move_by(*(-self.scroll))
+        return i + j

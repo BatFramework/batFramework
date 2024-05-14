@@ -17,6 +17,7 @@ import batFramework.transition as transition
 from .action import Action
 from .actionContainer import *
 from .camera import Camera
+from .object import Object
 from .entity import Entity
 from .renderGroup import RenderGroup
 from .dynamicEntity import DynamicEntity

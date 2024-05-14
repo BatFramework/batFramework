@@ -7,11 +7,10 @@ class DynamicEntity(bf.Entity):
     def __init__(
         self,
         size: None | tuple[int, int] = None,
-        no_surface: bool = False,
         surface_flags: int = 0,
         convert_alpha: bool = False,
     ) -> None:
-        super().__init__(size, no_surface, surface_flags, convert_alpha)
+        super().__init__(size, surface_flags, convert_alpha)
         self.velocity = pygame.math.Vector2(0, 0)
 
     def on_collideX(self, collider: Self):

@@ -1,7 +1,6 @@
 import batFramework as bf
 import pygame
 from typing import Self,Iterator,Callable
-import multiprocessing
 """
 
 + same render order
@@ -11,8 +10,8 @@ import multiprocessing
 
 class RenderGroup(bf.Entity):
     def __init__(self, iterator_func : Callable ,blit_flags:int=0)->None:
-        super().__init__(no_surface=True)
-        self.iterator = iterator_func
+        super().__init__()
+        self.iterator  : Callable= iterator_func
         self.set_blit_flags(blit_flags)
         self.set_debug_color("white")
         

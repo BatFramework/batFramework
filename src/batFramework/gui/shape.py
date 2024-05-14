@@ -3,10 +3,8 @@ from .widget import Widget
 import pygame
 from typing import Self
 from math import ceil
-
-
 class Shape(Widget):
-    def __init__(self, size : tuple[float,float]):
+    def __init__(self, size : tuple[float,float] = None):
         self.color = (0, 0, 0, 0)
         self.border_radius: list[int] = [0]
         self.outline: int = 0
@@ -17,7 +15,7 @@ class Shape(Widget):
         self.shadow_color : tuple[int, int, int] | str = (0, 0, 0, 255)
         self.draw_mode = bf.drawMode.SOLID
         super().__init__(convert_alpha=True)
-        self.set_size(size)
+        if size : self.set_size(size)
 
     def get_padded_bottom(self) -> float:
         return self.rect.bottom - self.padding[3] - self.relief
@@ -110,6 +108,7 @@ class Shape(Widget):
     
     def _get_base_rect(self)->pygame.Rect:
         return pygame.FRect(0,self.rect.h - self.get_relief(), self.rect.w, self.get_relief())
+
 
     def _build_textured(self)->None:
         self.surface.fill((0,0,0,0))
