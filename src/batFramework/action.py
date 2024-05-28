@@ -4,6 +4,7 @@ import pygame
 
 ActionType = Enum("type", "INSTANTANEOUS CONTINUOUS HOLDING")
 
+
 class Action:
     def __init__(self, name: str) -> None:
         """
@@ -12,13 +13,13 @@ class Action:
         Args:
             name (str): The name of the action.
         """
-        self._name :str= name
-        self._active :bool= False
-        self._type :ActionType = ActionType.INSTANTANEOUS
-        self._key_control : set= set()       
-        self._mouse_control :set = set()
-        self._gamepad_button_control :set = set()
-        self._gamepad_axis_control :set = set()
+        self._name: str = name
+        self._active: bool = False
+        self._type: ActionType = ActionType.INSTANTANEOUS
+        self._key_control: set = set()
+        self._mouse_control: set = set()
+        self._gamepad_button_control: set = set()
+        self._gamepad_axis_control: set = set()
         self._holding = set()
         self._unique = False
         self.data: Any = None
@@ -65,7 +66,7 @@ class Action:
         self._key_control.update(keys)
         return self
 
-    def remove_key_control(self, *keys:int) -> "Action":
+    def remove_key_control(self, *keys: int) -> "Action":
         """
         Remove key controls to the action.
 
@@ -79,12 +80,13 @@ class Action:
         return self
 
     def replace_key_control(self, key, new_key) -> "Action":
-        if not key in self._key_control : return self
+        if not key in self._key_control:
+            return self
         self.remove_key_control(key)
         self.add_key_control(new_key)
         return self
 
-    def add_mouse_control(self, *mouse_buttons:int) -> "Action":
+    def add_mouse_control(self, *mouse_buttons: int) -> "Action":
         """
         Add mouse control to the action.
 

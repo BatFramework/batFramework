@@ -6,7 +6,7 @@ import random
 class Manager(bf.SceneManager):
     def __init__(self, *initial_scene_list) -> None:
         # random.seed("random")
-        self._screen: pygame.Surface|None = bf.const.SCREEN
+        self._screen: pygame.Surface | None = bf.const.SCREEN
         self._timeManager = bf.TimeManager()
         self._cutsceneManager = bf.CutsceneManager()
         self._cutsceneManager.set_manager(self)
@@ -17,7 +17,7 @@ class Manager(bf.SceneManager):
         self.do_init()
 
     @staticmethod
-    def set_icon(path: str)->None:
+    def set_icon(path: str) -> None:
         surf = pygame.image.load(bf.ResourceManager().get_path(path)).convert_alpha()
         pygame.display.set_icon(surf)
 
@@ -29,19 +29,19 @@ class Manager(bf.SceneManager):
             print("\n".join(str(t) for t in r))
         print("-" * 40)
 
-
-    def get_fps(self)->float:
+    def get_fps(self) -> float:
         return self._clock.get_fps()
 
-    def do_init(self)->None:
+    def do_init(self) -> None:
         pass
 
-    def do_pre_init(self)->None:
+    def do_pre_init(self) -> None:
         pass
+
     def stop(self) -> None:
         self._running = False
 
-    def run(self)->None:
+    def run(self) -> None:
         self._running = True
         dt: float = 0
         while self._running:
@@ -49,7 +49,9 @@ class Manager(bf.SceneManager):
                 if event.type == pygame.QUIT:
                     self._running = False
                     break
-                if event.type == pygame.VIDEORESIZE and not (bf.const.FLAGS & pygame.SCALED):
+                if event.type == pygame.VIDEORESIZE and not (
+                    bf.const.FLAGS & pygame.SCALED
+                ):
                     bf.const.set_resolution((event.w, event.h))
                 self.process_event(event)
             # update
@@ -59,7 +61,7 @@ class Manager(bf.SceneManager):
             self._cutsceneManager.update(dt)
             self.update(dt)
             # render
-            self._screen.fill((0,0,0))
+            self._screen.fill((0, 0, 0))
             self.draw(self._screen)
             pygame.display.flip()
         pygame.quit()

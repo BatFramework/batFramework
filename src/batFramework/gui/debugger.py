@@ -13,12 +13,13 @@ class Debugger(Label):
         self.static_data: dict = {}
         self.dynamic_data: dict = {}
         self.refresh_rate = 10
-        self.refresh_counter : float = 0
-        self.render_order = 99
+        self.refresh_counter: float = 0
         self.add_tags("debugger")
         self.set_visible(False)
-    def get_bounding_box(self):
-        yield None
+
+    # def get_debug_outlines(self):
+    #     yield None
+
     def to_string_id(self) -> str:
         return "Debugger"
 
@@ -34,14 +35,14 @@ class Debugger(Label):
         self.dynamic_data[key] = func
         self.update_text()
 
-    def remove_static(self,key)->bool:
+    def remove_static(self, key) -> bool:
         try:
             self.static_data.pop(key)
             return True
         except KeyError:
             return False
 
-    def remove_dynamic(self,key)->bool:
+    def remove_dynamic(self, key) -> bool:
         try:
             self.dynamic_data.pop(key)
             return True
@@ -50,8 +51,12 @@ class Debugger(Label):
 
     def set_parent_scene(self, scene) -> Self:
         super().set_parent_scene(scene)
+        self.set_render_order(99)
         self.update_text()
         return self
+
+    def set_text(self, text: str) -> Self:
+        return super().set_text(text)
 
     def update_text(self) -> None:
         if not self.parent_scene:
@@ -80,43 +85,37 @@ class Debugger(Label):
 
 
 class FPSDebugger(Debugger):
-    def __init__(self):
-        super().__init__()
-
     def do_when_added(self):
-        if not self.parent_scene or  not self.parent_scene.manager:
+        if not self.parent_scene or not self.parent_scene.manager:
             print("Debugger could not link to the manager")
             return
         manager_link = self.parent_scene.manager
-        self.add_dynamic(
-            "FPS", lambda: str(round(manager_link.get_fps()))
-        )
-class BasicDebugger(FPSDebugger):
-    def __init__(self):
-        super().__init__()
+        self.add_dynamic("FPS", lambda: str(round(manager_link.get_fps())))
 
+
+class BasicDebugger(FPSDebugger):
     def do_when_added(self):
-        if not self.parent_scene or  not self.parent_scene.manager:
+        if not self.parent_scene or not self.parent_scene.manager:
             print("Debugger could not link to the manager")
             return
-        self.add_dynamic("Resolution",lambda :  'x'.join(str(i) for i in bf.const.RESOLUTION))
+        self.add_dynamic(
+            "Resolution", lambda: "x".join(str(i) for i in bf.const.RESOLUTION)
+        )
         super().do_when_added()
         parent_scene = self.parent_scene
 
         self.add_dynamic("Mouse", pygame.mouse.get_pos)
         self.add_dynamic(
             "World",
-            lambda: convert_to_int(*parent_scene.camera.screen_to_world(
-                pygame.mouse.get_pos())
+            lambda: convert_to_int(
+                *parent_scene.camera.screen_to_world(pygame.mouse.get_pos())
             ),
         )
         self.add_dynamic(
             "Hud",
-            lambda: convert_to_int(*parent_scene.hud_camera.screen_to_world(
-                pygame.mouse.get_pos())
+            lambda: convert_to_int(
+                *parent_scene.hud_camera.screen_to_world(pygame.mouse.get_pos())
             ),
         )
-        self.add_dynamic("W. Ent.",lambda : parent_scene.get_world_entity_count())
-        self.add_dynamic("H. Ent.",lambda : parent_scene.get_hud_entity_count())
-        self.add_dynamic("Blits",lambda : parent_scene.blit_calls)
-
+        self.add_dynamic("W. Ent.", lambda: parent_scene.get_world_entity_count())
+        self.add_dynamic("H. Ent.", lambda: parent_scene.get_hud_entity_count())

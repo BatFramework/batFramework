@@ -10,7 +10,7 @@ class ActionContainer:
 
     def __iter__(self):
         return iter(self._actions.values())
-    
+
     def clear(self):
         self._actions = {}
 

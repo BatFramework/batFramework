@@ -1,4 +1,4 @@
-from .constraints  import *
+from .constraints import *
 from .widget import Widget
 from .image import Image
 from .interactiveWidget import InteractiveWidget

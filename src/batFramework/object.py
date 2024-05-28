@@ -2,6 +2,7 @@ from typing import Any, Self
 import pygame
 import batFramework as bf
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from .camera import Camera
 
@@ -9,23 +10,31 @@ if TYPE_CHECKING:
 class Object:
     __instance_count = 0
 
-    def __init__(self)->None:
-        self.rect = pygame.FRect(0,0,0,0)
+    def __init__(self) -> None:
+        self.rect = pygame.FRect(0, 0, 0, 0)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
         self.visible: bool = True
-        self.debug_color: tuple | str= "red"
+        self.debug_color: tuple | str = "red"
         self.render_order: int = 0
         self.uid: int = Object.__instance_count
         Object.__instance_count += 1
 
     @staticmethod
-    def new_uid()->int: 
+    def new_uid() -> int:
         i = Object.__instance_count
         Object.__instance_count += 1
         return i
 
-    def get_bounding_box(self):
+    def set_position(self,x,y)->Self:
+        self.rect.topleft = x,y
+        return self
+
+    def set_center(self,x,y)->Self:
+        self.rect.center = x,y
+        return self
+
+    def get_debug_outlines(self):
         yield (self.rect, self.debug_color)
 
     def set_debug_color(self, color) -> Self:
@@ -33,7 +42,12 @@ class Object:
         return self
 
     def set_parent_scene(self, scene) -> Self:
+        if scene == self.parent_scene : return self
+        if self.parent_scene is not  None:
+            self.do_when_removed()
         self.parent_scene = scene
+        if scene is not None:
+            self.do_when_added()
         return self
 
     def do_when_added(self):
@@ -42,33 +56,11 @@ class Object:
     def do_when_removed(self):
         pass
 
-    def set_position(self, x, y) -> Self:
-        self.rect.topleft = (x, y)
-        return self
-
-    def get_position(self) -> tuple:
-        return self.rect.topleft
-
-    def get_center(self) -> tuple:
-        return self.rect.center
-
-    def set_x(self, x) -> Self:
-        self.rect.x = x
-        return self
-
-    def set_y(self, y) -> Self:
-        self.rect.y = y
-        return self
-
-    def set_center(self, x, y) -> Self:
-        self.rect.center = (x, y)
-        return self
-
-    def set_uid(self, uid:int) -> Self:
+    def set_uid(self, uid: int) -> Self:
         self.uid = uid
         return self
 
-    def get_uid(self)->int:
+    def get_uid(self) -> int:
         return self.uid
 
     def add_tags(self, *tags) -> Self:
@@ -89,7 +81,7 @@ class Object:
 
     def process_event(self, event: pygame.Event) -> bool:
         """
-        Returns bool : True if the method is blocking (no propagation to next children of the scene)
+        Returns bool : True if the method is blocking (no propagation to next object of the scene)
         """
         self.do_process_actions(event)
         res = self.do_handle_event(event)
@@ -97,29 +89,28 @@ class Object:
 
     def do_process_actions(self, event: pygame.Event) -> None:
         """
-            Process entity actions you may have set
+        Process entity actions you may have set
         """
 
     def do_reset_actions(self) -> None:
         """
-            Reset entity actions you may have set
+        Reset entity actions you may have set
         """
 
     def do_handle_event(self, event: pygame.Event) -> bool:
         """
-            Handle specific events with no action support
+        Handle specific events with no action support
         """
         return False
 
-    def update(self, dt: float)->None:
+    def update(self, dt: float) -> None:
         """
-            Update method to be overriden by subclasses of entity
+        Update method to be overriden by subclasses of object (must call do_update and do_reset_actions)
         """
         self.do_update(dt)
         self.do_reset_actions()
 
-
-    def do_update(self, dt: float)->None:
+    def do_update(self, dt: float) -> None:
         """
-            Update method to be overriden for specific behavior by the end user
+        Update method to be overriden for specific behavior by the end user
         """

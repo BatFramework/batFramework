@@ -8,8 +8,9 @@ class Particle:
         self.dead = False
         self.surface = None
 
-    def update(self,dt):pass
-    
+    def update(self, dt):
+        pass
+
     def kill(self):
         self.dead = True
 
@@ -20,7 +21,7 @@ class Particle:
 class TimedParticle(Particle):
     def __init__(self, duration):
         super().__init__()
-        self.timer = bf.Timer(duration,end_callback = self.kill).start()
+        self.timer = bf.Timer(duration, end_callback=self.kill).start()
 
 
 class BasicParticle(TimedParticle):
@@ -28,8 +29,11 @@ class BasicParticle(TimedParticle):
         self,
         start_pos: tuple[float, float],
         start_vel: tuple[float, float],
-        duration=1,color=None,
-        size: tuple[int,int]=(4, 4),*args,**kwargs
+        duration=1,
+        color=None,
+        size: tuple[int, int] = (4, 4),
+        *args,
+        **kwargs,
     ):
         super().__init__(duration)
         self.rect = pygame.FRect(*start_pos, *size)
@@ -38,7 +42,7 @@ class BasicParticle(TimedParticle):
         if color:
             self.surface.fill(color)
         self.start()
-        
+
     def start(self):
         pass
 
@@ -50,25 +54,30 @@ class BasicParticle(TimedParticle):
     def update_surface(self):
         self.surface.set_alpha(255 - int(self.timer.get_progression() * 255))
 
+
 class DirectionalParticle(BasicParticle):
     def start(self):
         self.surface = self.surface.convert_alpha()
         self.original_surface = self.surface.copy()
 
     def update_surface(self):
-        angle = self.velocity.angle_to(Vector2(1,0))
-        self.surface = pygame.transform.rotate(self.original_surface,angle)
+        angle = self.velocity.angle_to(Vector2(1, 0))
+        self.surface = pygame.transform.rotate(self.original_surface, angle)
         super().update_surface()
+
 
 class ParticleGenerator(bf.Entity):
     def __init__(self) -> None:
-        super().__init__((0,0))
+        super().__init__((0, 0))
         self.particles: list[Particle] = []
 
-    def get_bounding_box(self):
+    def get_debug_outlines(self):
         for particle in self.particles:
-            yield (particle.rect.move(particle.rect.w//2,particle.rect.h//2),"blue")
-        yield (self.rect,"cyan")
+            yield (
+                particle.rect.move(particle.rect.w // 2, particle.rect.h // 2),
+                "blue",
+            )
+        yield (self.rect, "cyan")
 
     def add_particle(self, particle):
         self.particles.append(particle)
@@ -87,9 +96,6 @@ class ParticleGenerator(bf.Entity):
 
     def draw(self, camera) -> bool:
         camera.surface.fblits(
-            [
-                (p.surface,camera.world_to_screen(p.rect).center)
-                for p in self.particles
-            ]
+            [(p.surface, camera.world_to_screen(p.rect).center) for p in self.particles]
         )
         return len(self.particles)

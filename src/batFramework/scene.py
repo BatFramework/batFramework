@@ -10,7 +10,12 @@ import batFramework as bf
 
 
 class Scene:
-    def __init__(self, name: str, hud_convert_alpha: bool = True,world_convert_alpha:bool=False) -> None:
+    def __init__(
+        self,
+        name: str,
+        hud_convert_alpha: bool = True,
+        world_convert_alpha: bool = False,
+    ) -> None:
         """
         Initialize the Scene object.
 
@@ -31,18 +36,19 @@ class Scene:
         self.hud_camera: bf.Camera = bf.Camera(convert_alpha=hud_convert_alpha)
 
         self.root: bf.Root = bf.Root(self.hud_camera)
-        self.root.set_center(*self.hud_camera.get_center())
+        self.root.rect.center = self.hud_camera.get_center()
         self.add_hud_entity(self.root)
-        self.blit_calls = 0
 
-
-    def get_world_entity_count(self)->int:
+    def get_world_entity_count(self) -> int:
         return len(self.world_entities)
 
+    def get_hud_entity_count(self) -> int:
+        n = 0
+        def adder(e,var=n):
+            var += len(e.children)
+        self.root.visit(adder)
 
-    def get_hud_entity_count(self)->int:
-        return len(self.hud_entities) + self.root.count_children_recursive() -1
-
+        return len(self.hud_entities) + n 
 
     def set_scene_index(self, index: int):
         """Set the scene index."""
@@ -67,7 +73,7 @@ class Scene:
             return False
         return self.manager.set_sharedVar(name, value)
 
-    def get_sharedVar(self, name: str,error_value=None) -> Any:
+    def get_sharedVar(self, name: str, error_value=None) -> Any:
         """
         Get a shared variable from the manager.
 
@@ -79,7 +85,7 @@ class Scene:
         """
         if not self.manager:
             return error_value
-        return self.manager.get_sharedVar(name,error_value)
+        return self.manager.get_sharedVar(name, error_value)
 
     def do_when_added(self):
         pass
@@ -193,9 +199,8 @@ class Scene:
             res = self._recursive_search_by_uid(uid, child)
             if res is not None:
                 return res
-        
-        return None
 
+        return None
 
     # propagates event to all entities
     def process_event(self, event: pygame.Event):
@@ -217,7 +222,7 @@ class Scene:
     def do_early_process_event(self, event: pygame.Event) -> bool:
         """return True if stop event propagation in child entities and scene's action container"""
         return False
-        
+
     def do_handle_actions(self) -> None:
         """Handle actions within the scene."""
         pass
@@ -242,8 +247,9 @@ class Scene:
 
     def debug_entity(self, entity: bf.Entity, camera: bf.Camera):
         def draw_rect(data):
-            if data is None : return
-            if isinstance(data, pygame.FRect) or  isinstance(data, pygame.Rect):
+            if data is None:
+                return
+            if isinstance(data, pygame.FRect) or isinstance(data, pygame.Rect):
                 rect = data
                 color = entity.debug_color
             else:
@@ -251,41 +257,36 @@ class Scene:
                 color = data[1]
             pygame.draw.rect(camera.surface, color, camera.world_to_screen(rect), 1)
 
-        [draw_rect(data) for data in entity.get_bounding_box()]
-
+        [draw_rect(data) for data in entity.get_debug_outlines()]
 
     def sort_entities(self) -> None:
         """Sort entities within the scene based on their rendering order."""
         self.world_entities.sort(key=lambda e: e.render_order)
         self.hud_entities.sort(key=lambda e: e.render_order)
 
-
-    def _draw_camera(self,camera: bf.Camera,entity_list:list[bf.Entity])->int:
-        res = sum(entity.draw(camera) for entity in entity_list)
+    def _draw_camera(self, camera: bf.Camera, entity_list: list[bf.Entity]) ->NOne:
+        _ = [entity.draw(camera) for entity in entity_list]
         debugMode = self.manager.debug_mode
         # Draw outlines for world entities if required
         if debugMode == bf.DebugMode.OUTLINES:
-            [self.debug_entity(e,camera) for e in entity_list]
-        return res
+            [self.debug_entity(e, camera) for e in entity_list]
+
 
     def draw(self, surface: pygame.Surface):
-        total_blit_calls = 0
-        
+
         self.camera.clear()
         self.hud_camera.clear()
 
         # Draw all world entities
-        total_blit_calls += self._draw_camera(self.camera,self.world_entities)
+        self._draw_camera(self.camera, self.world_entities)
         # Draw all HUD entities
-        total_blit_calls += self._draw_camera(self.hud_camera,self.hud_entities)
+        self._draw_camera(self.hud_camera, self.hud_entities)
 
         self.do_early_draw(surface)
         self.camera.draw(surface)
         self.do_post_world_draw(surface)
         self.hud_camera.draw(surface)
         self.do_final_draw(surface)
-        self.blit_calls = total_blit_calls
-
 
     def do_early_draw(self, surface: pygame.Surface):
         pass
@@ -300,27 +301,28 @@ class Scene:
         self.set_active(True)
         self.set_visible(True)
         self.root.clear_hovered()
-        #self.root.clear_focused()
+        # self.root.clear_focused()
         self.root.build()
         self.do_on_enter()
+        # self.root.visit(lambda e : e.resolve_constraints())
 
     def on_exit(self):
         self.root.clear_hovered()
-        #self.root.clear_focused()
+        # self.root.clear_focused()
         self.set_active(False)
         self.set_visible(False)
         self.actions.hard_reset()
         self.early_actions.hard_reset()
         self.do_on_exit()
 
-    def do_on_enter(self)->None:
+    def do_on_enter(self) -> None:
         pass
 
-    def do_on_exit(self)->None:
+    def do_on_exit(self) -> None:
         pass
 
-    def do_on_enter_early(self)->None:
+    def do_on_enter_early(self) -> None:
         pass
 
-    def do_on_exit_early(self)->None:
+    def do_on_exit_early(self) -> None:
         pass

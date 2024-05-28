@@ -13,26 +13,34 @@ def search_index(target, lst):
 
 class AnimState:
     def __init__(
-        self, name: str, surface:pygame.Surface, width, height, duration_list: list | int) -> None:
-        self.frames: list[pygame.Surface] =list(bf.utils.split_surface(
-            surface, width, height,
-            False,convert_alpha
-        ).values())
-        self.frames_flipX: list[pygame.Surface] = list(bf.utils.split_surface(
-            surface, width, height,
-            True,convert_alpha
-        ).values())
-        
+        self,
+        name: str,
+        surface: pygame.Surface,
+        width,
+        height,
+        duration_list: list | int,
+    ) -> None:
+        self.frames: list[pygame.Surface] = list(
+            bf.utils.split_surface(
+                surface, width, height, False, convert_alpha
+            ).values()
+        )
+        self.frames_flipX: list[pygame.Surface] = list(
+            bf.utils.split_surface(surface, width, height, True, convert_alpha).values()
+        )
+
         self.name = name
-        self.duration_list :list[int]= []
+        self.duration_list: list[int] = []
         self.duration_list_length = 0
         self.set_duration_list(duration_list)
 
     def __repr__(self):
         return f"AnimState({self.name})"
 
-    def counter_to_frame(self, counter: float | int)->int:
-        return search_index(int(counter % self.duration_list_length), self.duration_list)
+    def counter_to_frame(self, counter: float | int) -> int:
+        return search_index(
+            int(counter % self.duration_list_length), self.duration_list
+        )
 
     def get_frame(self, counter, flip):
         i = self.counter_to_frame(counter)
@@ -50,47 +58,49 @@ class AnimState:
 class AnimatedSprite(bf.DynamicEntity):
     def __init__(self, size=None) -> None:
         super().__init__(size, no_surface=True)
-        self.float_counter :float= 0
+        self.float_counter: float = 0
         self.animStates: dict[str, AnimState] = {}
-        self.current_state: AnimState|None = None  
+        self.current_state: AnimState | None = None
         self.flipX = False
         self._locked = False
-        self.paused : bool = False
+        self.paused: bool = False
 
-    def pause(self)->None:
+    def pause(self) -> None:
         self.paused = True
 
-    def resume(self)->None:
+    def resume(self) -> None:
         self.paused = False
 
-    def toggle_pause(self)->None:
+    def toggle_pause(self) -> None:
         self.paused = not self.paused
 
-    def set_counter(self, value: float)->None:
+    def set_counter(self, value: float) -> None:
         self.float_counter = value
 
-    def set_frame(self,frame_index:int)->None:
-        if not self.current_state : return
+    def set_frame(self, frame_index: int) -> None:
+        if not self.current_state:
+            return
         total = sum(self.current_state.duration_list)
-        frame_index = max(0,min(total,frame_index))
+        frame_index = max(0, min(total, frame_index))
         new_counter = 0
         i = 0
         while frame_index < total:
-            if self.current_state.counter_to_frame(new_counter)>=frame_index:
+            if self.current_state.counter_to_frame(new_counter) >= frame_index:
                 break
-            new_counter +=self.current_state.duration_list[i]
-            i+=1 
+            new_counter += self.current_state.duration_list[i]
+            i += 1
         self.set_counter(new_counter)
-    def lock(self)->None:
+
+    def lock(self) -> None:
         self._locked = True
 
-    def unlock(self)->None:
+    def unlock(self) -> None:
         self._locked = False
 
-    def set_flipX(self, value)->None:
+    def set_flipX(self, value) -> None:
         self.flipX = value
 
-    def remove_animState(self, name: str)->bool:
+    def remove_animState(self, name: str) -> bool:
         if not name in self.animStates:
             return False
         self.animStates.pop(name)
@@ -99,48 +109,56 @@ class AnimatedSprite(bf.DynamicEntity):
                 list(self.animStates.keys())[0] if self.animStates else ""
             )
         return True
-        
+
     def add_animState(
-        self, name: str, surface: pygame.Surface, size: tuple[int, int], duration_list: list[int],
-        convert_alpha:bool=True
-    )->bool:
+        self,
+        name: str,
+        surface: pygame.Surface,
+        size: tuple[int, int],
+        duration_list: list[int],
+        convert_alpha: bool = True,
+    ) -> bool:
         if name in self.animStates:
             return False
         self.animStates[name] = AnimState(name, surface, *size, duration_list)
         if len(self.animStates) == 1:
             self.set_animState(name)
         return True
-        
-    def set_animState(self, state: str, reset_counter=True, lock=False)->bool:
+
+    def set_animState(self, state: str, reset_counter=True, lock=False) -> bool:
         if state not in self.animStates or self._locked:
             return False
 
         animState = self.animStates[state]
         self.current_state = animState
 
-        self.rect = (self.current_state.frames[0].get_frect(center=self.rect.center))
-        
+        self.rect = self.current_state.frames[0].get_frect(center=self.rect.center)
+
         if reset_counter or self.float_counter > sum(animState.duration_list):
             self.float_counter = 0
         if lock:
             self.lock()
         return True
 
-    def get_animState(self)->AnimState|None:
+    def get_animState(self) -> AnimState | None:
         return self.current_state
 
-    def update(self, dt: float)->None:
+    def update(self, dt: float) -> None:
         s = self.get_animState()
-        if not self.animStates or s is None :
+        if not self.animStates or s is None:
             return
-        if not self.paused : 
+        if not self.paused:
             self.float_counter += 60 * dt
             if self.float_counter > s.duration_list_length:
                 self.float_counter = 0
         self.do_update(dt)
 
     def draw(self, camera: bf.Camera) -> int:
-        if not self.visible or not camera.rect.colliderect(self.rect) or not self.current_state:
+        if (
+            not self.visible
+            or not camera.rect.colliderect(self.rect)
+            or not self.current_state
+        ):
             return 0
         camera.surface.blit(
             self.current_state.get_frame(self.float_counter, self.flipX),

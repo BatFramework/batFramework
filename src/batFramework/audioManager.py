@@ -5,19 +5,21 @@ pygame.mixer.init()
 
 
 class AudioManager(metaclass=bf.Singleton):
-    def __init__(self)->None:
+    def __init__(self) -> None:
         self.sounds: dict = {}
         self.musics: dict = {}
-        self.current_music :str|None= None
-        self.music_volume :float= 1
-        self.sound_volume :float= 1
+        self.current_music: str | None = None
+        self.music_volume: float = 1
+        self.sound_volume: float = 1
         pygame.mixer_music.set_endevent(bf.const.MUSIC_END_EVENT)
 
-    def free_sounds(self, force:bool=False):
+    def free_sounds(self, force: bool = False):
         if force:
             self.sounds = {}
             return
-        self.sounds :dict =  {key:value for key,value in self.sounds.items() if value["persistent"]}
+        self.sounds: dict = {
+            key: value for key, value in self.sounds.items() if value["persistent"]
+        }
 
     def set_sound_volume(self, volume: float):
         self.sound_volume = volume
@@ -26,13 +28,13 @@ class AudioManager(metaclass=bf.Singleton):
         self.music_volume = volume
         pygame.mixer_music.set_volume(volume)
 
-    def get_music_volume(self)->float:
+    def get_music_volume(self) -> float:
         return self.music_volume
 
-    def get_sound_volume(self)->float:
+    def get_sound_volume(self) -> float:
         return self.sound_volume
 
-    def has_sound(self, name:str):
+    def has_sound(self, name: str):
         return name in self.sounds
 
     def load_sound(self, name, path, persistent=False) -> pygame.mixer.Sound:
@@ -42,19 +44,19 @@ class AudioManager(metaclass=bf.Singleton):
         self.sounds[name] = {
             "path": path,
             "sound": pygame.mixer.Sound(path),
-            "persistent": persistent
+            "persistent": persistent,
         }
         return self.sounds[name]["sound"]
 
-    def load_sounds(self,sound_data_list:list[tuple[str,str,bool]])->None:
+    def load_sounds(self, sound_data_list: list[tuple[str, str, bool]]) -> None:
         for data in sound_data_list:
             self.load_sound(*data)
-        return 
-        
-    def play_sound(self, name, volume=1)-> bool:
+        return
+
+    def play_sound(self, name, volume=1) -> bool:
         """
-            Play the sound file with the given name.
-            returns True if the sound was played
+        Play the sound file with the given name.
+        returns True if the sound was played
 
         """
         try:
@@ -62,31 +64,32 @@ class AudioManager(metaclass=bf.Singleton):
             self.sounds[name]["sound"].play()
             return True
         except KeyError:
-            #print(f"Sound '{name}' not loaded in AudioManager.")
+            # print(f"Sound '{name}' not loaded in AudioManager.")
             return False
 
-    def stop_sound(self, name)-> bool:
+    def stop_sound(self, name) -> bool:
         try:
             self.sounds[name]["sound"].stop()
             return True
         except KeyError:
             return False
-            #print(f"Sound '{name}' not loaded in AudioManager.")
+            # print(f"Sound '{name}' not loaded in AudioManager.")
+
     def load_music(self, name, path):
         self.musics[name] = bf.ResourceManager().get_path(path)
         return
-        
-    def load_musics(self,music_data_list:list[tuple[str,str]]):
+
+    def load_musics(self, music_data_list: list[tuple[str, str]]):
         for data in music_data_list:
             self.load_music(*data)
         return
-        
-    def play_music(self, name, loop=0, fade=500)-> bool:
+
+    def play_music(self, name, loop=0, fade=500) -> bool:
         """
-            Play the sound file with the given 'name'.
-            Fades with the given 'fade' time in ms.
-            Music will loop 'loop' times (indefinitely if -1).
-            returns True if the sound was played
+        Play the sound file with the given 'name'.
+        Fades with the given 'fade' time in ms.
+        Music will loop 'loop' times (indefinitely if -1).
+        returns True if the sound was played
         """
         try:
             pygame.mixer_music.load(self.musics[name])
@@ -95,7 +98,7 @@ class AudioManager(metaclass=bf.Singleton):
             return True
         except KeyError:
             return False
-            #print(f"Music '{name}' not loaded in AudioManager.")
+            # print(f"Music '{name}' not loaded in AudioManager.")
 
     def stop_music(self):
         if not self.current_music:
@@ -117,5 +120,5 @@ class AudioManager(metaclass=bf.Singleton):
             return
         pygame.mixer_music.unpause()
 
-    def get_current_music(self)->str|None:
+    def get_current_music(self) -> str | None:
         return self.current_music

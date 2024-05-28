@@ -2,6 +2,7 @@ import batFramework as bf
 import pygame
 from typing import Self
 
+
 class Sprite(bf.DynamicEntity):
     def __init__(
         self,
@@ -13,13 +14,14 @@ class Sprite(bf.DynamicEntity):
         super().__init__(convert_alpha=convert_alpha)
         if data:
             self.set_image(data, size)
-    
+
     def set_image(
         self, data: pygame.Surface | str, size: None | tuple[int, int] = None
-    )->Self:
+    ) -> Self:
         if isinstance(data, str):
-            tmp = bf.ResourceManager().get_image(data,self.convert_alpha)
-            if tmp == None : print(f"Image file at '{data}' was not found :(")
+            tmp = bf.ResourceManager().get_image(data, self.convert_alpha)
+            if tmp == None:
+                print(f"Image file at '{data}' was not found :(")
             self.original_surface = tmp
         elif isinstance(data, pygame.Surface):
             self.original_surface = data
@@ -33,8 +35,7 @@ class Sprite(bf.DynamicEntity):
         self.set_size(size)
         return self
 
-
-    def set_size(self,size : tuple[int|None,int|None])->Self:
+    def set_size(self, size: tuple[int | None, int | None]) -> Self:
         new_size = []
         new_size[0] = size[0] if size[0] is not None else self.rect.w
         new_size[1] = size[1] if size[1] is not None else self.rect.h

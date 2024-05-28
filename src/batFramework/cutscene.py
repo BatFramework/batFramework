@@ -1,5 +1,6 @@
 import batFramework as bf
 
+
 class CutsceneBlock:
     ...
 
@@ -12,9 +13,9 @@ class CutsceneManager(metaclass=bf.Singleton):
     def __init__(self) -> None:
         self.current_cutscene: Cutscene = None
         self.cutscenes: list[bf.Cutscene] = []
-        self.manager : bf.Manager = None
-        
-    def set_manager(self,manager):
+        self.manager: bf.Manager = None
+
+    def set_manager(self, manager):
         self.manager = manager
 
     def get_flag(self, flag):
@@ -37,10 +38,11 @@ class CutsceneManager(metaclass=bf.Singleton):
             self.current_cutscene.play()
         self.manager.set_sharedVar("in_cutscene", True)
 
-    def enable_player_control(self)->None:
-        self.manager.set_sharedVar("player_has_control",True)
-    def disable_player_control(self)->None:
-        self.manager.set_sharedVar("player_has_control",False)
+    def enable_player_control(self) -> None:
+        self.manager.set_sharedVar("player_has_control", True)
+
+    def disable_player_control(self) -> None:
+        self.manager.set_sharedVar("player_has_control", False)
 
     def update(self, dt):
         if not self.current_cutscene is None:
@@ -72,10 +74,10 @@ class Cutscene:
     def init_blocks(self):
         pass
 
-    def add_blocks(self,*blocks:CutsceneBlock):
+    def add_blocks(self, *blocks: CutsceneBlock):
         self.cutscene_blocks.extend(blocks)
 
-    def add_end_blocks(self, *blocks:CutsceneBlock):
+    def add_end_blocks(self, *blocks: CutsceneBlock):
         _ = [block.set_parent_cutscene(self) for block in blocks]
         self.end_blocks.extend(blocks)
 
@@ -121,7 +123,6 @@ class Cutscene:
                     self.cutscene_blocks.extend(self.end_blocks)
                     self.end_blocks = []
             self.cutscene_blocks[self.block_index].start()
-
 
     def has_ended(self):
         return self.ended

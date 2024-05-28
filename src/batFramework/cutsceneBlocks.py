@@ -2,6 +2,7 @@ import batFramework as bf
 from .cutscene import Cutscene, CutsceneManager
 from .transition import *
 
+
 # Define the base CutsceneBlock class
 class CutsceneBlock:
     """
@@ -89,6 +90,7 @@ class ParallelBlock(CutsceneBlock):
     """
     Represents a parallel execution block for multiple Cutscene blocks.
     """
+
     def __init__(self, *blocks) -> None:
         super().__init__()
         # List of blocks to run in parallel
@@ -121,14 +123,16 @@ class SceneTransitionBlock(CutsceneBlock):
     """
 
     # Constructor for SceneTransitionBlock
-    def __init__(self, scene, transition : Transition = Fade(0.1),index :int= 0) -> None:
+    def __init__(
+        self, scene, transition: Transition = Fade(0.1), index: int = 0
+    ) -> None:
         super().__init__()
         # Target scene, transition type, duration, and additional keyword arguments
         self.target_scene = scene
         self.transition = transition
         self.index = index
         # Timer to handle the end of the transition
-        self.timer = bf.Timer(transition.duration,self.end)
+        self.timer = bf.Timer(transition.duration, self.end)
 
     # Start the scene transition block
     def start(self):
@@ -140,10 +144,11 @@ class SceneTransitionBlock(CutsceneBlock):
         if self.get_current_scene()._name == self.target_scene:
             self.end()
             return
-        CutsceneManager().manager.transition_to_scene(self.target_scene, self.transition,self.index)
+        CutsceneManager().manager.transition_to_scene(
+            self.target_scene, self.transition, self.index
+        )
         # Start the timer to handle the end of the transition
         self.timer.start()
-
 
 
 class DelayBlock(CutsceneBlock):
@@ -155,8 +160,9 @@ class DelayBlock(CutsceneBlock):
         super().start()
         self.timer.start()
 
+
 class FunctionBlock(CutsceneBlock):
-    def __init__(self,func)->None:
+    def __init__(self, func) -> None:
         self.function = func
 
     def start(self):

@@ -1,6 +1,8 @@
 from ..widget import Widget
 import batFramework as bf
 import pygame
+
+
 class Constraint:
     def __init__(self, name="Constraint", priority=0):
         self.priority = priority
@@ -25,8 +27,9 @@ class Constraint:
     def apply_constraint(self, parent_widget: Widget, child_widget: Widget):
         raise NotImplementedError("Subclasses must implement apply_constraint method")
 
+
 class MinWidth(Constraint):
-    def __init__(self, width:float):
+    def __init__(self, width: float):
         super().__init__(name="min_width")
         self.min_width = width
 
@@ -37,8 +40,9 @@ class MinWidth(Constraint):
         if not self.evaluate(parent_widget, child_widget):
             child_widget.set_size((self.min_width, child_widget.rect.h))
 
+
 class MinHeight(Constraint):
-    def __init__(self, height:float):
+    def __init__(self, height: float):
         super().__init__(name="min_height")
         self.min_height = height
 
@@ -47,8 +51,7 @@ class MinHeight(Constraint):
 
     def apply_constraint(self, parent_widget, child_widget):
         if not self.evaluate(parent_widget, child_widget):
-            child_widget.set_size((child_widget.rect.w,self.min_height))
-
+            child_widget.set_size((child_widget.rect.w, self.min_height))
 
 
 class CenterX(Constraint):
@@ -114,10 +117,12 @@ class PercentageWidth(Constraint):
                     )
                     return
                 child_widget.set_autoresize(False)
-            child_widget.set_size((
-                round(parent_widget.get_padded_width() * self.percentage),
-                child_widget.rect.h,
-            ))
+            child_widget.set_size(
+                (
+                    round(parent_widget.get_padded_width() * self.percentage),
+                    child_widget.rect.h,
+                )
+            )
 
 
 class PercentageHeight(Constraint):
@@ -130,7 +135,7 @@ class PercentageHeight(Constraint):
         return child_widget.rect.height == round(
             parent_widget.get_padded_height() * self.percentage
         )
-        
+
     def to_string(self) -> str:
         return f"{super().to_string()}.[{self.percentage*100}%,keep_autoresize={self.keep_autoresize}]"
 
@@ -143,10 +148,22 @@ class PercentageHeight(Constraint):
                     )
                     return
                 child_widget.set_autoresize(False)
-            child_widget.set_size((
-                child_widget.rect.w,
-                round(parent_widget.get_padded_height() * self.percentage),
-            ))
+            child_widget.set_size(
+                (
+                    child_widget.rect.w,
+                    round(parent_widget.get_padded_height() * self.percentage),
+                )
+            )
+
+class FillX(PercentageWidth):
+    def __init__(self, keep_autoresize: bool = False):
+        super().__init__(1,keep_autoresize)
+        self.name = "fill_x"
+
+class FillY(PercentageHeight):
+    def __init__(self, keep_autoresize: bool = False):
+        super().__init__(1,keep_autoresize)
+        self.name = "fill_y"
 
 
 class Height(Constraint):
@@ -155,7 +172,7 @@ class Height(Constraint):
             raise ValueError("height can't be negative")
         super().__init__(name="height")
         self.height = height
-        self.keep_autoresize:bool = keep_autoresize
+        self.keep_autoresize: bool = keep_autoresize
 
     def to_string(self) -> str:
         return f"{super().to_string()}.(height={self.height})"
@@ -181,7 +198,7 @@ class Width(Constraint):
             raise ValueError("width can't be negative")
         super().__init__(name="width")
         self.width = width
-        self.keep_autoresize : bool = keep_autoresize
+        self.keep_autoresize: bool = keep_autoresize
 
     def to_string(self) -> str:
         return f"{super().to_string()}.(width={self.width})"
@@ -200,9 +217,14 @@ class Width(Constraint):
                 child_widget.set_autoresize(False)
             child_widget.set_size((self.width, child_widget.rect.h))
 
-#TODO 
+
+# TODO
 class AspectRatio(Constraint):
-    def __init__(self, ratio: int | float | pygame.rect.FRectType = 1, reference_axis:bf.axis = bf.axis.HORIZONTAL):
+    def __init__(
+        self,
+        ratio: int | float | pygame.rect.FRectType = 1,
+        reference_axis: bf.axis = bf.axis.HORIZONTAL,
+    ):
         super().__init__(name="aspect_ratio")
         if isinstance(ratio, float | int):
             self.ratio = ratio
@@ -224,7 +246,10 @@ class AnchorBottom(Constraint):
         super().__init__(name="anchor_bottom")
 
     def evaluate(self, parent_widget, child_widget):
-        return child_widget.rect.top == parent_widget.get_padded_bottom() - child_widget.rect.h
+        return (
+            child_widget.rect.top
+            == parent_widget.get_padded_bottom() - child_widget.rect.h
+        )
 
     def apply_constraint(self, parent_widget, child_widget):
         if not self.evaluate(parent_widget, child_widget):
@@ -245,12 +270,15 @@ class AnchorTopRight(Constraint):
                 parent_widget.get_padded_top(),
             )
 
+
 class AnchorBottomRight(Constraint):
     def __init__(self):
         super().__init__(name="anchor_bottomright")
 
     def evaluate(self, parent_widget, child_widget):
-        return child_widget.rect.bottomright == parent_widget.get_padded_rect().bottomright
+        return (
+            child_widget.rect.bottomright == parent_widget.get_padded_rect().bottomright
+        )
 
     def apply_constraint(self, parent_widget, child_widget):
         if not self.evaluate(parent_widget, child_widget):
@@ -258,7 +286,6 @@ class AnchorBottomRight(Constraint):
                 parent_widget.get_padded_right() - child_widget.rect.w,
                 parent_widget.get_padded_bottom() - child_widget.rect.h,
             )
-
 
 
 class AnchorRight(Constraint):
@@ -289,21 +316,29 @@ class AnchorLeft(Constraint):
                 parent_widget.get_padded_left(), child_widget.rect.top
             )
 
+
 class MarginBottom(Constraint):
-    def __init__(self,margin:float):
+    def __init__(self, margin: float):
         super().__init__(name="margin_bottom")
         self.margin = margin
+
     def evaluate(self, parent_widget, child_widget):
-        return child_widget.rect.bottom == parent_widget.get_padded_bottom() - self.margin
+        return (
+            child_widget.rect.bottom == parent_widget.get_padded_bottom() - self.margin
+        )
 
     def apply_constraint(self, parent_widget, child_widget):
         if not self.evaluate(parent_widget, child_widget):
-            child_widget.set_y(parent_widget.get_padded_bottom() - child_widget.rect.h - self.margin)
+            child_widget.set_y(
+                parent_widget.get_padded_bottom() - child_widget.rect.h - self.margin
+            )
+
 
 class MarginTop(Constraint):
-    def __init__(self,margin:float):
+    def __init__(self, margin: float):
         super().__init__(name="margin_top")
         self.margin = margin
+
     def evaluate(self, parent_widget, child_widget):
         return child_widget.rect.top == parent_widget.get_padded_top() + self.margin
 
@@ -311,10 +346,12 @@ class MarginTop(Constraint):
         if not self.evaluate(parent_widget, child_widget):
             child_widget.set_y(parent_widget.get_padded_top() + self.margin)
 
+
 class MarginLeft(Constraint):
-    def __init__(self,margin:float):
+    def __init__(self, margin: float):
         super().__init__(name="margin_left")
         self.margin = margin
+
     def evaluate(self, parent_widget, child_widget):
         return child_widget.rect.left == parent_widget.get_padded_left() + self.margin
 
@@ -322,13 +359,17 @@ class MarginLeft(Constraint):
         if not self.evaluate(parent_widget, child_widget):
             child_widget.set_x(parent_widget.get_padded_left() + self.margin)
 
+
 class MarginRight(Constraint):
-    def __init__(self,margin:float):
+    def __init__(self, margin: float):
         super().__init__(name="margin_right")
         self.margin = margin
+
     def evaluate(self, parent_widget, child_widget):
         return child_widget.rect.right == parent_widget.get_padded_right() + self.margin
 
     def apply_constraint(self, parent_widget, child_widget):
         if not self.evaluate(parent_widget, child_widget):
-            child_widget.set_x(parent_widget.get_padded_right()  -  child_widget.rect.w - self.margin)
+            child_widget.set_x(
+                parent_widget.get_padded_right() - child_widget.rect.w - self.margin
+            )
