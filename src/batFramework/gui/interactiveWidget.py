@@ -112,14 +112,10 @@ class InteractiveWidget(Widget):
     def set_focused_child(self, child: "InteractiveWidget"):
         pass
 
-    def draw_focused(self, camera: bf.Camera) -> None:
+    def draw_focused(self, camera: bf.Camera) -> None: 
         delta = 4 + ((2*cos(pygame.time.get_ticks()/100)) //2) * 2
         pygame.draw.rect(
             camera.surface,
             "white",
-            camera.world_to_screen(
-                self.rect.move(-camera.rect.x,-camera.rect.y).inflate(delta,delta)
-            ),1
+            self.rect.move(-camera.rect.x,-camera.rect.y).inflate(delta,delta),1
         )
-
-

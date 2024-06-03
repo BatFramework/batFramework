@@ -23,7 +23,7 @@ class Label(Shape):
 
         self.text_color: tuple[int, int, int] | str = "black"
 
-        self.text_outline_color: tuple[int, int, int] | str = "gray"
+        self.text_outline_color: tuple[int, int, int] | str = "gray50"
 
         self.text_outline_surface: pygame.Surface = None
 
@@ -50,7 +50,7 @@ class Label(Shape):
         super().__init__((0, 0))
         self.set_padding((10, 4))
         self.set_debug_color("blue")
-        self.set_color("gray20")
+        self.set_color("gray50")
         self.set_autoresize(True)
         self.set_font(force=True)
         self.set_text(text)
@@ -176,26 +176,27 @@ class Label(Shape):
         if text == self.text:
             return self
         self.text = text
-        if self.autoresize : 
-            self.dirty_shape = True
-        else:
-            self.dirty_surface = True
+        self.dirty_shape = True
         return self
 
     def get_min_required_size(self)->tuple[float,float]:
-        return self.inflate_rect_by_padding((0,0,self.text_rect.size))
+        if not self.text_rect:
+            params = {
+                "font_name": self.font_object.name,
+                "text": self.text,
+                "antialias": False,
+                "color": "white",
+                "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
+                "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
+            }
+
+            self.text_rect.size = self._render_font(params).get_size()
+        return self.inflate_rect_by_padding((0,0,*self.text_rect.size)).size
 
     def get_text(self) -> str:
         return self.text
 
-    def get_min_required_size(self) -> tuple[float, float]:
-        return (
-            (0, 0)
-            if not self.font_object
-            else self.inflate_rect_by_padding(
-                pygame.FRect(0, 0, *self.font_object.size(self.text))
-            ).size
-        )
+
 
     def _render_font(self, params: dict) -> pygame.Surface:
         key = tuple(params.values())
@@ -205,7 +206,24 @@ class Label(Shape):
         if self.draw_mode == bf.drawMode.SOLID:
             if cached_value is None:
                 params.pop("font_name")
+
+                #save old settings                
+                old_italic = self.font_object.get_italic()
+                old_bold = self.font_object.get_bold()
+                old_underline = self.font_object.get_underline()
+
+                #setup font
+                self.font_object.set_italic(self.is_italic)
+                self.font_object.set_bold(self.is_bold)
+                self.font_object.set_underline(self.is_underlined)
+                
                 surf = self.font_object.render(**params)
+
+                # reset font 
+                self.font_object.set_italic(old_italic)
+                self.font_object.set_bold(old_bold)
+                self.font_object.set_underline(old_underline)
+
                 if self.do_caching:
                     Label._text_cache[key] = surf
             else:
@@ -216,20 +234,34 @@ class Label(Shape):
 
         return surf
 
+    def _build_layout(self) -> None:
+
+        params = {
+            "font_name": self.font_object.name,
+            "text": self.text,
+            "antialias": False,
+            "color": "white",
+            "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
+            "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
+        }
+
+        self.text_rect.size = self._render_font(params).get_size()
+        if self.autoresize:
+            target_rect = self.inflate_rect_by_padding((0,0,*self.text_rect.size))
+            if self.rect.size != target_rect.size:
+                self.set_size(target_rect.size)
+                self.build()
+                return
+        padded = self.get_padded_rect().move(-self.rect.x,-self.rect.y)
+        self.align_text(self.text_rect,padded,self.alignment)
+
     def _paint_text(self) -> None:
         if self.font_object is None:
             print(f"No font for widget with text : '{self}' :(")
             return
         # render(text, antialias, color, bgcolor=None, wraplength=0) -> Surface
-        old_italic = self.font_object.get_italic()
-        old_bold = self.font_object.get_bold()
-        old_underline = self.font_object.get_underline()
 
-        self.font_object.set_italic(self.is_italic)
-        self.font_object.set_bold(self.is_bold)
-        self.font_object.set_underline(self.is_underlined)
-
-        padded = self.get_padded_rect()
+        
 
         params = {
             "font_name": self.font_object.name,
@@ -237,13 +269,10 @@ class Label(Shape):
             "antialias": self.antialias,
             "color": self.text_color,
             "bgcolor": None,  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
-            "wraplength": int(padded.w) if self.auto_wraplength else 0,
+            "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
         }
         self.text_surface = self._render_font(params)
 
-        self.font_object.set_italic(old_italic)
-        self.font_object.set_bold(old_bold)
-        self.font_object.set_underline(old_underline)
 
         if self.show_text_outline:
             self.text_outline_surface = (
@@ -267,17 +296,6 @@ class Label(Shape):
             (self.text_surface, self.text_rect.move(0, self.relief - self.get_relief()))
         )
         self.surface.fblits(l)
-
-    def _build_layout(self) -> None:
-        self.text_rect.size = self.font_object.size(self.text)
-        if self.autoresize:
-            target_rect = self.inflate_rect_by_padding((0,0,*self.text_rect.size))
-            if self.rect.size != target_rect.size:
-                self.set_size(target_rect.size)
-                self.build()
-                return
-        padded = self.get_padded_rect().move(-self.rect.x,-self.rect.y)
-        self.align_text(self.text_rect,padded,self.alignment)
 
     def align_text(self,text_rect:pygame.FRect,area:pygame.FRect,alignment: bf.alignment):
         if alignment == bf.alignment.LEFT : alignment = bf.alignment.MIDLEFT

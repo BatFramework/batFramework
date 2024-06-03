@@ -12,7 +12,7 @@ class Container(Shape, InteractiveWidget):
     def __init__(self, layout: Layout= None, *children: Widget) -> None:
         super().__init__()
         self.dirty_children = False
-        self.fit_to_children :bool = False
+        self.fit_to_children :bool = True
         self.set_debug_color("green")
         self.layout: Layout = layout
         self.scroll = Vector2(0, 0)
@@ -56,20 +56,14 @@ class Container(Shape, InteractiveWidget):
     def get_debug_outlines(self):
         yield (self.rect, self.debug_color)
         yield (self.get_padded_rect(),self.debug_color)
-        # if self.children:
-        #     yield (
-        #         self.children[0]
-        #         .rect.unionall([c.rect for c in self.children[1:]])
-        #         .move(-self.scroll),
-        #         self.debug_color,
-        #     )
+
         for child in self.children:
             for data in child.get_debug_outlines():
                 yield (data[0].move(*-self.scroll), data[1])
 
     def get_interactive_children(self) -> list[InteractiveWidget]:
         return [
-            child for child in self.children if isinstance(child, InteractiveWidget)
+            child for child in self.children if isinstance(child, InteractiveWidget) and child.allow_focus_to_self()
         ]
 
     def focus_next_child(self) -> None:
@@ -140,25 +134,17 @@ class Container(Shape, InteractiveWidget):
     def allow_focus_to_self(self) -> bool:
         return len(self.get_interactive_children()) != 0 
 
-    # def update(self,dt)->None:
-    #     super().update(dt)
-    
 
-    def _fit_to_children(self) -> None:
-        # TODO CLEAN THIS UP / Make it more reliable
-        if not self.children:
-            return
-        children_rect = self.children[0].rect.unionall(
-            list(c.rect for c in self.children)
-        )
-        self.set_size(self.inflate_rect_by_padding(children_rect).size)
-        self.rect.center = children_rect.center
+#     def _fit_to_children(self) -> None:
+# 
+#         self.set_size(self.layout.get_fit_size())
+#         # self.rect.center = children_rect.center
+#         # self.set_position(*self.rect.topleft)
 
 
     def draw(self, camera: bf.Camera) -> None:
-
-
-
+        # print("\n---DRAW")
+        constraints_down = False
         if self.dirty_shape:
             self.dirty_constraints = True
             self.dirty_children = True
@@ -169,20 +155,19 @@ class Container(Shape, InteractiveWidget):
             self.dirty_shape = False
 
         if self.dirty_constraints:
+
             if self.parent and self.parent.dirty_constraints:
                 self.parent.visit_up(self.selective_up)
             else:
-                self.visit(lambda c : c.resolve_constraints())
-
+                constraints_down = True
 
         if self.dirty_children:
             if self.layout :
                 self.layout.arrange()
-            if self.fit_to_children:
-                self._fit_to_children()
-
             self.dirty_children = False
 
+        if constraints_down:
+                self.visit(lambda c : c.resolve_constraints())
 
 
         if self.dirty_surface : 

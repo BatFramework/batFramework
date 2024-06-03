@@ -44,8 +44,9 @@ class Scene:
 
     def get_hud_entity_count(self) -> int:
         n = 0
-        def adder(e,var=n):
-            var += len(e.children)
+        def adder(e):
+            nonlocal n
+            n += len(e.children)
         self.root.visit(adder)
 
         return len(self.hud_entities) + n 

@@ -15,6 +15,10 @@ class DraggableWidget(InteractiveWidget):
     def do_reset_actions(self) -> None:
         self.drag_action.reset()
 
+    def do_on_drag(self,x,y,world_drag_point:tuple[float,float])->None:
+        pass
+
+
     def update(self, dt: float):
 
         if self.drag_action.is_active() and self.is_clicked_down:
@@ -25,7 +29,9 @@ class DraggableWidget(InteractiveWidget):
                 return
             else:
                 self.set_position(x - self.offset[0], y - self.offset[1])
+                self.do_on_drag(*self.rect.topleft,(x,y))
                 return
         else:
             self.offset = None
+            self.is_clicked_down = False
         super().update(dt)

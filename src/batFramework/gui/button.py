@@ -12,23 +12,35 @@ class Button(Label, InteractiveWidget):
     def __init__(self, text: str, callback: None | Callable = None) -> None:
         self.callback = callback
         self.is_hovered: bool = False
-        self.effect_max: float = 20
-        self.use_effect: bool = False
-        self.effect_speed: float = 1.8
         self.is_clicking: bool = False
-        self.effect: float = 0
-        self.effect_color: tuple[int, int, int] | str = "white"
         self.enabled: bool = True
         self.hover_cursor = bf.const.DEFAULT_HOVER_CURSOR
         self.click_cursor = bf.const.DEFAULT_CLICK_CURSOR
         self.click_down_sound = None
         self.click_up_sound = None
-
         self.get_focus_sound = None
         self.lose_focus_sound = None
+        self.pressed_relief : int = 1
+        self.unpressed_relief : int = 2
         super().__init__(text=text)
         self.set_debug_color("cyan")
         self.focusable = True
+        self.set_relief(self.unpressed_relief)
+
+    def set_unpressed_relief(self,relief:int=0)->Self:
+        if relief == self.unpressed_relief : return self
+        self.unpressed_relief = relief 
+        self.dirty_shape = True
+        if not self.is_clicking : self.set_relief(relief)
+        return self
+
+    def set_pressed_relief(self,relief:int=0)->Self:
+        if relief == self.pressed_relief : return self
+        self.pressed_relief = relief 
+        self.dirty_shape = True
+        if self.is_clicking : self.set_relief(relief)
+
+        return self
 
     def set_click_down_sound(self, sound_name: str) -> Self:
         self.click_down_sound = sound_name
@@ -54,40 +66,24 @@ class Button(Label, InteractiveWidget):
         self.click_cursor = cursor
         return self
 
-    def enable_effect(self) -> Self:
-        self.use_effect = True
-        return self
-
-    def disable_effect(self) -> Self:
-        self.use_effect = False
-        self.effect = 0
-        return self
-
-    def set_effect_color(self, color: tuple[int, int, int] | str):
-        self.effect_color = color
-        return self
-
-    def get_relief(self) -> int:
-        if not self.relief:
-            return 0
-        return self.relief if not self.is_clicking else max(1, ceil(self.relief / 4))
-
     def get_surface_filter(self) -> pygame.Surface | None:
-        size = self.surface.get_size()
+        size = int(self.rect.w),int(self.rect.h)
         surface_filter = Button._cache.get((size, *self.border_radius), None)
         if surface_filter is None:
             # Create a mask from the original surface
             mask = pygame.mask.from_surface(self.surface, threshold=0)
-
-            silhouette_surface = mask.to_surface(
-                setcolor=(30, 30, 30), unsetcolor=(255, 255, 255)
-            )
+            
+            silhouette_surface = mask.to_surface(setcolor=(30, 30, 30), unsetcolor=(0,0,0))
 
             Button._cache[(size, *self.border_radius)] = silhouette_surface
 
             surface_filter = silhouette_surface
 
         return surface_filter
+
+    def allow_focus_to_self(self)->bool:
+        return True
+        return self.enabled
 
     def enable(self) -> Self:
         self.enabled = True
@@ -97,7 +93,6 @@ class Button(Label, InteractiveWidget):
     def disable(self) -> Self:
         self.enabled = False
         self.dirty_surface = True
-        
         return self
 
     def is_enabled(self) -> bool:
@@ -122,8 +117,7 @@ class Button(Label, InteractiveWidget):
             bf.AudioManager().play_sound(self.lose_focus_sound)
         self.dirty_surface = True
 
-
-    def to_string_id(self) -> str:
+    def __str__(self) -> str:
         return f"Button({self.text}){'' if self.enabled else '[disabled]'}"
 
     def click(self, force=False) -> None:
@@ -131,51 +125,38 @@ class Button(Label, InteractiveWidget):
             return
         if self.callback is not None:
             self.callback()
-            bf.Timer(duration=0.1, end_callback=self._safety_effect_end).start()
-
-    def _safety_effect_end(self) -> None:
-        if self.effect > 0:
-            self.effect = 0
-            self.dirty_surface = True
-
-    def start_effect(self):
-        if self.effect <= 0:
-            self.effect = self.effect_max
 
     def do_on_click_down(self, button) -> None:
-        if self.enabled and button == 1 and self.effect == 0:
+        if self.enabled and button == 1 :
             if not self.get_focus():
                 return
             self.is_clicking = True
             bf.AudioManager().play_sound(self.click_down_sound)
 
             pygame.mouse.set_cursor(self.click_cursor)
-
-            if self.use_effect:
-                self.start_effect()
-            else:
-                self.dirty_surface = True
+            self.set_relief(self.pressed_relief)
 
     def do_on_click_up(self, button) -> None:
         if self.enabled and button == 1 and self.is_clicking:
             self.is_clicking = False
             bf.AudioManager().play_sound(self.click_up_sound)
-
-            self.dirty_surface = True
+            self.set_relief(self.unpressed_relief)
             self.click()
 
     def on_enter(self) -> None:
         if not self.enabled:
             return
         super().on_enter()
-        self.effect = 0
-        self.dirty_surface = True
+        self.dirty_surface  = True
         pygame.mouse.set_cursor(self.hover_cursor)
 
     def on_exit(self) -> None:
         super().on_exit()
-        self.is_clicking = False
-        self.dirty_surface = True
+        if self.is_clicking:
+            self.set_relief(self.unpressed_relief)
+        self.is_clicking    = False
+        self.dirty_surface  = True
+
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
 
     def on_lose_focus(self):
@@ -192,37 +173,6 @@ class Button(Label, InteractiveWidget):
             self.on_click_up(1)
         super().on_key_up(key)
 
-    def update(self, dt):
-        super().update(dt)
-        if self.effect <= 0 or (not self.use_effect):
-            return
-        self.effect -= dt * 60 * self.effect_speed
-        if self.is_clicking:
-            if self.effect < 1:
-                self.effect = 1
-        else:
-            if self.effect < 0:
-                self.effect = 0
-        self.dirty_surface = True
-
-    def _paint_effect(self) -> None:
-        if self.effect < 1:
-            return
-        e = int(min(self.rect.w // 3, self.rect.h // 3, self.effect))
-        pygame.draw.rect(
-            self.surface,
-            self.effect_color,
-            (
-                0,
-                self.relief - self.get_relief(),
-                self.rect.w,
-                self.rect.h - self.relief,
-            ),
-            # int(self.effect),
-            e,
-            *self.border_radius,
-        )
-
     def _paint_disabled(self) -> None:
         self.surface.blit(
             self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_RGB_SUB
@@ -233,12 +183,19 @@ class Button(Label, InteractiveWidget):
             self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_RGB_ADD
         )
 
+    def get_padded_rect(self)->pygame.FRect:
+        return pygame.FRect(
+            self.rect.x + self.padding[0], self.rect.y + self.padding[1] + (self.unpressed_relief - self.pressed_relief if  self.is_clicking else 0),
+            self.rect.w - self.padding[2] - self.padding[0],
+            self.rect.h - self.unpressed_relief - self.padding[1] - self.padding[3] #
+        )
+
+    def _get_elevated_rect(self) -> pygame.FRect:
+        return pygame.FRect(0,  self.unpressed_relief - self.pressed_relief if  self.is_clicking else 0 , self.rect.w, self.rect.h - self.unpressed_relief)
+
     def paint(self) -> None:
         super().paint()
         if not self.enabled:
             self._paint_disabled()
         elif self.is_hovered:
-            # pass
             self._paint_hovered()
-        if self.use_effect and self.effect:
-            self._paint_effect()

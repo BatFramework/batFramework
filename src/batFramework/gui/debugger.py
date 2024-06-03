@@ -84,6 +84,11 @@ class Debugger(Label):
             self.update_text()
 
 
+    def __str__(self)->str:
+        return "Debugger"
+    # def top_at(self,x,y):
+        # return None
+
 class FPSDebugger(Debugger):
     def do_when_added(self):
         if not self.parent_scene or not self.parent_scene.manager:
@@ -119,3 +124,5 @@ class BasicDebugger(FPSDebugger):
         )
         self.add_dynamic("W. Ent.", lambda: parent_scene.get_world_entity_count())
         self.add_dynamic("H. Ent.", lambda: parent_scene.get_hud_entity_count())
+
+        self.add_dynamic("Hover",lambda : str(parent_scene.root.hovered) if parent_scene.root.hovered else None)

@@ -29,6 +29,9 @@ class Layout:
         raise NotImplementedError("Subclasses must implement arrange method")
 
 
+    def get_fit_size(self)->tuple[float,float]:
+        return 0,0
+
 class Column(Layout):
     def __init__(self, gap: int = 0):
         super().__init__()
@@ -39,67 +42,78 @@ class Column(Layout):
         self.notify_parent()
         return self
 
+    def get_fit_size(self):
+        len_children = len(self.parent.children)
+
+        parent_height = sum(c.get_min_required_size()[1] for c in self.parent.children)
+        parent_width = max(c.get_min_required_size()[0] for c in self.parent.children)
+        if self.gap:
+            parent_height += (len_children - 1) * self.gap
+
+        target_rect = self.parent.inflate_rect_by_padding((0,0,parent_width,parent_height))
+        return target_rect.size
+        
     def arrange(self) -> None:
         if not self.parent or not self.parent.children:
             return
-        
-        # print(self.parent,"arranging",self.gap)
+        if self.child_constraints :  
+            for child in self.parent.children : child.add_constraints(*self.child_constraints)
+              
         self.child_rect = self.parent.get_padded_rect()
-        len_children = len(self.parent.children)
+
         if self.parent.fit_to_children:
-            parent_height = sum(c.get_min_required_size()[1] for c in self.parent.children)
-            parent_width = max(c.get_min_required_size()[0] for c in self.parent.children)
-            if self.gap:
-                parent_height += (len_children - 1) * self.gap
-            self.children_rect.update(
-                *self.child_rect.topleft,
-                parent_width,
-                parent_height,
-            )
+            width,height = self.get_fit_size()
+            if self.parent.rect.size != (width,height):
+                self.parent.set_size((width,height))
+                self.parent.build()
+                self.arrange()
+                return
 
         y = self.child_rect.top
         for child in self.parent.children :
             child.set_position(self.child_rect.x,y)
             y+= child.get_min_required_size()[1] + self.gap
-            if self.child_constraints : child.add_constraints(*self.child_constraints)
-
 
 class Row(Layout):
-    def __init__(self, gap: int = 0, fit_children: bool = True, center: bool = True):
+    def __init__(self, gap: int = 0):
         super().__init__()
         self.gap = gap
-        self.fit_children: bool = fit_children
-        self.center = center
 
     def set_gap(self, value: float) -> Self:
         self.gap = value
         self.notify_parent()
         return self
 
-    def arrange(self) -> None:
-        if not self.parent or not self.parent.children:
-            return
+    def get_fit_size(self):
         len_children = len(self.parent.children)
+
         parent_width = sum(c.get_min_required_size()[0] for c in self.parent.children)
         parent_height = max(c.get_min_required_size()[1] for c in self.parent.children)
 
         if self.gap:
             parent_width += (len_children - 1) * self.gap
-        self.children_rect.update(
-            self.parent.get_padded_left(),
-            self.parent.get_padded_top(),
-            parent_width,
-            parent_height,
-        )
-        if self.center:
-            self.children_rect.center = self.parent.get_padded_center()
-        if self.fit_children:
-            self.parent.set_size((parent_width, parent_height))
 
-        current_x = self.children_rect.left
+        target_rect = self.parent.inflate_rect_by_padding((0, 0, parent_width, parent_height))
+        return target_rect.size
 
+    def arrange(self) -> None:
+        if not self.parent or not self.parent.children:
+            return
+        if self.child_constraints:
+            for child in self.parent.children:
+                child.add_constraints(*self.child_constraints)
+
+        self.child_rect = self.parent.get_padded_rect()
+
+        if self.parent.fit_to_children:
+            width, height = self.get_fit_size()
+            if self.parent.rect.size != (width, height):
+                self.parent.set_size((width, height))
+                self.parent.build()
+                self.arrange()
+                return
+
+        x = self.child_rect.left
         for child in self.parent.children:
-            child.set_position(current_x, self.parent.rect.y)
-            current_x += child.rect.w + self.gap
-            for c in self.child_constraints:
-                child.add_constraints(c)
+            child.set_position(x, self.child_rect.y)
+            x += child.get_min_required_size()[0] + self.gap

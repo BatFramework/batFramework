@@ -16,6 +16,7 @@ class Entity(Object):
         **kwargs,
     ) -> None:
         super().__init__()
+        self.visible: bool = True
         self.rect.size = (10, 10) if size is None else size
         self.do_convert_alpha: bool = convert_alpha
         self.surface_flags: int = surface_flags

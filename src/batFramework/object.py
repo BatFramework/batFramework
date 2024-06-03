@@ -14,7 +14,6 @@ class Object:
         self.rect = pygame.FRect(0, 0, 0, 0)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
-        self.visible: bool = True
         self.debug_color: tuple | str = "red"
         self.render_order: int = 0
         self.uid: int = Object.__instance_count

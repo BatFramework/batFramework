@@ -35,17 +35,6 @@ class Widget(bf.Entity):
         if self.parent:self.parent.do_sort_children = True
         return self
 
-    # def set_index(self,index:int=0)->Self:
-    #     if not self.parent : return self
-    #     length =len(self.parent.children)
-    #     if index < 0 or index >= length or length <= 1 :return self 
-    #     tmp = self.render_order
-    #     self.render_order = self.parent.children[index].render_order
-    #     self.parent.children[index].render_order = tmp
-    #     self.parent.do_sort_children = True
-    #     print(self.parent,"PARENT SORT TRUE",pygame.time.get_ticks())
-    #     return self
-
 
     def inflate_rect_by_padding(self,rect: pygame.Rect|pygame.FRect)->pygame.Rect|pygame.FRect:
         return pygame.FRect(
@@ -122,7 +111,7 @@ class Widget(bf.Entity):
         return self.rect.y + self.padding[1]
 
     def get_padded_bottom(self)->float:
-        return self.rect.bottom - self.padding[3]
+        return self.rect.bottom - self.padding[3] 
 
     def get_debug_outlines(self):
         yield (self.rect, self.debug_color)
@@ -144,22 +133,24 @@ class Widget(bf.Entity):
         return self
 
     def resolve_constraints(self)->None:
-        # print("Applying constraints on ",self," |",end='')
+        # print("Applying constraints on ",self)
         if self.parent is None or not self.constraints:
             # print("(No CONSTRAINTS)")        
             self.dirty_constraints = False
             return
+
         all_good = False
 
         while not all_good:
             for constraint in self.constraints:
                 if not constraint.evaluate(self.parent,self):
                     constraint.apply(self.parent,self)
+                    # print(constraint.name,"Applied")
             self.__constraint_iteration += 1
             if  all(c.evaluate(self.parent,self) for c in self.constraints):
                all_good = True 
             if self.__constraint_iteration > MAX_CONSTRAINTS:
-                print(self,"CONSTRAINTS ERROR")
+                print(self,"CONSTRAINTS ERROR",list(c.name for c in self.constraints if not c.evaluate(self.parent,self)))
                 return
         # print("DONE")
         self.__constraint_iteration = 0
@@ -185,11 +176,12 @@ class Widget(bf.Entity):
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         if self.children:
-            for child in self.children:
-                r = child.top_at(x, y)
-                if r is not None:
-                    return r
-        return self if self.rect.collidepoint(x, y) else None
+            for child in reversed(self.children):
+                if child.visible: 
+                    r = child.top_at(x, y)
+                    if r is not None:
+                        return r
+        return self if self.visible and self.rect.collidepoint(x, y) else None
 
     def add(self,*children:"Widget")->Self:
         self.children.extend(children)
@@ -210,6 +202,9 @@ class Widget(bf.Entity):
             self.parent.do_sort_children = True
 
     def set_size(self,size:tuple)->Self:
+        size = list(size)
+        if size[0] is None : size[0] = self.rect.w
+        if size[1] is None : size[1] = self.rect.h
         if size == self.rect.size : return self
         self.rect.size = size
         self.dirty_shape = True
@@ -270,9 +265,9 @@ class Widget(bf.Entity):
             self.dirty_constraints = True
             self.dirty_surface = True
             self.build()
+            self.dirty_shape = False
             for child in self.children :
                 child.dirty_constraints = True
-            self.dirty_shape = False
 
         if self.dirty_constraints:
             if self.parent and self.parent.dirty_constraints:

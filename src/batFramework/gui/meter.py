@@ -17,19 +17,20 @@ class Meter(Shape):
         max_value: float = 1,
         step: float = 0.1,
     ):
+        super().__init__(size)
         self.min_value, self.max_value = 0, 1
         self.step = step
         self.snap: bool = False
         self.value = self.max_value
-        self.content = Shape((0, 0))
+        self.content = Shape((0, 0)).set_color(bf.color.BLUE)
         self.content.top_at = lambda x, y: custom_top_at(self.content, x, y)
-        super().__init__(size)
-        self.add_child(self.content)
+        self.add(self.content)
+        self.set_padding(1)
         self.set_outline_width(1)
         self.set_outline_color(bf.color.BLACK)
         self.set_debug_color("pink")
 
-    def to_string_id(self) -> str:
+    def __str__(self) -> str:
         return "Meter"
 
     def set_step(self, step: float) -> Self:
@@ -44,7 +45,7 @@ class Meter(Shape):
             )
             return self
         self.min_value, self.max_value = range_min, range_max
-        self.build()
+        self.dirty_shape = True
 
     def get_debug_outlines(self):
         yield from super().get_debug_outlines()
@@ -54,7 +55,7 @@ class Meter(Shape):
         value = max(self.min_value, min(self.max_value, value))
         value = round(value / self.step) * self.step
         self.value = value
-        self.build()
+        self.dirty_shape = True
         return self
 
     def get_value(self) -> float:
@@ -75,6 +76,3 @@ class Meter(Shape):
     def build(self) -> None:
         super().build()
         self._build_content()
-        self.surface.blit(
-            self.content.surface, self.content.rect.move(-self.rect.x, -self.rect.y)
-        )

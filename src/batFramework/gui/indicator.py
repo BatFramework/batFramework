@@ -3,6 +3,7 @@ from typing import Any, Self
 import pygame
 from .widget import Widget
 from .interactiveWidget import InteractiveWidget
+from .draggableWidget import DraggableWidget
 import batFramework as bf
 
 
@@ -30,7 +31,7 @@ class Indicator(Shape):
 class ToggleIndicator(Indicator):
     def __init__(self, default_value: bool) -> None:
         self.value: bool = default_value
-        self.callback = None
+        self.callback = lambda val : self.set_color("green" if val else "red")
         super().__init__((20, 20))
         self.set_value(default_value)
 
@@ -55,29 +56,5 @@ class ToggleIndicator(Indicator):
         if r is self:
             return None
         return r
-class SliderHandle(Indicator, InteractiveWidget):
-    def do_when_added(self):
-        self.clicked_inside = False
-        self.action = bf.Action("click").add_mouse_control(1).set_holding()
 
-    def do_on_click_down(self, button: int) -> None:
-        if self.parent : self.parent.get_focus()
-        self.clicked_inside = True
-        super().do_on_click_down(button)
-
-    def do_process_actions(self, event: pygame.Event) -> None:
-        self.action.process_event(event)
-
-    def do_reset_actions(self) -> None:
-        self.action.reset()
-
-    def on_mouse_motion(self, x, y):
-        if self.clicked_inside and self.action.is_active():
-            centerx = x - self.parent.meter.get_padded_left() - self.rect.w // 2
-            self.parent.set_value(
-                (centerx / self.parent.get_meter_active_width())
-                * self.parent.meter.get_range()
-            )
-            self.dirty_surface = True
-        elif self.clicked_inside:
-            self.clicked_inside = False
+        

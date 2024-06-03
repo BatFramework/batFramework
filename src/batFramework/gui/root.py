@@ -100,3 +100,6 @@ class Root(InteractiveWidget):
         super().draw(camera)
         if self.focused :
             self.focused.draw_focused(camera)
+
+    def draw_focused(self,camera):
+        return

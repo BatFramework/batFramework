@@ -3,53 +3,81 @@ from .meter import Meter
 from .button import Button
 from .indicator import *
 from .meter import Meter
+from .shape import Shape
+from .interactiveWidget import InteractiveWidget
+
+class SliderHandle(Indicator, DraggableWidget):
+
+    def on_click_down(self, button: int) -> None:
+        super().on_click_down(button)
+        if button == 1:
+            self.parent.get_focus()
+
+    def on_exit(self) -> None:
+        self.is_hovered = False
+        self.do_on_exit()
+
+    def do_on_drag(self, x, y, world_drag_point) -> None:
+        m = self.parent.meter
+        r = m.get_padded_rect()
+        position = self.rect.centerx
+        self.rect.clamp_ip(r)
+        # Adjust handle position to value
+        self.parent.set_value(self.parent.position_to_value(position))
+
+    def top_at(self, x, y):
+        return Widget.top_at(self, x, y)
 
 
-class SliderMeter(Meter, InteractiveWidget):
-    def do_on_click_down(self, button: int) -> None:
-        self.parent.get_focus()
-        super().do_on_click_down(button)
+        
+class SliderMeter(Meter,InteractiveWidget):
+    def on_click_down(self,button:int)->None:
+        if button == 1 : 
+            self.parent.get_focus()
+            r = self.get_root()
+            if r:
+                pos = r.drawing_camera.screen_to_world(pygame.mouse.get_pos())[0]
+                self.parent.set_value(self.parent.position_to_value(pos))
 
-    def on_mouse_motion(self, x, y) -> None:
-        self.parent.handle.on_mouse_motion(x, y)
-        if pygame.mouse.get_pressed()[0]:
-            centerx = x - self.get_padded_left() - self.parent.handle.rect.w // 2
-            self.parent.set_value(
-                (centerx / self.parent.get_meter_active_width())
-                * self.parent.meter.get_range()
-            )
+        self.do_on_click_down(button)
 
 
 class Slider(Button):
-    def __init__(self, text: str, default_value: float = 1.0, callback=None) -> None:
-        self.modified_callback = None
-        self.meter: Meter = SliderMeter((20, 4)).set_value(default_value)
-        self.meter.set_debug_color(bf.color.RED)
-        self.handle: SliderHandle = SliderHandle()
-        self.handle.set_debug_color(bf.color.ORANGE)
-
-        self.handle.disable_clip_to_parent()
-
+    def __init__(self, text: str, default_value: float = 1.0) -> None:
+        super().__init__(text, None)
         self.gap: float | int = 0
-        super().__init__(text, callback)
-        self.add_child(self.meter, self.handle)
-
-    def to_string_id(self) -> str:
+        self.modified_callback = None
+        self.meter: SliderMeter = SliderMeter((0,0))
+        self.handle =  SliderHandle().set_color(bf.color.CLOUD)
+        self.add(self.meter,self.handle)
+        self.meter.set_debug_color(bf.color.RED)
+        self.set_value(default_value,True)
+        
+    def __str__(self) -> str:
         return "Slider"
 
     def set_gap(self, value: int | float) -> Self:
         value = max(0, value)
         self.gap = value
-        self.build()
         return self
 
-    def on_mouse_motion(self, x, y) -> None:
-        self.handle.on_mouse_motion(x, y)
-        if self.get_root().get_hovered() == self and self.handle.clicked_inside:
-            centerx = x - self.meter.get_padded_left() - self.handle.rect.w // 2
-            self.set_value(
-                (centerx / self.get_meter_active_width()) * self.meter.get_range()
-            )
+    def get_min_required_size(self) -> tuple[float, float]:
+        if not self.text_rect:
+            params = {
+                "font_name": self.font_object.name,
+                "text": self.text,
+                "antialias": False,
+                "color": "white",
+                "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
+                "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
+            }
+            self.text_rect.size = self._render_font(params).get_size()
+        w,h = self.text_rect.size
+        return self.inflate_rect_by_padding(
+            (0, 0, w + (self.gap if self.text else 0) + self.meter.rect.w, max(h, self.meter.rect.h))
+        ).size
+
+
 
     def set_modify_callback(self, callback) -> Self:
         self.modified_callback = callback
@@ -57,17 +85,15 @@ class Slider(Button):
 
     def set_range(self, range_min: float, range_max: float) -> Self:
         self.meter.set_range(range_min, range_max)
-        self.build()
         return self
 
     def set_step(self, step: float) -> Self:
         self.meter.set_step(step)
-        self.build()
         return self
 
     def set_value(self, value, no_callback: bool = False) -> Self:
         self.meter.set_value(value)
-        self.build()
+        self.dirty_shape = True
         if self.modified_callback and (not no_callback):
             self.modified_callback(self.meter.value)
         return self
@@ -77,81 +103,88 @@ class Slider(Button):
             self.set_value(self.meter.get_value() + self.meter.step)
         elif key == pygame.K_LEFT:
             self.set_value(self.meter.get_value() - self.meter.step)
-        else:
-            return
-        self.build()
-
-    def get_meter_active_width(self) -> float:
-        return self.meter.get_padded_width() - self.handle.rect.w
-
-    def get_relative_meter_value(self, x: float) -> float:
-        return self.get_meter_active_width()
-
-    def get_relative_handle_position(self, value: float) -> float:
-        return self.get_meter_active_width() * (value / self.meter.get_range())
-
+            
     def do_on_click_down(self, button) -> None:
-        if not self.get_focus():
-            return
+        self.get_focus()
 
-    def build(self) -> None:
-        self.meter.build()
-        self.handle.build()
-        super().build()
+
+    def value_to_position(self, value: float) -> float:
+        """
+        Converts a value to a position on the meter, considering the step size.
+        """
+        rect = self.meter.get_padded_rect()
+        value_range = self.meter.get_range()
+        value = round(value / self.meter.step) * self.meter.step
+        position_ratio = (value - self.meter.min_value) / value_range
+        return rect.left + position_ratio * rect.width
+
+        
+    def position_to_value(self, position: float) -> float:
+        """
+        Converts a position on the meter to a value, considering the step size.
+        """
+        rect = self.meter.get_padded_rect()
+        position = max(rect.left, min(position, rect.right))
+        position_ratio = (position - rect.left) / rect.width
+        value_range = self.meter.get_range()
+        value = self.meter.min_value + position_ratio * value_range
+        return round(value / self.meter.step) * self.meter.step
+
+            
 
     def _build_layout(self) -> None:
-        self.handle.set_size((self.text_rect.h, self.text_rect.h))
-        size = (
-            0,
-            0,
-            self.text_rect.w + self.meter.rect.w + self.gap,
-            max(self.text_rect.h, self.meter.rect.h),
-        )
-        required_rect = self.inflate_rect_by_padding(size)
+        params = {
+            "font_name": self.font_object.name,
+            "text": self.text,
+            "antialias": False,
+            "color": "white",
+            "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
+            "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
+        }
 
-        if self.autoresize and (self.rect.size != required_rect.size):
-            self.resized_flag = True
-            self.set_size(required_rect.size)
-            return
-        elif not self.autoresize:
-            self.meter.set_size(
-                (
-                    self.get_padded_width() - self.text_rect.w - self.gap,
-                    self.get_padded_height(),
-                )
-            )
-        if self.resized_flag:
-            self.resized_flag = False
-            if self.parent:
-                self.parent.notify()
+        self.text_rect.size = self._render_font(params).get_size()
+        
+        gap = self.gap if self.text else 0
+        
+        if self.autoresize:
+            meter_size =  self.text_rect.h * 10, self.text_rect.h
+        else:
+            meter_size = self.get_padded_width() - self.text_rect.w - gap,self.text_rect.h
 
-        self.handle.set_size((self.meter.rect.h, self.meter.rect.h))
+        handle_size = meter_size[1],meter_size[1]
 
-        # Adjust positions
+        tmp_rect = pygame.FRect(0,0,self.text_rect.w + gap + meter_size[0],self.text_rect.h)
+        if self.autoresize:
+            target_rect = self.inflate_rect_by_padding(tmp_rect)
+            if self.rect.size != target_rect.size:
+                self.set_size(target_rect.size)
+                self.build()
+                return
 
-        self.text_rect.midleft = self.get_padded_rect_rel().midleft
-        meter_rect = self.meter.rect.copy()
-        meter_rect.midleft = (
-            self.get_padded_rect()
-            .move(self.text_rect.w + self.gap, self.relief - self.get_relief())
-            .midleft
-        )
-        self.meter.set_position(*meter_rect.topleft)
-        handle_rect = self.handle.rect.copy()
-        handle_rect.center = self.meter.content.rect.midright
-        handle_rect.right = min(self.meter.get_padded_right(), handle_rect.right)
-        handle_rect.left = max(self.meter.get_padded_left(), handle_rect.left)
+        # ------------------------------------ size is ok
 
-        self.handle.set_position(*handle_rect.topleft)
-        l = []
-        if self.show_text_outline:
-            l.append(
-                (
-                    self.text_outline_surface,
-                    self.text_rect.move(-1, self.relief - self.get_relief() - 1),
-                )
-            )
-        l.append(
-            (self.text_surface, self.text_rect.move(0, self.relief - self.get_relief()))
-        )
-        self.surface.fblits(l)
+        self.handle.set_size(handle_size)
+
+        self.meter.set_size(meter_size)
+
+        padded = self.get_padded_rect().move(-self.rect.x,-self.rect.y)
+        
+        self.align_text(tmp_rect,padded,self.alignment)
+        self.text_rect.midleft = tmp_rect.midleft
+
+        # place meter 
+
+        self.meter.set_position(*self.text_rect.move(self.rect.x + gap,self.rect.y + (self.text_rect.h /2) - meter_size[1]/2).topright)
+
+        # place handle
+
+        r = self.meter.get_padded_rect()
+        x = r[2] * self.meter.get_ratio()
+        
+        self.handle.set_center(r[0]+x,r.centery)
+
+        # adjust handle if it is in max/min position so it doesn't overflow
+        if self.handle.rect.left < r.left:
+            self.handle.set_position(r.left,self.handle.rect.y)
+        elif self.handle.rect.right > r.right:
+            self.handle.set_position(r.right-self.handle.rect.w,self.handle.rect.y)
