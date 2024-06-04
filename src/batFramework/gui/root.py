@@ -98,8 +98,7 @@ class Root(InteractiveWidget):
 
     def draw(self, camera: bf.Camera) -> int:
         super().draw(camera)
-        if self.focused :
+        if self.focused and self.focused!=self:
             self.focused.draw_focused(camera)
 
-    def draw_focused(self,camera):
-        return
+

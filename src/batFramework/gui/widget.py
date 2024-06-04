@@ -231,7 +231,7 @@ class Widget(bf.Entity):
         if self.surface.get_size() != new_size:
             new_size = [max(0,i) for i in new_size]
             self.surface = pygame.Surface(new_size,self.surface_flags)
-            if self.do_convert_alpha : self.surface = self.surface.convert_alpha()
+            if self.convert_alpha : self.surface = self.surface.convert_alpha()
 
     def paint(self)->None:
         self.surface.fill((0,0,0,0))

@@ -11,8 +11,7 @@ class Button(Label, InteractiveWidget):
 
     def __init__(self, text: str, callback: None | Callable = None) -> None:
         self.callback = callback
-        self.is_hovered: bool = False
-        self.is_clicking: bool = False
+        self.is_pressed: bool = False
         self.enabled: bool = True
         self.hover_cursor = bf.const.DEFAULT_HOVER_CURSOR
         self.click_cursor = bf.const.DEFAULT_CLICK_CURSOR
@@ -31,14 +30,14 @@ class Button(Label, InteractiveWidget):
         if relief == self.unpressed_relief : return self
         self.unpressed_relief = relief 
         self.dirty_shape = True
-        if not self.is_clicking : self.set_relief(relief)
+        if not self.is_pressed : self.set_relief(relief)
         return self
 
     def set_pressed_relief(self,relief:int=0)->Self:
         if relief == self.pressed_relief : return self
         self.pressed_relief = relief 
         self.dirty_shape = True
-        if self.is_clicking : self.set_relief(relief)
+        if self.is_pressed : self.set_relief(relief)
 
         return self
 
@@ -130,15 +129,15 @@ class Button(Label, InteractiveWidget):
         if self.enabled and button == 1 :
             if not self.get_focus():
                 return
-            self.is_clicking = True
+            self.is_pressed = True
             bf.AudioManager().play_sound(self.click_down_sound)
 
             pygame.mouse.set_cursor(self.click_cursor)
             self.set_relief(self.pressed_relief)
 
     def do_on_click_up(self, button) -> None:
-        if self.enabled and button == 1 and self.is_clicking:
-            self.is_clicking = False
+        if self.enabled and button == 1 and self.is_pressed:
+            self.is_pressed = False
             bf.AudioManager().play_sound(self.click_up_sound)
             self.set_relief(self.unpressed_relief)
             self.click()
@@ -152,9 +151,9 @@ class Button(Label, InteractiveWidget):
 
     def on_exit(self) -> None:
         super().on_exit()
-        if self.is_clicking:
+        if self.is_pressed:
             self.set_relief(self.unpressed_relief)
-        self.is_clicking    = False
+        self.is_pressed    = False
         self.dirty_surface  = True
 
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
@@ -185,13 +184,13 @@ class Button(Label, InteractiveWidget):
 
     def get_padded_rect(self)->pygame.FRect:
         return pygame.FRect(
-            self.rect.x + self.padding[0], self.rect.y + self.padding[1] + (self.unpressed_relief - self.pressed_relief if  self.is_clicking else 0),
+            self.rect.x + self.padding[0], self.rect.y + self.padding[1] + (self.unpressed_relief - self.pressed_relief if  self.is_pressed else 0),
             self.rect.w - self.padding[2] - self.padding[0],
             self.rect.h - self.unpressed_relief - self.padding[1] - self.padding[3] #
         )
 
     def _get_elevated_rect(self) -> pygame.FRect:
-        return pygame.FRect(0,  self.unpressed_relief - self.pressed_relief if  self.is_clicking else 0 , self.rect.w, self.rect.h - self.unpressed_relief)
+        return pygame.FRect(0,  self.unpressed_relief - self.pressed_relief if  self.is_pressed else 0 , self.rect.w, self.rect.h - self.unpressed_relief)
 
     def paint(self) -> None:
         super().paint()

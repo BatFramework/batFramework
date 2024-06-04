@@ -7,44 +7,35 @@ from typing import Self
 class Image(Widget):
     def __init__(
         self,
-        data: pygame.Surface | str | None = None,
-        size: None | tuple[int, int] = None,
+        path: str = None,
         convert_alpha=True,
     ):
-        self.dirty: bool = False
         self.original_surface = None
-        self.surface = None
-        super().__init__(convert_alpha)
-        if data:
-            self.set_image(data, size)
+        super().__init__(convert_alpha = convert_alpha)
+        if path is not None:
+            self.from_path(path)
 
-    def build(self) -> None:
-        if self.original_surface and (
-            (not self.surface or self.surface.get_size() != self.get_size_int())
-            or self.dirty
-        ):
-            self.surface = pygame.transform.scale(
-                self.original_surface, self.get_size_int()
-            )
-
-    def set_image(
-        self, data: pygame.Surface | str, size: None | tuple[int, int] = None
-    ) -> Self:
-        if isinstance(data, str):
-            tmp = bf.ResourceManager().get_image(data, self.convert_alpha)
-        elif isinstance(data, pygame.Surface):
-            tmp = data
-            if self.convert_alpha:
-                tmp = tmp.convert_alpha()
+    def paint(self) -> None:
+        super().paint()
+        self.surface.fill((0,0,0,0 if self.convert_alpha else 255))
+        if self.rect.size != self.original_surface.get_size():
+            self.surface.blit(pygame.transform.scale(self.original_surface,self.rect.size),(0,0))
         else:
-            tmp is None
+            self.surface.blit(self.original_surface,(0,0))
+    def from_path(self,path:str)->Self:
+        tmp = bf.ResourceManager().get_image(path,self.convert_alpha)
         if tmp is None:
             return Self
-
-        if tmp != self.original_surface:
-            self.dirty = True
         self.original_surface = tmp
-        if size is None and self.original_surface:
-            size = self.original_surface.get_size()
-        self.set_size(size)
-        return Self
+        if self.autoresize:
+            self.set_size(self.original_surface.get_size())
+        self.dirty_surface = True
+        return self
+
+    def from_surface(self,surface: pygame.Surface)->Self:
+        if surface is None : return self
+        self.original_surface = surface
+        if self.autoresize:
+            self.set_size(self.original_surface.get_size())
+        self.dirty_surface = True
+        return self

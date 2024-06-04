@@ -12,13 +12,12 @@ def custom_top_at(self, x, y):
 class Meter(Shape):
     def __init__(
         self,
-        size: tuple[float, float],
         min_value: float = 0,
         max_value: float = 1,
-        step: float = 0.1,
+        step: float = 0.1
     ):
-        super().__init__(size)
-        self.min_value, self.max_value = 0, 1
+        super().__init__()
+        self.min_value, self.max_value = min_value,max_value
         self.step = step
         self.snap: bool = False
         self.value = self.max_value

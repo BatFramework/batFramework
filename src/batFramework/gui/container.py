@@ -21,6 +21,11 @@ class Container(Shape, InteractiveWidget):
         self.layout.set_parent(self)
         self.add(*children)
     
+    def get_min_required_size(self):
+        if self.layout and self.fit_to_children:
+            return self.layout.get_fit_size()
+
+
     def set_fit_to_children(self,value:bool)->Self:
         self.fit_to_children = value
         self.dirty_shape = True
@@ -133,6 +138,7 @@ class Container(Shape, InteractiveWidget):
 
     def allow_focus_to_self(self) -> bool:
         return len(self.get_interactive_children()) != 0 
+
 
 
 #     def _fit_to_children(self) -> None:

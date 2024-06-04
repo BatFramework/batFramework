@@ -47,7 +47,7 @@ class Slider(Button):
         super().__init__(text, None)
         self.gap: float | int = 0
         self.modified_callback = None
-        self.meter: SliderMeter = SliderMeter((0,0))
+        self.meter: SliderMeter = SliderMeter()
         self.handle =  SliderHandle().set_color(bf.color.CLOUD)
         self.add(self.meter,self.handle)
         self.meter.set_debug_color(bf.color.RED)

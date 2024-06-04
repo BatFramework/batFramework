@@ -18,7 +18,7 @@ class Entity(Object):
         super().__init__()
         self.visible: bool = True
         self.rect.size = (10, 10) if size is None else size
-        self.do_convert_alpha: bool = convert_alpha
+        self.convert_alpha: bool = convert_alpha
         self.surface_flags: int = surface_flags
         self.blit_flags: int = 0
         self.surface: pygame.Surface = pygame.Surface(self.rect.size, surface_flags)
@@ -38,7 +38,7 @@ class Entity(Object):
         return self
 
     def set_convert_alpha(self, value: bool) -> Self:
-        self.do_convert_alpha = value
+        self.convert_alpha = value
         return self
 
     def set_blit_flags(self, blit_flags: int) -> Self:
