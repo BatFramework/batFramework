@@ -118,39 +118,38 @@ class Row(Layout):
         self.notify_parent()
         return self
 
-    def get_fit_size(self):
+    def get_raw_size(self) -> tuple[float, float]:
         len_children = len(self.parent.children)
-        if not len_children : return self.parent.rect.size 
-
+        if not len_children: return self.parent.rect.size
         parent_width = sum(c.get_min_required_size()[0] for c in self.parent.children)
         parent_height = max(c.get_min_required_size()[1] for c in self.parent.children)
-
         if self.gap:
             parent_width += (len_children - 1) * self.gap
-
         target_rect = self.parent.inflate_rect_by_padding((0, 0, parent_width, parent_height))
-        if not self.parent.autoresize_w : target_rect.w = self.parent.rect.w
-        if not self.parent.autoresize_h : target_rect.h = self.parent.rect.h
+
         return target_rect.size
+
+    def get_auto_size(self) -> tuple[float, float]:
+        target_size = list(self.get_raw_size())
+        if not self.parent.autoresize_w: target_size[0] = self.parent.rect.w
+        if not self.parent.autoresize_h: target_size[1] = self.parent.rect.h
+        return target_size
 
     def arrange(self) -> None:
         if not self.parent or not self.parent.children:
             return
         if self.child_constraints:
-            for child in self.parent.children:
-                child.add_constraints(*self.child_constraints)
-
+            for child in self.parent.children: child.add_constraints(*self.child_constraints)
         self.child_rect = self.parent.get_padded_rect()
 
         if self.parent.autoresize_w or self.parent.autoresize_h:
-            width, height = self.get_fit_size()
-
+            width, height = self.get_auto_size()
             if self.parent.rect.size != (width, height):
                 self.parent.set_size((width, height))
                 self.parent.build()
                 self.arrange()
                 return
-
+        self.child_rect.move_ip(-self.parent.scroll.x, -self.parent.scroll.y)
         x = self.child_rect.left
         for child in self.parent.children:
             child.set_position(x, self.child_rect.y)
