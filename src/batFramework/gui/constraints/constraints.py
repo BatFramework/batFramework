@@ -37,7 +37,7 @@ class MinWidth(Constraint):
         return child_widget.rect.width >= self.min_width
 
     def apply_constraint(self, parent_widget, child_widget):
-        child_widget.set_size((self.min_width, child_widget.rect.h))
+        child_widget.set_size((self.min_width,None))
 
 
 class MinHeight(Constraint):
@@ -49,7 +49,7 @@ class MinHeight(Constraint):
         return child_widget.rect.h >= self.min_height
 
     def apply_constraint(self, parent_widget, child_widget):
-        child_widget.set_size((child_widget.rect.w, self.min_height))
+        child_widget.set_size((None, self.min_height))
 
 
 class CenterX(Constraint):
@@ -85,7 +85,6 @@ class Center(Constraint):
     def evaluate(self, parent_widget, child_widget):
         return int(child_widget.rect.centerx - parent_widget.get_padded_center()[0]) == 0 and \
         int(child_widget.rect.centery - parent_widget.get_padded_center()[1]) == 0
-    
 
     def apply_constraint(self, parent_widget, child_widget):
         child_widget.set_center(*parent_widget.get_padded_center())
@@ -106,17 +105,17 @@ class PercentageWidth(Constraint):
         )
 
     def apply_constraint(self, parent_widget, child_widget):
-        if child_widget.autoresize:
+        if child_widget.autoresize_w:
             if self.keep_autoresize:
                 print(
                     f"WARNING: Constraint on {child_widget.__str__()} can't resize, autoresize set to True"
                 )
                 return
-            child_widget.set_autoresize(False)
+            child_widget.set_autoresize_w(False)
 
         child_widget.set_size(
             (
-                round(parent_widget.get_padded_width() * self.percentage),child_widget.get_min_required_size()[1])
+                round(parent_widget.get_padded_width() * self.percentage),None)
         )
 
 class PercentageHeight(Constraint):
@@ -132,14 +131,12 @@ class PercentageHeight(Constraint):
         return f"{super().__str__()}.[{self.percentage*100}%,keep_autoresize={self.keep_autoresize}]"
 
     def apply_constraint(self, parent_widget, child_widget):
-        if child_widget.autoresize:
+        if child_widget.autoresize_h:
             if self.keep_autoresize:
                 print(f"WARNING: Constraint on {child_widget} can't resize, autoresize set to True")
                 return
-            child_widget.set_autoresize(False)
-        child_widget.set_size(
-            (child_widget.get_min_required_size()[0],round(parent_widget.get_padded_height() * self.percentage))
-        )
+            child_widget.set_autoresize_h(False)
+        child_widget.set_size((None,round(parent_widget.get_padded_height() * self.percentage)))
 
 class FillX(PercentageWidth):
     def __init__(self, keep_autoresize: bool = False):
@@ -153,7 +150,7 @@ class FillY(PercentageHeight):
 
 
 class Height(Constraint):
-    def __init__(self, height: float, keep_autoresize: bool = True):
+    def __init__(self, height: float, keep_autoresize: bool = False):
         if height < 0:
             raise ValueError("height can't be negative")
         super().__init__(name="height")
@@ -167,16 +164,16 @@ class Height(Constraint):
         return child_widget.rect.height == self.height
 
     def apply_constraint(self, parent_widget, child_widget):
-        if child_widget.autoresize:
+        if child_widget.autoresize_h:
             if self.keep_autoresize:
                 print(f"WARNING: Constraint on {child_widget.__str__()} can't resize, autoresize set to True")
                 return
-            child_widget.set_autoresize(False)
+            child_widget.set_autoresize_h(False)
         child_widget.set_size((None, self.height))
 
 
 class Width(Constraint):
-    def __init__(self, width: float, keep_autoresize: bool = True):
+    def __init__(self, width: float, keep_autoresize: bool = False):
         if width < 0:
             raise ValueError("width can't be negative")
         super().__init__(name="width")
@@ -190,38 +187,62 @@ class Width(Constraint):
         return child_widget.rect.width == self.width
 
     def apply_constraint(self, parent_widget, child_widget):
-        if child_widget.autoresize:
+        if child_widget.autoresize_w:
             if self.keep_autoresize:
                 print(
                     f"WARNING: Constraint on {child_widget.__str__()} can't resize, autoresize set to True"
                 )
                 return
-            child_widget.set_autoresize(False)
-        child_widget.set_size((self.width, child_widget.rect.h))
+            child_widget.set_autoresize_w(False)
+        child_widget.set_size((self.width, None))
 
 
-# TODO
 class AspectRatio(Constraint):
     def __init__(
         self,
         ratio: int | float | pygame.rect.FRectType = 1,
         reference_axis: bf.axis = bf.axis.HORIZONTAL,
+        keep_autoresize=False,
     ):
         super().__init__(name="aspect_ratio")
+        self.ref_axis : bf.axis = reference_axis
+        self.keep_autoresize: bool = keep_autoresize
+
         if isinstance(ratio, float | int):
             self.ratio = ratio
         elif isinstance(ratio, pygame.rect.FRect):
-            self.ratio = ratio.w / ratio.h
+            self.ratio = (ratio.w / ratio.h) if reference_axis == bf.axis.HORIZONTAL else (ratio.h / ratio.w)
         else:
             raise TypeError(f"Ratio must be float or FRect")
 
     def evaluate(self, parent_widget, child_widget):
-        return self.ratio == child_widget.rect.w / child_widget.rect.h
+        if self.ref_axis == bf.axis.HORIZONTAL:
+            return self.ratio == child_widget.rect.w / child_widget.rect.h
+        if self.ref_axis == bf.axis.VERTICAL:
+            return self.ratio == child_widget.rect.h / child_widget.rect.w
 
     def apply_constraint(self, parent_widget, child_widget):
-        if not self.evaluate(parent_widget, child_widget):
-            return  # TODO
 
+        if self.ref_axis == bf.axis.VERTICAL:
+            if child_widget.autoresize_w :
+                if self.keep_autoresize:
+                    print(
+                        f"WARNING: Constraint on {child_widget.__str__()} can't resize, autoresize set to True"
+                    )
+                    return
+                child_widget.set_autoresize_w(False)
+            child_widget.set_size((child_widget.rect.h * self.ratio,None))
+        
+        if self.ref_axis == bf.axis.HORIZONTAL:
+            if child_widget.autoresize_h :
+                if self.keep_autoresize:
+                    print(
+                        f"WARNING: Constraint on {child_widget.__str__()} can't resize, autoresize set to True"
+                    )
+                    return
+                child_widget.set_autoresize_h(False)
+            print("HERE")
+            child_widget.set_size((None,child_widget.rect.w * self.ratio))
 
 class AnchorBottom(Constraint):
     def __init__(self):
@@ -338,7 +359,7 @@ class MarginRight(Constraint):
         self.margin = margin
 
     def evaluate(self, parent_widget, child_widget):
-        return child_widget.rect.right == parent_widget.get_padded_right() + self.margin
+        return child_widget.rect.right == parent_widget.get_padded_right() - self.margin
 
     def apply_constraint(self, parent_widget, child_widget):
         child_widget.set_position(

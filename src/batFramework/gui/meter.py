@@ -54,7 +54,7 @@ class Meter(Shape):
         value = max(self.min_value, min(self.max_value, value))
         value = round(value / self.step) * self.step
         self.value = value
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def get_value(self) -> float:
@@ -67,9 +67,8 @@ class Meter(Shape):
         return self.value / (self.max_value - self.min_value)
 
     def _build_content(self) -> None:
-        self.content.set_size(
-            (self.get_padded_width() * self.get_ratio(), self.get_padded_height())
-        )
+        width = (self.get_padded_width() * self.get_ratio())
+        self.content.set_size((width, self.get_padded_height()))
         self.content.set_position(*self.get_padded_rect().topleft)
 
     def build(self) -> None:

@@ -6,7 +6,6 @@ from .draggableWidget import DraggableWidget
 from .root import Root
 from .shape import Shape
 from .meter import Meter
-from .frame import Frame
 from .label import Label
 from .dialogueBox import DialogueBox
 from .textInput import TextInput

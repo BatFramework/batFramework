@@ -1,6 +1,4 @@
 import pygame
-from enum import Enum
-import sys, os
 
 
 class Constants:

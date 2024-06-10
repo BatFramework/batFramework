@@ -21,6 +21,11 @@ class AudioManager(metaclass=bf.Singleton):
             key: value for key, value in self.sounds.items() if value["persistent"]
         }
 
+    def free_music(self):
+        if self.current_music:
+            pygame.mixer.music.unload(self.current_music)
+            
+
     def set_sound_volume(self, volume: float):
         self.sound_volume = volume
 

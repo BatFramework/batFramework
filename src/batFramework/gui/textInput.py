@@ -109,3 +109,19 @@ class TextInput(Label, InteractiveWidget):
         super().paint()
         if self.is_focused:
             self._paint_cursor()
+
+
+    def align_text(self,text_rect:pygame.FRect,area:pygame.FRect,alignment: bf.alignment):
+        if alignment == bf.alignment.LEFT : alignment = bf.alignment.MIDLEFT
+        elif alignment == bf.alignment.MIDRIGHT : alignment = bf.alignment.MIDRIGHT
+
+        pos = area.__getattribute__(alignment.value)
+        text_rect.__setattr__(alignment.value,pos)
+        w = self.font_object.size(
+            self.get_text()[: self.cursor_position]
+        )[0]
+        if self.text_rect.x + w > area.right:
+            self.text_rect.right = area.right
+        elif self.text_rect.x + w < area.left:
+            self.text_rect.left = area.left
+        

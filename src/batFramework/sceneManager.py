@@ -8,7 +8,7 @@ def swap(lst, index1, index2):
 
 class SceneManager:
     def __init__(self, *initial_scenes: bf.Scene) -> None:
-        self.debug_mode: bf.enums.DebugMode = bf.DebugMode.HIDDEN
+        self.debug_mode: bf.enums.debugMode = bf.debugMode.HIDDEN
         self._sharedVarDict: dict = {}
 
         self._scene_transitions: list[bf.transition.Transition] = []
@@ -31,15 +31,10 @@ class SceneManager:
     def print_status(self):
         print("-" * 40)
         print(
-            [
-                (
-                    s._name,
-                    "Active" if s._active else "Inactive",
-                    "Visible" if s._visible else "Invisible",
-                    f"index={s.scene_index}",
-                )
+            '\n'.join(
+                f" {s._name:<30}\t{'Active' if s._active else 'Inactive'}\t{'Visible' if s._visible else 'Invisible'}\tindex= {s.scene_index}"
                 for s in self._scenes
-            ]
+            )
         )
         print(f"[Debugging] = {self.debug_mode}")
         print("---SHARED VARIABLES---")
@@ -98,9 +93,11 @@ class SceneManager:
         index: int = 0,
     ):
         target_scene = self.get_scene(scene_name)
+        if not target_scene : 
+            print(f"'{scene_name}' does not exist")
+            return
         if (
             len(self._scenes) == 0
-            or not target_scene
             or index >= len(self._scenes)
             or index < 0
         ):
@@ -130,9 +127,12 @@ class SceneManager:
         self.current_transition.clear()
 
     def set_scene(self, scene_name, index=0):
+        target_scene = self.get_scene(scene_name)
+        if not target_scene : 
+            print(f"'{scene_name}' does not exist")
+            return
         if (
             len(self._scenes) == 0
-            or (target_scene := self.get_scene(scene_name)) is None
             or index >= len(self._scenes)
             or index < 0
         ):
@@ -148,8 +148,8 @@ class SceneManager:
 
     def cycle_debug_mode(self):
         current_index = self.debug_mode.value
-        next_index = (current_index + 1) % len(bf.DebugMode)
-        return bf.DebugMode(next_index)
+        next_index = (current_index + 1) % len(bf.debugMode)
+        return bf.debugMode(next_index)
 
     def process_event(self, event: pygame.Event):
         keys = pygame.key.get_pressed()

@@ -163,7 +163,7 @@ class Scene:
         """Add actions to the scene."""
         self.actions.add_actions(*action)
 
-    def add_early_actionss(self, *action):
+    def add_early_actions(self, *action):
         """Add actions to the scene."""
         self.early_actions.add_actions(*action)
 
@@ -265,11 +265,11 @@ class Scene:
         self.world_entities.sort(key=lambda e: e.render_order)
         self.hud_entities.sort(key=lambda e: e.render_order)
 
-    def _draw_camera(self, camera: bf.Camera, entity_list: list[bf.Entity]) ->NOne:
+    def _draw_camera(self, camera: bf.Camera, entity_list: list[bf.Entity]) ->None:
         _ = [entity.draw(camera) for entity in entity_list]
         debugMode = self.manager.debug_mode
         # Draw outlines for world entities if required
-        if debugMode == bf.DebugMode.OUTLINES:
+        if debugMode == bf.debugMode.OUTLINES:
             [self.debug_entity(e, camera) for e in entity_list]
 
 

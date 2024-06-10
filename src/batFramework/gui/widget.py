@@ -13,21 +13,36 @@ class Widget(bf.Entity):
         self.constraints : list[Constraint] = []
         self.parent : "Widget" = None
         self.do_sort_children =False
-        # self.relative_position = [0,0]
-        #               left|top|right|bottom
+        self.clip_children : bool = True
         self.padding = (0,  0,  0,  0)
         self.dirty_surface : bool = True #  if true will call paint before drawing 
         self.dirty_shape : bool = True #    if true will call (build+paint) before drawing
         self.dirty_constraints : bool = False
         self.is_root : bool = False
-        self.autoresize : bool = True
+        self.autoresize_w,self.autoresize_h  = True,True
         self.__constraint_iteration = 0
+
+    def set_clip_children(self,value:bool)->Self:
+        self.clip_children = value
+        self.dirty_surface = True
+        return self
 
     def __str__(self)->str:
         return "Widget"
 
     def set_autoresize(self,value:bool)->Self:
-        self.autoresize = value
+        self.autoresize_w = self.autoresize_h = value
+        self.dirty_shape = True
+        return self
+
+    def set_autoresize_w(self,value:bool)->Self:
+        self.autoresize_w = value
+        self.dirty_shape = True
+        return self
+
+    def set_autoresize_h(self,value:bool)->Self:
+        self.autoresize_h = value
+        self.dirty_shape = True
         return self
 
     def set_render_order(self,render_order:int)->Self:
@@ -201,6 +216,15 @@ class Widget(bf.Entity):
         if self.parent:
             self.parent.do_sort_children = True
 
+    def set_size_if_autoresize(self,size:tuple[float,float])->Self:
+        size = list(size)
+        size[0] = size[0] if self.autoresize_w else None
+        size[1] = size[1] if self.autoresize_h else None
+
+        self.set_size(size)
+
+        return self
+
     def set_size(self,size:tuple)->Self:
         size = list(size)
         if size[0] is None : size[0] = self.rect.w
@@ -242,6 +266,8 @@ class Widget(bf.Entity):
         if self.parent:
             self.parent.visit_up(func)
 
+
+
     def selective_up(self,widget:"Widget"):
         # if returns True then stop climbing widget tree
         if widget.parent and widget.parent.dirty_constraints:
@@ -278,5 +304,17 @@ class Widget(bf.Entity):
         if self.dirty_surface : 
             self.paint()
             self.dirty_surface = False
+
+
+
         super().draw(camera)
-        _ = [child.draw(camera) for child in self.children]
+        if self.clip_children:
+
+            new_clip = camera.world_to_screen(self.get_padded_rect())
+            old_clip = camera.surface.get_clip()
+            new_clip = new_clip.clip(old_clip)
+            camera.surface.set_clip(new_clip)
+
+        _ = [child.draw(camera) for child in sorted(self.children, key=lambda c: c.render_order)]
+        if self.clip_children:
+            camera.surface.set_clip(old_clip)

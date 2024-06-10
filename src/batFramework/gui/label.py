@@ -76,7 +76,7 @@ class Label(Shape):
         if value == self.is_italic:
             return self
         self.is_italic = value
-        if self.autoresize : 
+        if self.autoresize_h or self.autoresize_w: 
             self.dirty_shape = True
         else:
             self.dirty_surface = True
@@ -86,7 +86,7 @@ class Label(Shape):
         if value == self.is_bold:
             return self
         self.is_bold = value
-        if self.autoresize : 
+        if self.autoresize_h or self.autoresize_w: 
             self.dirty_shape = True
         else:
             self.dirty_surface = True
@@ -131,7 +131,7 @@ class Label(Shape):
 
     def set_auto_wraplength(self, val: bool) -> "Label":
         self.auto_wraplength = val
-        if self.autoresize : 
+        if self.autoresize_h or self.autoresize_w: 
             self.dirty_shape = True
         else:
             self.dirty_surface = True
@@ -146,7 +146,7 @@ class Label(Shape):
             return self
         self.font_name = font_name
         self.font_object = bf.FontManager().get_font(self.font_name, self.text_size)
-        if self.autoresize : 
+        if self.autoresize_h or self.autoresize_w: 
             self.dirty_shape = True
         else:
             self.dirty_surface = True
@@ -158,7 +158,8 @@ class Label(Shape):
             return self
         self.text_size = text_size
         self.font_object = bf.FontManager().get_font(self.font_name, self.text_size)
-        if self.autoresize : self.dirty_shape = True
+        if self.autoresize_h or self.autoresize_w: 
+            self.dirty_shape = True
         return self
 
     def get_text_size(self) -> int:
@@ -180,6 +181,8 @@ class Label(Shape):
         return self
 
     def get_min_required_size(self)->tuple[float,float]:
+        if not (self.autoresize_w or  self.autoresize_h) : 
+            return self.rect.size
         if not self.text_rect:
             params = {
                 "font_name": self.font_object.name,
@@ -191,12 +194,12 @@ class Label(Shape):
             }
 
             self.text_rect.size = self._render_font(params).get_size()
-        return self.inflate_rect_by_padding((0,0,*self.text_rect.size)).size
+        res = self.inflate_rect_by_padding((0,0,*self.text_rect.size)).size
+        # return res
+        return res[0] if self.autoresize_w else self.rect.w, res[1] if self.autoresize_h else self.rect.h
 
     def get_text(self) -> str:
         return self.text
-
-
 
     def _render_font(self, params: dict) -> pygame.Surface:
         key = tuple(params.values())
@@ -246,8 +249,10 @@ class Label(Shape):
         }
 
         self.text_rect.size = self._render_font(params).get_size()
-        if self.autoresize:
+        if self.autoresize_h or self.autoresize_w: 
             target_rect = self.inflate_rect_by_padding((0,0,*self.text_rect.size))
+            if not self.autoresize_w : target_rect.w = self.rect.w
+            if not self.autoresize_h : target_rect.h = self.rect.h
             if self.rect.size != target_rect.size:
                 self.set_size(target_rect.size)
                 self.build()
@@ -259,9 +264,6 @@ class Label(Shape):
         if self.font_object is None:
             print(f"No font for widget with text : '{self}' :(")
             return
-        # render(text, antialias, color, bgcolor=None, wraplength=0) -> Surface
-
-        
 
         params = {
             "font_name": self.font_object.name,
@@ -273,16 +275,13 @@ class Label(Shape):
         }
         self.text_surface = self._render_font(params)
 
-
         if self.show_text_outline:
             self.text_outline_surface = (
                 pygame.mask.from_surface(self.text_surface)
                 .convolve(self._text_outline_mask)
                 .to_surface(setcolor=self.text_outline_color, unsetcolor=(0, 0, 0, 0))
             )
-        # self.text_rect.topleft=padded.move(-self.rect.x,-self.rect.y).topleft
-        # place the text in self.surface
-        # print(f"{self.text_surface.get_size() =},{self.text_rect.size=}")
+
 
         l = []
         if self.show_text_outline:

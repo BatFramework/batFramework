@@ -46,6 +46,7 @@ class Manager(bf.SceneManager):
         dt: float = 0
         while self._running:
             for event in pygame.event.get():
+                self.process_event(event)
                 if event.type == pygame.QUIT:
                     self._running = False
                     break
@@ -53,7 +54,6 @@ class Manager(bf.SceneManager):
                     bf.const.FLAGS & pygame.SCALED
                 ):
                     bf.const.set_resolution((event.w, event.h))
-                self.process_event(event)
             # update
             dt = self._clock.tick(bf.const.FPS) / 1000
             # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time

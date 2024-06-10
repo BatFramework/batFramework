@@ -61,7 +61,11 @@ class axis(Enum):
     HORIZONTAL = "horizontal"
     VERTICAL = "vertical"
 
-
+class spacing(Enum):
+    MIN = "min"
+    HALF = "half"
+    MAX = "max"
+    MANUAL = "manual"
 class alignment(Enum):
     LEFT = "left"
     RIGHT = "right"
@@ -79,7 +83,12 @@ class drawMode(Enum):
     TEXTURED = 1
 
 
-class DebugMode(Enum):
+class debugMode(Enum):
     HIDDEN = 0
     DEBUGGER = 1
     OUTLINES = 2
+
+class actionType(Enum):
+    INSTANTANEOUS = 0
+    CONTINUOUS = 1
+    HOLDING = 2

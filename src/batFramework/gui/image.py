@@ -27,15 +27,19 @@ class Image(Widget):
         if tmp is None:
             return Self
         self.original_surface = tmp
-        if self.autoresize:
-            self.set_size(self.original_surface.get_size())
+        size = self.original_surface.get_size()
+        if not self.autoresize_h : size[0] = None
+        if not self.autoresize_h : size[1] = None
+        self.set_size(size)
         self.dirty_surface = True
         return self
 
     def from_surface(self,surface: pygame.Surface)->Self:
         if surface is None : return self
         self.original_surface = surface
-        if self.autoresize:
-            self.set_size(self.original_surface.get_size())
+        size = self.original_surface.get_size()
+        if not self.autoresize_h : size[0] = None
+        if not self.autoresize_h : size[1] = None
+        self.set_size(size)
         self.dirty_surface = True
         return self

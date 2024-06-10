@@ -60,6 +60,10 @@ class ScrollingSprite(bf.Sprite):
         super().update(dt)
 
     def set_size(self, size: tuple[int | None, int | None]) -> Self:
+        size = list(size)
+        if size[0] is None: size[0] = self.rect.w
+        if size[1] is None: size[1] = self.rect.h
+
         self.surface = pygame.Surface(size).convert_alpha()
         self.rect = self.surface.get_frect(center=self.rect.center)
         return self

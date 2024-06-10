@@ -15,7 +15,7 @@ class Root(InteractiveWidget):
         self.hovered: Widget | None = self
         self.set_debug_color("yellow")
         self.set_render_order(999)
-
+        self.clip_children = False
     def __str__(self) -> str:
         return "Root"
 
@@ -43,6 +43,27 @@ class Root(InteractiveWidget):
             return
         self.focused = widget
         self.focused.on_get_focus()
+
+    def get_by_tags(self,*tags)->list[Widget]:
+        res = []
+        def getter(w:Widget):
+            nonlocal res
+            if any(t in w.tags for t in tags):
+                res.append(w)
+        self.visit(getter)
+        return res
+
+    def get_by_uid(self,uid:int)->Widget:
+        def helper(w: Widget,uid):
+            if w.uid == uid:
+                return w
+            for child in w.children:
+                res = helper(child,uid)
+                if res : 
+                    return child
+                
+            return None
+        return helper(self,uid)
 
     def set_size(self, size: tuple[float, float], force: bool = False) -> "Root":
         if not force:

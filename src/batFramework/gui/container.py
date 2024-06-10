@@ -9,10 +9,9 @@ from pygame.math import Vector2
 
 
 class Container(Shape, InteractiveWidget):
-    def __init__(self, layout: Layout= None, *children: Widget) -> None:
+    def __init__(self, layout: Layout = None, *children: Widget) -> None:
         super().__init__()
         self.dirty_children = False
-        self.fit_to_children :bool = True
         self.set_debug_color("green")
         self.layout: Layout = layout
         self.scroll = Vector2(0, 0)
@@ -20,35 +19,35 @@ class Container(Shape, InteractiveWidget):
             self.layout = Column()
         self.layout.set_parent(self)
         self.add(*children)
-    
+
     def get_min_required_size(self):
-        if self.layout and self.fit_to_children:
-            return self.layout.get_fit_size()
-
-
-    def set_fit_to_children(self,value:bool)->Self:
-        self.fit_to_children = value
-        self.dirty_shape = True
-        return self 
+        if self.layout:
+            return self.layout.get_auto_size()
+        return self.rect.size
 
     def reset_scroll(self) -> Self:
         self.scroll.update(0, 0)
+        self.dirty_children = True
         return self
 
     def set_scroll(self, value: tuple) -> Self:
         self.scroll.update(value)
+        self.dirty_children = True
         return self
 
     def scrollX_by(self, x: float | int) -> Self:
         self.scroll.x += x
+        self.dirty_children = True
         return self
 
     def scrollY_by(self, y: float | int) -> Self:
         self.scroll.y += y
+        self.dirty_children = True
         return self
 
     def scroll_by(self, value: tuple[float | int, float | int]) -> Self:
         self.scroll += value
+        self.dirty_children = True
         return self
 
     def set_layout(self, layout: Layout) -> Self:
@@ -58,13 +57,14 @@ class Container(Shape, InteractiveWidget):
             self.dirty_children = True
         return self
 
+
     def get_debug_outlines(self):
         yield (self.rect, self.debug_color)
-        yield (self.get_padded_rect(),self.debug_color)
+        yield (self.get_padded_rect(), self.debug_color)
 
         for child in self.children:
-            for data in child.get_debug_outlines():
-                yield (data[0].move(*-self.scroll), data[1])
+            yield from child.get_debug_outlines()
+            # for data in child.get_debug_outlines():
 
     def get_interactive_children(self) -> list[InteractiveWidget]:
         return [
@@ -72,35 +72,24 @@ class Container(Shape, InteractiveWidget):
         ]
 
     def focus_next_child(self) -> None:
-        l = self.get_interactive_children()
-        self.focused_index = min(self.focused_index + 1, len(l) - 1)
-        l[self.focused_index].get_focus()
-        # moved = l[self.focused_index].rect.clamp(self.get_padded_rect())
-        # self.set_scroll((moved.x - l[self.focused_index].rect.x,moved.y-l[self.focused_index].rect.y))
-
+        self.layout.focus_next_child()
+        
     def focus_prev_child(self) -> None:
-        l = self.get_interactive_children()
-        self.focused_index = max(self.focused_index - 1, 0)
-        l[self.focused_index].get_focus()
-        # moved = l[self.focused_index].rect.clamp(self.get_padded_rect())
-        # self.set_scroll((moved.x - l[self.focused_index].rect.x,moved.y-l[self.focused_index].rect.y))
+        self.layout.focus_prev_child()
 
     def clear_children(self) -> None:
         self.children.clear()
-        
-        # self.resolve_constraints()
+        self.dirty_children = True
 
     def add(self, *child: Widget) -> Self:
         super().add(*child)
         self.dirty_children = True
         return self
 
-    def remove(self, child: Widget) -> Self:
-        super().remove(child)
+    def remove(self, *child: Widget) -> Self:
+        super().remove(*child)
         self.dirty_children = True
         return self
-
-
 
     def resolve_constraints(self) -> None:
         super().resolve_constraints()
@@ -112,7 +101,7 @@ class Container(Shape, InteractiveWidget):
         if self.visible and self.rect.collidepoint(x, y):
             if self.children:
                 for child in reversed(self.children):
-                    r = child.top_at(x + self.scroll.x, y + self.scroll.y)
+                    r = child.top_at(x,y)
                     if r is not None:
                         return r
             return self
@@ -137,48 +126,48 @@ class Container(Shape, InteractiveWidget):
         return False
 
     def allow_focus_to_self(self) -> bool:
-        return len(self.get_interactive_children()) != 0 
-
-
-
-#     def _fit_to_children(self) -> None:
-# 
-#         self.set_size(self.layout.get_fit_size())
-#         # self.rect.center = children_rect.center
-#         # self.set_position(*self.rect.topleft)
-
+        return len(self.get_interactive_children()) != 0
 
     def draw(self, camera: bf.Camera) -> None:
-        # print("\n---DRAW")
         constraints_down = False
         if self.dirty_shape:
             self.dirty_constraints = True
             self.dirty_children = True
             self.dirty_surface = True
             self.build()
-            for child in self.children :
+            for child in self.children:
                 child.dirty_constraints = True
             self.dirty_shape = False
 
         if self.dirty_constraints:
-
             if self.parent and self.parent.dirty_constraints:
                 self.parent.visit_up(self.selective_up)
             else:
                 constraints_down = True
 
         if self.dirty_children:
-            if self.layout :
+            if self.layout:
                 self.layout.arrange()
             self.dirty_children = False
 
         if constraints_down:
-                self.visit(lambda c : c.resolve_constraints())
+            self.visit(lambda c: c.resolve_constraints())
 
-
-        if self.dirty_surface : 
+        if self.dirty_surface:
             self.paint()
             self.dirty_surface = False
 
-        bf.Entity.draw(self,camera)
-        _ = [child.draw(camera) for child in sorted(self.children,key =lambda c : c.render_order)]
+
+        bf.Entity.draw(self, camera)
+
+        if self.clip_children:
+            new_clip = camera.world_to_screen(self.get_padded_rect())
+            old_clip = camera.surface.get_clip()
+            new_clip = new_clip.clip(old_clip)
+            camera.surface.set_clip(new_clip)
+        # Draw children with adjusted positions
+        _ = [child.draw(camera) for child in sorted(self.children, key=lambda c: c.render_order)]
+
+        if self.clip_children:
+            camera.surface.set_clip(old_clip)
+
