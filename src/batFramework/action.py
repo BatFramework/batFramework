@@ -1,8 +1,8 @@
-from typing import Any
+from typing import Any,Self
 from enum import Enum
 import pygame
+from .enums import actionType
 
-ActionType = Enum("type", "INSTANTANEOUS CONTINUOUS HOLDING")
 
 
 class Action:
@@ -15,9 +15,10 @@ class Action:
         """
         self._name: str = name
         self._active: bool = False
-        self._type: ActionType = ActionType.INSTANTANEOUS
+        self._type: actionType = actionType.INSTANTANEOUS
         self._key_control: set = set()
         self._mouse_control: set = set()
+        self._event_control: set = set()
         self._gamepad_button_control: set = set()
         self._gamepad_axis_control: set = set()
         self._holding = set()
@@ -53,7 +54,17 @@ class Action:
         self._active = value
         self._holding = set()
 
-    def add_key_control(self, *keys) -> "Action":
+
+    def add_event_control(self,*events)->Self:
+        self._event_control.update(events)
+        return self
+
+    def remove_event_control(self,*events)->Self:
+        self._event_control = self._event_control - events
+        return self
+
+
+    def add_key_control(self, *keys) -> Self:
         """
         Add key controls to the action.
 
@@ -66,7 +77,7 @@ class Action:
         self._key_control.update(keys)
         return self
 
-    def remove_key_control(self, *keys: int) -> "Action":
+    def remove_key_control(self, *keys: int) -> Self:
         """
         Remove key controls to the action.
 
@@ -79,14 +90,14 @@ class Action:
         self._key_control = self._key_control - set(keys)
         return self
 
-    def replace_key_control(self, key, new_key) -> "Action":
+    def replace_key_control(self, key, new_key) -> Self:
         if not key in self._key_control:
             return self
         self.remove_key_control(key)
         self.add_key_control(new_key)
         return self
 
-    def add_mouse_control(self, *mouse_buttons: int) -> "Action":
+    def add_mouse_control(self, *mouse_buttons: int) -> Self:
         """
         Add mouse control to the action.
 
@@ -108,7 +119,7 @@ class Action:
         """
         return self._name
 
-    def set_continuous(self) -> "Action":
+    def set_continuous(self) -> Self:
         """
         Set the action type to continuous.
 
@@ -116,7 +127,7 @@ class Action:
             Action: The updated Action object for method chaining.
         """
         self._holding = set()
-        self._type = ActionType.CONTINUOUS
+        self._type = actionType.CONTINUOUS
         return self
 
     def is_continuous(self) -> bool:
@@ -126,16 +137,16 @@ class Action:
         Returns:
             bool: True if the action type is continuous, False otherwise.
         """
-        return self._type == ActionType.CONTINUOUS
+        return self._type == actionType.CONTINUOUS
 
-    def set_instantaneous(self) -> "Action":
+    def set_instantaneous(self) -> Self:
         """
         Set the action type to instantaneous.
 
         Returns:
             Action: The updated Action object for method chaining.
         """
-        self._type = ActionType.INSTANTANEOUS
+        self._type = actionType.INSTANTANEOUS
         self._holding = set()
         return self
 
@@ -146,16 +157,16 @@ class Action:
         Returns:
             bool: True if the action type is instantaneous, False otherwise.
         """
-        return self._type == ActionType.INSTANTANEOUS
+        return self._type == actionType.INSTANTANEOUS
 
-    def set_holding(self) -> "Action":
+    def set_holding(self) -> Self:
         """
         Set the action type to holding.
 
         Returns:
             Action: The updated Action object for method chaining.
         """
-        self._type = ActionType.HOLDING
+        self._type = actionType.HOLDING
         return self
 
     def is_holding_type(self) -> bool:
@@ -165,13 +176,13 @@ class Action:
         Returns:
             bool: True if the action type is holding, False otherwise.
         """
-        return self._type == ActionType.HOLDING
+        return self._type == actionType.HOLDING
 
     def process_update(self, event: pygame.Event) -> None:
         if (
             self.is_active()
             and event.type == pygame.MOUSEMOTION
-            and self.is_holding_type()
+            and self._type == actionType.HOLDING
             and pygame.MOUSEMOTION in self._mouse_control
         ):
             self.data = {"pos": event.pos, "rel": event.rel}
@@ -187,24 +198,27 @@ class Action:
             bool: True if the action was activated by the event, False otherwise.
         """
         if event.type == pygame.KEYDOWN and event.key in self._key_control:
-            self._active = True
-            if self.is_holding_type():
-                self._holding.add(event.key)
+            self._activate_action(event.key)
             return True
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button in self._mouse_control:
-            self._active = True
-            if self.is_holding_type():
-                self._holding.add(event.button)
+            self._activate_action(event.button)
             return True
 
         if event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
-            self._active = True
-            if self.is_holding_type():
-                self._holding.add(event.type)
+            self._activate_action(event.type)
+            return True
+
+        if event.type in self._event_control:
+            self._activate_action(event.type)
             return True
 
         return False
+
+    def _activate_action(self, control):
+        self._active = True
+        if self._type == actionType.HOLDING:
+            self._holding.add(control)
 
     def process_deactivate(self, event: pygame.event.Event) -> bool:
         """
@@ -216,30 +230,25 @@ class Action:
         Returns:
             bool: True if the action was deactivated by the event, False otherwise.
         """
-        if self._type == ActionType.HOLDING:
+        if self._type == actionType.HOLDING:
             if event.type == pygame.KEYUP and event.key in self._key_control:
-                if event.key in self._holding:
-                    self._holding.remove(event.key)
-                if not self._holding:
-                    self._active = False
-                    return True
-            elif (
-                event.type == pygame.MOUSEBUTTONUP
-                and event.button in self._mouse_control
-            ):
-                if event.button in self._holding:
-                    self._holding.remove(event.button)
-                if not self._holding:
-                    self._active = False
-                    return True
-            elif event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
+                return self._deactivate_action(event.key)
+            if event.type == pygame.MOUSEBUTTONUP and event.button in self._mouse_control:
+                return self._deactivate_action(event.button)
+            if event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
                 self.value = None
-                if event.type in self._holding:
-                    self._holding.remove(event.type)
-                if not self._holding:
-                    self._active = False
-                    return True
+                return self._deactivate_action(event.type)
+            if event.type in self._event_control:
+                return self._deactivate_action(event.type)
 
+        return False
+
+    def _deactivate_action(self, control) -> bool:
+        if control in self._holding:
+            self._holding.remove(control)
+        if not self._holding:
+            self._active = False
+            return True
         return False
 
     def process_event(self, event: pygame.event.Event) -> bool:
@@ -263,9 +272,9 @@ class Action:
         """
         Reset the action's state to the default state.
         """
-        if self._type in {ActionType.CONTINUOUS, ActionType.HOLDING}:
+        if self._type in {actionType.CONTINUOUS, actionType.HOLDING}:
             return
-        elif self._type == ActionType.INSTANTANEOUS:
+        elif self._type == actionType.INSTANTANEOUS:
             self._active = False
 
     def hard_reset(self) -> None:
