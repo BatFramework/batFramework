@@ -15,13 +15,14 @@ class TextInput(Label, InteractiveWidget):
         self.old_key_repeat: tuple = (0, 0)
         self.cursor_timer = bf.Timer(0.3, self._cursor_toggle, loop=True).start()
         self.cursor_timer.pause()
-        self.show_cursor: bool = True
+        self.show_cursor: bool = False
 
     def to_string_id(self) -> str:
         return f"TextInput({self.text})"
 
-    def _cursor_toggle(self):
-        self.show_cursor = not self.show_cursor
+    def _cursor_toggle(self,value:bool = None):
+        if value is None : value = not self.show_cursor
+        self.show_cursor = value
         self.dirty_surface = True
 
     def do_on_click_down(self, button):
@@ -38,10 +39,12 @@ class TextInput(Label, InteractiveWidget):
     def do_on_get_focus(self):
         self.old_key_repeat = pygame.key.get_repeat()
         self.cursor_timer.resume()
+        self._cursor_toggle(True)
         pygame.key.set_repeat(200, 50)
 
     def do_on_lose_focus(self):
         self.cursor_timer.pause()
+        self._cursor_toggle(False)
         pygame.key.set_repeat(*self.old_key_repeat)
 
     def set_cursor_position(self, position: int) -> Self:
@@ -52,6 +55,8 @@ class TextInput(Label, InteractiveWidget):
         self.cursor_position = position
         self.show_cursor = True
         self.dirty_surface = True
+        if self.text_rect.w > self.get_padded_width():
+            self.dirty_shape = True
         return self
 
     def do_handle_event(self, event) -> bool:
@@ -107,8 +112,7 @@ class TextInput(Label, InteractiveWidget):
 
     def paint(self) -> None:
         super().paint()
-        if self.is_focused:
-            self._paint_cursor()
+        self._paint_cursor()
 
 
     def align_text(self,text_rect:pygame.FRect,area:pygame.FRect,alignment: bf.alignment):
