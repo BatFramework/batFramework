@@ -1,5 +1,5 @@
 import batFramework as bf
-from typing import Self
+from typing import Self,Callable
 from .label import Label
 from .interactiveWidget import InteractiveWidget
 import pygame
@@ -8,14 +8,18 @@ import pygame
 class TextInput(Label, InteractiveWidget):
     def __init__(self) -> None:
         self.cursor_position = 0
-        super().__init__("A")
-        self.set_text("")
-        self.set_focusable(True)
-        self.set_outline_color("black")
         self.old_key_repeat: tuple = (0, 0)
         self.cursor_timer = bf.Timer(0.3, self._cursor_toggle, loop=True).start()
         self.cursor_timer.pause()
         self.show_cursor: bool = False
+        self.on_modify :Callable[[str],str] = None 
+        self.set_focusable(True)
+        self.set_outline_color("black")
+        super().__init__("")
+
+    def set_modify_callback(self,callback : Callable[[str],str])->Self:
+        self.on_modify = callback
+        return self
 
     def to_string_id(self) -> str:
         return f"TextInput({self.text})"
@@ -59,41 +63,40 @@ class TextInput(Label, InteractiveWidget):
             self.dirty_shape = True
         return self
 
-    def do_handle_event(self, event) -> bool:
+    def do_handle_event(self, event):
         if not self.is_focused:
-            return False
-
+            return
         text = self.get_text()
         cursor_position = self.cursor_position
 
         if event.type == pygame.TEXTINPUT:
             self.set_text(text[:cursor_position] + event.text + text[cursor_position:])
             self.set_cursor_position(cursor_position + 1)
-            return True
-
-        if event.type == pygame.KEYDOWN:
+        elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.lose_focus()
         
-            if event.key == pygame.K_BACKSPACE:
+            elif event.key == pygame.K_BACKSPACE:
                 if cursor_position > 0:
                     self.set_text(text[:cursor_position - 1] + text[cursor_position:])
                     self.set_cursor_position(cursor_position - 1)
-                return True
 
-            if event.key == pygame.K_RIGHT:
+            elif event.key == pygame.K_RIGHT:
                 self.set_cursor_position(cursor_position + 1)
-                return True
 
-            if event.key == pygame.K_LEFT:
+            elif event.key == pygame.K_LEFT:
                 self.set_cursor_position(cursor_position - 1)
-                return True
 
-            if event.key in [pygame.K_UP, pygame.K_DOWN]:
-                return False
+            else:
+                return
+        else : 
+            return
 
-        return False
-
+        event.consumed = True
+        
+    def set_text(self, text: str) -> Self:
+        if self.on_modify : text = self.on_modify(text)
+        return super().set_text(text)
 
     def _paint_cursor(self) -> None:
         if not self.font_object or not self.show_cursor:
@@ -127,5 +130,5 @@ class TextInput(Label, InteractiveWidget):
         if self.text_rect.x + w > area.right:
             self.text_rect.right = area.right
         elif self.text_rect.x + w < area.left:
-            self.text_rect.left = area.left
+            self.text_rect.left = area.left - w
         

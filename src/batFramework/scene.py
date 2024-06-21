@@ -24,10 +24,10 @@ class Scene:
             enable_alpha (bool, optional): Enable alpha channel for the scene surfaces. Defaults to True.
         """
         self.scene_index = 0
-        self._name = name
+        self.name = name
         self.manager: Manager | None = None
-        self._active = False
-        self._visible = False
+        self.active = False
+        self.visible = False
         self.world_entities: list[bf.Entity] = []
         self.hud_entities: list[bf.Entity] = []
         self.actions: bf.ActionContainer = bf.ActionContainer()
@@ -102,27 +102,27 @@ class Scene:
 
     def set_visible(self, value: bool):
         """Set the visibility of the scene."""
-        self._visible = value
+        self.visible = value
         if self.manager:
             self.manager.update_scene_states()
 
     def set_active(self, value):
         """Set the activity of the scene."""
-        self._active = value
+        self.active = value
         if self.manager:
             self.manager.update_scene_states()
 
     def is_active(self) -> bool:
         """Check if the scene is active."""
-        return self._active
+        return self.active
 
     def is_visible(self) -> bool:
         """Check if the scene is visible."""
-        return self._visible
+        return self.visible
 
     def get_name(self) -> str:
         """Get the name of the scene."""
-        return self._name
+        return self.name
 
     def add_world_entity(self, *entity: bf.Entity):
         """Add world entities to the scene."""
@@ -206,26 +206,30 @@ class Scene:
     # propagates event to all entities
     def process_event(self, event: pygame.Event):
         """
-        Propagates event to child events. Calls early process event first, if returns False then stops. Processes scene's action_container, then custom do_handle_event function.
-        Finally resets the action_container, and propagates to all child entities. if any of them returns True, the propagation is stopped.
+        Propagates event while it is not consumed.
+        In order : 
+        -do_early_handle_event()
+        -scene early_actions
+        -propagate to scene entities (hud then world)
+        -do_handle_event()
+        -scene actions
+        at each step, if the event is consumed the propagation stops
         """
-        if self.do_early_process_event(event):
-            return
+        if event.consumed : return
+        self.do_early_handle_event(event)
+        if event.consumed : return
         self.early_actions.process_event(event)
-        self.do_handle_actions()
-        self.do_handle_event(event)
+        if event.consumed : return
         for entity in self.hud_entities + self.world_entities:
-            if entity.process_event(event):
-                return
+            entity.process_event(event)
+            if event.consumed : return    
+        self.do_handle_event(event)
+        if event.consumed : return
         self.actions.process_event(event)
 
     # called before process event
-    def do_early_process_event(self, event: pygame.Event) -> bool:
-        """return True if stop event propagation in child entities and scene's action container"""
-        return False
-
-    def do_handle_actions(self) -> None:
-        """Handle actions within the scene."""
+    def do_early_handle_event(self, event: pygame.Event) :
+        """Called early in event propagation"""
         pass
 
     def do_handle_event(self, event: pygame.Event):

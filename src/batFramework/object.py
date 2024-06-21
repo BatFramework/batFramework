@@ -82,9 +82,9 @@ class Object:
         """
         Returns bool : True if the method is blocking (no propagation to next object of the scene)
         """
+        if event.consumed : return
         self.do_process_actions(event)
-        res = self.do_handle_event(event)
-        return res
+        self.do_handle_event(event)
 
     def do_process_actions(self, event: pygame.Event) -> None:
         """
@@ -96,7 +96,7 @@ class Object:
         Reset entity actions you may have set
         """
 
-    def do_handle_event(self, event: pygame.Event) -> bool:
+    def do_handle_event(self, event: pygame.Event):
         """
         Handle specific events with no action support
         """

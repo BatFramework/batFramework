@@ -20,7 +20,8 @@ class SliderHandle(Indicator, DraggableWidget):
         self.is_hovered = False
         self.do_on_exit()
 
-    def do_on_drag(self, x, y, world_drag_point) -> None:
+    def do_on_drag(self,drag_start:tuple[float,float],drag_end: tuple[float,float]) -> None:
+        super().do_on_drag(drag_start,drag_end)
         m : Meter = self.parent.meter
         r = m.get_padded_rect()
         position = self.rect.centerx

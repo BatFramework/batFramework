@@ -13,8 +13,10 @@ class Action:
         Args:
             name (str): The name of the action.
         """
-        self._name: str = name
-        self._active: bool = False
+        self.name: str = name
+        self.active: bool = False
+        self.data: dict = {}
+        self.consume_event : bool = False
         self._type: actionType = actionType.INSTANTANEOUS
         self._key_control: set = set()
         self._mouse_control: set = set()
@@ -22,10 +24,8 @@ class Action:
         self._gamepad_button_control: set = set()
         self._gamepad_axis_control: set = set()
         self._holding = set()
-        self._unique = False
-        self.data: Any = None
 
-    def set_unique(self, val: bool) -> None:
+    def set_consume_event(self, val: bool) -> Self:
         """
         Set whether this action is unique (exclusive).
         When in an action Container, unique actions -when active - break the propagation of their event to other actions.
@@ -33,16 +33,8 @@ class Action:
         Args:
             val (bool): True if the action is unique, False otherwise.
         """
-        self._unique = val
-
-    def is_active(self) -> bool:
-        """
-        Check if the action is currently active.
-
-        Returns:
-            bool: True if the action is active, False otherwise.
-        """
-        return self._active
+        self.consume_event = val
+        return self
 
     def set_active(self, value: bool) -> None:
         """
@@ -51,8 +43,8 @@ class Action:
         Args:
             value (bool): True to activate the action, False to deactivate it.
         """
-        self._active = value
-        self._holding = set()
+        self.active = value
+        # self._holding = set()
 
 
     def add_event_control(self,*events)->Self:
@@ -109,15 +101,6 @@ class Action:
         """
         self._mouse_control.update(mouse_buttons)
         return self
-
-    def get_name(self) -> str:
-        """
-        Get the name of the action.
-
-        Returns:
-            str: The name of the action.
-        """
-        return self._name
 
     def set_continuous(self) -> Self:
         """
@@ -180,14 +163,13 @@ class Action:
 
     def process_update(self, event: pygame.Event) -> None:
         if (
-            self.is_active()
-            and event.type == pygame.MOUSEMOTION
+            event.type == pygame.MOUSEMOTION
             and self._type == actionType.HOLDING
             and pygame.MOUSEMOTION in self._mouse_control
-        ):
-            self.data = {"pos": event.pos, "rel": event.rel}
+        ) or self._event_control:
+            self.data = event.dict
 
-    def process_activate(self, event: pygame.event.Event) -> bool:
+    def process_activate(self, event: pygame.event.Event):
         """
         Process activation of the action based on a pygame event.
 
@@ -197,76 +179,72 @@ class Action:
         Returns:
             bool: True if the action was activated by the event, False otherwise.
         """
+
         if event.type == pygame.KEYDOWN and event.key in self._key_control:
             self._activate_action(event.key)
-            return True
 
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button in self._mouse_control:
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button in self._mouse_control:
             self._activate_action(event.button)
-            return True
 
-        if event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
+        elif event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
             self._activate_action(event.type)
-            return True
 
-        if event.type in self._event_control:
+        elif event.type in self._event_control:
             self._activate_action(event.type)
-            return True
-
-        return False
+            self.data = event.dict
+        else:
+            return
+        if self.consume_event : event.consumed = True
 
     def _activate_action(self, control):
-        self._active = True
+        self.active = True
         if self._type == actionType.HOLDING:
             self._holding.add(control)
 
-    def process_deactivate(self, event: pygame.event.Event) -> bool:
+    def process_deactivate(self, event: pygame.event.Event):
         """
         Process deactivation of the action based on a pygame event.
 
         Args:
             event (pygame.event.Event): The pygame event to process.
 
-        Returns:
-            bool: True if the action was deactivated by the event, False otherwise.
         """
         if self._type == actionType.HOLDING:
             if event.type == pygame.KEYUP and event.key in self._key_control:
-                return self._deactivate_action(event.key)
-            if event.type == pygame.MOUSEBUTTONUP and event.button in self._mouse_control:
-                return self._deactivate_action(event.button)
-            if event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
-                self.value = None
-                return self._deactivate_action(event.type)
-            if event.type in self._event_control:
-                return self._deactivate_action(event.type)
+                self._deactivate_action(event.key)
+            elif event.type == pygame.MOUSEBUTTONUP and event.button in self._mouse_control:
+                self._deactivate_action(event.button)
+            elif event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
+                self._deactivate_action(event.type)
+            elif event.type in self._event_control:
+                self._deactivate_action(event.type)
+            else:
+                event.consumed = False
 
-        return False
+        if self.consume_event: event.consumed = True
 
     def _deactivate_action(self, control) -> bool:
         if control in self._holding:
             self._holding.remove(control)
         if not self._holding:
-            self._active = False
-            return True
-        return False
+            self.active = False
 
-    def process_event(self, event: pygame.event.Event) -> bool:
+    def process_event(self, event: pygame.event.Event):
         """
         Process a pygame event and update the action's state.
 
         Args:
             event (pygame.event.Event): The pygame event to process.
-
-        Returns:
-            bool: True if the action state changed, False otherwise.
         """
-        if not self._active:
-            res = self.process_activate(event)
+
+        if event.consumed : return
+        if not self.active:
+            self.process_activate(event)
         else:
-            res = self.process_deactivate(event)
-        self.process_update(event)
-        return res
+            self.process_deactivate(event)
+        if self.active:
+            self.process_update(event)
+        return
 
     def reset(self) -> None:
         """
@@ -275,11 +253,11 @@ class Action:
         if self._type in {actionType.CONTINUOUS, actionType.HOLDING}:
             return
         elif self._type == actionType.INSTANTANEOUS:
-            self._active = False
+            self.active = False
 
     def hard_reset(self) -> None:
         """
         Hard reset the action, deactivating it and clearing any holding controls.
         """
-        self._active = False
+        self.active = False
         self._holding = set()

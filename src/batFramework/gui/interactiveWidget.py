@@ -47,12 +47,13 @@ class InteractiveWidget(Widget):
         self.is_focused = False
         self.do_on_lose_focus()
 
-    def on_key_down(self, key):
-        if key == pygame.K_DOWN or key == pygame.KMOD_ALT:
+    def on_key_down(self,key):
+        if key == pygame.K_DOWN:
             self.focus_next_sibling()
-        if key == pygame.K_UP:
+        elif key == pygame.K_UP:
             self.focus_prev_sibling()
-        self.do_on_key_down(key)
+        else:
+            self.do_on_key_down(key)
 
     def on_key_up(self, key):
         self.do_on_key_up(key)
@@ -107,6 +108,9 @@ class InteractiveWidget(Widget):
         pass
 
     def on_mouse_motion(self, x, y) -> None:
+        self.do_on_mouse_motion(x,y)
+
+    def do_on_mouse_motion(self,x,y)->None:
         pass
 
     def set_focused_child(self, child: "InteractiveWidget"):

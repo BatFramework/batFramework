@@ -3,6 +3,7 @@ from .widget import Widget
 from .image import Image
 from .interactiveWidget import InteractiveWidget
 from .draggableWidget import DraggableWidget
+from .clickableWidget import ClickableWidget
 from .root import Root
 from .shape import Shape
 from .meter import Meter
@@ -15,4 +16,5 @@ from .layout import *
 from .container import Container
 from .indicator import *
 from .toggle import Toggle
+from .radioButton import RadioButton,RadioVariable
 from .slider import Slider

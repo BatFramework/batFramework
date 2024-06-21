@@ -16,6 +16,7 @@ class Root(InteractiveWidget):
         self.set_debug_color("yellow")
         self.set_render_order(999)
         self.clip_children = False
+
     def __str__(self) -> str:
         return "Root"
 
@@ -34,6 +35,7 @@ class Root(InteractiveWidget):
         self.hovered = None
 
     def focus_on(self, widget: InteractiveWidget | None) -> None:
+        if widget == self.focused : return
         if widget and not widget.allow_focus_to_self():
             return
         if self.focused is not None:
@@ -82,14 +84,12 @@ class Root(InteractiveWidget):
                 self.focused.on_key_down(event.key)
             if event.type == pygame.KEYUP:
                 self.focused.on_key_up(event.key)
-        if not self.hovered or not isinstance(self.hovered, InteractiveWidget):
-            return False
+        elif not self.hovered or not isinstance(self.hovered, InteractiveWidget):
+            return
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.hovered.on_click_down(event.button)
-        if event.type == pygame.MOUSEBUTTONUP:
+        elif event.type == pygame.MOUSEBUTTONUP:
             self.hovered.on_click_up(event.button)
-
-        return False
 
 
     def do_on_click_down(self, button: int) -> None:

@@ -3,42 +3,43 @@ import pygame
 from typing import Self
 
 
-class Sprite(bf.DynamicEntity):
+class Sprite(bf.Entity):
     def __init__(
         self,
-        data: pygame.Surface | str,
+        path=None,
         size: None | tuple[int, int] = None,
         convert_alpha: bool = True,
     ):
-        self.original_surface = None
-        super().__init__(convert_alpha=convert_alpha)
-        if data:
-            self.set_image(data, size)
+        self.original_surface: pygame.Surface = None
 
-    def set_image(
-        self, data: pygame.Surface | str, size: None | tuple[int, int] = None
-    ) -> Self:
-        if isinstance(data, str):
-            tmp = bf.ResourceManager().get_image(data, self.convert_alpha)
-            if tmp == None:
-                print(f"Image file at '{data}' was not found :(")
-            self.original_surface = tmp
-        elif isinstance(data, pygame.Surface):
-            self.original_surface = data
-        else:
-            raise ValueError("Image data can be either path or Surface")
-        if self.convert_alpha:
-            self.original_surface = self.original_surface.convert_alpha()
-        if not size:
-            size = self.original_surface.get_size()
+        super().__init__(convert_alpha = convert_alpha)
+        if path is not None:
+            self.from_path(path)
+        if size is not None and self.original_surface:
+            self.set_size(self.original_surface.get_size())
 
+
+    def set_size(self,size:tuple[float,float]) -> Self:
+        if size == self.rect.size : return self
+        self.rect.size = size
+        self.surface = pygame.Surface((int(self.rect.w),int(self.rect.h)),self.surface_flags)
+        if self.convert_alpha : self.surface = self.surface.convert_alpha()
+        self.surface.fill((0,0,0,0 if self.convert_alpha else 255))
+        self.surface.blit(pygame.transform.scale(self.original_surface,self.rect.size),(0,0))
+        return self
+            
+    def from_path(self,path:str)->Self:
+        tmp = bf.ResourceManager().get_image(path,self.convert_alpha)
+        if tmp is None:
+            return self
+        self.original_surface = tmp
+        size = self.original_surface.get_size()
         self.set_size(size)
         return self
 
-    def set_size(self, size: tuple[int | None, int | None]) -> Self:
-        new_size = []
-        new_size[0] = size[0] if size[0] is not None else self.rect.w
-        new_size[1] = size[1] if size[1] is not None else self.rect.h
-        self.surface = pygame.transform.scale(self.original_surface, new_size)
-        self.rect = self.surface.get_frect(center=self.rect.center)
+    def from_surface(self,surface: pygame.Surface)->Self:
+        if surface is None : return self
+        self.original_surface = surface
+        size = self.original_surface.get_size()
+        self.set_size(size)
         return self

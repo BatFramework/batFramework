@@ -22,10 +22,12 @@ class Image(Widget):
             self.surface.blit(pygame.transform.scale(self.original_surface,self.rect.size),(0,0))
         else:
             self.surface.blit(self.original_surface,(0,0))
+
+
     def from_path(self,path:str)->Self:
         tmp = bf.ResourceManager().get_image(path,self.convert_alpha)
         if tmp is None:
-            return Self
+            return self
         self.original_surface = tmp
         size = self.original_surface.get_size()
         if not self.autoresize_h : size[0] = None

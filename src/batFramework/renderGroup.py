@@ -3,10 +3,8 @@ import pygame
 from typing import Self, Iterator, Callable
 
 """
-
 + same render order
 + fblits
-
 """
 
 class RenderGroup(bf.Entity):

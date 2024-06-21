@@ -19,7 +19,7 @@ class CutsceneBlock:
         self.started = False
 
     def get_scene_at(self, index):
-        return bf.CutsceneManager().manager._scenes[index]
+        return bf.CutsceneManager().manager.scenes[index]
 
     def set_scene(self, name, index=0):
         return CutsceneManager().manager.set_scene(name, index)
@@ -141,7 +141,7 @@ class SceneTransitionBlock(CutsceneBlock):
         """
         super().start()
         # Initiate the scene transition
-        if self.get_current_scene()._name == self.target_scene:
+        if self.get_current_scene().name == self.target_scene:
             self.end()
             return
         CutsceneManager().manager.transition_to_scene(

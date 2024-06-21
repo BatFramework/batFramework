@@ -32,7 +32,7 @@ class Camera:
             self._clear_color = pygame.Color(0, 0, 0)
 
         self.follow_point_func = None
-        self.follow_speed: float = 0.1
+        self.follow_friction: float = 0.5
 
         self.zoom_factor = 1
         self.max_zoom = 2
@@ -160,6 +160,10 @@ class Camera:
         self.follow_speed = follow_speed if func else 0.1
         return self
 
+    def set_follow_friction(self,friction:float)->Self:
+        self.follow_friction = friction
+        return self
+
     def zoom_by(self, amount: float) -> Self:
         """
         Zooms the camera by the given amount.
@@ -243,7 +247,7 @@ class Camera:
         Returns:
             pygame.FRect: Transposed rectangle.
         """
-        return pygame.FRect(rect.x - self.rect.left, rect.y - self.rect.top, *rect.size)
+        return pygame.FRect(rect[0] - self.rect.left, rect[1] - self.rect.top, rect[2],rect[3])
 
     def world_to_screen_point(
         self, point: tuple[float, float] | tuple[int, int]
@@ -284,7 +288,7 @@ class Camera:
         """
         if self.follow_point_func:
             self.vector_center.update(*self.rect.center)
-            amount = (dt * 60) * self.follow_speed
+            amount = pygame.math.clamp(self.follow_friction,0,1)
             self.set_center(*self.vector_center.lerp(self.follow_point_func(), amount))
 
     def draw(self, surface: pygame.Surface):

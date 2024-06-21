@@ -1,90 +1,105 @@
 import batFramework as bf
 import pygame
-
+from typing import Self
 
 def swap(lst, index1, index2):
     lst[index1], lst[index2] = lst[index2], lst[index1]
 
 
 class SceneManager:
-    def __init__(self, *initial_scenes: bf.Scene) -> None:
-        self.debug_mode: bf.enums.debugMode = bf.debugMode.HIDDEN
-        self._sharedVarDict: dict = {}
-
-        self._scene_transitions: list[bf.transition.Transition] = []
+    def __init__(self) -> None:
+        self.scenes: list[bf.Scene] = []
+        self.shared_variables: dict = {}
+        self.shared_events = {pygame.WINDOWRESIZED}
 
         self.set_sharedVar("in_cutscene", False)
-        self.current_transition: dict[str, bf.transition.Transition] = {}
         self.set_sharedVar("player_has_control", True)
-        self.last_frame = None
 
-        self._scenes: list[bf.Scene] = list(initial_scenes)
-        for index, s in enumerate(self._scenes):
-            s.set_manager(self)
+        self.debug_mode: bf.enums.debugMode = bf.debugMode.HIDDEN
+        self.current_transitions: dict[str, bf.transition.Transition] = {}
+
+
+
+    def init_scenes(self,*initial_scenes):
+        for index, s in enumerate(initial_scenes):
             s.set_scene_index(index)
-            s.do_when_added()
+        for s in reversed(initial_scenes):
+            self.add_scene(s)
+        # self.scenes = list(initial_scenes)
         self.set_scene(initial_scenes[0].get_name())
         self.update_scene_states()
 
-        self.shared_events = [pygame.WINDOWRESIZED]
+    def set_shared_event(self,event:pygame.Event)->None:
+        """
+        Add an event that will be propagated to all active scenes, not just the one on top.
+        """
+        self.shared_events.add(event)
 
     def print_status(self):
+        """
+        Print some information about the current state of the scenes.
+        """
         print("-" * 40)
         print(
             '\n'.join(
-                f" {s._name:<30}\t{'Active' if s._active else 'Inactive'}\t{'Visible' if s._visible else 'Invisible'}\tindex= {s.scene_index}"
-                for s in self._scenes
+                f" {s.name:<30}\t{'Active' if s.active else 'Inactive'}\t{'Visible' if s.visible else 'Invisible'}\tindex= {s.scene_index}"
+                for s in self.scenes
             )
         )
         print(f"[Debugging] = {self.debug_mode}")
         print("---SHARED VARIABLES---")
-        for name, value in self._sharedVarDict.items():
+        for name, value in self.shared_variables.items():
             print(f"[{str(name)} = {str(value)}]")
         print("-" * 40)
 
     def set_sharedVar(self, name, value) -> bool:
-        self._sharedVarDict[name] = value
+        """
+        Set a shared variable of any type. This will be accessible (read/write) from any scene
+        """
+        self.shared_variables[name] = value
         return True
 
     def get_sharedVar(self, name, error_value=None):
-        if name not in self._sharedVarDict:
-            return error_value
-        return self._sharedVarDict[name]
+        """
+        Get a shared variable
+        """
+        return self.shared_variables.get(name,error_value)
 
     def get_current_scene_name(self) -> str:
-        return self._scenes[0].get_name()
+        """get the name of the current scene"""
+        return self.scenes[0].get_name()
 
     def get_current_scene(self) -> bf.Scene:
-        return self._scenes[0]
+        return self.scenes[0]
 
     def update_scene_states(self):
-        self.active_scenes = [s for s in reversed(self._scenes) if s._active]
-        self.visible_scenes = [s for s in reversed(self._scenes) if s._visible]
+        self.active_scenes = [s for s in reversed(self.scenes) if s.active]
+        self.visible_scenes = [s for s in reversed(self.scenes) if s.visible]
 
     def add_scene(self, scene: bf.Scene):
-        if scene in self._scenes and not self.has_scene(scene._name):
+        if scene in self.scenes and not self.has_scene(scene.name):
             return
         scene.set_manager(self)
         scene.do_when_added()
-        self._scenes.insert(0, scene)
+        self.scenes.insert(0, scene)
 
     def remove_scene(self, name: str):
-        self._scenes = [s for s in self._scenes if s._name != name]
+        self.scenes = [s for s in self.scenes if s.name != name]
 
     def has_scene(self, name):
-        return any(name == scene._name for scene in self._scenes)
+        return any(name == scene.name for scene in self.scenes)
 
     def get_scene(self, name):
         if not self.has_scene(name):
             return None
-        for scene in self._scenes:
-            if scene._name == name:
+        for scene in self.scenes:
+            if scene.name == name:
                 return scene
 
     def get_scene_at(self, index: int) -> bf.Scene | None:
-        if index < 0 or index >= len(self._scenes):
+        if index < 0 or index >= len(self.scenes):
             return None
-        return self._scenes[index]
+        return self.scenes[index]
 
     def transition_to_scene(
         self,
@@ -94,11 +109,11 @@ class SceneManager:
     ):
         target_scene = self.get_scene(scene_name)
         if not target_scene : 
-            print(f"'{scene_name}' does not exist")
+            print(f"Scene '{scene_name}' does not exist")
             return
         if (
-            len(self._scenes) == 0
-            or index >= len(self._scenes)
+            len(self.scenes) == 0
+            or index >= len(self.scenes)
             or index < 0
         ):
             return
@@ -109,7 +124,7 @@ class SceneManager:
         target_scene.draw(dest_surface)
         target_scene.do_on_enter_early()
         self.get_scene_at(index).do_on_exit_early()
-        self.current_transition = {"scene_name": scene_name, "transition": transition}
+        self.current_transitions = {"scene_name": scene_name, "transition": transition}
         transition.set_start_callback(lambda: self._start_transition(target_scene))
         transition.set_end_callback(lambda: self._end_transition(scene_name, index))
         transition.set_source(source_surface)
@@ -124,7 +139,7 @@ class SceneManager:
     def _end_transition(self, scene_name, index):
         self.set_scene(scene_name, index)
         self.set_sharedVar("player_has_control", True)
-        self.current_transition.clear()
+        self.current_transitions.clear()
 
     def set_scene(self, scene_name, index=0):
         target_scene = self.get_scene(scene_name)
@@ -132,18 +147,18 @@ class SceneManager:
             print(f"'{scene_name}' does not exist")
             return
         if (
-            len(self._scenes) == 0
-            or index >= len(self._scenes)
+            len(self.scenes) == 0
+            or index >= len(self.scenes)
             or index < 0
         ):
             return
 
         # switch
-        self._scenes[index].on_exit()
+        self.scenes[index].on_exit()
         # re-insert scene at index 0
-        self._scenes.remove(target_scene)
-        self._scenes.insert(index, target_scene)
-        _ = [s.set_scene_index(i) for i, s in enumerate(self._scenes)]
+        self.scenes.remove(target_scene)
+        self.scenes.insert(index, target_scene)
+        _ = [s.set_scene_index(i) for i, s in enumerate(self.scenes)]
         target_scene.on_enter()
 
     def cycle_debug_mode(self):
@@ -166,9 +181,9 @@ class SceneManager:
                 self.print_status()
                 return
         if event.type in self.shared_events:
-            [s.process_event(event) for s in self._scenes]
+            [s.process_event(event) for s in self.scenes]
         else:
-            self._scenes[0].process_event(event)
+            self.scenes[0].process_event(event)
 
     def update(self, dt: float) -> None:
         for scene in self.active_scenes:
@@ -181,13 +196,13 @@ class SceneManager:
     def draw(self, surface) -> None:
         for scene in self.visible_scenes:
             scene.draw(surface)
-        if self.current_transition:
+        if self.current_transitions:
             self._draw_transition(surface)
 
     def _draw_transition(self, surface):
-        self.current_transition["transition"].set_source(surface)
+        self.current_transitions["transition"].set_source(surface)
         tmp = bf.const.SCREEN.copy()
-        self.get_scene(self.current_transition["scene_name"]).draw(tmp)
-        self.current_transition["transition"].set_dest(tmp)
-        self.current_transition["transition"].draw(surface)
+        self.get_scene(self.current_transitions["scene_name"]).draw(tmp)
+        self.current_transitions["transition"].set_dest(tmp)
+        self.current_transitions["transition"].draw(surface)
         return

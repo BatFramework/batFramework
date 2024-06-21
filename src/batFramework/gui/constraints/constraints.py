@@ -254,6 +254,17 @@ class AnchorBottom(Constraint):
     def apply_constraint(self, parent_widget, child_widget):
         child_widget.set_position(child_widget.rect.x,parent_widget.get_padded_bottom() - child_widget.rect.h)
 
+class AnchorBottom(Constraint):
+    def __init__(self):
+        super().__init__(name="anchor_bottom")
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.top == parent_widget.get_padded_bottom() - child_widget.rect.h
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(child_widget.rect.x,parent_widget.get_padded_bottom() - child_widget.rect.h)
+
+
 
 class AnchorTopRight(Constraint):
     def __init__(self):
@@ -326,7 +337,6 @@ class MarginBottom(Constraint):
         child_widget.set_position(child_widget.rect.x,
             parent_widget.get_padded_bottom() - child_widget.rect.h - self.margin
         )
-
 
 class MarginTop(Constraint):
     def __init__(self, margin: float):

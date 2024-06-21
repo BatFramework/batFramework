@@ -16,7 +16,7 @@ class ActionContainer:
 
     def add_actions(self, *actions: bf.Action):
         for action in actions:
-            self._actions[action.get_name()] = action
+            self._actions[action.name] = action
 
     def get(self, name: str) -> bf.Action:
         return self._actions.get(name)
@@ -29,16 +29,16 @@ class ActionContainer:
 
     def is_active(self, *names: str) -> bool:
         return all(
-            self._actions.get(name).is_active() if name in self._actions else False
+            self._actions.get(name).active if name in self._actions else False
             for name in names
         )
 
     def process_event(self, event):
+        if event.consumed : return
         for action in self._actions.values():
-            a = action.process_event(event)
-            if a and action._unique:
-                break
-
+            action.process_event(event)
+            if event.consumed == True:break
+             
     def reset(self):
         for action in self._actions.values():
             action.reset()

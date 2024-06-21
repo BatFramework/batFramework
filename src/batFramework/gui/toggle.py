@@ -105,4 +105,9 @@ class Toggle(Button):
                 case bf.spacing.HALF:
                     gap = (padded.w)/2 - self.text_rect.w
 
-        self.indicator.set_position(*self.text_rect.move(self.rect.x+gap,self.rect.y + (self.text_rect.h /2) - self.indicator.rect.h/2).topright)
+        self.indicator.set_position(
+            *self.text_rect.move(
+                self.rect.x+gap,
+                self.rect.y + (self.text_rect.h /2) - self.indicator.rect.h/2
+            ).topright
+        )

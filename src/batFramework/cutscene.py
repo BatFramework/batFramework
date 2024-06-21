@@ -82,7 +82,7 @@ class Cutscene:
         self.end_blocks.extend(blocks)
 
     def get_scene_at(self, index):
-        return bf.CutsceneManager().manager._scenes[index]
+        return bf.CutsceneManager().manager.scenes[index]
 
     def get_current_scene(self):
         return bf.CutsceneManager().manager.get_current_scene()

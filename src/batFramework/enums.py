@@ -45,7 +45,6 @@ class color:
     LIGHT_GB = (73, 107, 34)
     LIGHTER_GB = (154, 158, 63)
 
-
 class easing(Enum):
     LINEAR = (0, 0, 1, 1)
     EASE_IN = (0.95, 0, 1, 0.55)
@@ -55,7 +54,6 @@ class easing(Enum):
 
     def __init__(self, *control_points):
         self.control_points = control_points
-
 
 class axis(Enum):
     HORIZONTAL = "horizontal"
@@ -78,10 +76,16 @@ class alignment(Enum):
     MIDRIGHT = "midright"
     BOTTOMLEFT = "bottomleft"
     BOTTOMRIGHT = "bottomright"
+
+class direction(Enum):
+    LEFT = 0
+    UP = 1
+    RIGHT = 2
+    DOWN = 3 
+
 class drawMode(Enum):
     SOLID = 0
     TEXTURED = 1
-
 
 class debugMode(Enum):
     HIDDEN = 0
@@ -92,3 +96,9 @@ class actionType(Enum):
     INSTANTANEOUS = 0
     CONTINUOUS = 1
     HOLDING = 2
+
+
+class textMode(Enum):
+    ALPHABETICAL = 0
+    NUMERICAL = 1
+    ALPHANUMERIC = 3 

@@ -3,8 +3,8 @@ from enum import Enum
 import os
 import batFramework as bf
 import json
-
-
+from .enums import *
+import re
 class Singleton(type):
     _instances = {}
 
@@ -15,10 +15,16 @@ class Singleton(type):
 
 
 class Utils:
+
     @staticmethod
     def split_surface(
-        surface, split_size: tuple[int, int], func=None
+        surface : pygame.Surface, split_size: tuple[int, int], func=None
     ) -> dict[tuple[int, int], pygame.Surface]:
+        """
+        Splits a surface into subsurfaces and returns a dictionnary of them
+        with their tuple coordinates as keys.
+        Exemple : '(0,0) : Surface' 
+        """
         if surface is None:
             return None
         width, height = surface.get_size()
@@ -33,3 +39,19 @@ class Utils:
                 res[(ix, iy)] = sub
 
         return res
+    
+    @staticmethod
+    def filter_text(text_mode: textMode):
+        if text_mode == textMode.ALPHABETICAL:
+            pattern = re.compile(r'[^a-zA-Z]')
+        elif text_mode == textMode.NUMERICAL:
+            pattern = re.compile(r'[^0-9]')
+        elif text_mode == textMode.ALPHANUMERICAL:
+            pattern = re.compile(r'[^a-zA-Z0-9]')
+        else:
+            raise ValueError("Unsupported text mode")
+        
+        def filter_function(s: str) -> str:
+            return pattern.sub('', s)
+        
+        return filter_function

@@ -62,12 +62,18 @@ class Layout:
 
 
 class Column(Layout):
-    def __init__(self, gap: int = 0):
+    def __init__(self, gap: int = 0,spacing:bf.spacing = bf.spacing.MANUAL):
         super().__init__()
         self.gap = gap
+        self.spacing = spacing
 
     def set_gap(self, value: float) -> Self:
         self.gap = value
+        self.notify_parent()
+        return self
+    
+    def set_spacing(self,spacing: bf.spacing)->Self:
+        self.spacing = spacing
         self.notify_parent()
         return self
 
@@ -79,7 +85,6 @@ class Column(Layout):
         if self.gap:
             parent_height += (len_children - 1) * self.gap
         target_rect = self.parent.inflate_rect_by_padding((0,0,parent_width,parent_height))
-
         return target_rect.size
     
     def get_auto_size(self)-> tuple[float,float]:
@@ -109,14 +114,21 @@ class Column(Layout):
             y+= child.get_min_required_size()[1] + self.gap
 
 class Row(Layout):
-    def __init__(self, gap: int = 0):
+    def __init__(self, gap: int = 0,spacing: bf.spacing=bf.spacing.MANUAL):
         super().__init__()
         self.gap = gap
+        self.spacing = spacing
 
     def set_gap(self, value: float) -> Self:
         self.gap = value
         self.notify_parent()
         return self
+    
+    def set_spacing(self,spacing: bf.spacing)->Self:
+        self.spacing = spacing
+        self.notify_parent()
+        return self
+
 
     def get_raw_size(self) -> tuple[float, float]:
         len_children = len(self.parent.children)

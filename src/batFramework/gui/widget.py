@@ -60,6 +60,8 @@ class Widget(bf.Entity):
         )
             
     def set_position(self, x, y) -> Self:
+        if x is None: x = self.rect.x
+        if y is None: y = self.rect.y
         if (x,y) == self.rect.topleft : return self
         dx,dy = x-self.rect.x,y-self.rect.y
         self.rect.topleft = x,y
@@ -67,6 +69,8 @@ class Widget(bf.Entity):
         return self
 
     def set_center(self,x,y)->Self:
+        if x is None : x = self.rect.centerx
+        if y is None : y = self.rect.centery
         if (x,y) == self.rect.center : return self
         dx,dy = x-self.rect.centerx,y-self.rect.centery
         self.rect.center = x,y
@@ -130,10 +134,10 @@ class Widget(bf.Entity):
 
     def get_debug_outlines(self):
         yield (self.rect, self.debug_color)
-        if any(self.padding) : yield (self.get_padded_rect(),"white")
+        if any(self.padding) : yield (self.get_padded_rect(),"gray")
         for child in self.children:
             yield from child.get_debug_outlines()
-        
+
     def add_constraints(self,*constraints:"Constraint")->Self:
         self.constraints.extend(constraints)
         seen = set()
@@ -148,27 +152,25 @@ class Widget(bf.Entity):
         return self
 
     def resolve_constraints(self)->None:
-        # print("Applying constraints on ",self)
         if self.parent is None or not self.constraints:
-            # print("(No CONSTRAINTS)")        
             self.dirty_constraints = False
             return
-
         all_good = False
-
+        constraint_iteration = 0
         while not all_good:
             for constraint in self.constraints:
                 if not constraint.evaluate(self.parent,self):
                     constraint.apply(self.parent,self)
                     # print(constraint.name,"Applied")
-            self.__constraint_iteration += 1
+            constraint_iteration += 1
             if  all(c.evaluate(self.parent,self) for c in self.constraints):
-               all_good = True 
-            if self.__constraint_iteration > MAX_CONSTRAINTS:
+               all_good = True
+               break
+            elif self.__constraint_iteration > MAX_CONSTRAINTS:
                 print(self,"CONSTRAINTS ERROR",list(c.name for c in self.constraints if not c.evaluate(self.parent,self)))
+                self.dirty_constraints = False
                 return
         # print("DONE")
-        self.__constraint_iteration = 0
         self.dirty_constraints = False
 
     def remove_constraints(self,*names:str)->Self:
@@ -233,22 +235,23 @@ class Widget(bf.Entity):
         self.rect.size = size
         self.dirty_shape = True
         return self
+    
+
+    def process_event(self, event: pygame.Event) -> bool:
+        # First propagate to children
+        for child in self.children:
+            child.process_event(event)
+        # return True if the method is blocking (no propagation to next children of the scene)
+        super().process_event(event)
+
 
     def update(self,dt)->None:
-        super().update(dt)
         if self.do_sort_children:
             self.children.sort(key = lambda c : c.render_order)
             self.do_sort_children = False
         _ = [c.update(dt) for c in self.children]
+        super().update(dt)
 
-    # if return True -> don't propagate to siblings or parents
-    def process_event(self, event: pygame.Event) -> bool:
-        # First propagate to children
-        for child in self.children:
-            if child.process_event(event):
-                return True
-        # return True if the method is blocking (no propagation to next children of the scene)
-        return super().process_event(event)
 
     def build(self)->None:
         new_size =tuple(map(int,self.rect.size))       
@@ -265,8 +268,6 @@ class Widget(bf.Entity):
         if func(self) : return
         if self.parent:
             self.parent.visit_up(func)
-
-
 
     def selective_up(self,widget:"Widget"):
         # if returns True then stop climbing widget tree

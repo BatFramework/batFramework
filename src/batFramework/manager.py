@@ -6,13 +6,15 @@ import random
 class Manager(bf.SceneManager):
     def __init__(self, *initial_scene_list) -> None:
         # random.seed("random")
+        super().__init__()
         self._screen: pygame.Surface | None = bf.const.SCREEN
         self._timeManager = bf.TimeManager()
         self._cutsceneManager = bf.CutsceneManager()
         self._cutsceneManager.set_manager(self)
         self._clock: pygame.Clock = pygame.Clock()
+        pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
         self.do_pre_init()
-        super().__init__(*initial_scene_list)
+        self.init_scenes(*initial_scene_list)
         self.set_sharedVar("clock", self._clock)
         self.do_init()
 
@@ -46,14 +48,16 @@ class Manager(bf.SceneManager):
         dt: float = 0
         while self._running:
             for event in pygame.event.get():
+                event.consumed = False
                 self.process_event(event)
-                if event.type == pygame.QUIT:
-                    self._running = False
-                    break
-                if event.type == pygame.VIDEORESIZE and not (
-                    bf.const.FLAGS & pygame.SCALED
-                ):
-                    bf.const.set_resolution((event.w, event.h))
+                if not event.consumed:
+                    if event.type == pygame.QUIT:
+                        self._running = False
+                        break
+                    if event.type == pygame.VIDEORESIZE and not (
+                        bf.const.FLAGS & pygame.SCALED
+                    ):
+                        bf.const.set_resolution((event.w, event.h))
             # update
             dt = self._clock.tick(bf.const.FPS) / 1000
             # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time

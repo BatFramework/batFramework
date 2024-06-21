@@ -6,7 +6,7 @@ from math import ceil
 
 
 class Shape(Widget):
-    def __init__(self, size: tuple[float, float] = None):
+    def __init__(self, size: tuple[float, float] = None,*args,**kwargs):
         super().__init__(size=size,convert_alpha=True)
         self.color = (0, 0, 0, 0)
         self.border_radius: list[int] = [0]

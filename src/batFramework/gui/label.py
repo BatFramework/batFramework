@@ -100,6 +100,8 @@ class Label(Shape):
         return self
 
     def set_text_outline_matrix(self, matrix: list[list[0 | 1]]) -> Self:
+        if matrix is None:
+            matrix = [[0 for _ in range(3)] for _ in range(3)]
         for y in range(3):
             for x in range(3):
                 self._text_outline_mask.set_at((x, y), matrix[2 - y][2 - x])
