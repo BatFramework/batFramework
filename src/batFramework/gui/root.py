@@ -76,16 +76,15 @@ class Root(InteractiveWidget):
 
 
     def do_handle_event(self, event):
-        # if event.type == pygame.VIDEORESIZE:
-        #     self.set_size(event.w, event.h, force=True)
-        #     return True
         if self.focused:
             if event.type == pygame.KEYDOWN:
                 self.focused.on_key_down(event.key)
             if event.type == pygame.KEYUP:
                 self.focused.on_key_up(event.key)
-        elif not self.hovered or not isinstance(self.hovered, InteractiveWidget):
+        
+        if not self.hovered or (not isinstance(self.hovered, InteractiveWidget)):
             return
+        
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.hovered.on_click_down(event.button)
         elif event.type == pygame.MOUSEBUTTONUP:

@@ -14,6 +14,9 @@ class DialogueBox(Label):
         self.set_alignment(bf.alignment.LEFT)
         super().__init__("")
 
+    def __str__(self) -> str:
+        return "DialogueBox"
+
     def pause(self)->Self:
         self.is_paused = True
         return self

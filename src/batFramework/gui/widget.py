@@ -21,6 +21,10 @@ class Widget(bf.Entity):
         self.is_root : bool = False
         self.autoresize_w,self.autoresize_h  = True,True
         self.__constraint_iteration = 0
+        
+    def __del__(self):
+        bf.StyleManager().remove_widget(self)
+        super().__del__()
 
     def set_clip_children(self,value:bool)->Self:
         self.clip_children = value
@@ -205,6 +209,7 @@ class Widget(bf.Entity):
         i = len(self.children)
         for child in children:
             child.set_render_order(i).set_parent(self).set_parent_scene(self.parent_scene)
+            bf.StyleManager().register_widget(child)
             i += 1
         if self.parent:
             self.parent.do_sort_children = True

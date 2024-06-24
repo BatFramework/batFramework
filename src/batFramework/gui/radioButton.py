@@ -10,9 +10,13 @@ class RadioButton(Toggle):
         self.radio_value : Any = radio_value if radio_value is not None else text if text else None
         self.radio_variable : RadioVariable = None
 
+    def __str__(self) -> str:
+        return f"RadioButton({self.radio_value}|{'Active' if self.value else 'Inactive'})"
+
     def set_radio_value(self,value:Any)->Self:
         self.radio_value = value
-        self.update_radio()
+        
+        if self.radio_variable  : self.radio_variable.update_buttons()
         return self
     
     def set_text(self, text: str) -> Self:
@@ -52,11 +56,12 @@ class RadioVariable:
         self.buttons = [b for b in self.buttons if b not in buttons]
         return self
 
-    def set_value(self,value:Any):
+    def set_value(self,value:Any)->Self:
         if value == self.value: return
         self.value = value
         if self.modify_callback :self.modify_callback(value)
         self.update_buttons() 
+        return self
 
     def update_buttons(self):
         _ = [b.set_value(b.radio_value == self.value,False) for b in self.buttons]

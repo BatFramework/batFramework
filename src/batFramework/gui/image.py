@@ -14,6 +14,9 @@ class Image(Widget):
         super().__init__(convert_alpha = convert_alpha)
         if path is not None:
             self.from_path(path)
+            
+    def __str__(self) -> str:
+        return "Image"
 
     def paint(self) -> None:
         super().paint()

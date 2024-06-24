@@ -65,7 +65,7 @@ class ScrollingSprite(bf.Sprite):
         if size[1] is None: size[1] = self.rect.h
 
         self.surface = pygame.Surface(size).convert_alpha()
-        self.rect = self.surface.get_frect(center=self.rect.center)
+        self.rect = self.surface.get_frect(topleft= self.rect.topleft)
         return self
 
     def _get_mosaic_rect_list(self) -> Iterator[pygame.Rect]:

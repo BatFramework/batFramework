@@ -21,7 +21,7 @@ class TextInput(Label, InteractiveWidget):
         self.on_modify = callback
         return self
 
-    def to_string_id(self) -> str:
+    def __str__(self) -> str:
         return f"TextInput({self.text})"
 
     def _cursor_toggle(self,value:bool = None):

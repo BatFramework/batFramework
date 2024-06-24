@@ -17,12 +17,6 @@ class Debugger(Label):
         self.add_tags("debugger")
         self.set_visible(False)
 
-    # def get_debug_outlines(self):
-    #     yield None
-
-    def to_string_id(self) -> str:
-        return "Debugger"
-
     def set_refresh_rate(self, value: int) -> Self:
         self.refresh_rate = value
         return self

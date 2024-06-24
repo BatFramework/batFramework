@@ -376,3 +376,61 @@ class MarginRight(Constraint):
             parent_widget.get_padded_right() - child_widget.rect.w - self.margin,
             child_widget.rect.y
         )
+
+
+
+class PercentageMarginBottom(Constraint):
+    def __init__(self, margin: float):
+        super().__init__(name="percentage_margin_bottom")
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return (
+            child_widget.rect.bottom == parent_widget.get_padded_top() + parent_widget.get_padded_height() * self.margin
+        )
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(child_widget.rect.x,
+            parent_widget.get_padded_bottom() - child_widget.rect.h - parent_widget.get_padded_height() * self.margin
+        )
+
+class PercentageMarginTop(Constraint):
+    def __init__(self, margin: float):
+        super().__init__(name="percentage_margin_top")
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.top ==  parent_widget.get_padded_top() + parent_widget.get_padded_height() * self.margin
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(child_widget.rect.x,parent_widget.get_padded_top() + parent_widget.get_padded_height() * self.margin)
+
+
+class PercentageMarginLeft(Constraint):
+    def __init__(self, margin: float):
+        super().__init__(name="percentage_margin_left")
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.left == parent_widget.get_padded_left()  + parent_widget.get_padded_width() * self.margin
+
+    def apply_constraint(self, parent_widget, child_widget):
+        if not self.evaluate(parent_widget, child_widget):
+            child_widget.set_position(parent_widget.get_padded_left() + parent_widget.get_padded_width() * self.margin,child_widget.rect.y)
+
+
+class PercentageMarginRight(Constraint):
+    def __init__(self, margin: float):
+        super().__init__(name="percentage_margin_right")
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.right == parent_widget.get_padded_right() - parent_widget.get_padded_width() * self.margin
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(
+            parent_widget.get_padded_right() - child_widget.rect.w - parent_widget.get_padded_width() * self.margin,
+            child_widget.rect.y
+        )
+
+

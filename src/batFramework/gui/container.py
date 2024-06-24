@@ -50,6 +50,22 @@ class Container(Shape, InteractiveWidget):
         self.dirty_children = True
         return self
 
+    def clamp_scroll(self) -> Self:
+        if not self.children : return Self
+        r = self.get_padded_rect()
+        size = self.children[0].rect.unionall(self.children[1:]).size
+        
+        # Calculate the maximum scroll values
+        max_scroll_x = max(0, size[0] - r.width)
+        max_scroll_y = max(0, size[1] - r.height)
+        
+        # Clamp the scroll values
+        self.scroll.x = max(0, min(self.scroll.x, max_scroll_x))
+        self.scroll.y = max(0, min(self.scroll.y, max_scroll_y))
+        
+        self.dirty_children = True
+        return self
+
     def set_layout(self, layout: Layout) -> Self:
         tmp = self.layout
         self.layout = layout
@@ -117,6 +133,20 @@ class Container(Shape, InteractiveWidget):
         self.focused_index = min(self.focused_index, len(l))
         return l[self.focused_index].get_focus()
 
+    def do_handle_event(self,event):
+        if event.type == pygame.MOUSEBUTTONDOWN and self.visible and not self.autoresize_h:
+            r = self.get_root()
+            if not r : return
+            if self.rect.collidepoint(r.drawing_camera.screen_to_world(pygame.mouse.get_pos())):
+                if event.button == 4: 
+                    self.scroll_by((0,-10))
+                elif event.button == 5 : 
+                    self.scroll_by((0,10))
+                else:
+                    return
+                event.consumed = True
+                self.clamp_scroll()
+
     def set_focused_child(self, child: InteractiveWidget) -> bool:
         l = self.get_interactive_children()
         i = l.index(child)
@@ -144,7 +174,8 @@ class Container(Shape, InteractiveWidget):
                 self.parent.visit_up(self.selective_up)
             else:
                 constraints_down = True
-
+        if not self.dirty_children : 
+            self.dirty_children = any(c.dirty_shape for c in self.children)
         if self.dirty_children:
             if self.layout:
                 self.layout.arrange()

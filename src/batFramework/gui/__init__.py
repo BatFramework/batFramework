@@ -1,5 +1,7 @@
 from .constraints import *
 from .widget import Widget
+from .styleManager import StyleManager
+from .style import Style
 from .image import Image
 from .interactiveWidget import InteractiveWidget
 from .draggableWidget import DraggableWidget
