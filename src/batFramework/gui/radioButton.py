@@ -37,6 +37,10 @@ class RadioVariable:
         self.value = None
         self.modify_callback : Callable[[Any],] = None
 
+    def set_modify_callback(self,callback)->Self:
+        self.modify_callback = callback
+        return self
+
     def link(self,*buttons:RadioButton)->Self:
         if not buttons : return self
         for b in buttons : 
