@@ -7,8 +7,8 @@ from typing import Self
 class Label(Shape):
     _text_cache = {}
 
-    def __init__(self, text: str) -> None:
-        self.text = ""
+    def __init__(self, text: str = "") -> None:
+        self.text = text
 
         self.resized_flag: bool = False
 
@@ -53,7 +53,6 @@ class Label(Shape):
         self.set_color("gray50")
         self.set_autoresize(True)
         self.set_font(force=True)
-        self.set_text(text)
 
     @staticmethod
     def clear_cache():
