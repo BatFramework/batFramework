@@ -32,9 +32,15 @@ class Layout:
         return
 
     def get_raw_size(self)->tuple[float,float]:
+        """
+        Returns the supposed size the container should have to encapsulate perfectly all of its widgets
+        """
         return self.parent.rect.size if self.parent else 0,0
 
     def get_auto_size(self)->tuple[float,float]:
+        """
+        Returns the final size the container should have (while keeping the the width and height if they are non-resizable) 
+        """
         return self.parent.rect.size if self.parent else 0,0
 
     def focus_next_child(self)->None:
