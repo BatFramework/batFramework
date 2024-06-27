@@ -2,7 +2,7 @@ import batFramework as bf
 from .interactiveWidget import InteractiveWidget
 from .widget import Widget
 import pygame
-
+from typing import Self
 
 class Root(InteractiveWidget):
     def __init__(self, camera) -> None:
@@ -19,6 +19,10 @@ class Root(InteractiveWidget):
 
     def __str__(self) -> str:
         return "Root"
+
+    def set_parent_scene(self, parent_scene: bf.Scene) -> Self:
+        bf.StyleManager().register_widget(self)
+        return super().set_parent_scene(parent_scene)
 
     def get_focused(self) -> Widget | None:
         return self.focused
@@ -118,7 +122,7 @@ class Root(InteractiveWidget):
 
     def draw(self, camera: bf.Camera) -> int:
         super().draw(camera)
-        if self.focused and self.focused!=self:
+        if self.parent_scene and self.parent_scene.active and self.focused and self.focused!=self:
             self.focused.draw_focused(camera)
 
 
