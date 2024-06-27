@@ -137,11 +137,11 @@ class SceneManager:
         self.set_sharedVar("player_has_control", False)
 
     def _end_transition(self, scene_name, index):
-        self.set_scene(scene_name, index)
+        self.set_scene(scene_name, index,True)
         self.set_sharedVar("player_has_control", True)
         self.current_transitions.clear()
 
-    def set_scene(self, scene_name, index=0):
+    def set_scene(self, scene_name, index=0,ignore_early_late:bool = False):
         target_scene = self.get_scene(scene_name)
         if not target_scene : 
             print(f"'{scene_name}' does not exist")
@@ -154,11 +154,15 @@ class SceneManager:
             return
 
         # switch
+        if not ignore_early_late:
+            self.scenes[index].do_on_exit_early()
         self.scenes[index].on_exit()
         # re-insert scene at index 0
         self.scenes.remove(target_scene)
         self.scenes.insert(index, target_scene)
         _ = [s.set_scene_index(i) for i, s in enumerate(self.scenes)]
+        if not ignore_early_late:
+            self.scenes[index].do_on_enter_early()
         target_scene.on_enter()
 
     def cycle_debug_mode(self):
