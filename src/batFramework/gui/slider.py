@@ -63,7 +63,12 @@ class Slider(Button):
         self.set_value(default_value,True)
         # print(self.handle.rect)
         # self.handle.set_visible(False)
-        
+
+    def set_visible(self, value: bool) -> Self:
+        self.handle.set_visible(value)
+        self.meter.set_visible(value)
+        return super().set_visible(value)
+
     def __str__(self) -> str:
         return "Slider"
 
@@ -201,8 +206,6 @@ class Slider(Button):
                     gap = padded.w - self.text_rect.w - self.meter.rect.w
                 case bf.spacing.MIN:
                     gap = 0
-                case bf.spacing.HALF:
-                    gap = (padded.w)/2 - self.text_rect.w
 
         # place meter 
 

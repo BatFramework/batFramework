@@ -22,9 +22,6 @@ class Widget(bf.Entity):
         self.autoresize_w,self.autoresize_h  = True,True
         self.__constraint_iteration = 0
         
-    def __del__(self):
-        bf.StyleManager().remove_widget(self)
-        super().__del__()
 
     def set_clip_children(self,value:bool)->Self:
         self.clip_children = value
@@ -220,6 +217,7 @@ class Widget(bf.Entity):
             if child in children:
                 child.set_parent(None).set_parent_scene(None)
                 self.children.remove(child)
+                bf.StyleManager().remove_widget(child)
         if self.parent:
             self.parent.do_sort_children = True
 

@@ -15,6 +15,10 @@ class Toggle(Button):
         self.add(self.indicator)
         # self.set_gap(int(max(4, self.get_padded_width() / 3)))
 
+    def set_visible(self, value: bool) -> Self:
+        self.indicator.set_visible(value)
+        return super().set_visible(value)
+
     def set_value(self, value: bool, do_callback=False) -> Self:
         self.value = value
         self.indicator.set_value(value)
@@ -57,7 +61,7 @@ class Toggle(Button):
             }
             self.text_rect.size = self._render_font(params).get_size()
         w,h = self.text_rect.size
-        size = max(self.indicator.rect.w,w + self.font_object.point_size + (self.gap if self.text else 0)), max(h,self.font_object.point_size,self.indicator.rect.h)
+        size = max(self.indicator.rect.w,w + self.font_object.point_size + (self.gap if self.text else 0)),self.text_rect.h
         return self.inflate_rect_by_padding((0,0,*size)).size
 
         
@@ -102,8 +106,6 @@ class Toggle(Button):
                     gap = padded.w - self.text_rect.w - self.indicator.rect.w
                 case bf.spacing.MIN:
                     gap = 0
-                case bf.spacing.HALF:
-                    gap = (padded.w)/2 - self.text_rect.w
 
         self.indicator.set_position(
             *self.text_rect.move(
