@@ -34,8 +34,7 @@ class Tileset:
             num_tiles = len(self.tile_dict.values())
         return f"{num_tiles} tiles | Tile size : {self.tile_size}"
 
-    def get_tile(self, x, y, flipX=False, flipY=False) -> pygame.Surface | None:
-
+    def get_tile(self, x:int, y:int, flipX=False, flipY=False) -> pygame.Surface | None:
         if flipX:
             x = self.tile_width - 1 - x
         if flipY:
@@ -43,4 +42,5 @@ class Tileset:
         tile_data = self.tile_dict.get((x, y), None)
         if tile_data is None:
             return None
+        
         return tile_data.get((flipX, flipY), None)
