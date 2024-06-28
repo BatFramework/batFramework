@@ -149,52 +149,56 @@ class FillY(PercentageHeight):
         self.name = "fill_y"
 
 
-class Height(Constraint):
-    def __init__(self, height: float, keep_autoresize: bool = False):
-        if height < 0:
-            raise ValueError("height can't be negative")
-        super().__init__(name="height")
-        self.height = height
+class PercentageRectHeight(Constraint):
+    def __init__(self, percentage: float, keep_autoresize: bool = False):
+        super().__init__(name="percentage_rect_height")
+        self.percentage: float = percentage
         self.keep_autoresize: bool = keep_autoresize
 
-    def __str__(self) -> str:
-        return f"{super().__str__()}.(height={self.height})"
-
     def evaluate(self, parent_widget, child_widget):
-        return child_widget.rect.height == self.height
+        return child_widget.rect.height == round(parent_widget.rect.height * self.percentage)
+
+    def __str__(self) -> str:
+        return f"{super().__str__()}.[{self.percentage*100}%, keep_autoresize={self.keep_autoresize}]"
 
     def apply_constraint(self, parent_widget, child_widget):
         if child_widget.autoresize_h:
             if self.keep_autoresize:
-                print(f"WARNING: Constraint on {child_widget.__str__()} can't resize, autoresize set to True")
+                print(f"WARNING: Constraint on {child_widget} can't resize, autoresize set to True")
                 return
             child_widget.set_autoresize_h(False)
-        child_widget.set_size((None, self.height))
+        child_widget.set_size((None, round(parent_widget.rect.height * self.percentage)))
 
-
-class Width(Constraint):
-    def __init__(self, width: float, keep_autoresize: bool = False):
-        if width < 0:
-            raise ValueError("width can't be negative")
-        super().__init__(name="width")
-        self.width = width
+class PercentageRectWidth(Constraint):
+    def __init__(self, percentage: float, keep_autoresize: bool = False):
+        super().__init__(name="percentage_rect_width")
+        self.percentage: float = percentage
         self.keep_autoresize: bool = keep_autoresize
 
-    def __str__(self) -> str:
-        return f"{super().__str__()}.(width={self.width})"
-
     def evaluate(self, parent_widget, child_widget):
-        return child_widget.rect.width == self.width
+        return child_widget.rect.width == round(parent_widget.rect.width * self.percentage)
+
+    def __str__(self) -> str:
+        return f"{super().__str__()}.[{self.percentage*100}%, keep_autoresize={self.keep_autoresize}]"
 
     def apply_constraint(self, parent_widget, child_widget):
         if child_widget.autoresize_w:
             if self.keep_autoresize:
-                print(
-                    f"WARNING: Constraint on {child_widget.__str__()} can't resize, autoresize set to True"
-                )
+                print(f"WARNING: Constraint on {child_widget} can't resize, autoresize set to True")
                 return
             child_widget.set_autoresize_w(False)
-        child_widget.set_size((self.width, None))
+        child_widget.set_size((round(parent_widget.rect.width * self.percentage), None))
+
+class FillRectX(PercentageRectWidth):
+    def __init__(self, keep_autoresize: bool = False):
+        super().__init__(1, keep_autoresize)
+        self.name = "fill_rect_x"
+
+class FillRectY(PercentageRectHeight):
+    def __init__(self, keep_autoresize: bool = False):
+        super().__init__(1, keep_autoresize)
+        self.name = "fill_rect_y"
+
 
 
 class AspectRatio(Constraint):
@@ -434,3 +438,61 @@ class PercentageMarginRight(Constraint):
         )
 
 
+class PercentageRectMarginBottom(Constraint):
+    def __init__(self, margin: float):
+        super().__init__(name="percentage_rect_margin_bottom")
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return (
+            child_widget.rect.bottom == parent_widget.rect.top + parent_widget.rect.height * self.margin
+        )
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(
+            child_widget.rect.x,
+            parent_widget.rect.bottom - child_widget.rect.height - parent_widget.rect.height * self.margin
+        )
+
+class PercentageRectMarginTop(Constraint):
+    def __init__(self, margin: float):
+        super().__init__(name="percentage_rect_margin_top")
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.top == parent_widget.rect.top + parent_widget.rect.height * self.margin
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(
+            child_widget.rect.x,
+            parent_widget.rect.top + parent_widget.rect.height * self.margin
+        )
+
+class PercentageRectMarginLeft(Constraint):
+    def __init__(self, margin: float):
+        super().__init__(name="percentage_rect_margin_left")
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.left == parent_widget.rect.left + parent_widget.rect.width * self.margin
+
+    def apply_constraint(self, parent_widget, child_widget):
+        if not self.evaluate(parent_widget, child_widget):
+            child_widget.set_position(
+                parent_widget.rect.left + parent_widget.rect.width * self.margin,
+                child_widget.rect.y
+            )
+
+class PercentageRectMarginRight(Constraint):
+    def __init__(self, margin: float):
+        super().__init__(name="percentage_rect_margin_right")
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.right == parent_widget.rect.right - parent_widget.rect.width * self.margin
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(
+            parent_widget.rect.right - child_widget.rect.width - parent_widget.rect.width * self.margin,
+            child_widget.rect.y
+        )
