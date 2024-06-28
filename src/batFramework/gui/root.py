@@ -59,6 +59,12 @@ class Root(InteractiveWidget):
         self.visit(getter)
         return res
 
+    def focus_next_tab(self,widget):
+        return True
+
+    def focus_prev_tab(self,widget):
+        return True
+
     def get_by_uid(self,uid:int)->Widget:
         def helper(w: Widget,uid):
             if w.uid == uid:
@@ -82,17 +88,22 @@ class Root(InteractiveWidget):
     def do_handle_event(self, event):
         if self.focused:
             if event.type == pygame.KEYDOWN:
-                self.focused.on_key_down(event.key)
-            if event.type == pygame.KEYUP:
-                self.focused.on_key_up(event.key)
+                if self.focused.on_key_down(event.key):
+                    event.consumed = True
+            elif event.type == pygame.KEYUP:
+                if self.focused.on_key_up(event.key):
+                    event.consumed = True
         
         if not self.hovered or (not isinstance(self.hovered, InteractiveWidget)):
             return
         
         if event.type == pygame.MOUSEBUTTONDOWN:
-            self.hovered.on_click_down(event.button)
+            if self.hovered.on_click_down(event.button):
+                event.consumed = True
+
         elif event.type == pygame.MOUSEBUTTONUP:
-            self.hovered.on_click_up(event.button)
+            if self.hovered.on_click_up(event.button):
+                event.consumed = True
 
 
     def do_on_click_down(self, button: int) -> None:

@@ -32,6 +32,7 @@ class TextInput(Label, InteractiveWidget):
     def do_on_click_down(self, button):
         if button != 1:
             return
+        self.set_cursor_position(len(self.get_text()))
         self.get_focus()
 
     def do_on_enter(self):
@@ -117,7 +118,6 @@ class TextInput(Label, InteractiveWidget):
         super().paint()
         self._paint_cursor()
 
-
     def align_text(self,text_rect:pygame.FRect,area:pygame.FRect,alignment: bf.alignment):
         if alignment == bf.alignment.LEFT : alignment = bf.alignment.MIDLEFT
         elif alignment == bf.alignment.MIDRIGHT : alignment = bf.alignment.MIDRIGHT
@@ -131,4 +131,3 @@ class TextInput(Label, InteractiveWidget):
             self.text_rect.right = area.right
         elif self.text_rect.x + w < area.left:
             self.text_rect.left = area.left - w
-        

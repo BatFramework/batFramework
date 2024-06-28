@@ -7,7 +7,6 @@ from typing import Self
 import pygame
 from pygame.math import Vector2
 
-
 class Container(Shape, InteractiveWidget):
     def __init__(self, layout: Layout = None, *children: Widget) -> None:
         super().__init__()
@@ -187,7 +186,6 @@ class Container(Shape, InteractiveWidget):
         if self.dirty_surface:
             self.paint()
             self.dirty_surface = False
-
 
         bf.Entity.draw(self, camera)
 

@@ -80,6 +80,11 @@ class Widget(bf.Entity):
 
     def set_parent_scene(self,parent_scene:bf.Scene)->Self:
         super().set_parent_scene(parent_scene)
+        if parent_scene is None:
+            bf.StyleManager().remove_widget(self)
+        else:
+            bf.StyleManager().register_widget(self)
+
         for c in self.children : 
             c.set_parent_scene(parent_scene) 
         return self
@@ -181,12 +186,6 @@ class Widget(bf.Entity):
     def has_constraint(self,name:str)->bool:
         return any(c.name == name for c in self.constraints )
 
-    def visit(self,func:Callable,top_down:bool = True)->None:
-        if top_down : func(self)
-        for child in self.children:
-            child.visit(func,top_down)
-        if not top_down: func(self)
-
     def get_root(self)->"Root":
         if self.is_root:
             return self
@@ -206,7 +205,6 @@ class Widget(bf.Entity):
         i = len(self.children)
         for child in children:
             child.set_render_order(i).set_parent(self).set_parent_scene(self.parent_scene)
-            bf.StyleManager().register_widget(child)
             i += 1
         if self.parent:
             self.parent.do_sort_children = True
@@ -217,7 +215,6 @@ class Widget(bf.Entity):
             if child in children:
                 child.set_parent(None).set_parent_scene(None)
                 self.children.remove(child)
-                bf.StyleManager().remove_widget(child)
         if self.parent:
             self.parent.do_sort_children = True
 
@@ -255,7 +252,6 @@ class Widget(bf.Entity):
         _ = [c.update(dt) for c in self.children]
         super().update(dt)
 
-
     def build(self)->None:
         new_size =tuple(map(int,self.rect.size))       
         if self.surface.get_size() != new_size:
@@ -267,10 +263,16 @@ class Widget(bf.Entity):
         self.surface.fill((0,0,0,0))
         return self
 
-    def visit_up(self,func)->None:
-        if func(self) : return
+    def visit(self,func:Callable,top_down:bool = True,*args,**kwargs)->None:
+        if top_down : func(self,*args,**kwargs)
+        for child in self.children:
+            child.visit(func,top_down)
+        if not top_down: func(self,*args,**kwargs)
+
+    def visit_up(self,func,*args,**kwargs)->None:
+        if func(self,*args,**kwargs) : return
         if self.parent:
-            self.parent.visit_up(func)
+            self.parent.visit_up(func,*args,**kwargs)
 
     def selective_up(self,widget:"Widget"):
         # if returns True then stop climbing widget tree
@@ -288,7 +290,6 @@ class Widget(bf.Entity):
             widget.build()
             widget.dirty_shape = False
             self.dirty_surface = True
-
 
     def draw(self, camera: bf.Camera) -> None:
         if self.dirty_shape:
@@ -309,16 +310,16 @@ class Widget(bf.Entity):
             self.paint()
             self.dirty_surface = False
 
-
-
         super().draw(camera)
+        
         if self.clip_children:
-
+        
             new_clip = camera.world_to_screen(self.get_padded_rect())
             old_clip = camera.surface.get_clip()
             new_clip = new_clip.clip(old_clip)
             camera.surface.set_clip(new_clip)
 
         _ = [child.draw(camera) for child in sorted(self.children, key=lambda c: c.render_order)]
+
         if self.clip_children:
             camera.surface.set_clip(old_clip)

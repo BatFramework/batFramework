@@ -23,7 +23,7 @@ class InteractiveWidget(Widget):
         return self
 
     def allow_focus_to_self(self) -> bool:
-        return True
+        return self.visible
 
     def get_focus(self) -> bool:
         if self.focusable and ((r := self.get_root()) is not None):
@@ -47,28 +47,41 @@ class InteractiveWidget(Widget):
         self.is_focused = False
         self.do_on_lose_focus()
 
-    def on_key_down(self,key):
-        if key == pygame.K_DOWN:
-            self.focus_next_sibling()
-        elif key == pygame.K_UP:
-            self.focus_prev_sibling()
-        else:
-            self.do_on_key_down(key)
+    def focus_next_tab(self,widget):
+        # print(self.parent,self,"looking for ",widget)
 
-    def on_key_up(self, key):
-        self.do_on_key_up(key)
+        if widget != self:
+            if isinstance(self,InteractiveWidget) and not isinstance(self,bf.Container):
+                print(self,"A")
+                self.focus_next_sibling()
+                return
+            i_children = [c for c in self.children if isinstance(c,InteractiveWidget)]
+            
+            if i_children: 
+                index = i_children.index(widget)
+                if index < len(i_children)-1:
+                    i_children[index+1].get_focus()
+                    return
 
-    def do_on_key_down(self, key):
-        pass
+        if self.parent:
+            self.parent.focus_next_tab(self)
+        
+    def focus_prev_tab(self,widget):
+        if widget != self:
+            if isinstance(self,InteractiveWidget) and not isinstance(self,bf.Container):
+                self.get_focus()
+                return
+            i_children = [c for c in self.children if isinstance(c,InteractiveWidget) ]
+            
+            if i_children: 
+                index = i_children.index(widget)
+                if index > 0 :
+                    i_children[index-1].get_focus()
+                    return
 
-    def do_on_key_up(self, key):
-        pass
-
-    def do_on_get_focus(self) -> None:
-        pass
-
-    def do_on_lose_focus(self) -> None:
-        pass
+        if self.parent:
+            self.parent.focus_prev_tab(self)
+        
 
     def focus_next_sibling(self) -> None:
         if isinstance(self.parent, bf.Container):
@@ -78,19 +91,51 @@ class InteractiveWidget(Widget):
         if isinstance(self.parent, bf.Container):
             self.parent.focus_prev_child()
 
-    def on_click_down(self, button: int) -> None:
+    def on_key_down(self,key)->bool:
+        if key == pygame.K_DOWN:
+            self.focus_next_sibling()
+        elif key == pygame.K_UP:
+            self.focus_prev_sibling()
+        elif key == pygame.K_TAB and self.parent:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LSHIFT] or  keys[pygame.K_RSHIFT]:
+    
+                self.focus_prev_tab(self)
+            else:
+                self.focus_next_tab(self)
+            
+        else:
+            return self.do_on_key_down(key)
+        return True
+    def on_key_up(self, key)->bool:
+        return self.do_on_key_up(key)
+
+    def do_on_key_down(self, key)->bool:
+        return False
+
+    def do_on_key_up(self, key)->bool:
+        return False
+
+    def do_on_get_focus(self) -> None:
+        pass
+
+    def do_on_lose_focus(self) -> None:
+        pass
+
+
+    def on_click_down(self, button: int) -> bool:
         self.is_clicked_down = True
-        self.do_on_click_down(button)
+        return self.do_on_click_down(button)
 
-    def on_click_up(self, button: int) -> None:
+    def on_click_up(self, button: int) -> bool:
         self.is_clicked_down = False
-        self.do_on_click_up(button)
+        return self.do_on_click_up(button)
 
-    def do_on_click_down(self, button: int) -> None:
-        pass
+    def do_on_click_down(self, button: int) -> bool:
+        return False
 
-    def do_on_click_up(self, button: int) -> None:
-        pass
+    def do_on_click_up(self, button: int) -> bool:
+        return False
 
     def on_enter(self) -> None:
         self.is_hovered = True

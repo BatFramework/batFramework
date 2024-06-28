@@ -21,6 +21,7 @@ class Image(Widget):
     def paint(self) -> None:
         super().paint()
         self.surface.fill((0,0,0,0 if self.convert_alpha else 255))
+        if self.original_surface is None: return
         if self.rect.size != self.original_surface.get_size():
             self.surface.blit(pygame.transform.scale(self.original_surface,self.rect.size),(0,0))
         else:
