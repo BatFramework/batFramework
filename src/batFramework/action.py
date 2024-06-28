@@ -89,7 +89,8 @@ class Action:
         self.add_key_control(new_key)
         return self
 
-    def add_mouse_control(self, *mouse_buttons: int) -> Self:
+
+    def add_mouse_control(self, *mouse: int) -> Self:
         """
         Add mouse control to the action.
 
@@ -99,9 +100,21 @@ class Action:
         Returns:
             Action: The updated Action object for method chaining.
         """
-        self._mouse_control.update(mouse_buttons)
+        self._mouse_control.update(mouse)
         return self
 
+    def remove_mouse_control(self, *mouse : int) ->Self:
+        self._mouse_control = self._mouse_control - set(mouse)
+        return self
+
+    def replace_mouse_control(self, mouse, new_mouse)->Self:
+        if not mouse in self._mouse_control:
+            return self
+        self.remove_mouse_control(mouse)
+        self.add_mouse_control(new_mouse)
+        return self
+    
+        
     def set_continuous(self) -> Self:
         """
         Set the action type to continuous.
