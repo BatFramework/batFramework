@@ -1,7 +1,8 @@
 from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
-
+from collections import OrderedDict
+import itertools
 if TYPE_CHECKING:
     from .manager import Manager
     from .sceneManager import SceneManager
@@ -28,8 +29,8 @@ class Scene:
         self.manager: Manager | None = None
         self.active = False
         self.visible = False
-        self.world_entities: list[bf.Entity] = []
-        self.hud_entities: list[bf.Entity] = []
+        self.world_entities: OrderedDict[bf.Entity, None] = OrderedDict()
+        self.hud_entities: OrderedDict[bf.Entity, None] = OrderedDict()
         self.actions: bf.ActionContainer = bf.ActionContainer()
         self.early_actions: bf.ActionContainer = bf.ActionContainer()
         self.camera: bf.Camera = bf.Camera(convert_alpha=world_convert_alpha)
@@ -124,40 +125,43 @@ class Scene:
         """Get the name of the scene."""
         return self.name
 
-    def add_world_entity(self, *entity: bf.Entity):
+    def add_world_entity(self, *entities: bf.Entity):
         """Add world entities to the scene."""
-        for e in entity:
-            self.world_entities.append(e)
-            e.parent_scene = self
-            e.do_when_added()
+        for e in entities:
+            if e not in self.world_entities:
+                self.world_entities[e] = None
+                e.parent_scene = self
+                e.do_when_added()
         self.sort_entities()
 
-    def remove_world_entity(self, *entity: bf.Entity):
+    def remove_world_entity(self, *entities: bf.Entity):
         """Remove world entities from the scene."""
-        for e in entity:
-            if e not in self.world_entities:
-                return False
-            e.do_when_removed()
-            e.parent_scene = None
-            self.world_entities.remove(e)
-            return True
+        removed = False
+        for e in entities:
+            if e in self.world_entities:
+                e.do_when_removed()
+                e.parent_scene = None
+                del self.world_entities[e]
+                removed = True
+        return removed
 
-    def add_hud_entity(self, *entity: bf.Entity):
+    def add_hud_entity(self, *entities: bf.Entity):
         """Add HUD entities to the scene."""
-        for e in entity:
-            self.hud_entities.append(e)
-            e.parent_scene = self
-            e.do_when_added()
+        for e in entities:
+            if e not in self.hud_entities:
+                self.hud_entities[e] = None
+                e.parent_scene = self
+                e.do_when_added()
         self.sort_entities()
         return True
 
-    def remove_hud_entity(self, *entity: bf.Entity):
+    def remove_hud_entity(self, *entities: bf.Entity):
         """Remove HUD entities from the scene."""
-        for e in entity:
+        for e in entities:
             if e in self.hud_entities:
                 e.do_when_removed()
                 e.parent_scene = None
-                self.hud_entities.remove(e)
+                del self.hud_entities[e]
 
     def add_actions(self, *action):
         """Add actions to the scene."""
@@ -171,7 +175,7 @@ class Scene:
         """Get entities by their tags."""
         res = [
             entity
-            for entity in self.world_entities + self.hud_entities
+            for entity in itertools.chain(self.world_entities.keys(), self.hud_entities.keys())
             if any(entity.has_tags(t) for t in tags)
         ]
         res.extend(list(self.root.get_by_tags(*tags)))
@@ -179,10 +183,11 @@ class Scene:
 
     def get_by_uid(self, uid) -> bf.Entity | None:
         """Get an entity by its unique identifier."""
-        res = self._find_entity_by_uid(uid, self.world_entities + self.hud_entities)
+        res = self._find_entity_by_uid(uid, itertools.chain(self.world_entities.keys(), self.hud_entities.keys()))
         if res is None:
             res = self._recursive_search_by_uid(uid, self.root)
         return res
+
 
     def _find_entity_by_uid(self, uid, entities) -> bf.Entity | None:
         """Search for entity by uid in a list of entities."""
@@ -203,7 +208,7 @@ class Scene:
 
         return None
 
-    # propagates event to all entities
+
     def process_event(self, event: pygame.Event):
         """
         Propagates event while it is not consumed.
@@ -215,17 +220,23 @@ class Scene:
         -scene actions
         at each step, if the event is consumed the propagation stops
         """
-        if event.consumed : return
+        if event.consumed:
+            return
         self.do_early_handle_event(event)
-        if event.consumed : return
+        if event.consumed:
+            return
         self.early_actions.process_event(event)
-        if event.consumed : return
-        for entity in self.hud_entities + self.world_entities:
+        if event.consumed:
+            return
+        for entity in itertools.chain(self.hud_entities.keys(), self.world_entities.keys()):
             entity.process_event(event)
-            if event.consumed : return    
+            if event.consumed:
+                return
         self.do_handle_event(event)
-        if event.consumed : return
+        if event.consumed:
+            return
         self.actions.process_event(event)
+
 
     # called before process event
     def do_early_handle_event(self, event: pygame.Event) :
@@ -238,7 +249,7 @@ class Scene:
 
     def update(self, dt):
         """Update the scene. Do NOT override"""
-        for entity in self.world_entities + self.hud_entities:
+        for entity in itertools.chain(self.hud_entities.keys(), self.world_entities.keys()):
             entity.update(dt)
         self.do_update(dt)
         self.camera.update(dt)
@@ -266,32 +277,30 @@ class Scene:
 
     def sort_entities(self) -> None:
         """Sort entities within the scene based on their rendering order."""
-        self.world_entities.sort(key=lambda e: e.render_order)
-        self.hud_entities.sort(key=lambda e: e.render_order)
-
-    def _draw_camera(self, camera: bf.Camera, entity_list: list[bf.Entity]) ->None:
-        _ = [entity.draw(camera) for entity in entity_list]
-        debugMode = self.manager.debug_mode
-        # Draw outlines for world entities if required
-        if debugMode == bf.debugMode.OUTLINES:
-            [self.debug_entity(e, camera) for e in entity_list]
-
+        self.world_entities = OrderedDict(sorted(self.world_entities.items(), key=lambda e: e[0].render_order))
+        self.hud_entities = OrderedDict(sorted(self.hud_entities.items(), key=lambda e: e[0].render_order))
 
     def draw(self, surface: pygame.Surface):
-
         self.camera.clear()
         self.hud_camera.clear()
 
         # Draw all world entities
-        self._draw_camera(self.camera, self.world_entities)
+        self._draw_camera(self.camera, self.world_entities.keys())
         # Draw all HUD entities
-        self._draw_camera(self.hud_camera, self.hud_entities)
+        self._draw_camera(self.hud_camera, self.hud_entities.keys())
 
         self.do_early_draw(surface)
         self.camera.draw(surface)
         self.do_post_world_draw(surface)
         self.hud_camera.draw(surface)
         self.do_final_draw(surface)
+
+    def _draw_camera(self, camera: bf.Camera, entity_list):
+        _ = [entity.draw(camera) for entity in entity_list]
+        debugMode = self.manager.debug_mode
+        # Draw outlines for world entities if required
+        if debugMode == bf.debugMode.OUTLINES:
+            [self.debug_entity(e, camera) for e in entity_list]
 
     def do_early_draw(self, surface: pygame.Surface):
         pass
