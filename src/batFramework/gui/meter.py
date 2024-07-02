@@ -10,14 +10,9 @@ def custom_top_at(self, x, y):
 
 
 class Meter(Shape):
-    def __init__(
-        self,
-        min_value: float = 0,
-        max_value: float = 1,
-        step: float = 0.1
-    ):
+    def __init__(self, min_value: float = 0, max_value: float = 1, step: float = 0.1):
         super().__init__()
-        self.min_value, self.max_value = min_value,max_value
+        self.min_value, self.max_value = min_value, max_value
         self.step = step
         self.snap: bool = False
         self.value = self.max_value
@@ -67,7 +62,7 @@ class Meter(Shape):
         return self.value / (self.max_value - self.min_value)
 
     def _build_content(self) -> None:
-        width = (self.get_padded_width() * self.get_ratio())
+        width = self.get_padded_width() * self.get_ratio()
         self.content.set_size((width, self.get_padded_height()))
         self.content.set_position(*self.get_padded_rect().topleft)
 

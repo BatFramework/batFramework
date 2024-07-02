@@ -3,10 +3,12 @@ import pygame
 import batFramework as bf
 from .object import Object
 
+
 class Entity(Object):
     """
     Basic entity class
     """
+
     def __init__(
         self,
         size: None | tuple[int, int] = None,
@@ -30,7 +32,7 @@ class Entity(Object):
         self.surface.set_alpha(min(max(0, alpha), 255))
         return self
 
-    def get_alpha(self)->int:
+    def get_alpha(self) -> int:
         return self.surface.get_alpha()
 
     def set_surface_flags(self, surface_flags: int) -> Self:
@@ -44,6 +46,10 @@ class Entity(Object):
     def set_blit_flags(self, blit_flags: int) -> Self:
         self.blit_flags = blit_flags
         return self
+
+    def get_debug_outlines(self):
+        if self.visible:
+            yield (self.rect, self.debug_color)
 
     def set_render_order(self, render_order: int) -> Self:
         self.render_order = render_order
@@ -59,7 +65,8 @@ class Entity(Object):
         """
         Draw the entity onto the camera surface
         """
-        if not self.visible or not camera.rect.colliderect(self.rect): return
+        if not self.visible or not camera.rect.colliderect(self.rect):
+            return
         camera.surface.blit(
             self.surface,
             camera.world_to_screen(self.rect),

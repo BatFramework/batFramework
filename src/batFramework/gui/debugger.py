@@ -7,6 +7,7 @@ import pygame
 def convert_to_int(*args):
     return [int(arg) for arg in args]
 
+
 class Debugger(Label):
     def __init__(self) -> None:
         super().__init__("")
@@ -55,14 +56,17 @@ class Debugger(Label):
     def update_text(self) -> None:
         if not self.parent_scene:
             return
+
         d = "\n".join(
             key + ":" + data if key != "" else data
             for key, data in self.static_data.items()
         )
+
         d2 = "\n".join(
             key + ":" + str(data()) if key != "" else str(data())
             for key, data in self.dynamic_data.items()
         )
+
         self.set_text("\n".join((d, d2)).strip())
 
     def update(self, dt: float) -> None:
@@ -77,13 +81,17 @@ class Debugger(Label):
             self.refresh_counter = 0
             self.update_text()
 
-
-    def __str__(self)->str:
+    def __str__(self) -> str:
         return "Debugger"
-    # def top_at(self,x,y):
-        # return None
+
+    def top_at(self, x, y):
+        return None
+
 
 class FPSDebugger(Debugger):
+    def __init__(self):
+        super().__init__()
+
     def do_when_added(self):
         if not self.parent_scene or not self.parent_scene.manager:
             print("Debugger could not link to the manager")
@@ -119,4 +127,9 @@ class BasicDebugger(FPSDebugger):
         self.add_dynamic("W. Ent.", lambda: parent_scene.get_world_entity_count())
         self.add_dynamic("H. Ent.", lambda: parent_scene.get_hud_entity_count())
 
-        self.add_dynamic("Hover",lambda : str(parent_scene.root.hovered) if parent_scene.root.hovered else None)
+        self.add_dynamic(
+            "Hover",
+            lambda: (
+                str(parent_scene.root.hovered) if parent_scene.root.hovered else None
+            ),
+        )

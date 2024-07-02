@@ -25,12 +25,12 @@ class Object:
         Object.__instance_count += 1
         return i
 
-    def set_position(self,x,y)->Self:
-        self.rect.topleft = x,y
+    def set_position(self, x, y) -> Self:
+        self.rect.topleft = x, y
         return self
 
-    def set_center(self,x,y)->Self:
-        self.rect.center = x,y
+    def set_center(self, x, y) -> Self:
+        self.rect.center = x, y
         return self
 
     def get_debug_outlines(self):
@@ -41,8 +41,9 @@ class Object:
         return self
 
     def set_parent_scene(self, scene) -> Self:
-        if scene == self.parent_scene : return self
-        if self.parent_scene is not  None:
+        if scene == self.parent_scene:
+            return self
+        if self.parent_scene is not None:
             self.do_when_removed()
         self.parent_scene = scene
         if scene is not None:
@@ -58,9 +59,6 @@ class Object:
     def set_uid(self, uid: int) -> Self:
         self.uid = uid
         return self
-
-    def get_uid(self) -> int:
-        return self.uid
 
     def add_tags(self, *tags) -> Self:
         for tag in tags:
@@ -82,7 +80,8 @@ class Object:
         """
         Returns bool : True if the method is blocking (no propagation to next object of the scene)
         """
-        if event.consumed : return
+        if event.consumed:
+            return
         self.do_process_actions(event)
         self.do_handle_event(event)
 

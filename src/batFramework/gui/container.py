@@ -7,6 +7,7 @@ from typing import Self
 import pygame
 from pygame.math import Vector2
 
+
 class Container(Shape, InteractiveWidget):
     def __init__(self, layout: Layout = None, *children: Widget) -> None:
         super().__init__()
@@ -18,6 +19,9 @@ class Container(Shape, InteractiveWidget):
             self.layout = Column()
         self.layout.set_parent(self)
         self.add(*children)
+
+    def __str__(self) -> str:
+        return f"Container({self.uid},{len(self.children)})"
 
     def get_min_required_size(self):
         if self.layout:
@@ -50,18 +54,19 @@ class Container(Shape, InteractiveWidget):
         return self
 
     def clamp_scroll(self) -> Self:
-        if not self.children : return Self
+        if not self.children:
+            return Self
         r = self.get_padded_rect()
         size = self.children[0].rect.unionall(self.children[1:]).size
-        
+
         # Calculate the maximum scroll values
         max_scroll_x = max(0, size[0] - r.width)
         max_scroll_y = max(0, size[1] - r.height)
-        
+
         # Clamp the scroll values
         self.scroll.x = max(0, min(self.scroll.x, max_scroll_x))
         self.scroll.y = max(0, min(self.scroll.y, max_scroll_y))
-        
+
         self.dirty_children = True
         return self
 
@@ -72,23 +77,16 @@ class Container(Shape, InteractiveWidget):
             self.dirty_children = True
         return self
 
-
-    def get_debug_outlines(self):
-        yield (self.rect, self.debug_color)
-        yield (self.get_padded_rect(), self.debug_color)
-
-        for child in self.children:
-            yield from child.get_debug_outlines()
-            # for data in child.get_debug_outlines():
-
     def get_interactive_children(self) -> list[InteractiveWidget]:
         return [
-            child for child in self.children if isinstance(child, InteractiveWidget) and child.allow_focus_to_self()
+            child
+            for child in self.children
+            if isinstance(child, InteractiveWidget) and child.allow_focus_to_self()
         ]
 
     def focus_next_child(self) -> None:
         self.layout.focus_next_child()
-        
+
     def focus_prev_child(self) -> None:
         self.layout.focus_prev_child()
 
@@ -109,14 +107,11 @@ class Container(Shape, InteractiveWidget):
     def resolve_constraints(self) -> None:
         super().resolve_constraints()
 
-    def __str__(self) -> str:
-        return f"Container({self.uid},{len(self.children)})"
-
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         if self.visible and self.rect.collidepoint(x, y):
             if self.children:
                 for child in reversed(self.children):
-                    r = child.top_at(x,y)
+                    r = child.top_at(x, y)
                     if r is not None:
                         return r
             return self
@@ -132,30 +127,22 @@ class Container(Shape, InteractiveWidget):
         self.focused_index = min(self.focused_index, len(l))
         return l[self.focused_index].get_focus()
 
-    def do_handle_event(self,event):
-        if event.type == pygame.MOUSEBUTTONDOWN and self.visible and not self.autoresize_h:
-            r = self.get_root()
-            if not r : return
-            if self.rect.collidepoint(r.drawing_camera.screen_to_world(pygame.mouse.get_pos())):
-                if event.button == 4: 
-                    self.scroll_by((0,-10))
-                elif event.button == 5 : 
-                    self.scroll_by((0,10))
-                else:
-                    return
-                event.consumed = True
-                self.clamp_scroll()
+    def do_handle_event(self, event):
+        self.layout.handle_event(event)
 
     def set_focused_child(self, child: InteractiveWidget) -> bool:
         l = self.get_interactive_children()
-        i = l.index(child)
+        try:
+            i = l.index(child)
+        except ValueError:
+            return False
         if i >= 0:
             self.focused_index = i
             return True
         return False
 
     def allow_focus_to_self(self) -> bool:
-        return len(self.get_interactive_children()) != 0
+        return len(self.get_interactive_children()) != 0 and self.visible
 
     def draw(self, camera: bf.Camera) -> None:
         constraints_down = False
@@ -173,7 +160,7 @@ class Container(Shape, InteractiveWidget):
                 self.parent.visit_up(self.selective_up)
             else:
                 constraints_down = True
-        if not self.dirty_children : 
+        if not self.dirty_children:
             self.dirty_children = any(c.dirty_shape for c in self.children)
         if self.dirty_children:
             if self.layout:
@@ -195,8 +182,10 @@ class Container(Shape, InteractiveWidget):
             new_clip = new_clip.clip(old_clip)
             camera.surface.set_clip(new_clip)
         # Draw children with adjusted positions
-        _ = [child.draw(camera) for child in sorted(self.children, key=lambda c: c.render_order)]
+        _ = [
+            child.draw(camera)
+            for child in sorted(self.children, key=lambda c: c.render_order)
+        ]
 
         if self.clip_children:
             camera.surface.set_clip(old_clip)
-

@@ -3,6 +3,8 @@ from .interactiveWidget import InteractiveWidget
 from .widget import Widget
 import pygame
 from typing import Self
+import sys
+
 
 class Root(InteractiveWidget):
     def __init__(self, camera) -> None:
@@ -14,7 +16,7 @@ class Root(InteractiveWidget):
         self.focused: InteractiveWidget | None = self
         self.hovered: Widget | None = self
         self.set_debug_color("yellow")
-        self.set_render_order(999)
+        self.set_render_order(sys.maxsize)
         self.clip_children = False
 
     def __str__(self) -> str:
@@ -38,8 +40,14 @@ class Root(InteractiveWidget):
             self.hovered.on_exit()
         self.hovered = None
 
+    def get_debug_outlines(self):
+        yield (self.rect, self.debug_color)
+        for child in self.children:
+            yield from child.get_debug_outlines()
+
     def focus_on(self, widget: InteractiveWidget | None) -> None:
-        if widget == self.focused : return
+        if widget == self.focused:
+            return
         if widget and not widget.allow_focus_to_self():
             return
         if self.focused is not None:
@@ -50,32 +58,34 @@ class Root(InteractiveWidget):
         self.focused = widget
         self.focused.on_get_focus()
 
-    def get_by_tags(self,*tags)->list[Widget]:
+    def get_by_tags(self, *tags) -> list[Widget]:
         res = []
-        def getter(w:Widget):
+
+        def getter(w: Widget):
             nonlocal res
             if any(t in w.tags for t in tags):
                 res.append(w)
+
         self.visit(getter)
         return res
 
-    def focus_next_tab(self,widget):
+    def focus_next_tab(self, widget):
         return True
 
-    def focus_prev_tab(self,widget):
+    def focus_prev_tab(self, widget):
         return True
 
-    def get_by_uid(self,uid:int)->Widget:
-        def helper(w: Widget,uid):
+    def get_by_uid(self, uid: int) -> "Widget":
+        def helper(w: "Widget", uid: int) -> "Widget":
             if w.uid == uid:
                 return w
             for child in w.children:
-                res = helper(child,uid)
-                if res : 
-                    return child
-                
+                res = helper(child, uid)
+                if res is not None:
+                    return res
             return None
-        return helper(self,uid)
+
+        return helper(self, uid)
 
     def set_size(self, size: tuple[float, float], force: bool = False) -> "Root":
         if not force:
@@ -83,7 +93,6 @@ class Root(InteractiveWidget):
         self.rect.size = size
         # self.build(resolve_constraints=True)
         return self
-
 
     def do_handle_event(self, event):
         if self.focused:
@@ -93,10 +102,10 @@ class Root(InteractiveWidget):
             elif event.type == pygame.KEYUP:
                 if self.focused.on_key_up(event.key):
                     event.consumed = True
-        
+
         if not self.hovered or (not isinstance(self.hovered, InteractiveWidget)):
             return
-        
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.hovered.on_click_down(event.button):
                 event.consumed = True
@@ -104,7 +113,6 @@ class Root(InteractiveWidget):
         elif event.type == pygame.MOUSEBUTTONUP:
             if self.hovered.on_click_up(event.button):
                 event.consumed = True
-
 
     def do_on_click_down(self, button: int) -> None:
         if button == 1:
@@ -133,7 +141,10 @@ class Root(InteractiveWidget):
 
     def draw(self, camera: bf.Camera) -> int:
         super().draw(camera)
-        if self.parent_scene and self.parent_scene.active and self.focused and self.focused!=self:
+        if (
+            self.parent_scene
+            and self.parent_scene.active
+            and self.focused
+            and self.focused != self
+        ):
             self.focused.draw_focused(camera)
-
-

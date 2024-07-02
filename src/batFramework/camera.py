@@ -2,6 +2,7 @@ import pygame
 from pygame.math import Vector2
 import batFramework as bf
 from typing import Self
+import math
 
 
 class Camera:
@@ -32,7 +33,8 @@ class Camera:
             self._clear_color = pygame.Color(0, 0, 0)
 
         self.follow_point_func = None
-        self.follow_friction: float = 0.5
+        self.damping = float("inf")
+        self.dead_zone_radius = 10
 
         self.zoom_factor = 1
         self.max_zoom = 2
@@ -145,23 +147,20 @@ class Camera:
         self.rect.center = (x, y)
         return self
 
-    def set_follow_point(self, func, follow_speed: float = 0.1) -> Self:
-        """
-        Set the following function (returns tuple x y).
-        Camera will center its position to the center of the given coordinates.
-
-        Args:
-            func: Function returning coordinates to follow.
-
-        Returns:
-            Camera: Returns the Camera object.
-        """
+    def set_follow_point_func(self, func) -> Self:
         self.follow_point_func = func
-        self.follow_speed = follow_speed if func else 0.1
         return self
 
-    def set_follow_friction(self,friction:float)->Self:
-        self.follow_friction = friction
+    def set_follow_speed(self, speed: float) -> Self:
+        self.follow_speed = speed
+        return self
+
+    def set_follow_damping(self, damping: float) -> Self:
+        self.damping = damping
+        return self
+
+    def set_dead_zone_radius(self, radius: float) -> Self:
+        self.dead_zone_radius = radius
         return self
 
     def zoom_by(self, amount: float) -> Self:
@@ -247,7 +246,9 @@ class Camera:
         Returns:
             pygame.FRect: Transposed rectangle.
         """
-        return pygame.FRect(rect[0] - self.rect.left, rect[1] - self.rect.top, rect[2],rect[3])
+        return pygame.FRect(
+            rect[0] - self.rect.left, rect[1] - self.rect.top, rect[2], rect[3]
+        )
 
     def world_to_screen_point(
         self, point: tuple[float, float] | tuple[int, int]
@@ -280,16 +281,20 @@ class Camera:
         )
 
     def update(self, dt):
-        """
-        Update the camera position based on the follow point function.
+        if not self.follow_point_func or not (math.isfinite(dt) and dt > 0):
+            return
 
-        Args:
-            dt: Time delta for updating the camera position.
-        """
-        if self.follow_point_func:
-            self.vector_center.update(*self.rect.center)
-            amount = pygame.math.clamp(self.follow_friction,0,1)
-            self.set_center(*self.vector_center.lerp(self.follow_point_func(), amount))
+        target = Vector2(self.follow_point_func())
+        self.vector_center.update(self.rect.center)
+
+        if self.damping == float("inf"):
+            self.vector_center = target
+        elif math.isfinite(self.damping) and self.damping > 0:
+            damping_factor = 1 - math.exp(-self.damping * dt)
+            if not math.isnan(damping_factor):
+                self.vector_center += (target - self.vector_center) * damping_factor
+
+        self.rect.center = self.vector_center
 
     def draw(self, surface: pygame.Surface):
         """

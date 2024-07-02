@@ -1,13 +1,13 @@
 import batFramework as bf
 from .widget import Widget
 import pygame
-from typing import Self,Iterable
+from typing import Self, Iterable
 from math import ceil
 
 
 class Shape(Widget):
-    def __init__(self, size: tuple[float, float] = None,*args,**kwargs):
-        super().__init__(size=size,convert_alpha=True)
+    def __init__(self, size: tuple[float, float] = None, *args, **kwargs):
+        super().__init__(size=size, convert_alpha=True)
         self.color = (0, 0, 0, 0)
         self.border_radius: list[int] = [0]
         self.outline: int = 0
@@ -24,15 +24,15 @@ class Shape(Widget):
     def get_padded_height(self) -> float:
         return self.rect.h - self.padding[1] - self.padding[3] - self.relief
 
-    def get_padded_top(self)->float:
+    def get_padded_top(self) -> float:
         return self.rect.y + self.relief
 
-    def get_padded_rect(self)->pygame.FRect:
+    def get_padded_rect(self) -> pygame.FRect:
         return pygame.FRect(
             self.rect.x + self.padding[0],
             self.rect.y + self.padding[1],
             self.rect.w - self.padding[2] - self.padding[0],
-            self.rect.h - self.padding[1] - self.padding[3] - self.relief
+            self.rect.h - self.padding[1] - self.padding[3] - self.relief,
         )
 
     def set_shadow_color(self, color: tuple[int, int, int] | str) -> Self:
@@ -43,7 +43,8 @@ class Shape(Widget):
     def set_relief(self, relief: int) -> Self:
         if relief < 0:
             return self
-        if self.relief == relief : return self
+        if self.relief == relief:
+            return self
         self.relief = relief
         self.dirty_shape = True
         return self
@@ -100,7 +101,7 @@ class Shape(Widget):
         self.dirty_surface = True
         return self
 
-    def paint(self)->None:
+    def paint(self) -> None:
         if self.draw_mode == bf.drawMode.TEXTURED:
             self._paint_textured()
             return
@@ -112,8 +113,6 @@ class Shape(Widget):
             self._paint_rounded_shape()
             if self.outline:
                 self._paint_rounded_outline()
-
-
 
     def _paint_textured(self) -> None:
         self.surface.fill((0, 0, 0, 0))
@@ -218,14 +217,10 @@ class Shape(Widget):
         self.surface.fblits(lst)
 
     def _get_elevated_rect(self) -> pygame.FRect:
-        return pygame.FRect(
-            0,0  , self.rect.w, self.rect.h - self.relief
-        )
+        return pygame.FRect(0, 0, self.rect.w, self.rect.h - self.relief)
 
     def _get_base_rect(self) -> pygame.FRect:
-        return pygame.FRect(
-            0, self.rect.h - self.relief , self.rect.w, self.relief
-        )
+        return pygame.FRect(0, self.rect.h - self.relief, self.rect.w, self.relief)
 
     def _paint_shape(self) -> None:
         self.surface.fill((0, 0, 0, 0))
@@ -237,8 +232,8 @@ class Shape(Widget):
         e = self._get_elevated_rect()
         b = e.copy()
         b.bottom = self.rect.h
-        pygame.draw.rect(self.surface, self.shadow_color,   b, 0, *self.border_radius)
-        pygame.draw.rect(self.surface, self.color,          e, 0, *self.border_radius)
+        pygame.draw.rect(self.surface, self.shadow_color, b, 0, *self.border_radius)
+        pygame.draw.rect(self.surface, self.color, e, 0, *self.border_radius)
 
     def _paint_outline(self) -> None:
         if self.relief:
@@ -269,7 +264,7 @@ class Shape(Widget):
         e = self._get_elevated_rect()
         b = e.copy()
         b.h += e.bottom - b.bottom
-        
+
         pygame.draw.rect(
             self.surface,
             self.outline_color,

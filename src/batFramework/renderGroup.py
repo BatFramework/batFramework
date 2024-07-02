@@ -7,8 +7,11 @@ from typing import Self, Iterator, Callable
 + fblits
 """
 
+
 class RenderGroup(bf.Entity):
-    def __init__(self, entity_iterator: Callable[[],Iterator[bf.Entity]], blit_flags: int = 0) -> None:
+    def __init__(
+        self, entity_iterator: Callable[[], Iterator[bf.Entity]], blit_flags: int = 0
+    ) -> None:
         super().__init__()
         self.entity_iterator = entity_iterator
         self.set_blit_flags(blit_flags)
@@ -57,6 +60,8 @@ class RenderGroup(bf.Entity):
         if not self.visible:
             return
         fblits_data = (
-            (e.surface, (e.rect.x - camera.rect.x,e.rect.y - camera.rect.y)) for e in self.entity_iterator() if camera.rect.colliderect(e.rect)
+            (e.surface, (e.rect.x - camera.rect.x, e.rect.y - camera.rect.y))
+            for e in self.entity_iterator()
+            if camera.rect.colliderect(e.rect)
         )
         camera.surface.fblits(fblits_data, self.blit_flags)

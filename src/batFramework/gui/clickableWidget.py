@@ -7,10 +7,10 @@ import pygame
 from math import ceil
 
 
-class ClickableWidget(Shape,InteractiveWidget):
+class ClickableWidget(Shape, InteractiveWidget):
     _cache: dict = {}
 
-    def __init__(self,callback: None | Callable = None,*args,**kwargs) -> None:
+    def __init__(self, callback: None | Callable = None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.callback = callback
         self.is_pressed: bool = False
@@ -21,29 +21,32 @@ class ClickableWidget(Shape,InteractiveWidget):
         self.click_up_sound = None
         self.get_focus_sound = None
         self.lose_focus_sound = None
-        self.pressed_relief : int = 1
-        self.unpressed_relief : int = 2
-        self.silent_focus : bool = False
+        self.pressed_relief: int = 1
+        self.unpressed_relief: int = 2
+        self.silent_focus: bool = False
         self.set_debug_color("cyan")
         self.set_relief(self.unpressed_relief)
 
-    def set_unpressed_relief(self,relief:int=0)->Self:
-        if relief == self.unpressed_relief : return self
-        self.unpressed_relief = relief 
+    def set_unpressed_relief(self, relief: int = 0) -> Self:
+        if relief == self.unpressed_relief:
+            return self
+        self.unpressed_relief = relief
         self.dirty_shape = True
-        if not self.is_pressed : self.set_relief(relief)
+        if not self.is_pressed:
+            self.set_relief(relief)
         return self
 
-    def set_silent_focus(self,value:bool)->Self:
+    def set_silent_focus(self, value: bool) -> Self:
         self.silent_focus = value
         return self
 
-
-    def set_pressed_relief(self,relief:int=0)->Self:
-        if relief == self.pressed_relief : return self
-        self.pressed_relief = relief 
+    def set_pressed_relief(self, relief: int = 0) -> Self:
+        if relief == self.pressed_relief:
+            return self
+        self.pressed_relief = relief
         self.dirty_shape = True
-        if self.is_pressed : self.set_relief(relief)
+        if self.is_pressed:
+            self.set_relief(relief)
 
         return self
 
@@ -72,13 +75,15 @@ class ClickableWidget(Shape,InteractiveWidget):
         return self
 
     def get_surface_filter(self) -> pygame.Surface | None:
-        size = int(self.rect.w),int(self.rect.h)
+        size = int(self.rect.w), int(self.rect.h)
         surface_filter = ClickableWidget._cache.get((size, *self.border_radius), None)
         if surface_filter is None:
             # Create a mask from the original surface
             mask = pygame.mask.from_surface(self.surface, threshold=0)
-            
-            silhouette_surface = mask.to_surface(setcolor=(30, 30, 30), unsetcolor=(0,0,0))
+
+            silhouette_surface = mask.to_surface(
+                setcolor=(30, 30, 30), unsetcolor=(0, 0, 0)
+            )
 
             ClickableWidget._cache[(size, *self.border_radius)] = silhouette_surface
 
@@ -86,7 +91,7 @@ class ClickableWidget(Shape,InteractiveWidget):
 
         return surface_filter
 
-    def allow_focus_to_self(self)->bool:
+    def allow_focus_to_self(self) -> bool:
         return True
 
     def enable(self) -> Self:
@@ -111,7 +116,7 @@ class ClickableWidget(Shape,InteractiveWidget):
         if self.get_focus_sound and not self.silent_focus:
             if self.parent_scene and self.parent_scene.visible:
                 bf.AudioManager().play_sound(self.get_focus_sound)
-        if self.silent_focus : 
+        if self.silent_focus:
             self.silent_focus = False
 
     def on_lose_focus(self):
@@ -119,7 +124,7 @@ class ClickableWidget(Shape,InteractiveWidget):
         if self.lose_focus_sound and not self.silent_focus:
             if self.parent_scene and self.parent_scene.visible:
                 bf.AudioManager().play_sound(self.lose_focus_sound)
-        if self.silent_focus : 
+        if self.silent_focus:
             self.silent_focus = False
 
     def __str__(self) -> str:
@@ -132,7 +137,7 @@ class ClickableWidget(Shape,InteractiveWidget):
             self.callback()
 
     def do_on_click_down(self, button) -> None:
-        if self.enabled and button == 1 :
+        if self.enabled and button == 1:
             if not self.get_focus():
                 return
             self.is_pressed = True
@@ -152,15 +157,15 @@ class ClickableWidget(Shape,InteractiveWidget):
         if not self.enabled:
             return
         super().on_enter()
-        self.dirty_surface  = True
+        self.dirty_surface = True
         pygame.mouse.set_cursor(self.hover_cursor)
 
     def on_exit(self) -> None:
         super().on_exit()
         if self.is_pressed:
             self.set_relief(self.unpressed_relief)
-        self.is_pressed    = False
-        self.dirty_surface  = True
+        self.is_pressed = False
+        self.dirty_surface = True
 
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
 
@@ -188,15 +193,23 @@ class ClickableWidget(Shape,InteractiveWidget):
             self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_RGB_ADD
         )
 
-    def get_padded_rect(self)->pygame.FRect:
+    def get_padded_rect(self) -> pygame.FRect:
         return pygame.FRect(
-            self.rect.x + self.padding[0], self.rect.y + self.padding[1] + (self.unpressed_relief - self.pressed_relief if  self.is_pressed else 0),
+            self.rect.x + self.padding[0],
+            self.rect.y
+            + self.padding[1]
+            + (self.unpressed_relief - self.pressed_relief if self.is_pressed else 0),
             self.rect.w - self.padding[2] - self.padding[0],
-            self.rect.h - self.unpressed_relief - self.padding[1] - self.padding[3] #
+            self.rect.h - self.unpressed_relief - self.padding[1] - self.padding[3],  #
         )
 
     def _get_elevated_rect(self) -> pygame.FRect:
-        return pygame.FRect(0,  self.unpressed_relief - self.pressed_relief if  self.is_pressed else 0 , self.rect.w, self.rect.h - self.unpressed_relief)
+        return pygame.FRect(
+            0,
+            self.unpressed_relief - self.pressed_relief if self.is_pressed else 0,
+            self.rect.w,
+            self.rect.h - self.unpressed_relief,
+        )
 
     def paint(self) -> None:
         super().paint()

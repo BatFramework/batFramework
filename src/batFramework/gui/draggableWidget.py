@@ -17,19 +17,21 @@ class DraggableWidget(InteractiveWidget):
     def do_reset_actions(self) -> None:
         self.drag_action.reset()
 
-    def do_on_drag(self,drag_start:tuple[float,float],drag_end: tuple[float,float])->None:
-        self.set_position(drag_end[0]-self.offset[0],drag_end[1]-self.offset[1])
+    def do_on_drag(
+        self, drag_start: tuple[float, float], drag_end: tuple[float, float]
+    ) -> None:
+        self.set_position(drag_end[0] - self.offset[0], drag_end[1] - self.offset[1])
 
     def update(self, dt: float):
         if self.drag_action.active and self.is_clicked_down:
             r = self.get_root()
             x, y = r.drawing_camera.screen_to_world(pygame.mouse.get_pos())
             if self.drag_start == None and self.drag_action.active:
-                self.offset = x-self.rect.x,y-self.rect.y
-                self.drag_start = x,y
+                self.offset = x - self.rect.x, y - self.rect.y
+                self.drag_start = x, y
                 return
             else:
-                self.do_on_drag(self.drag_start,(x,y))
+                self.do_on_drag(self.drag_start, (x, y))
                 return
         else:
             self.drag_start = None

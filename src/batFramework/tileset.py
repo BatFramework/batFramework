@@ -3,7 +3,6 @@ from .resourceManager import ResourceManager
 import batFramework as bf
 
 
-
 class Tileset:
     def __init__(self, source: pygame.Surface, tilesize: tuple[int, int]) -> None:
         self.surface = source
@@ -27,14 +26,15 @@ class Tileset:
                     self.tile_dict[coord] = {}
                 self.tile_dict[coord][flip_state] = tile
 
-
-    def __str__(self)->str:
+    def __str__(self) -> str:
         num_tiles = 0
         if self.tile_dict:
             num_tiles = len(self.tile_dict.values())
         return f"{num_tiles} tiles | Tile size : {self.tile_size}"
 
-    def get_tile(self, x:int, y:int, flipX=False, flipY=False) -> pygame.Surface | None:
+    def get_tile(
+        self, x: int, y: int, flipX=False, flipY=False
+    ) -> pygame.Surface | None:
         if flipX:
             x = self.tile_width - 1 - x
         if flipY:
@@ -42,5 +42,5 @@ class Tileset:
         tile_data = self.tile_dict.get((x, y), None)
         if tile_data is None:
             return None
-        
+
         return tile_data.get((flipX, flipY), None)

@@ -15,7 +15,7 @@ class FontManager(metaclass=Singleton):
         self.DEFAULT_ANTIALIAS = False
         self.FONTS = {}
 
-    def set_antialias(self,value:bool):
+    def set_antialias(self, value: bool):
         self.DEFAULT_ANTIALIAS = value
 
     def set_default_text_size(self, size: int):

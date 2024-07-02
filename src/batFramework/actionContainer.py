@@ -34,11 +34,13 @@ class ActionContainer:
         )
 
     def process_event(self, event):
-        if event.consumed : return
+        if event.consumed:
+            return
         for action in self._actions.values():
             action.process_event(event)
-            if event.consumed == True:break
-             
+            if event.consumed == True:
+                break
+
     def reset(self):
         for action in self._actions.values():
             action.reset()

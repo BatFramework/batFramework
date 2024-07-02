@@ -2,6 +2,7 @@ import batFramework as bf
 import pygame
 from typing import Self
 
+
 def swap(lst, index1, index2):
     lst[index1], lst[index2] = lst[index2], lst[index1]
 
@@ -18,9 +19,7 @@ class SceneManager:
         self.debug_mode: bf.enums.debugMode = bf.debugMode.HIDDEN
         self.current_transitions: dict[str, bf.transition.Transition] = {}
 
-
-
-    def init_scenes(self,*initial_scenes):
+    def init_scenes(self, *initial_scenes):
         for index, s in enumerate(initial_scenes):
             s.set_scene_index(index)
         for s in reversed(initial_scenes):
@@ -29,7 +28,7 @@ class SceneManager:
         self.set_scene(initial_scenes[0].get_name())
         self.update_scene_states()
 
-    def set_shared_event(self,event:pygame.Event)->None:
+    def set_shared_event(self, event: pygame.Event) -> None:
         """
         Add an event that will be propagated to all active scenes, not just the one on top.
         """
@@ -41,7 +40,7 @@ class SceneManager:
         """
         print("-" * 40)
         print(
-            '\n'.join(
+            "\n".join(
                 f" {s.name:<30}\t{'Active' if s.active else 'Inactive'}\t{'Visible' if s.visible else 'Invisible'}\tindex= {s.scene_index}"
                 for s in self.scenes
             )
@@ -63,7 +62,7 @@ class SceneManager:
         """
         Get a shared variable
         """
-        return self.shared_variables.get(name,error_value)
+        return self.shared_variables.get(name, error_value)
 
     def get_current_scene_name(self) -> str:
         """get the name of the current scene"""
@@ -108,14 +107,10 @@ class SceneManager:
         index: int = 0,
     ):
         target_scene = self.get_scene(scene_name)
-        if not target_scene : 
+        if not target_scene:
             print(f"Scene '{scene_name}' does not exist")
             return
-        if (
-            len(self.scenes) == 0
-            or index >= len(self.scenes)
-            or index < 0
-        ):
+        if len(self.scenes) == 0 or index >= len(self.scenes) or index < 0:
             return
         source_surface = bf.const.SCREEN.copy()
         dest_surface = bf.const.SCREEN.copy()
@@ -137,20 +132,16 @@ class SceneManager:
         self.set_sharedVar("player_has_control", False)
 
     def _end_transition(self, scene_name, index):
-        self.set_scene(scene_name, index,True)
+        self.set_scene(scene_name, index, True)
         self.set_sharedVar("player_has_control", True)
         self.current_transitions.clear()
 
-    def set_scene(self, scene_name, index=0,ignore_early:bool = False):
+    def set_scene(self, scene_name, index=0, ignore_early: bool = False):
         target_scene = self.get_scene(scene_name)
-        if not target_scene : 
+        if not target_scene:
             print(f"'{scene_name}' does not exist")
             return
-        if (
-            len(self.scenes) == 0
-            or index >= len(self.scenes)
-            or index < 0
-        ):
+        if len(self.scenes) == 0 or index >= len(self.scenes) or index < 0:
             return
 
         # switch

@@ -1,8 +1,7 @@
 import batFramework as bf
 
 
-class StateMachine:
-    ...
+class StateMachine: ...
 
 
 class State:

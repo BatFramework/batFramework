@@ -23,7 +23,6 @@ class Indicator(Shape):
     def get_value(self) -> Any:
         pass
 
-
     def top_at(self, x, y):
         return None
 
@@ -31,7 +30,7 @@ class Indicator(Shape):
 class ToggleIndicator(Indicator):
     def __init__(self, default_value: bool) -> None:
         self.value: bool = default_value
-        self.callback = lambda val : self.set_color("green" if val else "red")
+        self.callback = lambda val: self.set_color("green" if val else "red")
         super().__init__((20, 20))
         self.set_value(default_value)
 
@@ -56,5 +55,3 @@ class ToggleIndicator(Indicator):
         if r is self:
             return None
         return r
-
-        

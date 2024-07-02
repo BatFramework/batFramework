@@ -1,8 +1,7 @@
-from typing import Any,Self
+from typing import Any, Self
 from enum import Enum
 import pygame
 from .enums import actionType
-
 
 
 class Action:
@@ -16,7 +15,7 @@ class Action:
         self.name: str = name
         self.active: bool = False
         self.data: dict = {}
-        self.consume_event : bool = False
+        self.consume_event: bool = False
         self._type: actionType = actionType.INSTANTANEOUS
         self._key_control: set = set()
         self._mouse_control: set = set()
@@ -46,15 +45,13 @@ class Action:
         self.active = value
         # self._holding = set()
 
-
-    def add_event_control(self,*events)->Self:
+    def add_event_control(self, *events) -> Self:
         self._event_control.update(events)
         return self
 
-    def remove_event_control(self,*events)->Self:
+    def remove_event_control(self, *events) -> Self:
         self._event_control = self._event_control - events
         return self
-
 
     def add_key_control(self, *keys) -> Self:
         """
@@ -89,7 +86,6 @@ class Action:
         self.add_key_control(new_key)
         return self
 
-
     def add_mouse_control(self, *mouse: int) -> Self:
         """
         Add mouse control to the action.
@@ -103,18 +99,17 @@ class Action:
         self._mouse_control.update(mouse)
         return self
 
-    def remove_mouse_control(self, *mouse : int) ->Self:
+    def remove_mouse_control(self, *mouse: int) -> Self:
         self._mouse_control = self._mouse_control - set(mouse)
         return self
 
-    def replace_mouse_control(self, mouse, new_mouse)->Self:
+    def replace_mouse_control(self, mouse, new_mouse) -> Self:
         if not mouse in self._mouse_control:
             return self
         self.remove_mouse_control(mouse)
         self.add_mouse_control(new_mouse)
         return self
-    
-        
+
     def set_continuous(self) -> Self:
         """
         Set the action type to continuous.
@@ -196,7 +191,9 @@ class Action:
         if event.type == pygame.KEYDOWN and event.key in self._key_control:
             self._activate_action(event.key)
 
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button in self._mouse_control:
+        elif (
+            event.type == pygame.MOUSEBUTTONDOWN and event.button in self._mouse_control
+        ):
             self._activate_action(event.button)
 
         elif event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
@@ -207,7 +204,8 @@ class Action:
             self.data = event.dict
         else:
             return
-        if self.consume_event : event.consumed = True
+        if self.consume_event:
+            event.consumed = True
 
     def _activate_action(self, control):
         self.active = True
@@ -225,7 +223,10 @@ class Action:
         if self._type == actionType.HOLDING:
             if event.type == pygame.KEYUP and event.key in self._key_control:
                 self._deactivate_action(event.key)
-            elif event.type == pygame.MOUSEBUTTONUP and event.button in self._mouse_control:
+            elif (
+                event.type == pygame.MOUSEBUTTONUP
+                and event.button in self._mouse_control
+            ):
                 self._deactivate_action(event.button)
             elif event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
                 self._deactivate_action(event.type)
@@ -234,7 +235,8 @@ class Action:
             else:
                 event.consumed = False
 
-        if self.consume_event: event.consumed = True
+        if self.consume_event:
+            event.consumed = True
 
     def _deactivate_action(self, control) -> bool:
         if control in self._holding:
@@ -250,7 +252,8 @@ class Action:
             event (pygame.event.Event): The pygame event to process.
         """
 
-        if event.consumed : return
+        if event.consumed:
+            return
         if not self.active:
             self.process_activate(event)
         else:

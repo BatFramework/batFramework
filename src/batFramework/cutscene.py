@@ -1,12 +1,10 @@
 import batFramework as bf
 
 
-class CutsceneBlock:
-    ...
+class CutsceneBlock: ...
 
 
-class Cutscene:
-    ...
+class Cutscene: ...
 
 
 class CutsceneManager(metaclass=bf.Singleton):

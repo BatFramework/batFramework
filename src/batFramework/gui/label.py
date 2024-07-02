@@ -34,7 +34,7 @@ class Label(Shape):
         # reference to the font object
         self.font_object = None
         # Rect containing the text of the label
-        self.text_rect = pygame.FRect(0,0,0,0)
+        self.text_rect = pygame.FRect(0, 0, 0, 0)
         # text surface (result of font.render)
         self.text_surface: pygame.Surface = pygame.Surface((0, 0))
         self.do_caching: bool = False
@@ -58,6 +58,9 @@ class Label(Shape):
     def clear_cache():
         Label._text_cache = {}
 
+    def __str__(self) -> str:
+        return f"Label({self.text})"
+
     def enable_caching(self) -> Self:
         self.do_caching = True
         return self
@@ -75,7 +78,7 @@ class Label(Shape):
         if value == self.is_italic:
             return self
         self.is_italic = value
-        if self.autoresize_h or self.autoresize_w: 
+        if self.autoresize_h or self.autoresize_w:
             self.dirty_shape = True
         else:
             self.dirty_surface = True
@@ -85,7 +88,7 @@ class Label(Shape):
         if value == self.is_bold:
             return self
         self.is_bold = value
-        if self.autoresize_h or self.autoresize_w: 
+        if self.autoresize_h or self.autoresize_w:
             self.dirty_shape = True
         else:
             self.dirty_surface = True
@@ -122,9 +125,6 @@ class Label(Shape):
         self.dirty_surface = True
         return self
 
-    def __str__(self) -> str:
-        return f"Label({self.text})"
-
     def set_alignment(self, alignment: bf.alignment) -> "Label":
         self.alignment = alignment
         self.dirty_surface = True
@@ -132,22 +132,23 @@ class Label(Shape):
 
     def set_auto_wraplength(self, val: bool) -> "Label":
         self.auto_wraplength = val
-        if self.autoresize_h or self.autoresize_w: 
+        if self.autoresize_h or self.autoresize_w:
             self.dirty_shape = True
         else:
             self.dirty_surface = True
         return self
 
     def get_debug_outlines(self):
+        if self.visible:
+            yield (self.text_rect.move(*self.rect.topleft), "purple")
         yield from super().get_debug_outlines()
-        yield (self.text_rect.move(*self.rect.topleft),"purple")
-        
+
     def set_font(self, font_name: str = None, force: bool = False) -> Self:
         if font_name == self.font_name and not force:
             return self
         self.font_name = font_name
         self.font_object = bf.FontManager().get_font(self.font_name, self.text_size)
-        if self.autoresize_h or self.autoresize_w: 
+        if self.autoresize_h or self.autoresize_w:
             self.dirty_shape = True
         else:
             self.dirty_surface = True
@@ -159,7 +160,7 @@ class Label(Shape):
             return self
         self.text_size = text_size
         self.font_object = bf.FontManager().get_font(self.font_name, self.text_size)
-        if self.autoresize_h or self.autoresize_w: 
+        if self.autoresize_h or self.autoresize_w:
             self.dirty_shape = True
         return self
 
@@ -181,8 +182,8 @@ class Label(Shape):
         self.dirty_shape = True
         return self
 
-    def get_min_required_size(self)->tuple[float,float]:
-        if not (self.autoresize_w or  self.autoresize_h) : 
+    def get_min_required_size(self) -> tuple[float, float]:
+        if not (self.autoresize_w or self.autoresize_h):
             return self.rect.size
         if not self.text_rect:
             params = {
@@ -191,13 +192,17 @@ class Label(Shape):
                 "antialias": False,
                 "color": "white",
                 "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
-                "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
+                "wraplength": (
+                    int(self.get_padded_width()) if self.auto_wraplength else 0
+                ),
             }
 
             self.text_rect.size = self._render_font(params).get_size()
-        res = self.inflate_rect_by_padding((0,0,*self.text_rect.size)).size
+        res = self.inflate_rect_by_padding((0, 0, *self.text_rect.size)).size
         # return res
-        return res[0] if self.autoresize_w else self.rect.w, res[1] if self.autoresize_h else self.rect.h
+        return res[0] if self.autoresize_w else self.rect.w, (
+            res[1] if self.autoresize_h else self.rect.h
+        )
 
     def get_text(self) -> str:
         return self.text
@@ -211,19 +216,19 @@ class Label(Shape):
             if cached_value is None:
                 params.pop("font_name")
 
-                #save old settings                
+                # save old settings
                 old_italic = self.font_object.get_italic()
                 old_bold = self.font_object.get_bold()
                 old_underline = self.font_object.get_underline()
 
-                #setup font
+                # setup font
                 self.font_object.set_italic(self.is_italic)
                 self.font_object.set_bold(self.is_bold)
                 self.font_object.set_underline(self.is_underlined)
-                
+
                 surf = self.font_object.render(**params)
 
-                # reset font 
+                # reset font
                 self.font_object.set_italic(old_italic)
                 self.font_object.set_bold(old_bold)
                 self.font_object.set_underline(old_underline)
@@ -250,16 +255,18 @@ class Label(Shape):
         }
 
         self.text_rect.size = self._render_font(params).get_size()
-        if self.autoresize_h or self.autoresize_w: 
-            target_rect = self.inflate_rect_by_padding((0,0,*self.text_rect.size))
-            if not self.autoresize_w : target_rect.w = self.rect.w
-            if not self.autoresize_h : target_rect.h = self.rect.h
+        if self.autoresize_h or self.autoresize_w:
+            target_rect = self.inflate_rect_by_padding((0, 0, *self.text_rect.size))
+            if not self.autoresize_w:
+                target_rect.w = self.rect.w
+            if not self.autoresize_h:
+                target_rect.h = self.rect.h
             if self.rect.size != target_rect.size:
                 self.set_size(target_rect.size)
                 self.build()
                 return
-        padded = self.get_padded_rect().move(-self.rect.x,-self.rect.y)
-        self.align_text(self.text_rect,padded,self.alignment)
+        padded = self.get_padded_rect().move(-self.rect.x, -self.rect.y)
+        self.align_text(self.text_rect, padded, self.alignment)
 
     def _paint_text(self) -> None:
         if self.font_object is None:
@@ -283,7 +290,6 @@ class Label(Shape):
                 .to_surface(setcolor=self.text_outline_color, unsetcolor=(0, 0, 0, 0))
             )
 
-
         l = []
         if self.show_text_outline:
             l.append(
@@ -297,18 +303,22 @@ class Label(Shape):
         )
         self.surface.fblits(l)
 
-    def align_text(self,text_rect:pygame.FRect,area:pygame.FRect,alignment: bf.alignment):
-        if alignment == bf.alignment.LEFT : alignment = bf.alignment.MIDLEFT
-        elif alignment == bf.alignment.MIDRIGHT : alignment = bf.alignment.MIDRIGHT
+    def align_text(
+        self, text_rect: pygame.FRect, area: pygame.FRect, alignment: bf.alignment
+    ):
+        if alignment == bf.alignment.LEFT:
+            alignment = bf.alignment.MIDLEFT
+        elif alignment == bf.alignment.MIDRIGHT:
+            alignment = bf.alignment.MIDRIGHT
 
         pos = area.__getattribute__(alignment.value)
-        text_rect.__setattr__(alignment.value,pos)
+        text_rect.__setattr__(alignment.value, pos)
 
     def build(self) -> None:
         super().build()
         self._build_layout()
 
-    def paint(self)->None:
+    def paint(self) -> None:
         super().paint()
         if self.font_object:
             self._paint_text()

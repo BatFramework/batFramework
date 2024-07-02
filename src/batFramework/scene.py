@@ -3,6 +3,7 @@ import re
 from typing import TYPE_CHECKING, Any
 from collections import OrderedDict
 import itertools
+
 if TYPE_CHECKING:
     from .manager import Manager
     from .sceneManager import SceneManager
@@ -45,12 +46,14 @@ class Scene:
 
     def get_hud_entity_count(self) -> int:
         n = 0
+
         def adder(e):
             nonlocal n
             n += len(e.children)
+
         self.root.visit(adder)
 
-        return len(self.hud_entities) + n 
+        return len(self.hud_entities) + n
 
     def set_scene_index(self, index: int):
         """Set the scene index."""
@@ -175,7 +178,9 @@ class Scene:
         """Get entities by their tags."""
         res = [
             entity
-            for entity in itertools.chain(self.world_entities.keys(), self.hud_entities.keys())
+            for entity in itertools.chain(
+                self.world_entities.keys(), self.hud_entities.keys()
+            )
             if any(entity.has_tags(t) for t in tags)
         ]
         res.extend(list(self.root.get_by_tags(*tags)))
@@ -183,11 +188,12 @@ class Scene:
 
     def get_by_uid(self, uid) -> bf.Entity | None:
         """Get an entity by its unique identifier."""
-        res = self._find_entity_by_uid(uid, itertools.chain(self.world_entities.keys(), self.hud_entities.keys()))
+        res = self._find_entity_by_uid(
+            uid, itertools.chain(self.world_entities.keys(), self.hud_entities.keys())
+        )
         if res is None:
             res = self._recursive_search_by_uid(uid, self.root)
         return res
-
 
     def _find_entity_by_uid(self, uid, entities) -> bf.Entity | None:
         """Search for entity by uid in a list of entities."""
@@ -208,11 +214,10 @@ class Scene:
 
         return None
 
-
     def process_event(self, event: pygame.Event):
         """
         Propagates event while it is not consumed.
-        In order : 
+        In order :
         -do_early_handle_event()
         -scene early_actions
         -propagate to scene entities (hud then world)
@@ -228,7 +233,9 @@ class Scene:
         self.early_actions.process_event(event)
         if event.consumed:
             return
-        for entity in itertools.chain(self.hud_entities.keys(), self.world_entities.keys()):
+        for entity in itertools.chain(
+            self.hud_entities.keys(), self.world_entities.keys()
+        ):
             entity.process_event(event)
             if event.consumed:
                 return
@@ -237,9 +244,8 @@ class Scene:
             return
         self.actions.process_event(event)
 
-
     # called before process event
-    def do_early_handle_event(self, event: pygame.Event) :
+    def do_early_handle_event(self, event: pygame.Event):
         """Called early in event propagation"""
         pass
 
@@ -249,7 +255,9 @@ class Scene:
 
     def update(self, dt):
         """Update the scene. Do NOT override"""
-        for entity in itertools.chain(self.hud_entities.keys(), self.world_entities.keys()):
+        for entity in itertools.chain(
+            self.hud_entities.keys(), self.world_entities.keys()
+        ):
             entity.update(dt)
         self.do_update(dt)
         self.camera.update(dt)
@@ -277,8 +285,12 @@ class Scene:
 
     def sort_entities(self) -> None:
         """Sort entities within the scene based on their rendering order."""
-        self.world_entities = OrderedDict(sorted(self.world_entities.items(), key=lambda e: e[0].render_order))
-        self.hud_entities = OrderedDict(sorted(self.hud_entities.items(), key=lambda e: e[0].render_order))
+        self.world_entities = OrderedDict(
+            sorted(self.world_entities.items(), key=lambda e: e[0].render_order)
+        )
+        self.hud_entities = OrderedDict(
+            sorted(self.hud_entities.items(), key=lambda e: e[0].render_order)
+        )
 
     def draw(self, surface: pygame.Surface):
         self.camera.clear()

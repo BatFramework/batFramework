@@ -47,41 +47,54 @@ class InteractiveWidget(Widget):
         self.is_focused = False
         self.do_on_lose_focus()
 
-    def focus_next_tab(self,widget):
-        # print(self.parent,self,"looking for ",widget)
+    def focus_next_tab(self, previous_widget):
 
-        if widget != self:
-            if isinstance(self,InteractiveWidget) and not isinstance(self,bf.Container):
-                print(self,"A")
+        if previous_widget != self and self.visible:
+            if (
+                isinstance(self, InteractiveWidget)
+                and not isinstance(self, bf.Container)
+                and self.allow_focus_to_self()
+            ):
                 self.focus_next_sibling()
                 return
-            i_children = [c for c in self.children if isinstance(c,InteractiveWidget)]
-            
-            if i_children: 
-                index = i_children.index(widget)
-                if index < len(i_children)-1:
-                    i_children[index+1].get_focus()
+            i_children = [
+                c
+                for c in self.children
+                if isinstance(c, InteractiveWidget) and c.visible
+            ]
+            if i_children:
+                index = i_children.index(previous_widget)
+                if index < len(i_children) - 1:
+
+                    i_children[index + 1].get_focus()
                     return
 
         if self.parent:
             self.parent.focus_next_tab(self)
-        
-    def focus_prev_tab(self,widget):
-        if widget != self:
-            if isinstance(self,InteractiveWidget) and not isinstance(self,bf.Container):
+
+    def focus_prev_tab(self, previous_widget):
+        if previous_widget != self and self.visible:
+            if (
+                isinstance(self, InteractiveWidget)
+                and not isinstance(self, bf.Container)
+                and self.allow_focus_to_self()
+            ):
                 self.get_focus()
                 return
-            i_children = [c for c in self.children if isinstance(c,InteractiveWidget) ]
-            
-            if i_children: 
-                index = i_children.index(widget)
-                if index > 0 :
-                    i_children[index-1].get_focus()
+            i_children = [
+                c
+                for c in self.children
+                if isinstance(c, InteractiveWidget) and c.visible
+            ]
+
+            if i_children:
+                index = i_children.index(previous_widget)
+                if index > 0:
+                    i_children[index - 1].get_focus()
                     return
 
         if self.parent:
             self.parent.focus_prev_tab(self)
-        
 
     def focus_next_sibling(self) -> None:
         if isinstance(self.parent, bf.Container):
@@ -91,29 +104,32 @@ class InteractiveWidget(Widget):
         if isinstance(self.parent, bf.Container):
             self.parent.focus_prev_child()
 
-    def on_key_down(self,key)->bool:
+    def on_key_down(self, key) -> bool:
         if key == pygame.K_DOWN:
             self.focus_next_sibling()
         elif key == pygame.K_UP:
             self.focus_prev_sibling()
         elif key == pygame.K_TAB and self.parent:
             keys = pygame.key.get_pressed()
-            if keys[pygame.K_LSHIFT] or  keys[pygame.K_RSHIFT]:
-    
+            if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+
                 self.focus_prev_tab(self)
             else:
                 self.focus_next_tab(self)
-            
-        else:
-            return self.do_on_key_down(key)
-        return True
-    def on_key_up(self, key)->bool:
-        return self.do_on_key_up(key)
 
-    def do_on_key_down(self, key)->bool:
+        else:
+
+            return self.do_on_key_down(key)
+
         return False
 
-    def do_on_key_up(self, key)->bool:
+    def on_key_up(self, key) -> bool:
+        return self.do_on_key_up(key)
+
+    def do_on_key_down(self, key) -> bool:
+        return False
+
+    def do_on_key_up(self, key) -> bool:
         return False
 
     def do_on_get_focus(self) -> None:
@@ -121,7 +137,6 @@ class InteractiveWidget(Widget):
 
     def do_on_lose_focus(self) -> None:
         pass
-
 
     def on_click_down(self, button: int) -> bool:
         self.is_clicked_down = True
@@ -153,18 +168,19 @@ class InteractiveWidget(Widget):
         pass
 
     def on_mouse_motion(self, x, y) -> None:
-        self.do_on_mouse_motion(x,y)
+        self.do_on_mouse_motion(x, y)
 
-    def do_on_mouse_motion(self,x,y)->None:
+    def do_on_mouse_motion(self, x, y) -> None:
         pass
 
     def set_focused_child(self, child: "InteractiveWidget"):
         pass
 
-    def draw_focused(self, camera: bf.Camera) -> None: 
-        delta = 4 + ((2*cos(pygame.time.get_ticks()/100)) //2) * 2
+    def draw_focused(self, camera: bf.Camera) -> None:
+        delta = 4 + ((2 * cos(pygame.time.get_ticks() / 100)) // 2) * 2
         pygame.draw.rect(
             camera.surface,
             "white",
-            self.rect.move(-camera.rect.x,-camera.rect.y).inflate(delta,delta),1
+            self.rect.move(-camera.rect.x, -camera.rect.y).inflate(delta, delta),
+            1,
         )
