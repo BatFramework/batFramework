@@ -36,8 +36,9 @@ class BasicParticle(TimedParticle):
         **kwargs,
     ):
         super().__init__(duration)
-        self.rect = pygame.FRect(*start_pos, *size)
-        self.surface = pygame.Surface(size).convert()
+        self.rect = pygame.FRect(0,0, *size)
+        self.rect.center = start_pos
+        self.surface = pygame.Surface(size)
         self.velocity = Vector2(start_vel)
         if color:
             self.surface.fill(color)
@@ -57,7 +58,6 @@ class BasicParticle(TimedParticle):
 
 class DirectionalParticle(BasicParticle):
     def start(self):
-        self.surface = self.surface.convert_alpha()
         self.original_surface = self.surface.copy()
 
     def update_surface(self):
@@ -96,6 +96,6 @@ class ParticleGenerator(bf.Entity):
 
     def draw(self, camera) -> bool:
         camera.surface.fblits(
-            [(p.surface, camera.world_to_screen(p.rect).center) for p in self.particles]
+            [(p.surface, camera.world_to_screen(p.rect)) for p in self.particles]
         )
         return len(self.particles)

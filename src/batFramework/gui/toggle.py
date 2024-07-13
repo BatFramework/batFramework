@@ -13,6 +13,7 @@ class Toggle(Button):
         self.spacing: bf.spacing = bf.spacing.MANUAL
         super().__init__(text, callback)
         self.add(self.indicator)
+        self.set_clip_children(False)
         # self.set_gap(int(max(4, self.get_padded_width() / 3)))
 
     def set_visible(self, value: bool) -> Self:
@@ -53,24 +54,16 @@ class Toggle(Button):
 
     def get_min_required_size(self) -> tuple[float, float]:
         if not self.text_rect:
-            params = {
-                "font_name": self.font_object.name,
-                "text": self.text,
-                "antialias": False,
-                "color": "white",
-                "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
-                "wraplength": (
-                    int(self.get_padded_width()) if self.auto_wraplength else 0
-                ),
-            }
-            self.text_rect.size = self._render_font(params).get_size()
+            self.text_rect.size = self._get_text_rect_required_size()
         w, h = self.text_rect.size
+        outline_offset = self._get_outline_offset()
+
         size = (
             max(
                 self.indicator.rect.w,
                 w + self.font_object.point_size + (self.gap if self.text else 0),
             ),
-            self.text_rect.h,
+            self.text_rect.h + outline_offset[1],
         )
         return self.inflate_rect_by_padding((0, 0, *size)).size
 
@@ -78,23 +71,18 @@ class Toggle(Button):
 
         gap = self.gap if self.text else 0
 
-        params = {
-            "font_name": self.font_object.name,
-            "text": self.text,
-            "antialias": False,
-            "color": "white",
-            "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
-            "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
-        }
-        self.text_rect.size = self._render_font(params).get_size()
+        self.text_rect.size = self._get_text_rect_required_size()
 
-        indicator_height = self.font_object.point_size
-
-        self.indicator.set_size((indicator_height, indicator_height))
+        outline_offset = self._get_outline_offset()
 
         tmp_rect = pygame.FRect(
-            0, 0, self.text_rect.w + gap + indicator_height, self.text_rect.h
+            0, 0,
+            self.text_rect.w + gap + self.indicator.rect.w + outline_offset[0],
+            self.text_rect.h + outline_offset[1]
         )
+
+        point_size = min(tmp_rect.h, self.font_object.point_size)
+        self.indicator.set_size_if_autoresize((point_size,point_size))
 
         if self.autoresize_h or self.autoresize_w:
             target_rect = self.inflate_rect_by_padding(tmp_rect)
@@ -107,20 +95,20 @@ class Toggle(Button):
                 self.build()
                 return
 
-        padded = self.get_padded_rect().move(-self.rect.x, -self.rect.y)
 
-        self.align_text(tmp_rect, padded, self.alignment)
+        padded_rect = self.get_padded_rect()
+        padded_relative = padded_rect.move(-self.rect.x, -self.rect.y)
+
+ 
+
+        self.align_text(tmp_rect, padded_relative, self.alignment)
         self.text_rect.midleft = tmp_rect.midleft
         if self.text:
             match self.spacing:
                 case bf.spacing.MAX:
-                    gap = padded.w - self.text_rect.w - self.indicator.rect.w
+                    gap = padded_relative.right - self.text_rect.right - self.indicator.rect.w
                 case bf.spacing.MIN:
                     gap = 0
 
-        self.indicator.set_position(
-            *self.text_rect.move(
-                self.rect.x + gap,
-                self.rect.y + (self.text_rect.h / 2) - self.indicator.rect.h / 2,
-            ).topright
-        )
+        self.indicator.rect.x = self.rect.x + self.text_rect.right + gap
+        self.indicator.rect.centery = self.rect.y + padded_relative.top + self.text_rect.h // 2

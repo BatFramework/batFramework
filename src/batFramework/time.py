@@ -5,10 +5,10 @@ from typing import Self
 class Timer:
     _count: int = 0
 
-    def __init__(self, duration: float | int, end_callback, loop: bool = False) -> None:
+    def __init__(self, duration: float | int, end_callback, loop: bool = False, register="global") -> None:
         self.name: int = Timer._count
         Timer._count += 1
-
+        self.register = register
         self.duration: int | float = duration
         self.end_callback = end_callback
 
@@ -17,6 +17,9 @@ class Timer:
         self.is_looping: bool = loop
         self.is_paused: bool = False
         self.do_delete: bool = False
+
+    def __bool__(self)->bool:
+        return self.elapsed_time==-1 or self.is_over
 
     def __repr__(self) -> str:
         return f"Timer ({self.name}) {self.elapsed_time}/{self.duration} | {'loop ' if self.is_looping else ''} {'(D) ' if self.do_delete else ''}"
@@ -30,7 +33,7 @@ class Timer:
     def start(self, force: bool = False) -> Self:
         if self.elapsed_time != -1 and not force:
             return self
-        if not bf.TimeManager().add_timer(self):
+        if not bf.TimeManager().add_timer(self,self.register):
             return self
         self.elapsed_time = 0
         self.is_paused = False
@@ -79,36 +82,38 @@ class Timer:
     def should_delete(self) -> bool:
         return self.is_over or self.do_delete
 
-
-class TimerRegister:
-    def __init__(self, active=True):
-        self.active = active
-        self.timers: dict[int | str, Timer] = {}
-
-    def __iter__(self):
-        return iter(self.timers.values())
-
-    def add_timer(self, timer: Timer):
-        self.timers[timer.name] = timer
-
-    def update(self, dt):
-        expired_timers = []
-        for timer in list(self.timers.values()):
-            if not timer.is_paused:
-                timer.update(dt)
-            if timer.should_delete():
-                expired_timers.append(timer.name)
-        for name in expired_timers:
-            del self.timers[name]
-
+class SceneTimer(Timer):
+    def __init__(self, duration: float | int, end_callback, loop: bool = False, scene_name:str = "global") -> None:
+        super().__init__(duration, end_callback, loop, scene_name)
 
 class TimeManager(metaclass=bf.Singleton):
+    class TimerRegister:
+        def __init__(self, active=True):
+            self.active = active
+            self.timers: dict[int | str, Timer] = {}
+
+        def __iter__(self):
+            return iter(self.timers.values())
+
+        def add_timer(self, timer: Timer):
+            self.timers[timer.name] = timer
+
+        def update(self, dt):
+            expired_timers = []
+            for timer in list(self.timers.values()):
+                if not timer.is_paused:
+                    timer.update(dt)
+                if timer.should_delete():
+                    expired_timers.append(timer.name)
+            for name in expired_timers:
+                del self.timers[name]
+
     def __init__(self):
-        self.registers = {"global": TimerRegister()}
+        self.registers = {"global": TimeManager.TimerRegister()}
 
     def add_register(self, name, active=True):
         if name not in self.registers:
-            self.registers[name] = TimerRegister(active)
+            self.registers[name] = TimeManager.TimerRegister(active)
 
     def add_timer(self, timer, register="global") -> bool:
         if register in self.registers:

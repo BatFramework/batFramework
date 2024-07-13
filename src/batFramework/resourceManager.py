@@ -33,11 +33,11 @@ class ResourceManager(metaclass=Singleton):
                     # print(f"Loaded image : '{file_path}'")
 
                 elif file.lower().endswith((".mp3", ".wav")):
-                    bf.AudioManager().load_sound(file.lower().split(".")[0], file_path)
+                    bf.AudioManager().load_sound(file.split(".")[0], file_path)
                     # print(f"Loaded sound : '{file_path}'")
 
                 elif file.lower().endswith((".ttf", ".otf")):
-                    bf.FontManager().load_font(file_path, file.lower().split(".")[0])
+                    bf.FontManager().load_font(file_path, file.split(".")[0])
                     # print(f"Loaded font : '{file_path}'")
 
         print(f"Loaded resources in directory : '{path}'")

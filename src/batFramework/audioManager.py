@@ -68,7 +68,7 @@ class AudioManager(metaclass=bf.Singleton):
             self.sounds[name]["sound"].play()
             return True
         except KeyError:
-            # print(f"Sound '{name}' not loaded in AudioManager.")
+            print(f"Sound '{name}' not loaded in AudioManager.")
             return False
 
     def stop_sound(self, name) -> bool:
@@ -77,7 +77,7 @@ class AudioManager(metaclass=bf.Singleton):
             return True
         except KeyError:
             return False
-            # print(f"Sound '{name}' not loaded in AudioManager.")
+            print(f"Sound '{name}' not loaded in AudioManager.")
 
     def load_music(self, name, path):
         self.musics[name] = bf.ResourceManager().get_path(path)

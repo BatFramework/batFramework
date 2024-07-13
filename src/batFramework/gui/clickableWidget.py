@@ -141,7 +141,8 @@ class ClickableWidget(Shape, InteractiveWidget):
             if not self.get_focus():
                 return
             self.is_pressed = True
-            bf.AudioManager().play_sound(self.click_down_sound)
+            if self.click_down_sound:
+                bf.AudioManager().play_sound(self.click_down_sound)
 
             pygame.mouse.set_cursor(self.click_cursor)
             self.set_relief(self.pressed_relief)
@@ -149,7 +150,8 @@ class ClickableWidget(Shape, InteractiveWidget):
     def do_on_click_up(self, button) -> None:
         if self.enabled and button == 1 and self.is_pressed:
             self.is_pressed = False
-            bf.AudioManager().play_sound(self.click_up_sound)
+            if self.click_up_sound:
+                bf.AudioManager().play_sound(self.click_up_sound)
             self.set_relief(self.unpressed_relief)
             self.click()
 

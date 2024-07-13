@@ -15,11 +15,11 @@ class SceneManager:
 
         self.set_sharedVar("in_cutscene", False)
         self.set_sharedVar("player_has_control", True)
-
+        self.old_player_control = True
         self.debug_mode: bf.enums.debugMode = bf.debugMode.HIDDEN
         self.current_transitions: dict[str, bf.transition.Transition] = {}
 
-    def init_scenes(self, *initial_scenes):
+    def init_scenes(self, *initial_scenes:bf.Scene):
         for index, s in enumerate(initial_scenes):
             s.set_scene_index(index)
         for s in reversed(initial_scenes):
@@ -129,11 +129,11 @@ class SceneManager:
     def _start_transition(self, target_scene: bf.Scene):
         target_scene.set_active(True)
         target_scene.set_visible(True)
+        self.old_player_control = bool(self.get_sharedVar("player_has_control"))
         self.set_sharedVar("player_has_control", False)
 
     def _end_transition(self, scene_name, index):
         self.set_scene(scene_name, index, True)
-        self.set_sharedVar("player_has_control", True)
         self.current_transitions.clear()
 
     def set_scene(self, scene_name, index=0, ignore_early: bool = False):
@@ -155,6 +155,9 @@ class SceneManager:
         if not ignore_early:
             self.scenes[index].do_on_enter_early()
         target_scene.on_enter()
+
+        self.set_sharedVar("player_has_control", self.old_player_control)
+
 
     def cycle_debug_mode(self):
         current_index = self.debug_mode.value

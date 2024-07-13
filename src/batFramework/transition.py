@@ -87,7 +87,7 @@ class Transition:
 class FadeColor(Transition):
     def __init__(
         self,
-        color: tuple | str,
+        color: tuple,
         middle_duration: float,
         first_duration: float = None,
         second_duration: float = None,
@@ -98,16 +98,25 @@ class FadeColor(Transition):
             first_duration = middle_duration
         if second_duration is None:
             second_duration = middle_duration
-        self.index = 0
+
         self.first = Fade(first_duration)
+        self.second = Fade(second_duration)
         self.color = color
-        self.second = Fade(second_duration).set_end_callback(
-            lambda: self.next_step(self.end)
-        )
-        self.timer = bf.Timer(
-            middle_duration, lambda: self.next_step(self.second.start)
-        )
-        self.first.set_end_callback(lambda: self.next_step(self.timer.start))
+        self.middle_duration = middle_duration
+        self.index = 0
+
+        self.timer = bf.Timer(middle_duration, self.transition_to_second)
+        self.first.set_end_callback(self.transition_to_middle)
+        self.second.set_end_callback(self.transition_to_end)
+
+    def transition_to_middle(self):
+        self.next_step(self.timer.start)
+
+    def transition_to_second(self):
+        self.next_step(self.second.start)
+
+    def transition_to_end(self):
+        self.next_step(self.end)
 
     def next_step(self, callback=None) -> None:
         self.index += 1
@@ -125,6 +134,7 @@ class FadeColor(Transition):
     def start(self):
         if self.start_callback:
             self.start_callback()
+
         self.color_surf = pygame.Surface(self.source.get_size())
         self.color_surf.fill(self.color)
 
@@ -141,12 +151,13 @@ class FadeColor(Transition):
             self.second.draw(surface)
 
     def skip(self, no_callback: bool = False):
-        if (no_callback == False) and self.end_callback:
+        if not no_callback and self.end_callback:
             self.end_callback()
 
         self.first.controller.stop()
         self.timer.stop()
         self.second.controller.stop()
+
 
 
 class Fade(Transition):
@@ -213,3 +224,5 @@ class CircleIn(Transition):
         )
         mask = pygame.mask.from_surface(self.circle_surf)
         mask.to_surface(surface=surface, setsurface=self.source, unsetsurface=self.dest)
+
+

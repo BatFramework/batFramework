@@ -42,10 +42,10 @@ class TextInput(Label, InteractiveWidget):
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
 
     def do_on_get_focus(self):
-        self.old_key_repeat = pygame.key.get_repeat()
         self.cursor_timer.resume()
         self._cursor_toggle(True)
         self.set_cursor_position(len(self.get_text()))
+        self.old_key_repeat = pygame.key.get_repeat()
         pygame.key.set_repeat(200, 50)
 
     def do_on_lose_focus(self):

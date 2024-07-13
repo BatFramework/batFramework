@@ -1,7 +1,10 @@
 import batFramework as bf
-
+from typing import TYPE_CHECKING
 
 class CutsceneBlock: ...
+
+if TYPE_CHECKING:
+    from .cutsceneBlocks import CutsceneBlock
 
 
 class Cutscene: ...
@@ -58,7 +61,7 @@ class CutsceneManager(metaclass=bf.Singleton):
 
 class Cutscene:
     def __init__(self) -> None:
-        self.cutscene_blocks = []
+        self.cutscene_blocks : list[CutsceneBlock] = []
         self.block_index = 0
         self.end_blocks: list[CutsceneBlock] = []
         self.ended = False

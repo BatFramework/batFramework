@@ -11,6 +11,7 @@ class SliderHandle(Indicator, DraggableWidget):
     def __init__(self):
         super().__init__()
         self.set_color(bf.color.CLOUD_SHADE)
+        self.old_key_repeat: tuple = (0, 0)
 
     def __str__(self) -> str:
         return "SliderHandle"
@@ -68,8 +69,6 @@ class Slider(Button):
         self.add(self.meter, self.handle)
         self.meter.set_debug_color(bf.color.RED)
         self.set_value(default_value, True)
-        # print(self.handle.rect)
-        # self.handle.set_visible(False)
 
     def set_visible(self, value: bool) -> Self:
         self.handle.set_visible(value)
@@ -84,20 +83,19 @@ class Slider(Button):
         self.gap = value
         return self
 
+    def do_on_get_focus(self) -> None:
+        super().do_on_get_focus()
+        self.old_key_repeat = pygame.key.get_repeat()
+        pygame.key.set_repeat(200, 50)
+
+    def do_on_lose_focus(self) -> None:
+        super().do_on_lose_focus()
+        pygame.key.set_repeat(*self.old_key_repeat)
+
     def get_min_required_size(self) -> tuple[float, float]:
         gap = self.gap if self.text else 0
         if not self.text_rect:
-            params = {
-                "font_name": self.font_object.name,
-                "text": self.text,
-                "antialias": False,
-                "color": "white",
-                "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
-                "wraplength": (
-                    int(self.get_padded_width()) if self.auto_wraplength else 0
-                ),
-            }
-            self.text_rect.size = self._render_font(params).get_size()
+            self.text_rect.size = self._get_text_rect_required_size()
         w, h = self.text_rect.size
         return self.inflate_rect_by_padding((0, 0, w + gap + self.meter.rect.w, h)).size
 
@@ -134,10 +132,8 @@ class Slider(Button):
     def do_on_key_down(self, key):
         if key == pygame.K_RIGHT:
             self.set_value(self.meter.get_value() + self.meter.step)
-            bf.AudioManager().play_sound(self.click_down_sound)
         elif key == pygame.K_LEFT:
             self.set_value(self.meter.get_value() - self.meter.step)
-            bf.AudioManager().play_sound(self.click_down_sound)
 
     def do_on_click_down(self, button) -> None:
         if button == 1:
@@ -151,8 +147,6 @@ class Slider(Button):
         value_range = self.meter.get_range()
         value = round(value / self.meter.step) * self.meter.step
         position_ratio = (value - self.meter.min_value) / value_range
-        # print(self.handle.rect)
-        # print(rect.left + (self.handle.rect.w/2) + position_ratio * (rect.width - self.handle.rect.w),self.handle.rect.w,self.rect.right)
         return (
             rect.left
             + (self.handle.rect.w / 2)
@@ -178,16 +172,7 @@ class Slider(Button):
 
         gap = self.gap if self.text else 0
 
-        params = {
-            "font_name": self.font_object.name,
-            "text": self.text,
-            "antialias": False,
-            "color": "white",
-            "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
-            "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
-        }
-
-        self.text_rect.size = self._render_font(params).get_size()
+        self.text_rect.size = self._get_text_rect_required_size()
 
         meter_size = [self.text_rect.h * 10, self.font_object.point_size]
         if not self.autoresize_w:
@@ -209,20 +194,19 @@ class Slider(Button):
                 return
 
         # ------------------------------------ size is ok
-        padded = self.get_padded_rect().move(-self.rect.x, -self.rect.y)
+        padded_rect = self.get_padded_rect()
+        padded_relative = padded_rect.move(-self.rect.x, -self.rect.y)
+
 
         self.meter.set_size_if_autoresize(meter_size)
-        handle_size = 2 * [self.meter.get_padded_height()]
 
-        self.handle.set_size_if_autoresize(handle_size)
-
-        self.align_text(tmp_rect, padded, self.alignment)
+        self.align_text(tmp_rect, padded_relative, self.alignment)
         self.text_rect.midleft = tmp_rect.midleft
 
         if self.text:
             match self.spacing:
                 case bf.spacing.MAX:
-                    gap = padded.w - self.text_rect.w - self.meter.rect.w
+                    gap = padded_relative.right - self.text_rect.right - self.meter.rect.w
                 case bf.spacing.MIN:
                     gap = 0
 

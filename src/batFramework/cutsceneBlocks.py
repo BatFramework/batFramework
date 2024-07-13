@@ -150,7 +150,6 @@ class SceneTransitionBlock(CutsceneBlock):
         # Start the timer to handle the end of the transition
         self.timer.start()
 
-
 class DelayBlock(CutsceneBlock):
     def __init__(self, duration) -> None:
         super().__init__()
@@ -159,7 +158,6 @@ class DelayBlock(CutsceneBlock):
     def start(self):
         super().start()
         self.timer.start()
-
 
 class FunctionBlock(CutsceneBlock):
     def __init__(self, func) -> None:

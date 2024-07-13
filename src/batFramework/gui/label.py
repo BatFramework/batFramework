@@ -101,6 +101,12 @@ class Label(Shape):
         self.dirty_surface = True
         return self
 
+    def set_text_outline_mask_size(self,size:tuple[int,int])->Self:
+        old_size = self._text_outline_mask.get_size()
+        m = [[self._text_outline_mask.get_at((x,y)) for x in range(min(old_size[0],size[0]))] for y in range(min(old_size[1],size[1]))]
+        self._text_outline_mask = pygame.Mask(size, fill=True)
+        self.set_text_outline_matrix(m)
+
     def set_text_outline_matrix(self, matrix: list[list[0 | 1]]) -> Self:
         if matrix is None:
             matrix = [[0 for _ in range(3)] for _ in range(3)]
@@ -125,12 +131,12 @@ class Label(Shape):
         self.dirty_surface = True
         return self
 
-    def set_alignment(self, alignment: bf.alignment) -> "Label":
+    def set_alignment(self, alignment: bf.alignment) -> Self:
         self.alignment = alignment
         self.dirty_surface = True
         return self
 
-    def set_auto_wraplength(self, val: bool) -> "Label":
+    def set_auto_wraplength(self, val: bool) -> Self:
         self.auto_wraplength = val
         if self.autoresize_h or self.autoresize_w:
             self.dirty_shape = True
@@ -186,18 +192,7 @@ class Label(Shape):
         if not (self.autoresize_w or self.autoresize_h):
             return self.rect.size
         if not self.text_rect:
-            params = {
-                "font_name": self.font_object.name,
-                "text": self.text,
-                "antialias": False,
-                "color": "white",
-                "bgcolor": "black",  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
-                "wraplength": (
-                    int(self.get_padded_width()) if self.auto_wraplength else 0
-                ),
-            }
-
-            self.text_rect.size = self._render_font(params).get_size()
+            self.text_rect.size = self._get_text_rect_required_size()
         res = self.inflate_rect_by_padding((0, 0, *self.text_rect.size)).size
         # return res
         return res[0] if self.autoresize_w else self.rect.w, (
@@ -242,9 +237,7 @@ class Label(Shape):
             surf = self.font_object.render(**params)
 
         return surf
-
-    def _build_layout(self) -> None:
-
+    def _get_text_rect_required_size(self):
         params = {
             "font_name": self.font_object.name,
             "text": self.text,
@@ -254,7 +247,13 @@ class Label(Shape):
             "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
         }
 
-        self.text_rect.size = self._render_font(params).get_size()
+        size = self._render_font(params).get_size()
+        s = self._text_outline_mask.get_size()
+        return size[0] + s[0]//2, size[1] + s[1]//2
+    def _build_layout(self) -> None:
+
+        self.text_rect.size = self._get_text_rect_required_size()
+        
         if self.autoresize_h or self.autoresize_w:
             target_rect = self.inflate_rect_by_padding((0, 0, *self.text_rect.size))
             if not self.autoresize_w:
@@ -267,6 +266,10 @@ class Label(Shape):
                 return
         padded = self.get_padded_rect().move(-self.rect.x, -self.rect.y)
         self.align_text(self.text_rect, padded, self.alignment)
+
+    def _get_outline_offset(self)->tuple[int,int]:
+        mask_size = self._text_outline_mask.get_size()
+        return  mask_size[0]//2,mask_size[1]//2
 
     def _paint_text(self) -> None:
         if self.font_object is None:
@@ -291,15 +294,16 @@ class Label(Shape):
             )
 
         l = []
+        outline_offset = self._get_outline_offset()
         if self.show_text_outline:
             l.append(
                 (
                     self.text_outline_surface,
-                    self.text_rect.move(-1, self.relief - self.get_relief() - 1),
+                    self.text_rect.move(0, self.relief - self.get_relief()),
                 )
             )
         l.append(
-            (self.text_surface, self.text_rect.move(0, self.relief - self.get_relief()))
+            (self.text_surface, self.text_rect.move(outline_offset[0], self.relief - self.get_relief() + outline_offset[1]))
         )
         self.surface.fblits(l)
 

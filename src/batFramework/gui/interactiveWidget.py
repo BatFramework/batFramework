@@ -181,6 +181,6 @@ class InteractiveWidget(Widget):
         pygame.draw.rect(
             camera.surface,
             "white",
-            self.rect.move(-camera.rect.x, -camera.rect.y).inflate(delta, delta),
+            self.rect.move(-camera.rect.x, -camera.rect.y),#.inflate(delta, delta),
             1,
         )

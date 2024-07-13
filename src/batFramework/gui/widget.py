@@ -188,7 +188,7 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
         seen = set()
         result = []
         for c in self.constraints:
-            if c.name not in seen:
+            if not any(c == o for o in seen):
                 result.append(c)
                 seen.add(c.name)
         self.constraints = result
@@ -271,9 +271,7 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
         size = list(size)
         size[0] = size[0] if self.autoresize_w else None
         size[1] = size[1] if self.autoresize_h else None
-
         self.set_size(size)
-
         return self
 
     def set_size(self, size: tuple) -> Self:
@@ -305,10 +303,12 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
     def build(self) -> None:
         new_size = tuple(map(int, self.rect.size))
         if self.surface.get_size() != new_size:
+            old_alpha = self.surface.get_alpha()
             new_size = [max(0, i) for i in new_size]
             self.surface = pygame.Surface(new_size, self.surface_flags)
             if self.convert_alpha:
                 self.surface = self.surface.convert_alpha()
+            self.surface.set_alpha(old_alpha)
 
     def paint(self) -> None:
         self.surface.fill((0, 0, 0, 0))

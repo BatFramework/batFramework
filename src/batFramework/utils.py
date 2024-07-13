@@ -5,6 +5,11 @@ import batFramework as bf
 import json
 from .enums import *
 import re
+from typing import Callable, TYPE_CHECKING, Any
+from functools import cache
+if TYPE_CHECKING:
+    from .object import Object
+    from .entity import Entity
 
 
 class Singleton(type):
@@ -27,8 +32,6 @@ class Utils:
         with their tuple coordinates as keys.
         Exemple : '(0,0) : Surface'
         """
-        if surface is None:
-            return None
         width, height = surface.get_size()
         res = {}
         for iy, y in enumerate(range(0, height, split_size[1])):
@@ -57,3 +60,61 @@ class Utils:
             return pattern.sub("", s)
 
         return filter_function
+
+
+    @staticmethod
+    @cache
+    def draw_spotlight(inside_color, outside_color, radius, radius_stop=None, dest_surf=None,size=None):
+        """
+        Draws a circle spotlight centered on a surface
+        inner color on the center
+        gradient towards outside color from radius to radius stop
+        surface background is made transparent
+        if des_surf is None:
+            if size is None :  size is radius_stop*radius_stop
+            returns the newly created surface of size 'size' with the spotlight drawn
+
+        """
+        if radius_stop is None:
+            radius_stop = radius
+        diameter = radius_stop * 2
+
+
+        if dest_surf is None:
+            if size is None:
+                size = (diameter,diameter)
+            dest_surf = pygame.Surface(size, pygame.SRCALPHA)
+
+
+
+        
+        dest_surf.fill((0,0,0,0))
+        center = dest_surf.get_rect().center
+
+        if radius_stop != radius:
+            for r in range(radius_stop, radius - 1, -1):
+                color = [
+                    inside_color[i] + (outside_color[i] - inside_color[i]) * (r - radius) / (radius_stop - radius)
+                    for i in range(3)
+                ] + [255]  # Preserve the alpha channel as fully opaque
+                pygame.draw.circle(dest_surf, color, center, r)
+        else:
+            pygame.draw.circle(dest_surf, inside_color, center, radius)
+
+        return dest_surf
+    
+
+    @staticmethod
+    def animate_move(entity:"Object", start_pos : tuple[float,float], end_pos:tuple[float,float])->Callable[[float],None]:
+        def func(x):
+            entity.set_center(start_pos[0]+(end_pos[0]-start_pos[0])*x,start_pos[1]+(end_pos[1]-start_pos[1])*x)
+        return func
+    
+    @staticmethod
+    def animate_alpha(entity:"Entity", start : int, end:int)->Callable[[float],None]:
+        def func(x):
+            entity.set_alpha(int(pygame.math.clamp(start+(end-start)*x,0,255)))
+        return func
+    
+
+

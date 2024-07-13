@@ -27,6 +27,7 @@ class Scene:
         """
         self.scene_index = 0
         self.name = name
+        bf.TimeManager().add_register(self.name,False)
         self.manager: Manager | None = None
         self.active = False
         self.visible = False
@@ -36,10 +37,16 @@ class Scene:
         self.early_actions: bf.ActionContainer = bf.ActionContainer()
         self.camera: bf.Camera = bf.Camera(convert_alpha=world_convert_alpha)
         self.hud_camera: bf.Camera = bf.Camera(convert_alpha=hud_convert_alpha)
-
+        self.should_sort :bool = True
         self.root: bf.Root = bf.Root(self.hud_camera)
         self.root.rect.center = self.hud_camera.get_center()
         self.add_hud_entity(self.root)
+        self.entities_to_remove = []
+        self.entities_to_add = []
+
+
+    def __str__(self)->str:
+        return f"Scene({self.name})"
 
     def get_world_entity_count(self) -> int:
         return len(self.world_entities)
@@ -130,31 +137,33 @@ class Scene:
 
     def add_world_entity(self, *entities: bf.Entity):
         """Add world entities to the scene."""
+        change = False
         for e in entities:
-            if e not in self.world_entities:
-                self.world_entities[e] = None
-                e.parent_scene = self
-                e.do_when_added()
-        self.sort_entities()
+            if e not in self.world_entities and e not in self.entities_to_add:
+                change = True
+                # self.world_entities[e] = None
+                self.entities_to_add.append(e)
+                e.set_parent_scene(self)
+        # self.sort_entities()
+        return change
 
+    # Updated remove_world_entity method to add entities to the removal list
     def remove_world_entity(self, *entities: bf.Entity):
-        """Remove world entities from the scene."""
-        removed = False
+        """Mark world entities for removal from the scene."""
+        change = False
         for e in entities:
             if e in self.world_entities:
-                e.do_when_removed()
-                e.parent_scene = None
-                del self.world_entities[e]
-                removed = True
-        return removed
+                change = True
+                self.entities_to_remove.append(e)
+                e.set_parent_scene(None)
+        return change
 
     def add_hud_entity(self, *entities: bf.Entity):
         """Add HUD entities to the scene."""
         for e in entities:
             if e not in self.hud_entities:
                 self.hud_entities[e] = None
-                e.parent_scene = self
-                e.do_when_added()
+                e.set_parent_scene(self)
         self.sort_entities()
         return True
 
@@ -162,9 +171,8 @@ class Scene:
         """Remove HUD entities from the scene."""
         for e in entities:
             if e in self.hud_entities:
-                e.do_when_removed()
-                e.parent_scene = None
-                del self.hud_entities[e]
+                e.set_parent_scene(None)
+                self.hud_entities.pop(e)
 
     def add_actions(self, *action):
         """Add actions to the scene."""
@@ -255,15 +263,31 @@ class Scene:
 
     def update(self, dt):
         """Update the scene. Do NOT override"""
+        if self.should_sort:
+            self._sort_entities_internal()
+
         for entity in itertools.chain(
             self.hud_entities.keys(), self.world_entities.keys()
         ):
             entity.update(dt)
+        
         self.do_update(dt)
         self.camera.update(dt)
         self.hud_camera.update(dt)
         self.actions.reset()
         self.early_actions.reset()
+
+
+        if self.entities_to_add:
+            for e in self.entities_to_add:
+                self.world_entities[e] = None
+            self.entities_to_add.clear()
+
+        # Remove marked entities after updating
+        if self.entities_to_remove:
+            for e in self.entities_to_remove:
+                self.world_entities.pop(e, None)
+            self.entities_to_remove.clear()
 
     def do_update(self, dt):
         """Specific update within the scene."""
@@ -284,6 +308,9 @@ class Scene:
         [draw_rect(data) for data in entity.get_debug_outlines()]
 
     def sort_entities(self) -> None:
+        self.should_sort = True
+
+    def _sort_entities_internal(self):
         """Sort entities within the scene based on their rendering order."""
         self.world_entities = OrderedDict(
             sorted(self.world_entities.items(), key=lambda e: e[0].render_order)
@@ -291,6 +318,7 @@ class Scene:
         self.hud_entities = OrderedDict(
             sorted(self.hud_entities.items(), key=lambda e: e[0].render_order)
         )
+        self.should_sort = False
 
     def draw(self, surface: pygame.Surface):
         self.camera.clear()
@@ -329,6 +357,7 @@ class Scene:
         self.root.clear_hovered()
         # self.root.clear_focused()
         self.root.build()
+        bf.TimeManager().activate_register(self.name)
         self.do_on_enter()
         # self.root.visit(lambda e : e.resolve_constraints())
 
@@ -339,6 +368,7 @@ class Scene:
         self.set_visible(False)
         self.actions.hard_reset()
         self.early_actions.hard_reset()
+        bf.TimeManager().deactivate_register(self.name)
         self.do_on_exit()
 
     def do_on_enter(self) -> None:

@@ -8,7 +8,7 @@ from .resourceManager import ResourceManager
 from .fontManager import FontManager
 from .utils import Utils as utils
 from .tileset import Tileset
-from .time import TimeManager, Timer
+from .time import *
 from .easingController import EasingController
 from .cutscene import Cutscene, CutsceneManager
 from .cutsceneBlocks import *
