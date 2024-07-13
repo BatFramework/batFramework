@@ -10,7 +10,6 @@ def swap(lst, index1, index2):
 class SceneManager:
     def __init__(self) -> None:
         self.scenes: list[bf.Scene] = []
-        self.shared_variables: dict = {}
         self.shared_events = {pygame.WINDOWRESIZED}
 
         self.set_sharedVar("in_cutscene", False)
@@ -51,18 +50,11 @@ class SceneManager:
             print(f"[{str(name)} = {str(value)}]")
         print("-" * 40)
 
-    def set_sharedVar(self, name, value) -> bool:
-        """
-        Set a shared variable of any type. This will be accessible (read/write) from any scene
-        """
-        self.shared_variables[name] = value
-        return True
+    def set_sharedVar(self, name, value) -> None:
+        bf.ResourceManager().set_sharedVar(name,value)
 
     def get_sharedVar(self, name, error_value=None):
-        """
-        Get a shared variable
-        """
-        return self.shared_variables.get(name, error_value)
+        return bf.ResourceManager().get_sharedVar(name, error_value)
 
     def get_current_scene_name(self) -> str:
         """get the name of the current scene"""

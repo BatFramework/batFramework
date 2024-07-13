@@ -3,6 +3,7 @@ import os
 import pygame
 import sys
 import json
+from typing import Any
 from .utils import Singleton
 
 if getattr(sys, "frozen", False):
@@ -16,6 +17,7 @@ else:
 
 class ResourceManager(metaclass=Singleton):
     def __init__(self):
+        self.shared_variables: dict[str,Any] = {}
         self.convert_image_cache = {}
         self.convert_alpha_image_cache = {}
         self.sound_cache = {}
@@ -82,3 +84,17 @@ class ResourceManager(metaclass=Singleton):
             return True
         except FileNotFoundError:
             return False
+
+
+    def set_sharedVar(self, name, value) -> bool:
+        """
+        Set a shared variable of any type. This will be accessible (read/write) from any scene
+        """
+        self.shared_variables[name] = value
+        return True
+
+    def get_sharedVar(self, name, error_value=None):
+        """
+        Get a shared variable
+        """
+        return self.shared_variables.get(name, error_value)

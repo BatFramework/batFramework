@@ -1,7 +1,7 @@
 import batFramework as bf
 from .cutscene import Cutscene, CutsceneManager
 from .transition import *
-
+from typing import Optional,Callable
 
 # Define the base CutsceneBlock class
 class CutsceneBlock:
@@ -160,10 +160,10 @@ class DelayBlock(CutsceneBlock):
         self.timer.start()
 
 class FunctionBlock(CutsceneBlock):
-    def __init__(self, func) -> None:
+    def __init__(self, func : Optional[Callable]) -> None:
         self.function = func
 
     def start(self):
         super().start()
-        self.function()
+        if self.function : self.function()
         self.end()
