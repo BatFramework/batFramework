@@ -6,7 +6,7 @@ import pygame
 
 
 class Toggle(Button):
-    def __init__(self, text: str, callback=None, default_value: bool = False) -> None:
+    def __init__(self, text: str = "", callback=None, default_value: bool = False) -> None:
         self.value: bool = default_value
         self.indicator: ToggleIndicator = ToggleIndicator(default_value)
         self.gap: float | int = 0

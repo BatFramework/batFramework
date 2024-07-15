@@ -7,7 +7,7 @@ class RadioVariable: ...
 
 
 class RadioButton(Toggle):
-    def __init__(self, text: str, radio_value: Any = None) -> None:
+    def __init__(self, text: str = "", radio_value: Any = None) -> None:
         super().__init__(text, None, False)
         self.radio_value: Any = (
             radio_value if radio_value is not None else text if text else None
