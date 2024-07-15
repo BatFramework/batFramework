@@ -21,15 +21,21 @@ class Image(Shape):
 
     def paint(self) -> None:
         super().paint()
-        # self.surface.fill((0,0,0,0 if self.convert_alpha else 255))
         if self.original_surface is None:
             return
-        if self.rect.size != self.original_surface.get_size():
-            self.surface.blit(
-                pygame.transform.scale(self.original_surface, self.rect.size), (0, 0)
-            )
+        padded = self.get_padded_rect().move(-self.rect.x,-self.rect.y)
+        target_size = padded.size
+        if self.original_surface.get_size() != target_size:
+            self.surface.blit(pygame.transform.scale(self.original_surface, target_size), padded.topleft)
         else:
-            self.surface.blit(self.original_surface, (0, 0))
+            self.surface.blit(self.original_surface, padded.topleft)
+
+    def build(self) -> None:
+        self.set_size_if_autoresize(
+            self.inflate_rect_by_padding((0,0,*self.original_surface.get_size())).size
+        )
+        super().build()
+
 
     def from_path(self, path: str) -> Self:
         tmp = bf.ResourceManager().get_image(path, self.convert_alpha)
@@ -37,10 +43,6 @@ class Image(Shape):
             return self
         self.original_surface = tmp
         size = self.original_surface.get_size()
-        if not self.autoresize_h:
-            size[0] = None
-        if not self.autoresize_h:
-            size[1] = None
         self.set_size(size)
         self.dirty_surface = True
         return self
@@ -50,10 +52,7 @@ class Image(Shape):
             return self
         self.original_surface = surface
         size = self.original_surface.get_size()
-        if not self.autoresize_h:
-            size[0] = None
-        if not self.autoresize_h:
-            size[1] = None
         self.set_size(size)
+
         self.dirty_surface = True
         return self

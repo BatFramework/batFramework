@@ -242,27 +242,10 @@ class Shape(Widget):
             pygame.draw.rect(self.surface, self.color, e, 0, *self.border_radius)
 
     def _paint_outline(self) -> None:
-        if self.relief:
-            pygame.draw.rect(
-                self.surface,
-                self.outline_color,
-                (
-                    0,
-                    self.relief - self.get_relief(),
-                    self.rect.w,
-                    self.rect.h - self.relief,
-                ),
-                self.outline_width,
-            )
         pygame.draw.rect(
             self.surface,
             self.outline_color,
-            (
-                0,
-                self.relief - self.get_relief(),
-                self.rect.w,
-                self.rect.h - (self.relief - self.get_relief()),
-            ),
+            self._get_elevated_rect(),
             self.outline_width,
         )
 
