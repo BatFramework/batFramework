@@ -31,9 +31,10 @@ class Image(Shape):
             self.surface.blit(self.original_surface, padded.topleft)
 
     def build(self) -> None:
-        self.set_size_if_autoresize(
-            self.inflate_rect_by_padding((0,0,*self.original_surface.get_size())).size
-        )
+        if self.original_surface is not None:
+            self.set_size_if_autoresize(
+                self.inflate_rect_by_padding((0,0,*self.original_surface.get_size())).size
+            )
         super().build()
 
 
