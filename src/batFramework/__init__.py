@@ -30,6 +30,7 @@ from .scene import Scene
 from .gui import *
 from .sceneManager import SceneManager
 from .manager import Manager
+import importlib.metadata
 
 
 def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
@@ -44,6 +45,16 @@ def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
     )
 
 
+
+def print_version():
+    package_name = "batFramework"
+    try:
+        version = importlib.metadata.version(package_name)
+        print(f"{package_name} version: {version}")
+    except importlib.metadata.PackageNotFoundError:
+        print(f"{package_name} is not installed")
+
+
 def init(
     resolution: tuple[int, int],
     flags: int = 0,
@@ -54,6 +65,7 @@ def init(
     window_title: str = "BatFramework Project",
     fps_limit: int = 0,
 ):
+    print_version()
     pygame.display.set_caption(window_title)
     init_screen(resolution, flags, vsync)
 
