@@ -89,8 +89,8 @@ class FadeColor(Transition):
         self,
         color: tuple,
         middle_duration: float,
-        first_duration: float = None,
-        second_duration: float = None,
+        first_duration: float | None = None,
+        second_duration: float | None = None,
         easing_function: bf.easing = bf.easing.LINEAR,
     ) -> None:
         super().__init__(0, easing_function)

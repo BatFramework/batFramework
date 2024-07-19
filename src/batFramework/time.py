@@ -2,12 +2,20 @@ import batFramework as bf
 from typing import Self
 
 
+from typing import Callable, Union, Self
+
+
 class Timer:
     _count: int = 0
+    _available_ids: set[int] = set()
 
-    def __init__(self, duration: float | int, end_callback, loop: bool = False, register="global") -> None:
-        self.name: int = Timer._count
-        Timer._count += 1
+    def __init__(self, duration: Union[float, int], end_callback: Callable, loop: bool = False, register: str = "global") -> None:
+        if Timer._available_ids:
+            self.uid = Timer._available_ids.pop()
+        else:
+            self.uid = Timer._count
+            Timer._count += 1
+
         self.register = register
         self.duration: int | float = duration
         self.end_callback = end_callback
@@ -21,8 +29,8 @@ class Timer:
     def __bool__(self)->bool:
         return self.elapsed_time==-1 or self.is_over
 
-    def __repr__(self) -> str:
-        return f"Timer ({self.name}) {self.elapsed_time}/{self.duration} | {'loop ' if self.is_looping else ''} {'(D) ' if self.do_delete else ''}"
+    def __str__(self) -> str:
+        return f"Timer ({self.uid}) {self.elapsed_time}/{self.duration} | {'loop ' if self.is_looping else ''} {'(D) ' if self.do_delete else ''}"
 
     def stop(self) -> Self:
         self.elapsed_time = -1
@@ -82,6 +90,10 @@ class Timer:
     def should_delete(self) -> bool:
         return self.is_over or self.do_delete
 
+    def _release_id(self):
+        Timer._available_ids.add(self.uid)
+
+
 class SceneTimer(Timer):
     def __init__(self, duration: float | int, end_callback, loop: bool = False, scene_name:str = "global") -> None:
         super().__init__(duration, end_callback, loop, scene_name)
@@ -96,7 +108,7 @@ class TimeManager(metaclass=bf.Singleton):
             return iter(self.timers.values())
 
         def add_timer(self, timer: Timer):
-            self.timers[timer.name] = timer
+            self.timers[timer.uid] = timer
 
         def update(self, dt):
             expired_timers = []
@@ -104,9 +116,9 @@ class TimeManager(metaclass=bf.Singleton):
                 if not timer.is_paused:
                     timer.update(dt)
                 if timer.should_delete():
-                    expired_timers.append(timer.name)
-            for name in expired_timers:
-                del self.timers[name]
+                    expired_timers.append(timer.uid)
+            for uid in expired_timers:
+                del self.timers[uid]
 
     def __init__(self):
         self.registers = {"global": TimeManager.TimerRegister()}
@@ -138,3 +150,12 @@ class TimeManager(metaclass=bf.Singleton):
 
     def deactivate_register(self, name):
         self.activate_register(name, active=False)
+
+    def __str__(self)->str:
+        res = "" 
+        for name,reg in self.registers.items():
+            if not reg.timers:continue
+            res +=name+"\n"
+            for t in reg.timers.values():
+                res +="\t"+str(t)+"\n"
+        return res

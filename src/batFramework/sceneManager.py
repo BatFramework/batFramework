@@ -37,17 +37,27 @@ class SceneManager:
         """
         Print some information about the current state of the scenes.
         """
+        def format_scene_info(scene):
+            status = 'Active' if scene.active else 'Inactive'
+            visibility = 'Visible' if scene.visible else 'Invisible'
+            return f" {scene.name:<30}\t{status}\t{visibility}\tindex={scene.scene_index}"
+
+        def format_shared_variable(name, value):
+            return f"[{name} = {value}]"
+
         print("-" * 40)
-        print(
-            "\n".join(
-                f" {s.name:<30}\t{'Active' if s.active else 'Inactive'}\t{'Visible' if s.visible else 'Invisible'}\tindex= {s.scene_index}"
-                for s in self.scenes
-            )
-        )
+        
+        # Print scene information
+        print("\n".join(format_scene_info(s) for s in self.scenes))
+        
+        # Print debugging mode status
         print(f"[Debugging] = {self.debug_mode}")
+        
+        # Print shared variables
         print("---SHARED VARIABLES---")
-        for name, value in self.shared_variables.items():
-            print(f"[{str(name)} = {str(value)}]")
+        for name, value in bf.ResourceManager().shared_variables.items():
+            print(format_shared_variable(name, value))
+        
         print("-" * 40)
 
     def set_sharedVar(self, name, value) -> None:

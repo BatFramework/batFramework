@@ -7,6 +7,10 @@ class Particle:
     def __init__(self, *args, **kwargs):
         self.dead = False
         self.surface = None
+        self.generator = None
+
+    def do_when_added(self):
+        pass
 
     def update(self, dt):
         pass
@@ -21,7 +25,15 @@ class Particle:
 class TimedParticle(Particle):
     def __init__(self, duration):
         super().__init__()
-        self.timer = bf.Timer(duration, end_callback=self.kill).start()
+        self.duration = duration
+
+    def do_when_added(self):
+        if self.generator and self.generator.parent_scene:
+            self.timer = bf.SceneTimer(
+                self.duration, end_callback=self.kill,
+                scene_name=self.generator.parent_scene.name).start()        
+        else:
+            self.timer = bf.Timer(self.duration, end_callback=self.kill).start()
 
 
 class BasicParticle(TimedParticle):
@@ -72,6 +84,7 @@ class ParticleGenerator(bf.Entity):
         self.particles: list[Particle] = []
 
     def get_debug_outlines(self):
+        return
         for particle in self.particles:
             yield (
                 particle.rect.move(particle.rect.w // 2, particle.rect.h // 2),
@@ -79,7 +92,9 @@ class ParticleGenerator(bf.Entity):
             )
         yield (self.rect, "cyan")
 
-    def add_particle(self, particle):
+    def add_particle(self, particle:Particle):
+        particle.generator = self
+        particle.do_when_added()
         self.particles.append(particle)
 
     def clear(self):
@@ -94,8 +109,7 @@ class ParticleGenerator(bf.Entity):
         for p in particles_to_remove:
             self.particles.remove(p)
 
-    def draw(self, camera) -> bool:
+    def draw(self, camera) -> None:
         camera.surface.fblits(
             [(p.surface, camera.world_to_screen(p.rect)) for p in self.particles]
         )
-        return len(self.particles)

@@ -8,7 +8,9 @@ if TYPE_CHECKING:
 
 
 class Object:
-    __instance_count = 0
+    __count = 0
+    __available_uid = set()
+    __used_uid = set()
 
     def __init__(self) -> None:
         self.rect = pygame.FRect(0, 0, 0, 0)
@@ -16,14 +18,17 @@ class Object:
         self.parent_scene: bf.Scene | None = None
         self.debug_color: tuple | str = "red"
         self.render_order: int = 0
-        self.uid: int = Object.__instance_count
-        Object.__instance_count += 1
+        self.uid: int = Object.__count
+        Object.__used_uid.add(self.uid)
 
-    @staticmethod
-    def new_uid() -> int:
-        i = Object.__instance_count
-        Object.__instance_count += 1
-        return i
+        if Object.__available_uid:
+            self.name = Object.__available_uid.pop()
+        else:
+            self.name = Object.__count
+            Object.__count += 1
+
+    def __del__(self):
+        Object.__available_uid.add(self.uid)
 
     def set_position(self, x, y) -> Self:
         self.rect.topleft = x, y
@@ -57,7 +62,11 @@ class Object:
         pass
 
     def set_uid(self, uid: int) -> Self:
+        if uid in Object.__used_uid:
+            print(f"set_uid error : UID '{uid}' is already in use")
+            return self
         self.uid = uid
+        Object.__used_uid.add(uid)
         return self
 
     def add_tags(self, *tags) -> Self:

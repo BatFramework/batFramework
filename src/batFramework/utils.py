@@ -64,7 +64,7 @@ class Utils:
 
     @staticmethod
     @cache
-    def draw_spotlight(inside_color, outside_color, radius, radius_stop=None, dest_surf=None,size=None):
+    def create_spotlight(inside_color, outside_color, radius, radius_stop=None, dest_surf=None,size=None):
         """
         Draws a circle spotlight centered on a surface
         inner color on the center
@@ -79,16 +79,14 @@ class Utils:
             radius_stop = radius
         diameter = radius_stop * 2
 
-
         if dest_surf is None:
             if size is None:
                 size = (diameter,diameter)
             dest_surf = pygame.Surface(size, pygame.SRCALPHA)
-
-
-
         
         dest_surf.fill((0,0,0,0))
+
+
         center = dest_surf.get_rect().center
 
         if radius_stop != radius:
@@ -102,7 +100,21 @@ class Utils:
             pygame.draw.circle(dest_surf, inside_color, center, radius)
 
         return dest_surf
-    
+
+    @staticmethod
+    def draw_spotlight(dest_surf:pygame.Surface,inside_color,outside_color,radius,radius_stop=None,center=None):
+        if radius_stop is None:
+            radius_stop = radius
+        center = dest_surf.get_rect().center if center is None else center
+        if radius_stop != radius:
+            for r in range(radius_stop, radius - 1, -1):
+                color = [
+                    inside_color[i] + (outside_color[i] - inside_color[i]) * (r - radius) / (radius_stop - radius)
+                    for i in range(3)
+                ] + [255]
+                pygame.draw.circle(dest_surf, color, center, r)
+        else:
+            pygame.draw.circle(dest_surf, inside_color, center, radius)
 
     @staticmethod
     def animate_move(entity:"Object", start_pos : tuple[float,float], end_pos:tuple[float,float])->Callable[[float],None]:

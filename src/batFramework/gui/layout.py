@@ -1,14 +1,15 @@
 import batFramework as bf
 from .widget import Widget
 from .constraints.constraints import *
-from typing import Self, TYPE_CHECKING
+from typing import Self, TYPE_CHECKING,override
+from abc import ABC,abstractmethod
 import pygame
 
 if TYPE_CHECKING:
     from .container import Container
 
 
-class Layout:
+class Layout(ABC):
     def __init__(self, parent: "Container" = None):
         self.parent = parent
         self.child_constraints: list[Constraint] = []
@@ -48,18 +49,10 @@ class Layout:
         return target_size
 
     def focus_next_child(self) -> None:
-        l = self.parent.get_interactive_children()
-        self.parent.focused_index = min(self.parent.focused_index + 1, len(l) - 1)
-        focused = l[self.parent.focused_index]
-        focused.get_focus()
-        self.scroll_to_widget(focused)
+        pass
 
     def focus_prev_child(self) -> None:
-        l = self.parent.get_interactive_children()
-        self.parent.focused_index = max(self.parent.focused_index - 1, 0)
-        focused = l[self.parent.focused_index]
-        focused.get_focus()
-        self.scroll_to_widget(focused)
+        pass
 
     def scroll_to_widget(self, widget: Widget) -> None:
         padded = self.parent.get_padded_rect()
@@ -74,7 +67,23 @@ class Layout:
         pass
 
 
-class Column(Layout):
+class SingleAxisLayout(Layout):
+    def focus_next_child(self) -> None:
+        l = self.parent.get_interactive_children()
+        self.parent.focused_index = min(self.parent.focused_index + 1, len(l) - 1)
+        focused = l[self.parent.focused_index]
+        focused.get_focus()
+        self.scroll_to_widget(focused)
+
+    def focus_prev_child(self) -> None:
+        l = self.parent.get_interactive_children()
+        self.parent.focused_index = max(self.parent.focused_index - 1, 0)
+        focused = l[self.parent.focused_index]
+        focused.get_focus()
+        self.scroll_to_widget(focused)
+
+
+class Column(SingleAxisLayout):
     def __init__(self, gap: int = 0, spacing: bf.spacing = bf.spacing.MANUAL):
         super().__init__()
         self.gap = gap
@@ -157,7 +166,7 @@ class Column(Layout):
                 self.parent.clamp_scroll()
 
 
-class Row(Layout):
+class Row(SingleAxisLayout):
     def __init__(self, gap: int = 0, spacing: bf.spacing = bf.spacing.MANUAL):
         super().__init__()
         self.gap = gap

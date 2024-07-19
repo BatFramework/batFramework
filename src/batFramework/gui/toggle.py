@@ -60,7 +60,7 @@ class Toggle(Button):
 
         size = (
             max(
-                self.indicator.rect.w,
+                self.indicator.get_min_required_size()[0],
                 w + self.font_object.point_size + (self.gap if self.text else 0),
             ),
             self.text_rect.h + outline_offset[1],

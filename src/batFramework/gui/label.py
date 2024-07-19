@@ -146,7 +146,7 @@ class Label(Shape):
 
     def get_debug_outlines(self):
         if self.visible:
-            yield (self.text_rect.move(*self.rect.topleft), "purple")
+            yield (self.text_rect.move(self.rect.x,self.rect.y), "purple")
         yield from super().get_debug_outlines()
 
     def set_font(self, font_name: str = None, force: bool = False) -> Self:
@@ -250,6 +250,7 @@ class Label(Shape):
         size = self._render_font(params).get_size()
         s = self._text_outline_mask.get_size()
         return size[0] + s[0]//2, size[1] + s[1]//2
+
     def _build_layout(self) -> None:
 
         self.text_rect.size = self._get_text_rect_required_size()
@@ -284,6 +285,7 @@ class Label(Shape):
             "bgcolor": None,  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
             "wraplength": int(self.get_padded_width()) if self.auto_wraplength else 0,
         }
+
         self.text_surface = self._render_font(params)
 
         if self.show_text_outline:
