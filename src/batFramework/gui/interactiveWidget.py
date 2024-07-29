@@ -8,6 +8,14 @@ if TYPE_CHECKING:
     from .container import Container
 import batFramework as bf
 
+def children_has_focus(widget):
+    if isinstance(widget,InteractiveWidget) and widget.is_focused:
+        return True
+    for child in widget.children:
+        if children_has_focus(child):
+            return True
+    return False
+
 
 class InteractiveWidget(Widget):
     def __init__(self, *args, **kwargs) -> None:
@@ -38,6 +46,13 @@ class InteractiveWidget(Widget):
             r.focus_on(None)
             return True
         return False
+
+    def set_parent(self, parent: Widget) -> Self:
+        if parent is None and children_has_focus(self):
+            self.get_root().clear_focused()
+            # pass focus on
+
+        return super().set_parent(parent)
 
     def on_get_focus(self) -> None:
         self.is_focused = True
