@@ -55,37 +55,31 @@ class Toggle(Button):
     def get_min_required_size(self) -> tuple[float, float]:
         if not self.text_rect:
             self.text_rect.size = self._get_text_rect_required_size()
-        w, h = self.text_rect.size
-        outline_offset = self._get_outline_offset()
-
         size = (
             max(
                 self.indicator.get_min_required_size()[0],
-                w + self.font_object.point_size + (self.gap if self.text else 0),
+                self.text_rect.w + self.font_object.point_size + (self.gap if self.text else 0),
             ),
-            self.text_rect.h + outline_offset[1],
+            self.text_rect.h,
         )
         return self.inflate_rect_by_padding((0, 0, *size)).size
 
     def _build_layout(self) -> None:
-
         gap = self.gap if self.text else 0
-
         self.text_rect.size = self._get_text_rect_required_size()
 
-        outline_offset = self._get_outline_offset()
+        #right part size
+        right_part_height = min(self.text_rect.h, self.font_object.point_size)
+        self.indicator.set_size_if_autoresize((right_part_height,right_part_height))
 
-        tmp_rect = pygame.FRect(
-            0, 0,
-            self.text_rect.w + gap + self.indicator.rect.w + outline_offset[0],
-            self.text_rect.h + outline_offset[1]
+        #join left and right
+        joined_rect = pygame.FRect(
+            0, 0, self.text_rect.w + gap + self.indicator.rect.w, self.text_rect.h 
         )
 
-        point_size = min(tmp_rect.h, self.font_object.point_size)
-        self.indicator.set_size_if_autoresize((point_size,point_size))
 
         if self.autoresize_h or self.autoresize_w:
-            target_rect = self.inflate_rect_by_padding(tmp_rect)
+            target_rect = self.inflate_rect_by_padding(joined_rect)
             if not self.autoresize_w:
                 target_rect.w = self.rect.w
             if not self.autoresize_h:
@@ -95,14 +89,15 @@ class Toggle(Button):
                 self.build()
                 return
 
+        # ------------------------------------ size is ok
 
+        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
         padded_rect = self.get_padded_rect()
         padded_relative = padded_rect.move(-self.rect.x, -self.rect.y)
 
- 
+        self.align_text(joined_rect, padded_relative.move( offset), self.alignment)
+        self.text_rect.midleft = joined_rect.midleft
 
-        self.align_text(tmp_rect, padded_relative, self.alignment)
-        self.text_rect.midleft = tmp_rect.midleft
         if self.text:
             match self.spacing:
                 case bf.spacing.MAX:
@@ -110,5 +105,8 @@ class Toggle(Button):
                 case bf.spacing.MIN:
                     gap = 0
 
-        self.indicator.rect.x = self.rect.x + self.text_rect.right + gap
-        self.indicator.rect.centery = self.rect.y + padded_relative.top + self.text_rect.h // 2
+        pos = self.text_rect.move(
+                self.rect.x + gap -offset[0],
+                self.rect.y + (self.text_rect.h / 2) - (right_part_height/ 2) -offset[1],
+            ).topright
+        self.indicator.rect.topleft = pos
