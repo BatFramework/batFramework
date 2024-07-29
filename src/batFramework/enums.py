@@ -110,4 +110,4 @@ class actionType(Enum):
 class textMode(Enum):
     ALPHABETICAL = 0
     NUMERICAL = 1
-    ALPHANUMERIC = 3
+    ALPHANUMERICAL = 3
