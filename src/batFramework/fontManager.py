@@ -42,7 +42,7 @@ class FontManager(metaclass=Singleton):
             filename = name  # if name is not given, name is the filename
         self.FONTS[filename] = {}
         # fill the dict
-        for size in range(self.MIN_FONT_SIZE, self.MAX_FONT_SIZE, 2):
+        for size in range(self.MIN_FONT_SIZE, self.MAX_FONT_SIZE+1, 2):
             self.FONTS[filename][size] = pygame.font.Font(path, size=size)
 
     def load_sysfont(self, font_name: str | None, key: str | None = ""):
@@ -52,7 +52,7 @@ class FontManager(metaclass=Singleton):
             raise FileNotFoundError(f"Requested font '{font_name}' was not found")
         self.FONTS[font_name] = {}
 
-        for size in range(self.MIN_FONT_SIZE, self.MAX_FONT_SIZE, 2):
+        for size in range(self.MIN_FONT_SIZE, self.MAX_FONT_SIZE+1, 2):
             self.FONTS[key][size] = pygame.font.SysFont(font_name, size=size)
 
     def get_font(
