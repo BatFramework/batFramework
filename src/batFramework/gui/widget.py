@@ -35,6 +35,8 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
         self.is_root: bool = False
         self.autoresize_w, self.autoresize_h = True, True
         self.__constraint_iteration = 0
+        self.__constraints_to_ignore = []
+        self.__constraints_capture = None
 
     def show(self) -> Self:
         self.visit(lambda w: w.set_visible(True))
@@ -110,7 +112,7 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
         ]
         return self
 
-    def set_parent_scene(self, parent_scene: bf.Scene) -> Self:
+    def set_parent_scene(self, parent_scene: bf.Scene | None) -> Self:
         super().set_parent_scene(parent_scene)
         if parent_scene is None:
             bf.StyleManager().remove_widget(self)
@@ -122,8 +124,8 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
     def set_parent(self, parent: "Widget") -> Self:
         if parent == self.parent:
             return self
-        if self.parent is not None:
-            self.parent.remove(self)
+        # if self.parent is not None and self.parent != parent:
+        #     self.parent.remove(self)
         self.parent = parent
         return self
 
@@ -194,41 +196,69 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
         self.constraints = result
         self.constraints.sort(key=lambda c: c.priority)
         self.dirty_constraints = True
+        self.__constraint_to_ignore = []
+
+        return self
+
+
+    def remove_constraints(self, *names: str) -> Self:
+        for c in self.constraints:
+            if c.name in names:
+                c.on_removal(self)
+        self.constraints = [c for c in self.constraints if c.name not in names]
+        self.__constraint_to_ignore = []
         return self
 
     def resolve_constraints(self) -> None:
         if self.parent is None or not self.constraints:
             self.dirty_constraints = False
             return
-        all_good = False
-        constraint_iteration = 0
-        while not all_good:
-            for constraint in self.constraints:
-                if not constraint.evaluate(self.parent, self):
-                    constraint.apply(self.parent, self)
-                    # print(constraint.name,"Applied")
-            constraint_iteration += 1
-            if all(c.evaluate(self.parent, self) for c in self.constraints):
-                all_good = True
-                break
-            elif self.__constraint_iteration > MAX_CONSTRAINTS:
-                print(
-                    self,
-                    "CONSTRAINTS ERROR",
-                    list(
-                        c.name
-                        for c in self.constraints
-                        if not c.evaluate(self.parent, self)
-                    ),
-                )
-                self.dirty_constraints = False
-                return
-        # print("DONE")
-        self.dirty_constraints = False
 
-    def remove_constraints(self, *names: str) -> Self:
-        self.constraints = [c for c in self.constraints if c.name not in names]
-        return self
+        if not self.__constraint_iteration:
+            self.__constraints_capture = None
+        else:
+            capture = tuple([c.priority for c in self.constraints])
+            if capture != self.__constraints_capture:
+                self.__constraints_capture = capture
+                self.__constraint_to_ignore = []
+
+        constraints = self.constraints.copy()
+        # If all are resolved early exit
+        if all(c.evaluate(self.parent,self) for c in constraints if c not in self.__constraint_to_ignore):
+            self.dirty_constraints = False
+            return
+        
+        # # Here there might be a conflict between 2 or more constraints
+        # we have to determine which ones causes conflict and ignore the one with least priority
+
+        stop = False
+
+        while True:
+            stop = True
+            # first pass with 2 iterations to sort out the transformative constraints
+            for _ in range(2):
+                for c in constraints:
+                    if c in self.__constraints_to_ignore:continue
+                    if not c.evaluate(self.parent,self) :
+                        c.apply(self.parent,self)
+            # second pass where we check conflicts
+            for c in constraints:
+                if c in self.__constraints_to_ignore:
+                    continue
+                if not c.evaluate(self.parent,self):
+                    # first pass invalidated this constraint
+                    self.__constraints_to_ignore.append(c)
+                    stop = False
+                    break
+
+            if stop: 
+                break
+
+        if self.__constraints_to_ignore:
+            print("Constraints ignored : ",[str(c) for c in self.__constraints_to_ignore])
+        
+
+        self.dirty_constraints = False
 
     def has_constraint(self, name: str) -> bool:
         return any(c.name == name for c in self.constraints)
@@ -236,7 +266,9 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
     def get_root(self) -> "Root":
         if self.is_root:
             return self
-        return self.parent.get_root()
+        if self.parent:
+            return self.parent.get_root()
+        return None
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         if self.children:
@@ -251,6 +283,7 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
         self.children.extend(children)
         i = len(self.children)
         for child in children:
+
             child.set_render_order(i).set_parent(self).set_parent_scene(
                 self.parent_scene
             )
@@ -262,8 +295,8 @@ class Widget(bf.Entity, metaclass=WidgetMeta):
     def remove(self, *children: "Widget") -> Self:
         for child in self.children:
             if child in children:
-                self.children.remove(child)
                 child.set_parent(None).set_parent_scene(None)
+                self.children.remove(child)
         if self.parent:
             self.parent.do_sort_children = True
 
