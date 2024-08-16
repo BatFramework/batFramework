@@ -35,30 +35,49 @@ class SceneManager:
 
     def print_status(self):
         """
-        Print some information about the current state of the scenes.
+        Print detailed information about the current state of the scenes and shared variables.
         """
+
         def format_scene_info(scene):
             status = 'Active' if scene.active else 'Inactive'
             visibility = 'Visible' if scene.visible else 'Invisible'
-            return f" {scene.name:<30}\t{status}\t{visibility}\tindex={scene.scene_index}"
+            return f"{scene.name:<30} | {status:<8} | {visibility:<10} | Index={scene.scene_index}"
 
         def format_shared_variable(name, value):
-            return f"[{name} = {value}]"
+            return f"[{name}] = {value}"
 
-        print("-" * 40)
-        
+        print("\n" + "=" * 50)
+        print(" SCENE STATUS".center(50))
+        print("=" * 50)
+
         # Print scene information
-        print("\n".join(format_scene_info(s) for s in self.scenes))
-        
+        if self.scenes:
+            header = f"{'Scene Name':<30} | {'Status':<8} | {'Visibility':<10} | {'Index':<7}"
+            print(header)
+            print("-" * 50)
+            print("\n".join(format_scene_info(s) for s in self.scenes))
+        else:
+            print("No scenes available.")
+
         # Print debugging mode status
-        print(f"[Debugging] = {self.debug_mode}")
-        
+        print("\n" + "=" * 50)
+        print(" DEBUGGING STATUS".center(50))
+        print("=" * 50)
+        print(f"[Debugging Mode] = {self.debug_mode}")
+
         # Print shared variables
-        print("---SHARED VARIABLES---")
-        for name, value in bf.ResourceManager().shared_variables.items():
-            print(format_shared_variable(name, value))
-        
-        print("-" * 40)
+        print("\n" + "=" * 50)
+        print(" SHARED VARIABLES".center(50))
+        print("=" * 50)
+
+        if bf.ResourceManager().shared_variables:
+            for name, value in bf.ResourceManager().shared_variables.items():
+                print(format_shared_variable(name, value))
+        else:
+            print("No shared variables available.")
+
+        print("=" * 50 + "\n")
+
 
     def set_sharedVar(self, name, value) -> None:
         bf.ResourceManager().set_sharedVar(name,value)
