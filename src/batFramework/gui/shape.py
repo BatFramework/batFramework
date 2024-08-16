@@ -43,14 +43,9 @@ class Shape(Widget):
     def set_relief(self, relief: int) -> Self:
         if relief < 0:
             return self
-        if self.relief == relief:
-            return self
+        self.dirty_shape = self.relief != relief
         self.relief = relief
-        self.dirty_shape = True
         return self
-
-    def get_relief(self) -> int:
-        return self.relief
 
     def set_texture(
         self, surface: pygame.SurfaceType, subsize: tuple[int, int] | None = None
@@ -223,8 +218,8 @@ class Shape(Widget):
         return pygame.FRect(0, self.rect.h - self.relief, self.rect.w, self.relief)
 
     def _paint_shape(self) -> None:
+        self.surface.fill((0, 0, 0, 0))
         if self.relief!=0:
-            self.surface.fill((0, 0, 0, 0))
             self.surface.fill(self.shadow_color, self._get_base_rect())
             self.surface.fill(self.color, self._get_elevated_rect())
         else:
