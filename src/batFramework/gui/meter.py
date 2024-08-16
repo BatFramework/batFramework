@@ -17,9 +17,11 @@ class Meter(Shape):
         self.snap: bool = False
         self.value = self.max_value
         self.content = Shape((0, 0)).set_color(bf.color.BLUE)
+        self.content.set_debug_color("cyan")
         self.content.top_at = lambda x, y: custom_top_at(self.content, x, y)
         self.add(self.content)
-        self.set_padding(1)
+        self.set_padding(4)
+        self.set_color("gray20")
         self.set_outline_width(1)
         self.set_outline_color(bf.color.BLACK)
         self.set_debug_color("pink")
@@ -38,18 +40,19 @@ class Meter(Shape):
                 f"[Warning] : minimum value {range_min} is greater than or equal to maximum value {range_max}"
             )
             return self
-        self.min_value, self.max_value = range_min, range_max
+        self.min_value = range_min
+        self.max_value = range_max
         self.dirty_shape = True
 
     def get_debug_outlines(self):
         yield from super().get_debug_outlines()
-        yield from self.content.get_debug_outlines()
+        # yield from self.content.get_debug_outlines()
 
     def set_value(self, value: float) -> Self:
         value = max(self.min_value, min(self.max_value, value))
         value = round(value / self.step) * self.step
-        self.value = value
-        self.dirty_surface = True
+        self.value = round(value,10)
+        self.dirty_shape = True
         return self
 
     def get_value(self) -> float:
@@ -59,12 +62,12 @@ class Meter(Shape):
         return self.max_value - self.min_value
 
     def get_ratio(self) -> float:
-        return self.value / (self.max_value - self.min_value)
+        return (self.value-self.min_value) / (self.max_value - self.min_value)
 
     def _build_content(self) -> None:
         width = self.get_padded_width() * self.get_ratio()
         self.content.set_size((width, self.get_padded_height()))
-        self.content.set_position(*self.get_padded_rect().topleft)
+        self.content.rect.topleft = self.get_padded_rect().topleft
 
     def build(self) -> None:
         super().build()
