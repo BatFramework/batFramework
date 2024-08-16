@@ -312,15 +312,14 @@ class Label(Shape):
 
         l = []
         outline_offset = self._get_outline_offset() if self.show_text_outline else (0,0)
+
         if self.show_text_outline:
             l.append(
-                (
-                    self.text_outline_surface,
-                    self.text_rect.move(-outline_offset[0], self.relief - self.get_relief()-outline_offset[1]),
-                )
+                (self.text_outline_surface,
+                (self.text_rect.x - outline_offset[0],self.text_rect.y - outline_offset[1]))
             )
         l.append(
-            (self.text_surface, self.text_rect.move(0, self.relief - self.get_relief()))
+            (self.text_surface, self.text_rect)
         )
         self.surface.fblits(l)
 
