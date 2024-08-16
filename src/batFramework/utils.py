@@ -122,6 +122,23 @@ class Utils:
             entity.set_center(start_pos[0]+(end_pos[0]-start_pos[0])*x,start_pos[1]+(end_pos[1]-start_pos[1])*x)
         return func
     
+    def animate_move_to(entity: "Object", end_pos: tuple[float, float]) -> Callable[[float], None]:
+        # Start position will be captured once when the animation starts
+        start_pos = [None]
+
+        def update_position(progression: float):
+            if start_pos[0] is None:
+                start_pos[0] = entity.rect.center  # Capture the start position at the start of the animation
+
+            # Calculate new position based on progression
+            new_x = start_pos[0][0] + (end_pos[0] - start_pos[0][0]) * progression
+            new_y = start_pos[0][1] + (end_pos[1] - start_pos[0][1]) * progression
+
+            # Set the entity's new position
+            entity.set_center(new_x, new_y)
+
+        return update_position
+
     @staticmethod
     def animate_alpha(entity:"Entity", start : int, end:int)->Callable[[float],None]:
         def func(x):
