@@ -51,7 +51,7 @@ class easing(Enum):
     EASE_IN = (0.95, 0, 1, 0.55)
     EASE_OUT = (0.5, 1, 0.5, 1)
     EASE_IN_OUT = (0.55, 0, 0.45, 1)
-    EASE_IN_OUT_ELASTIC = (0.39, -0.55, 0.3, 1.3)
+    EASE_IN_OUT_ELASTIC = (0.76,-0.36,0.41,1.34)
 
     def __init__(self, *control_points):
         self.control_points = control_points
