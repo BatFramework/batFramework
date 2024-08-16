@@ -27,7 +27,7 @@ class ClickableWidget(Shape, InteractiveWidget):
         self.set_debug_color("cyan")
         self.set_relief(self.unpressed_relief)
 
-    def set_unpressed_relief(self, relief: int = 0) -> Self:
+    def set_unpressed_relief(self, relief: int) -> Self:
         if relief == self.unpressed_relief:
             return self
         self.unpressed_relief = relief
@@ -36,18 +36,17 @@ class ClickableWidget(Shape, InteractiveWidget):
             self.set_relief(relief)
         return self
 
-    def set_silent_focus(self, value: bool) -> Self:
-        self.silent_focus = value
-        return self
-
-    def set_pressed_relief(self, relief: int = 0) -> Self:
+    def set_pressed_relief(self, relief: int) -> Self:
         if relief == self.pressed_relief:
             return self
         self.pressed_relief = relief
         self.dirty_shape = True
         if self.is_pressed:
             self.set_relief(relief)
+        return self
 
+    def set_silent_focus(self, value: bool) -> Self:
+        self.silent_focus = value
         return self
 
     def set_click_down_sound(self, sound_name: str) -> Self:
@@ -143,7 +142,6 @@ class ClickableWidget(Shape, InteractiveWidget):
             self.is_pressed = True
             if self.click_down_sound:
                 bf.AudioManager().play_sound(self.click_down_sound)
-
             pygame.mouse.set_cursor(self.click_cursor)
             self.set_relief(self.pressed_relief)
 
@@ -219,3 +217,4 @@ class ClickableWidget(Shape, InteractiveWidget):
             self._paint_disabled()
         elif self.is_hovered:
             self._paint_hovered()
+ 
