@@ -24,10 +24,24 @@ class Manager(bf.SceneManager):
         pygame.display.set_icon(surf)
 
     def print_status(self):
+        """
+        Print detailed information about the current state of the scenes, shared variables,
+        and additional timers managed by the subclass.
+        """
+        # Call the parent class's print_status method to include its information
         super().print_status()
-        print("TIMERS : ")
+        
+        # Add the timers information in a cohesive manner
+        print("\n" + "=" * 50)
+        print(" TIMERS".center(50))
+        print("=" * 50)
+        
+        # Print the timers information
         print(self._timeManager)
-        print("-" * 40)
+        
+        # End with a visual separator
+        print("=" * 50 + "\n")
+
 
     def get_fps(self) -> float:
         return self._clock.get_fps()
