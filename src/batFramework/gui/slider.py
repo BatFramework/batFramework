@@ -43,7 +43,6 @@ class SliderHandle(Indicator, DraggableWidget):
 
 
 class SliderMeter(Meter, InteractiveWidget):
-
     def __str__(self) -> str:
         return "SliderMeter"
 
@@ -54,9 +53,7 @@ class SliderMeter(Meter, InteractiveWidget):
             if r:
                 pos = r.drawing_camera.screen_to_world(pygame.mouse.get_pos())[0]
                 self.parent.set_value(self.parent.position_to_value(pos))
-
         self.do_on_click_down(button)
-
 
 class Slider(Button):
     def __init__(self, text: str, default_value: float = 1.0) -> None:
@@ -92,13 +89,6 @@ class Slider(Button):
         super().do_on_lose_focus()
         pygame.key.set_repeat(*self.old_key_repeat)
 
-    def get_min_required_size(self) -> tuple[float, float]:
-        gap = self.gap if self.text else 0
-        if not self.text_rect:
-            self.text_rect.size = self._get_text_rect_required_size()
-        w, h = self.text_rect.size
-        return self.inflate_rect_by_padding((0, 0, w + gap + self.meter.rect.w, h)).size
-
     def set_spacing(self, spacing: bf.spacing) -> Self:
         if spacing == self.spacing:
             return self
@@ -112,10 +102,12 @@ class Slider(Button):
 
     def set_range(self, range_min: float, range_max: float) -> Self:
         self.meter.set_range(range_min, range_max)
+        self.dirty_shape = True
         return self
 
     def set_step(self, step: float) -> Self:
         self.meter.set_step(step)
+        self.dirty_shape = True
         return self
 
     def set_value(self, value, no_callback: bool = False) -> Self:
@@ -168,22 +160,34 @@ class Slider(Button):
         value = self.meter.min_value + position_ratio * value_range
         return round(value / self.meter.step) * self.meter.step
 
+    def get_min_required_size(self) -> tuple[float, float]:
+        gap = self.gap if self.text else 0
+        if not self.text_rect:
+            self.text_rect.size = self._get_text_rect_required_size()
+        w, h = self.text_rect.size
+        return self.inflate_rect_by_padding((0, 0, w + gap + self.meter.get_min_required_size()[1], h)).size
+
     def _build_layout(self) -> None:
 
         gap = self.gap if self.text else 0
-
         self.text_rect.size = self._get_text_rect_required_size()
 
-        meter_size = [self.text_rect.h * 10, self.font_object.point_size]
+        #right part size
+        meter_width = self.text_rect.h * 10
         if not self.autoresize_w:
-            meter_size[0] = self.get_padded_width() - self.text_rect.w - gap
+            meter_width = self.get_padded_width() - self.text_rect.w - gap
+        right_part_height = min(self.text_rect.h, self.font_object.point_size)
+        self.meter.set_size_if_autoresize((meter_width,right_part_height))
+        self.handle.set_size_if_autoresize((None,right_part_height))
 
-        tmp_rect = pygame.FRect(
-            0, 0, self.text_rect.w + gap + meter_size[0], self.text_rect.h
+
+        #join left and right
+        joined_rect = pygame.FRect(
+            0, 0, self.text_rect.w + gap + meter_width, self.text_rect.h
         )
 
         if self.autoresize_h or self.autoresize_w:
-            target_rect = self.inflate_rect_by_padding(tmp_rect)
+            target_rect = self.inflate_rect_by_padding(joined_rect)
             if not self.autoresize_w:
                 target_rect.w = self.rect.w
             if not self.autoresize_h:
@@ -194,14 +198,14 @@ class Slider(Button):
                 return
 
         # ------------------------------------ size is ok
+        
+
+        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
         padded_rect = self.get_padded_rect()
         padded_relative = padded_rect.move(-self.rect.x, -self.rect.y)
 
-
-        self.meter.set_size_if_autoresize(meter_size)
-
-        self.align_text(tmp_rect, padded_relative, self.alignment)
-        self.text_rect.midleft = tmp_rect.midleft
+        self.align_text(joined_rect, padded_relative.move( offset), self.alignment)
+        self.text_rect.midleft = joined_rect.midleft
 
         if self.text:
             match self.spacing:
@@ -212,16 +216,12 @@ class Slider(Button):
 
         # place meter
 
-        self.meter.set_position(
-            *self.text_rect.move(
-                self.rect.x + gap,
-                self.rect.y + (self.text_rect.h / 2) - meter_size[1] / 2,
+        pos = self.text_rect.move(
+                self.rect.x + gap -offset[0],
+                self.rect.y + (self.text_rect.h / 2) - (right_part_height / 2) -offset[1],
             ).topright
-        )
+        self.meter.rect.topleft = pos
         # place handle
-
-        # print(self.meter.rect.top - self.rect.top)
-        # print(self.meter.rect.h)
 
         x = self.value_to_position(self.meter.value)
         r = self.meter.get_padded_rect()
