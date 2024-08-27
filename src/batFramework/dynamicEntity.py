@@ -12,6 +12,7 @@ class DynamicEntity(bf.Entity):
     ) -> None:
         super().__init__(size, surface_flags, convert_alpha,*args,**kwargs)
         self.velocity = pygame.math.Vector2(0, 0)
+        self.ignore_collisions : bool = False
 
     def on_collideX(self, collider: "DynamicEntity"):
         """
