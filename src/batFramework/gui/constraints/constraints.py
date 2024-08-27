@@ -458,10 +458,10 @@ class AnchorTopRight(Constraint):
         return child_widget.rect.topright == parent_widget.get_padded_rect().topright
 
     def apply_constraint(self, parent_widget, child_widget):
-        child_widget.set_position(
-            parent_widget.get_padded_right() - child_widget.rect.w,
-            parent_widget.get_padded_top(),
-        )
+        # print("before",child_widget.rect.topright, parent_widget.get_padded_rect().topright)
+        topright = parent_widget.get_padded_rect().topright
+        child_widget.set_position(topright[0] - child_widget.rect.w,topright[1])
+        # print("after",child_widget.rect.topright, parent_widget.get_padded_rect().topright)
 
 
 class AnchorBottomRight(Constraint):
@@ -474,9 +474,11 @@ class AnchorBottomRight(Constraint):
         )
 
     def apply_constraint(self, parent_widget, child_widget):
+        bottomright =  parent_widget.get_padded_rect().bottomright
+
         child_widget.set_position(
-            parent_widget.get_padded_right() - child_widget.rect.w,
-            parent_widget.get_padded_bottom() - child_widget.rect.h,
+            bottomright[0] - child_widget.rect.w,
+            bottomright[1] - child_widget.rect.h,
         )
 
 
