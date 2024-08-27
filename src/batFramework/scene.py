@@ -1,9 +1,9 @@
 from __future__ import annotations
 import re
-from typing import TYPE_CHECKING, Any
 from collections import OrderedDict
 import itertools
 
+from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .manager import Manager
     from .sceneManager import SceneManager
