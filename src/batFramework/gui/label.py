@@ -333,6 +333,7 @@ class Label(Shape):
 
         pos = area.__getattribute__(alignment.value)
         text_rect.__setattr__(alignment.value, pos)
+        text_rect.y = ceil(text_rect.y)
 
     def build(self) -> None:
         super().build()
