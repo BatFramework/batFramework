@@ -24,12 +24,14 @@ from .dynamicEntity import DynamicEntity
 from .sprite import Sprite
 from .scrollingSprite import ScrollingSprite
 from .particle import *
-from .animatedSprite import AnimatedSprite, AnimState
+from .animatedSprite import AnimatedSprite, Animation
+from .character import Character
 from .stateMachine import State, StateMachine
 from .scene import Scene
 from .gui import *
 from .sceneManager import SceneManager
 from .manager import Manager
+from .templates import *
 import importlib.metadata
 
 
