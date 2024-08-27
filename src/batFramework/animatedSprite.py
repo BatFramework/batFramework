@@ -1,7 +1,6 @@
 import batFramework as bf
 import pygame
-from typing import List, Dict, Tuple, Union, Optional
-from enum import Enum
+from typing import List, Dict, Tuple, Union, Optional, Self
 
 
 def search_index(target: int, lst: List[int]) -> int:
@@ -13,30 +12,28 @@ def search_index(target: int, lst: List[int]) -> int:
     return -1
 
 
-class AnimState:
+class Animation:
     def __init__(
         self,
-        name: str,
-        surface: pygame.Surface,
-        size: Tuple[int,int],
-        duration_list: Union[List[int], int],
+        name: str
     ) -> None:
-        self.frames: List[pygame.Surface] = list(
-            bf.utils.split_surface(
-                surface, size
-            ).values()
-        )
-        self.frames_flipX: List[pygame.Surface] = list(
-            bf.utils.split_surface(surface, size,).values()
-        )
-
         self.name = name
-        self.set_duration_list(duration_list)
+        self.frames: list[pygame.Surface] = []
+        self.frames_flipX : list[pygame.Surface] = []
+        self.duration_list = []
+        self.duration_list_length = 1
+
+    def from_surface(self,surface:pygame.Surface,size : Tuple[int,int])->Self:
+        self.frames         : List[pygame.Surface] = list(bf.utils.split_surface(surface, size).values())
+        self.frames_flipX   : List[pygame.Surface] = list(bf.utils.split_surface(surface, size,func=lambda s : pygame.transform.flip(s,True,False)).values())
+        return self
 
     def __repr__(self):
-        return f"AnimState({self.name})"
+        return f"Animation({self.name})"
 
     def counter_to_frame(self, counter: Union[float, int]) -> int:
+        if not self.frames : 
+            raise ValueError("Animation has no frames")
         return search_index(
             int(counter % self.duration_list_length), self.duration_list
         )
@@ -45,24 +42,29 @@ class AnimState:
         i = self.counter_to_frame(counter)
         return self.frames_flipX[i] if flip else self.frames[i]
 
-    def set_duration_list(self, duration_list: Union[List[int], int]):
+    def set_duration_list(self, duration_list: Union[List[int], int]) -> Self:
         if isinstance(duration_list, int):
             duration_list = [duration_list] * len(self.frames)
         if len(duration_list) != len(self.frames):
             raise ValueError("duration_list should have values for all frames")
         self.duration_list = duration_list
         self.duration_list_length = sum(self.duration_list)
-
+        return self
 
 class AnimatedSprite(bf.Entity):
     def __init__(self, size: Optional[Tuple[int, int]] = None) -> None:
         super().__init__(size, no_surface=True)
         self.float_counter: float = 0
-        self.animStates: Dict[str, AnimState] = {}
-        self.current_state: Optional[AnimState] = None
+        self.animations: Dict[str, Animation] = {}
+        self.current_state: Optional[Animation] = None
         self.flipX: bool = False
         self._locked: bool = False
         self._paused: bool = False
+        self.animation_end_callback = None
+
+    def set_animation_end_callback(self,callback)->Self:
+        self.animation_end_callback = callback
+        return self
 
     @property
     def paused(self) -> bool:
@@ -92,60 +94,61 @@ class AnimatedSprite(bf.Entity):
     def set_flipX(self, value: bool) -> None:
         self.flipX = value
 
-    def remove_animState(self, name: str) -> bool:
-        if name not in self.animStates:
+    def remove_animation(self, name: str) -> bool:
+        if name not in self.animations:
             return False
-        self.animStates.pop(name)
+        self.animations.pop(name)
         if self.current_state and self.current_state.name == name:
             self.current_state = (
-                list(self.animStates.values())[0] if self.animStates else None
+                list(self.animations.values())[0] if self.animations else None
             )
         return True
 
-    def add_animState(
+    def add_animation(
         self,
-        name: str,
-        surface: pygame.Surface,
-        size: Tuple[int, int],
-        duration_list: Union[List[int], int],
+        animation:Animation
     ) -> bool:
-        if name in self.animStates:
+        if animation.name in self.animations:
             return False
-        self.animStates[name] = AnimState(
-            name, surface, size, duration_list
-        )
-        if len(self.animStates) == 1:
-            self.set_animState(name)
+        self.animations[animation.name] = animation
         return True
 
-    def set_animState(
+    def set_animation(
         self, state: str, reset_counter: bool = True, lock: bool = False
     ) -> bool:
-        if state not in self.animStates or self._locked:
+        if state not in self.animations or self._locked:
             return False
 
-        animState = self.animStates[state]
-        self.current_state = animState
+        animation = self.animations[state]
+        self.current_state = animation
 
-        self.rect = self.current_state.frames[0].get_rect(center=self.rect.center)
+        if self.current_state.frames:
+            self.rect = self.current_state.frames[0].get_frect(center=self.rect.center)
 
-        if reset_counter or self.float_counter > animState.duration_list_length:
+        if reset_counter or (self.float_counter > animation.duration_list_length):
             self.float_counter = 0
+
         if lock:
             self.lock()
         return True
 
-    def get_animState(self) -> Optional[AnimState]:
+    def get_current_animation(self) -> Optional[Animation]:
         return self.current_state
 
     def update(self, dt: float) -> None:
-        s = self.get_animState()
-        if  self.animStates and s is not None:
+        s = self.get_current_animation()
+        if  self.animations and s is not None:
             if not self.paused:
                 self.float_counter += 60 * dt
                 if self.float_counter > s.duration_list_length:
+                    if self.animation_end_callback is not None:
+                        self.animation_end_callback()
                     self.float_counter = 0
-        self.do_update(dt)
+        super().update(dt)
+
+
+    def get_current_frame(self)->pygame.Surface:
+        return self.current_state.get_frame(self.float_counter, self.flipX)
 
     def draw(self, camera: bf.Camera) -> None:
         if (
@@ -155,7 +158,7 @@ class AnimatedSprite(bf.Entity):
         ):
             return
         camera.surface.blit(
-            self.current_state.get_frame(self.float_counter, self.flipX),
+            self.get_current_frame(),
             camera.world_to_screen(self.rect),
         )
         return 
