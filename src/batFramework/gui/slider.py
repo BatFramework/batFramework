@@ -12,11 +12,13 @@ class SliderHandle(Indicator, DraggableWidget):
         super().__init__()
         self.set_color(bf.color.CLOUD_SHADE)
         self.old_key_repeat: tuple = (0, 0)
-
+        self.parent : bf.ClickableWidget = self.parent
     def __str__(self) -> str:
         return "SliderHandle"
 
     def on_click_down(self, button: int) -> None:
+        if not self.parent.is_enabled(): 
+            return
         super().on_click_down(button)
         if button == 1:
             self.parent.get_focus()
@@ -28,6 +30,8 @@ class SliderHandle(Indicator, DraggableWidget):
     def do_on_drag(
         self, drag_start: tuple[float, float], drag_end: tuple[float, float]
     ) -> None:
+        if not self.parent.is_enabled(): 
+            return
         super().do_on_drag(drag_start, drag_end)
         m: Meter = self.parent.meter
         r = m.get_padded_rect()
@@ -47,6 +51,8 @@ class SliderMeter(Meter, InteractiveWidget):
         return "SliderMeter"
 
     def on_click_down(self, button: int) -> None:
+        if not self.parent.is_enabled(): 
+            return
         if button == 1:
             self.parent.get_focus()
             r = self.get_root()
@@ -122,12 +128,16 @@ class Slider(Button):
         return self.meter.get_value()
 
     def do_on_key_down(self, key):
+        if not self.is_enabled(): 
+            return
         if key == pygame.K_RIGHT:
             self.set_value(self.meter.get_value() + self.meter.step)
         elif key == pygame.K_LEFT:
             self.set_value(self.meter.get_value() - self.meter.step)
 
     def do_on_click_down(self, button) -> None:
+        if not self.is_enabled(): 
+            return
         if button == 1:
             self.get_focus()
 

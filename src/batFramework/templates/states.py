@@ -41,10 +41,11 @@ class CharacterState(bf.State):
         """Apply friction to horizontal velocity."""
         if (self.parent.actions.is_active("right") or self.parent.actions.is_active("left")):
             return
-        self.parent.velocity.x *= self.parent.friction
-
+        
         if abs(self.parent.velocity.x) < 0.01:  # Threshold for negligible velocity
             self.parent.velocity.x = 0
+        else:
+            self.parent.velocity.x *= self.parent.friction
 
     def apply_gravity(self, dt):
         """Apply gravity to vertical velocity."""

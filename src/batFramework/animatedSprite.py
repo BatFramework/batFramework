@@ -61,6 +61,7 @@ class AnimatedSprite(bf.Entity):
         self._locked: bool = False
         self._paused: bool = False
         self.animation_end_callback = None
+        self.transition_end_animation = None
 
     def set_animation_end_callback(self,callback)->Self:
         self.animation_end_callback = callback
@@ -118,7 +119,7 @@ class AnimatedSprite(bf.Entity):
     ) -> bool:
         if state not in self.animations or self._locked:
             return False
-
+        
         animation = self.animations[state]
         self.current_state = animation
 
@@ -130,8 +131,16 @@ class AnimatedSprite(bf.Entity):
 
         if lock:
             self.lock()
+        
+        if self.transition_end_animation is not None:
+            self.transition_end_animation = None
         return True
-
+    
+    def transition_to_animation(self,transition:str,animation:str)->Self:
+        self.set_animation(transition)
+        self.transition_end_animation = animation
+        return self
+    
     def get_current_animation(self) -> Optional[Animation]:
         return self.current_state
 
@@ -141,6 +150,9 @@ class AnimatedSprite(bf.Entity):
             if not self.paused:
                 self.float_counter += 60 * dt
                 if self.float_counter > s.duration_list_length:
+                    if self.transition_end_animation is not None:
+                        # print(f"{self.transition_end_animation=}, {self.get_current_animation()=}")
+                        self.set_animation(self.transition_end_animation)
                     if self.animation_end_callback is not None:
                         self.animation_end_callback()
                     self.float_counter = 0
