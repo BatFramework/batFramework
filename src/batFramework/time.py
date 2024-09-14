@@ -118,6 +118,7 @@ class TimeManager(metaclass=bf.Singleton):
                 if timer.should_delete():
                     expired_timers.append(timer.uid)
             for uid in expired_timers:
+                self.timers[uid]._release_id()
                 del self.timers[uid]
 
     def __init__(self):
