@@ -6,19 +6,19 @@ build-backend = "setuptools.build_meta"
 name = "batframework"
 version = "1.0.8"
 authors = [
-    { name="Turan Baturay", email="baturayturan@gmail.com" }
+    { name = "Turan Baturay", email = "baturayturan@gmail.com" }
 ]
 description = "Pygame framework for making games easier."
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "Operating System :: OS Independent"
 ]
-requires-python = ">=3.10"
-dependencies=[
+requires-python = ">=3.11"
+dependencies = [
     "pygame-ce"
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/TuranBaturay/batFramework"
+homepage = "https://github.com/TuranBaturay/batFramework"
