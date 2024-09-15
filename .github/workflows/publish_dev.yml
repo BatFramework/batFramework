@@ -25,7 +25,7 @@ jobs:
           pip install bump2version build twine
 
       - name: Bump pre-release version
-        run: bump2version --no-tag pre-release  # Automatically increments aN pre-release
+        run: bump2version --no-tag pre-release  # Automatically increments alpha pre-release
 
       - name: Build package
         run: python -m build
