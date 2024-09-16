@@ -32,8 +32,8 @@ jobs:
       - name: Build and publish to Test PyPI
         run: |
           python -m build
-          python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/* -u __token__ -p ${{ secrets.TEST_PYPI_API_TOKEN }}
-
+          python -m twine upload dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
+          
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
