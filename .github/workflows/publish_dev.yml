@@ -2,15 +2,11 @@ name: Dev Pre-Release
 
 on:
   workflow_dispatch:
-      bump-type:
-        description: 'Bump type'
+    inputs:
+      version:
+        description: 'Set the pre-release version'
         required: true
-        default: 'patch'
-        type: choice
-        options:
-        - major
-        - minor
-        - patch
+        default: '1.0.0-alpha'
 
 jobs:
   bump-dev:
@@ -19,14 +15,19 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v4
 
-      - name: Bump version
-        id: bump
-        uses: callowayproject/bump-my-version@master
-        env:
-          BUMPVERSION_TAG: "true"
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          args: ${{ inputs.bump-type }}
-          github-token: ${{ secrets.GH_TOKEN }}
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml
+
+      - name: Update version
+        run: |
+          python update_version.py ${{ inputs.version }}
 
       - name: Build and publish to Test PyPI
         run: |
@@ -41,6 +42,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Confirm bump
+      - name: Confirm version update
         run: |
           echo "Pre-release version set to ${{ inputs.version }}."

@@ -15,14 +15,19 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v4
 
-      - name: Bump version
-        id: bump
-        uses: callowayproject/bump-my-version@master
-        env:
-          BUMPVERSION_TAG: "true"
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          args: ${{ inputs.version }}
-          github-token: ${{ secrets.GH_TOKEN }}
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml
+
+      - name: Update version
+        run: |
+          python update_version.py ${{ inputs.version }}
 
       - name: Build and publish to PyPI
         run: |
@@ -36,6 +41,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Confirm bump
+      - name: Confirm version update
         run: |
           echo "Release version set to ${{ inputs.version }}."
