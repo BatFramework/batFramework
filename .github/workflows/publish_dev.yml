@@ -1,5 +1,8 @@
 name: Dev Pre-Release
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
     inputs:
@@ -33,7 +36,7 @@ jobs:
         run: |
           python -m build
           python -m twine upload dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
-          
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
