@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
+        with:
+          ref: dev  # Ensure it checks out the dev branch
 
       - name: Set up Python
         uses: actions/setup-python@v4
