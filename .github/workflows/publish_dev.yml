@@ -1,4 +1,4 @@
-name: Publish Pre-Release to PyPI
+name: Pre-release Workflow
 
 on:
   push:
@@ -6,10 +6,8 @@ on:
       - dev
 
 jobs:
-  publish:
-    name: Publish Pre-Release
+  bump-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -17,36 +15,25 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'  # or '3.10'
-
-      - name: Set up Git
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          python-version: 3.11
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install bump2version build twine
+        run: pip install bump-my-version build twine
+
+      - name: Show pyproject.toml before version bump
+        run: cat pyproject.toml
 
       - name: Bump pre-release version
-        run: bump2version --no-tag pre-release  # Automatically increments alpha pre-release
+        run: bump-my-version --new-version $(bump-my-version --current-version `bump-my-version current` --part pre-release --serialize "{major}.{minor}.{patch}a{build}")
 
-      - name: Build package
+      - name: Show pyproject.toml after version bump
+        run: cat pyproject.toml
+
+      - name: Build the package
         run: python -m build
 
-      - name: Publish to PyPI
+      - name: Upload to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: twine upload dist/*
-
-      - name: Create GitHub Pre-Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.bump_version.outputs.new_version }}
-          name: "Pre-Release ${{ steps.bump_version.outputs.new_version }}"
-          body: "Automated pre-release"
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python -m twine upload dist/*
