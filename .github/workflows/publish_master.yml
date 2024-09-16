@@ -1,36 +1,41 @@
-name: Release Workflow
+name: Master Release
 
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Set the release version'
+        required: true
+        default: '1.0.0'
 
 jobs:
-  bump-and-deploy:
+  bump-master:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
 
-      - name: Bump stable version
+      - name: Bump version
         id: bump
         uses: callowayproject/bump-my-version@master
         env:
           BUMPVERSION_TAG: "true"
         with:
-          args: patch  # You can also use `major` or `minor` based on your needs
+          args: ${{ inputs.version }}
           github-token: ${{ secrets.GH_TOKEN }}
 
-      - name: Check if version bumped
-        if: steps.bump.outputs.bumped == 'true'
+      - name: Build and publish to PyPI
         run: |
-          echo "Version was bumped from ${{ steps.bump.outputs.previous-version }} to ${{ steps.bump.outputs.current-version }}!"
+          python -m build
+          python -m twine upload dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
 
-      - name: Build the package
-        run: python -m build
-
-      - name: Upload to PyPI
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: python -m twine upload dist/*
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Confirm bump
+        run: |
+          echo "Release version set to ${{ inputs.version }}."

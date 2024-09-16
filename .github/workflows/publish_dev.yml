@@ -1,36 +1,42 @@
-name: Pre-release Workflow
+name: Dev Pre-Release
 
 on:
-  push:
-    branches:
-      - dev
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Set the pre-release version'
+        required: true
+        default: '1.0.0-alpha'
 
 jobs:
-  bump-and-deploy:
+  bump-dev:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
 
-      - name: Bump pre-release version
+      - name: Bump version
         id: bump
         uses: callowayproject/bump-my-version@master
         env:
-          BUMPVERSION_TAG: "true"
+          BUMPVERSION_TAG: "false"
         with:
-          args: patch --pre-release  # Bump pre-release versions (e.g., 1.0.8a7 -> 1.0.8a8)
+          args: ${{ inputs.version }}
           github-token: ${{ secrets.GH_TOKEN }}
 
-      - name: Check if version bumped
-        if: steps.bump.outputs.bumped == 'true'
+      - name: Build and publish to Test PyPI
         run: |
-          echo "Version was bumped from ${{ steps.bump.outputs.previous-version }} to ${{ steps.bump.outputs.current-version }}!"
+          python -m build
+          python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/* -u __token__ -p ${{ secrets.TEST_PYPI_API_TOKEN }}
 
-      - name: Build the package
-        run: python -m build
-
-      - name: Upload to PyPI
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
+          prerelease: true
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: python -m twine upload dist/*
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Confirm bump
+        run: |
+          echo "Pre-release version set to ${{ inputs.version }}."
