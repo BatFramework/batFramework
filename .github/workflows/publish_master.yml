@@ -32,6 +32,10 @@ jobs:
       - name: Bump stable release version
         run: bump2version release  # Automatically increments stable release version
 
+      - name: Display pyproject.toml
+        run: cat pyproject.toml
+      
+
       - name: Build package
         run: python -m build
 
