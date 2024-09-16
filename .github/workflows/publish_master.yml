@@ -9,25 +9,22 @@ jobs:
   bump-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout the code
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Bump stable version
+        id: bump
+        uses: callowayproject/bump-my-version@master
+        env:
+          BUMPVERSION_TAG: "true"
         with:
-          python-version: 3.11
+          args: patch  # You can also use `major` or `minor` based on your needs
+          github-token: ${{ secrets.GH_TOKEN }}
 
-      - name: Install dependencies
-        run: pip install bump-my-version build twine
-
-      - name: Show pyproject.toml before version bump
-        run: cat pyproject.toml
-
-      - name: Bump stable release version
-        run: bump-my-version patch
-
-      - name: Show pyproject.toml after version bump
-        run: cat pyproject.toml
+      - name: Check if version bumped
+        if: steps.bump.outputs.bumped == 'true'
+        run: |
+          echo "Version was bumped from ${{ steps.bump.outputs.previous-version }} to ${{ steps.bump.outputs.current-version }}!"
 
       - name: Build the package
         run: python -m build

@@ -9,25 +9,22 @@ jobs:
   bump-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
-
-      - name: Install dependencies
-        run: pip install bump-my-version build twine
-
-      - name: Show pyproject.toml before version bump
-        run: cat pyproject.toml
+      - name: Checkout the code
+        uses: actions/checkout@v4
 
       - name: Bump pre-release version
-        run: bump-my-version --new-version $(bump-my-version --current-version `bump-my-version current` --part pre-release --serialize "{major}.{minor}.{patch}a{build}")
+        id: bump
+        uses: callowayproject/bump-my-version@master
+        env:
+          BUMPVERSION_TAG: "true"
+        with:
+          args: patch --pre-release  # Bump pre-release versions (e.g., 1.0.8a7 -> 1.0.8a8)
+          github-token: ${{ secrets.GH_TOKEN }}
 
-      - name: Show pyproject.toml after version bump
-        run: cat pyproject.toml
+      - name: Check if version bumped
+        if: steps.bump.outputs.bumped == 'true'
+        run: |
+          echo "Version was bumped from ${{ steps.bump.outputs.previous-version }} to ${{ steps.bump.outputs.current-version }}!"
 
       - name: Build the package
         run: python -m build
