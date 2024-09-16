@@ -2,11 +2,15 @@ name: Dev Pre-Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Set the pre-release version'
+      bump-type:
+        description: 'Bump type'
         required: true
-        default: '1.0.0-alpha'
+        default: 'patch'
+        type: choice
+        options:
+        - major
+        - minor
+        - patch
 
 jobs:
   bump-dev:
@@ -19,9 +23,9 @@ jobs:
         id: bump
         uses: callowayproject/bump-my-version@master
         env:
-          BUMPVERSION_TAG: "false"
+          BUMPVERSION_TAG: "true"
         with:
-          args: ${{ inputs.version }}
+          args: ${{ inputs.bump-type }}
           github-token: ${{ secrets.GH_TOKEN }}
 
       - name: Build and publish to Test PyPI
