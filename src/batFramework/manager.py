@@ -1,7 +1,7 @@
 import batFramework as bf
 import pygame
+import asyncio
 import random
-
 
 class Manager(bf.SceneManager):
     def __init__(self, *initial_scene_list) -> None:
@@ -12,6 +12,8 @@ class Manager(bf.SceneManager):
         self._cutsceneManager = bf.CutsceneManager()
         self._cutsceneManager.set_manager(self)
         self._clock: pygame.Clock = pygame.Clock()
+        self._is_async_running : bool = False
+        self._running = False
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
         self.do_pre_init()
         self.init_scenes(*initial_scene_list)
@@ -55,7 +57,43 @@ class Manager(bf.SceneManager):
     def stop(self) -> None:
         self._running = False
 
+    async def run_async(self):
+        if self._running:
+            print("Error : Already running")
+            return
+        self._is_async_running = True
+        self._running = True
+        dt: float = 0
+        while self._running:
+            for event in pygame.event.get():
+                event.consumed = False
+                self.process_event(event)
+                if not event.consumed:
+                    if event.type == pygame.QUIT:
+                        self._running = False
+                        break
+                    if event.type == pygame.VIDEORESIZE and not (
+                        bf.const.FLAGS & pygame.SCALED
+                    ):
+                        bf.const.set_resolution((event.w, event.h))
+            # update
+            dt = self._clock.tick(bf.const.FPS) / 1000
+            # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time
+            self._timeManager.update(dt)
+            self._cutsceneManager.update(dt)
+            self.update(dt)
+            # render
+            self._screen.fill((0, 0, 0))
+            self.draw(self._screen)
+            pygame.display.flip()
+            await asyncio.sleep(0)
+        pygame.quit()
+
+
     def run(self) -> None:
+        if self._running:
+            print("Error : Already running")
+            return
         self._running = True
         dt: float = 0
         while self._running:
