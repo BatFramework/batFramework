@@ -12,3 +12,8 @@ test/
 HalloweenGamejam/
 src/batframework.egg-info
 new/
+.venv
+.vscode
+testing
+HalloweenGamejam
+game
