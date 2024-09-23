@@ -77,8 +77,6 @@ class Manager(bf.SceneManager):
                     ):
                         bf.const.set_resolution((event.w, event.h))
             # update
-            dt = self._clock.tick(bf.const.FPS) / 1000
-            # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time
             self._timeManager.update(dt)
             self._cutsceneManager.update(dt)
             self.update(dt)
@@ -86,6 +84,8 @@ class Manager(bf.SceneManager):
             self._screen.fill((0, 0, 0))
             self.draw(self._screen)
             pygame.display.flip()
+            dt = self._clock.tick(bf.const.FPS) / 1000
+            # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time
             await asyncio.sleep(0)
         pygame.quit()
 
@@ -109,8 +109,6 @@ class Manager(bf.SceneManager):
                     ):
                         bf.const.set_resolution((event.w, event.h))
             # update
-            dt = self._clock.tick(bf.const.FPS) / 1000
-            # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time
             self._timeManager.update(dt)
             self._cutsceneManager.update(dt)
             self.update(dt)
@@ -118,4 +116,6 @@ class Manager(bf.SceneManager):
             self._screen.fill((0, 0, 0))
             self.draw(self._screen)
             pygame.display.flip()
+            dt = self._clock.tick(bf.const.FPS) / 1000
+            # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time
         pygame.quit()

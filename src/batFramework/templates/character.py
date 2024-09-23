@@ -3,8 +3,8 @@ import pygame
 from .states import *
 
 class Platform2DCharacter(bf.Character):
-    def __init__(self):
-        super().__init__()
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
         self.actions = bf.ActionContainer(
             *bf.DirectionalKeyControls(),
             bf.Action("jump").add_key_control(pygame.K_SPACE).set_holding()
@@ -18,8 +18,6 @@ class Platform2DCharacter(bf.Character):
         self.friction = 0.7
         self.gravity = 300
         self.terminal_velocity = 1000
-        self.state_machine.set_state("idle")
-        
 
     def do_setup_animations(self):
         self.add_animation(bf.Animation("idle"))
@@ -33,7 +31,8 @@ class Platform2DCharacter(bf.Character):
         self.state_machine.add_state(Platform2DRun())
         self.state_machine.add_state(Platform2DJump())
         self.state_machine.add_state(Platform2DFall())
-
+        self.state_machine.set_state("idle")
+        
 
 
     def do_reset_actions(self) -> None:
