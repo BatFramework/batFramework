@@ -24,7 +24,8 @@ from .dynamicEntity import DynamicEntity
 from .sprite import Sprite
 from .scrollingSprite import ScrollingSprite
 from .particle import *
-from .animatedSprite import AnimatedSprite, Animation
+from .animation import Animation
+from .animatedSprite import AnimatedSprite
 from .character import Character
 from .stateMachine import State, StateMachine
 from .scene import Scene

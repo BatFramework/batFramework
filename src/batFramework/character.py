@@ -4,8 +4,8 @@ from .animatedSprite import AnimatedSprite
 from .dynamicEntity import DynamicEntity
 
 class Character(AnimatedSprite,DynamicEntity):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self,*args,**kwargs) -> None:
+        super().__init__(*args,**kwargs)
         self.state_machine = bf.StateMachine(self)
         self.do_setup_animations()
         self.do_setup_states()
