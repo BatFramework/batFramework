@@ -2,7 +2,6 @@ import batFramework as bf
 import pygame
 from typing import Self
 
-
 def swap(lst, index1, index2):
     lst[index1], lst[index2] = lst[index2], lst[index1]
 
@@ -11,11 +10,6 @@ class SceneManager:
     def __init__(self) -> None:
         self.scenes: list[bf.Scene] = []
         self.shared_events = {pygame.WINDOWRESIZED}
-
-        self.set_sharedVar("in_cutscene", False)
-        self.set_sharedVar("player_has_control", True)
-        self.old_player_control = True
-        self.debug_mode: bf.enums.debugMode = bf.debugMode.HIDDEN
         self.current_transitions: dict[str, bf.transition.Transition] = {}
 
     def init_scenes(self, *initial_scenes:bf.Scene):
@@ -23,7 +17,6 @@ class SceneManager:
             s.set_scene_index(index)
         for s in reversed(initial_scenes):
             self.add_scene(s)
-        # self.scenes = list(initial_scenes)
         self.set_scene(initial_scenes[0].get_name())
         self.update_scene_states()
 
@@ -38,7 +31,7 @@ class SceneManager:
         Print detailed information about the current state of the scenes and shared variables.
         """
 
-        def format_scene_info(scene):
+        def format_scene_info(scene:bf.Scene):
             status = 'Active' if scene.active else 'Inactive'
             visibility = 'Visible' if scene.visible else 'Invisible'
             return f"{scene.name:<30} | {status:<8} | {visibility:<10} | Index={scene.scene_index}"
@@ -78,13 +71,6 @@ class SceneManager:
 
         print("=" * 50 + "\n")
 
-
-    def set_sharedVar(self, name, value) -> None:
-        bf.ResourceManager().set_sharedVar(name,value)
-
-    def get_sharedVar(self, name, error_value=None):
-        return bf.ResourceManager().get_sharedVar(name, error_value)
-
     def get_current_scene_name(self) -> str:
         """get the name of the current scene"""
         return self.scenes[0].get_name()
@@ -106,10 +92,10 @@ class SceneManager:
     def remove_scene(self, name: str):
         self.scenes = [s for s in self.scenes if s.name != name]
 
-    def has_scene(self, name):
+    def has_scene(self, name:str):
         return any(name == scene.name for scene in self.scenes)
 
-    def get_scene(self, name):
+    def get_scene(self, name:str):
         if not self.has_scene(name):
             return None
         for scene in self.scenes:
@@ -150,8 +136,6 @@ class SceneManager:
     def _start_transition(self, target_scene: bf.Scene):
         target_scene.set_active(True)
         target_scene.set_visible(True)
-        self.old_player_control = bool(self.get_sharedVar("player_has_control"))
-        self.set_sharedVar("player_has_control", False)
 
     def _end_transition(self, scene_name, index):
         self.set_scene(scene_name, index, True)
@@ -177,11 +161,10 @@ class SceneManager:
             self.scenes[index].do_on_enter_early()
         target_scene.on_enter()
 
-        self.set_sharedVar("player_has_control", self.old_player_control)
 
 
     def cycle_debug_mode(self):
-        current_index = self.debug_mode.value
+        current_index = bf.ResourceManager().get_sharedVar("debug_mode").value
         next_index = (current_index + 1) % len(bf.debugMode)
         return bf.debugMode(next_index)
 
@@ -193,8 +176,7 @@ class SceneManager:
             and event.type == pygame.KEYDOWN
         ):
             if event.key == pygame.K_d:
-                self.debug_mode = self.cycle_debug_mode()
-                self.set_sharedVar("debug_mode", self.debug_mode)
+                bf.ResourceManager().set_sharedVar("debug_mode", self.cycle_debug_mode())
                 return
             if event.key == pygame.K_p:
                 self.print_status()

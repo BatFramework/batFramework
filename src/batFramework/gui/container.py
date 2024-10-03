@@ -174,7 +174,7 @@ class Container(Shape, InteractiveWidget):
             self.paint()
             self.dirty_surface = False
 
-        bf.Entity.draw(self, camera)
+        bf.Drawable.draw(self, camera)
 
         if self.clip_children:
             new_clip = camera.world_to_screen(self.get_padded_rect())

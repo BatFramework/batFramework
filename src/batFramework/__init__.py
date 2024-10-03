@@ -8,7 +8,7 @@ from .resourceManager import ResourceManager
 from .fontManager import FontManager
 from .utils import Utils as utils
 from .tileset import Tileset
-from .time import *
+from .timeManager import TimeManager,Timer,SceneTimer
 from .easingController import EasingController
 from .cutscene import Cutscene, CutsceneManager
 from .cutsceneBlocks import *
@@ -17,8 +17,8 @@ import batFramework.transition as transition
 from .action import Action
 from .actionContainer import *
 from .camera import Camera
-from .object import Object
 from .entity import Entity
+from .drawable import Drawable
 from .renderGroup import RenderGroup
 from .dynamicEntity import DynamicEntity
 from .sprite import Sprite

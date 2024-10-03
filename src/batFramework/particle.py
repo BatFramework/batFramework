@@ -78,7 +78,7 @@ class DirectionalParticle(BasicParticle):
         super().update_surface()
 
 
-class ParticleGenerator(bf.Entity):
+class ParticleGenerator(bf.Drawable):
     def __init__(self) -> None:
         super().__init__((0, 0))
         self.particles: list[Particle] = []

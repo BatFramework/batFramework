@@ -37,7 +37,6 @@ class Label(Shape):
         self.text_rect = pygame.FRect(0, 0, 0, 0)
         # text surface (result of font.render)
         self.text_surface: pygame.Surface = pygame.Surface((0, 0))
-        self.do_caching: bool = False
 
         self.show_text_outline: bool = False
 
@@ -54,20 +53,8 @@ class Label(Shape):
         self.set_autoresize(True)
         self.set_font(force=True)
 
-    @staticmethod
-    def clear_cache():
-        Label._text_cache = {}
-
     def __str__(self) -> str:
         return f"Label({repr(self.text)})"
-
-    def enable_caching(self) -> Self:
-        self.do_caching = True
-        return self
-
-    def disable_caching(self) -> Self:
-        self.do_caching = False
-        return self
 
     def set_text_color(self, color) -> Self:
         self.text_color = color
@@ -206,35 +193,26 @@ class Label(Shape):
         return self.text
 
     def _render_font(self, params: dict) -> pygame.Surface:
-        key = tuple(params.values())
-
-        cached_value = Label._text_cache.get(key, None)
 
         if self.draw_mode == bf.drawMode.SOLID:
-            if cached_value is None:
-                params.pop("font_name")
+            params.pop("font_name")
 
-                # save old settings
-                old_italic = self.font_object.get_italic()
-                old_bold = self.font_object.get_bold()
-                old_underline = self.font_object.get_underline()
+            # save old settings
+            old_italic = self.font_object.get_italic()
+            old_bold = self.font_object.get_bold()
+            old_underline = self.font_object.get_underline()
 
-                # setup font
-                self.font_object.set_italic(self.is_italic)
-                self.font_object.set_bold(self.is_bold)
-                self.font_object.set_underline(self.is_underlined)
+            # setup font
+            self.font_object.set_italic(self.is_italic)
+            self.font_object.set_bold(self.is_bold)
+            self.font_object.set_underline(self.is_underlined)
 
-                surf = self.font_object.render(**params)
+            surf = self.font_object.render(**params)
 
-                # reset font
-                self.font_object.set_italic(old_italic)
-                self.font_object.set_bold(old_bold)
-                self.font_object.set_underline(old_underline)
-
-                if self.do_caching:
-                    Label._text_cache[key] = surf
-            else:
-                surf = cached_value
+            # reset font
+            self.font_object.set_italic(old_italic)
+            self.font_object.set_bold(old_bold)
+            self.font_object.set_underline(old_underline)
         else:
             params.pop("font_name")
             surf = self.font_object.render(**params)

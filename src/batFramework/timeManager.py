@@ -1,7 +1,5 @@
 import batFramework as bf
 from typing import Self
-
-
 from typing import Callable, Union, Self
 
 

@@ -72,7 +72,7 @@ class Debugger(Label):
     def update(self, dt: float) -> None:
         if not self.parent_scene:
             return
-        if self.parent_scene.get_sharedVar("debug_mode") != bf.debugMode.DEBUGGER:
+        if bf.ResourceManager().get_sharedVar("debug_mode") != bf.debugMode.DEBUGGER:
             self.set_visible(False)
             return
         self.set_visible(True)

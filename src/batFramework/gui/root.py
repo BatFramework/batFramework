@@ -95,8 +95,6 @@ class Root(InteractiveWidget):
         return self
 
     def do_handle_event(self, event):
-        if not self.parent_scene.get_sharedVar("player_has_control"):
-            return
         if self.focused:
             if event.type == pygame.KEYDOWN:
                 if self.focused.on_key_down(event.key):
@@ -130,8 +128,6 @@ class Root(InteractiveWidget):
 
     def update(self, dt: float) -> None:
         super().update(dt)
-        if not self.parent_scene.get_sharedVar("player_has_control",True):
-            return
         old = self.hovered
         transposed = self.drawing_camera.screen_to_world(pygame.mouse.get_pos())
         self.hovered = self.top_at(*transposed) if self.top_at(*transposed) else None
@@ -145,8 +141,6 @@ class Root(InteractiveWidget):
 
     def draw(self, camera: bf.Camera) -> None:
         super().draw(camera)
-        if not self.parent_scene.get_sharedVar("player_has_control"):
-            return
         if (
             self.parent_scene
             and self.parent_scene.active

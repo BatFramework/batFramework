@@ -3,11 +3,11 @@ import pygame
 from typing import Self
 
 
-class Sprite(bf.Entity):
+class Sprite(bf.Drawable):
     def __init__(
         self,
-        path=None,
         size: None | tuple[int, int] = None,
+        path=None,
         convert_alpha: bool = True,
     ):
         self.original_surface: pygame.Surface = None

@@ -3,7 +3,7 @@ from .stateMachine import State
 from .animatedSprite import AnimatedSprite
 from .dynamicEntity import DynamicEntity
 
-class Character(AnimatedSprite,DynamicEntity):
+class Character(DynamicEntity,AnimatedSprite):
     def __init__(self,*args,**kwargs) -> None:
         super().__init__(*args,**kwargs)
         self.state_machine = bf.StateMachine(self)

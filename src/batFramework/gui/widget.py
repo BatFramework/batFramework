@@ -18,7 +18,7 @@ class WidgetMeta(type):
         return obj
 
 
-class Widget(bf.Entity, metaclass=WidgetMeta):
+class Widget(bf.Drawable, metaclass=WidgetMeta):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.children: list["Widget"] = []

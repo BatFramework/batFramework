@@ -1,74 +1,124 @@
 from typing import Any, Self
 import pygame
 import batFramework as bf
-from .object import Object
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .camera import Camera
 
 
-class Entity(Object):
-    """
-    Basic entity class
-    """
+class Entity:
+    __count = 0
+    __available_uid = set()
+    __used_uid = set()
 
-    def __init__(
-        self,
-        size: None | tuple[int, int] = None,
-        surface_flags: int = 0,
-        convert_alpha: bool = False,
-        *args,
-        **kwargs,
-    ) -> None:
-        super().__init__()
-        self.visible: bool = True
-        self.rect.size = (10, 10) if size is None else size
-        self.convert_alpha: bool = convert_alpha
-        self.surface_flags: int = surface_flags
-        self.blit_flags: int = 0
-        self.surface: pygame.Surface = pygame.Surface(self.rect.size, surface_flags)
-        if convert_alpha:
-            self.surface = self.surface.convert_alpha()
-            self.surface.fill((0, 0, 0, 0))
+    def __init__(self) -> None:
+        self.rect = pygame.FRect(0, 0, 0, 0)
+        self.tags: list[str] = []
+        self.parent_scene: bf.Scene | None = None
+        self.debug_color: tuple | str = "red"
+        self.uid: int = Entity.__count
+        Entity.__used_uid.add(self.uid)
 
-    def set_alpha(self, alpha: int) -> Self:
-        self.surface.set_alpha(min(max(0, alpha), 255))
+        if Entity.__available_uid:
+            self.name = Entity.__available_uid.pop()
+        else:
+            self.name = Entity.__count
+            Entity.__count += 1
+
+    def __del__(self):
+        Entity.__available_uid.add(self.uid)
+
+    def set_position(self, x, y) -> Self:
+        self.rect.topleft = x, y
         return self
 
-    def get_alpha(self) -> int:
-        return self.surface.get_alpha()
-
-    def set_surface_flags(self, surface_flags: int) -> Self:
-        self.surface_flags = surface_flags
-        return self
-
-    def set_convert_alpha(self, value: bool) -> Self:
-        self.convert_alpha = value
-        return self
-
-    def set_blit_flags(self, blit_flags: int) -> Self:
-        self.blit_flags = blit_flags
+    def set_center(self, x, y) -> Self:
+        self.rect.center = x, y
         return self
 
     def get_debug_outlines(self):
-        if self.visible:
-            yield (self.rect, self.debug_color)
+        yield (self.rect, self.debug_color)
 
-    def set_render_order(self, render_order: int) -> Self:
-        self.render_order = render_order
-        if self.parent_scene:
-            self.parent_scene.sort_entities()
+    def set_debug_color(self, color) -> Self:
+        self.debug_color = color
         return self
 
-    def set_visible(self, value: bool) -> Self:
-        self.visible = value
+    def set_parent_scene(self, scene) -> Self:
+        if scene == self.parent_scene:
+            return self
+        if self.parent_scene is not None:
+            self.do_when_removed()
+        self.parent_scene = scene
+        if scene is not None:
+            self.do_when_added()
         return self
 
-    def draw(self, camera: bf.Camera) -> None:
+    def do_when_added(self):
+        pass
+
+    def do_when_removed(self):
+        pass
+
+    def set_uid(self, uid: int) -> Self:
+        if uid in Entity.__used_uid:
+            print(f"set_uid error : UID '{uid}' is already in use")
+            return self
+        self.uid = uid
+        if uid in Entity.__used_uid:
+            Entity.__used_uid.remove(uid)
+        Entity.__used_uid.add(uid)
+        return self
+
+    def add_tags(self, *tags) -> Self:
+        for tag in tags:
+            if tag not in self.tags:
+                self.tags.append(tag)
+        self.tags.sort()
+        return self
+
+    def remove_tags(self, *tags):
+        self.tags = [tag for tag in self.tags if tag not in tags]
+
+    def has_tags(self, *tags) -> bool:
+        return all(tag in self.tags for tag in tags)
+
+    def get_tags(self) -> list[str]:
+        return self.tags
+
+    def process_event(self, event: pygame.Event) -> bool:
         """
-        Draw the entity onto the camera surface
+        Returns bool : True if the method is blocking (no propagation to next Entity of the scene)
         """
-        if not self.visible or not camera.rect.colliderect(self.rect):
+        if event.consumed:
             return
-        camera.surface.blit(
-            self.surface,
-            camera.world_to_screen(self.rect),
-            special_flags=self.blit_flags,
-        )
+        self.do_process_actions(event)
+        self.do_handle_event(event)
+
+    def do_process_actions(self, event: pygame.Event) -> None:
+        """
+        Process entity actions you may have set
+        """
+
+    def do_reset_actions(self) -> None:
+        """
+        Reset entity actions you may have set
+        """
+
+    def do_handle_event(self, event: pygame.Event):
+        """
+        Handle specific events with no action support
+        """
+        return False
+
+    def update(self, dt: float) -> None:
+        """
+        Update method to be overriden by subclasses of Entity (must call do_update and do_reset_actions)
+        """
+        self.do_update(dt)
+        self.do_reset_actions()
+
+    def do_update(self, dt: float) -> None:
+        """
+        Update method to be overriden for specific behavior by the end user
+        """

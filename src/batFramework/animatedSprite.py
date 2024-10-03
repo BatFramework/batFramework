@@ -3,7 +3,7 @@ import pygame
 from typing import List, Dict, Tuple, Union, Optional, Self
 from .animation import Animation
 
-class AnimatedSprite(bf.Entity):
+class AnimatedSprite(bf.Drawable):
     def __init__(self, size: Optional[Tuple[int, int]] = None,*args,**kwargs) -> None:
         super().__init__(size, no_surface=True,*args,**kwargs)
         self.float_counter: float = 0

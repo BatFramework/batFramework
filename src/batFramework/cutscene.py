@@ -1,5 +1,5 @@
 import batFramework as bf
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING,Self
 
 class CutsceneBlock: ...
 
@@ -75,13 +75,15 @@ class Cutscene:
     def init_blocks(self):
         pass
 
-    def add_blocks(self, *blocks: CutsceneBlock):
+    def add_blocks(self, *blocks: CutsceneBlock)->Self:
         self.cutscene_blocks.extend(blocks)
-
-    def add_end_blocks(self, *blocks: CutsceneBlock):
+        return self
+        
+    def add_end_blocks(self, *blocks: CutsceneBlock)->Self:
         _ = [block.set_parent_cutscene(self) for block in blocks]
         self.end_blocks.extend(blocks)
-
+        return self
+        
     def get_scene_at(self, index):
         return bf.CutsceneManager().manager.scenes[index]
 

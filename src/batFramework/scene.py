@@ -70,35 +70,6 @@ class Scene:
         """Get the scene index."""
         return self.scene_index
 
-    def set_sharedVar(self, name: str, value: Any) -> bool:
-        """
-        Set a shared variable in the manager.
-
-        Args:
-            name: Name of the shared variable.
-            value: Value to set.
-
-        Returns:
-            bool: True if setting was successful, False otherwise.
-        """
-        if not self.manager:
-            return False
-        return self.manager.set_sharedVar(name, value)
-
-    def get_sharedVar(self, name: str, error_value=None) -> Any:
-        """
-        Get a shared variable from the manager.
-
-        Args:
-            name: Name of the shared variable.
-
-        Returns:
-            Any: Value of the shared variable.
-        """
-        if not self.manager:
-            return error_value
-        return self.manager.get_sharedVar(name, error_value)
-
     def do_when_added(self):
         pass
 
@@ -277,7 +248,6 @@ class Scene:
         self.actions.reset()
         self.early_actions.reset()
 
-
         if self.entities_to_add:
             for e in self.entities_to_add:
                 self.world_entities[e] = None
@@ -337,7 +307,7 @@ class Scene:
 
     def _draw_camera(self, camera: bf.Camera, entity_list):
         _ = [entity.draw(camera) for entity in entity_list]
-        debugMode = self.manager.debug_mode
+        debugMode = bf.ResourceManager().get_sharedVar("debug_mode")
         # Draw outlines for world entities if required
         if debugMode == bf.debugMode.OUTLINES:
             [self.debug_entity(e, camera) for e in entity_list]
@@ -355,15 +325,12 @@ class Scene:
         self.set_active(True)
         self.set_visible(True)
         self.root.clear_hovered()
-        # self.root.clear_focused()
         self.root.build()
         bf.TimeManager().activate_register(self.name)
         self.do_on_enter()
-        # self.root.visit(lambda e : e.resolve_constraints())
 
     def on_exit(self):
         self.root.clear_hovered()
-        # self.root.clear_focused()
         self.set_active(False)
         self.set_visible(False)
         self.actions.hard_reset()
