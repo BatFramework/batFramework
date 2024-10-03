@@ -184,7 +184,6 @@ class Label(Shape):
             self.text_rect.size = self._get_text_rect_required_size()
         res = self.inflate_rect_by_padding((0, 0, *self.text_rect.size)).size
 
-        return res
         return res[0] if self.autoresize_w else self.rect.w, (
             res[1] if self.autoresize_h else self.rect.h
         )
