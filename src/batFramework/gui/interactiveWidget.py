@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from .container import Container
 import batFramework as bf
 
-def children_has_focus(widget):
+def children_has_focus(widget)->bool:
     if isinstance(widget,InteractiveWidget) and widget.is_focused:
         return True
     for child in widget.children:
@@ -84,7 +84,7 @@ class InteractiveWidget(Widget):
                     i_children[index + 1].get_focus()
                     return
 
-        if self.parent:
+        if self.parent and isinstance(self.parent,InteractiveWidget):
             self.parent.focus_next_tab(self)
 
     def focus_prev_tab(self, previous_widget):
@@ -108,7 +108,7 @@ class InteractiveWidget(Widget):
                     i_children[index - 1].get_focus()
                     return
 
-        if self.parent:
+        if self.parent and isinstance(self.parent,InteractiveWidget):
             self.parent.focus_prev_tab(self)
 
     def focus_next_sibling(self) -> None:
@@ -192,7 +192,7 @@ class InteractiveWidget(Widget):
         pass
 
     def draw_focused(self, camera: bf.Camera) -> None:
-        delta = 4 + ((2 * cos(pygame.time.get_ticks() / 100)) // 2) * 2
+        #delta = 4 + ((2 * cos(pygame.time.get_ticks() / 100)) // 2) * 2
         pygame.draw.rect(
             camera.surface,
             "white",
