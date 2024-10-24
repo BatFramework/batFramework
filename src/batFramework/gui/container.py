@@ -160,15 +160,18 @@ class Container(Shape, InteractiveWidget):
                 self.parent.visit_up(self.selective_up)
             else:
                 constraints_down = True
+                
+        if constraints_down:
+            self.visit(lambda c: c.resolve_constraints())
+
         if not self.dirty_children:
             self.dirty_children = any(c.dirty_shape for c in self.children)
+
         if self.dirty_children:
             if self.layout:
                 self.layout.arrange()
             self.dirty_children = False
 
-        if constraints_down:
-            self.visit(lambda c: c.resolve_constraints())
 
         if self.dirty_surface:
             self.paint()
