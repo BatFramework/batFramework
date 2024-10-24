@@ -58,6 +58,36 @@ class Manager(bf.SceneManager):
     def stop(self) -> None:
         self.running = False
 
+    def process_event(self, event: pygame.Event):
+        event.consumed = False
+        keys = pygame.key.get_pressed()
+        if (
+            bf.const.ALLOW_DEBUG and
+            keys[pygame.K_LCTRL]
+            and keys[pygame.K_LSHIFT]
+            and event.type == pygame.KEYDOWN
+        ):
+            if event.key == pygame.K_d:
+                bf.ResourceManager().set_sharedVar("debug_mode", self.cycle_debug_mode())
+                return
+            if event.key == pygame.K_p:
+                self.print_status()
+                return
+        super().process_event(event)
+        if not event.consumed:
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.VIDEORESIZE and not (
+                bf.const.FLAGS & pygame.SCALED
+            ):
+                bf.const.set_resolution((event.w, event.h))
+
+    def update(self, dt: float) -> None:
+        self.timeManager.update(dt)
+        self.cutsceneManager.update(dt)
+        super().update(dt)
+
+
     async def run_async(self):
         if self.running:
             print("Error : Already running")
@@ -67,22 +97,10 @@ class Manager(bf.SceneManager):
         dt: float = 0
         while self.running:
             for event in pygame.event.get():
-                event.consumed = False
                 self.process_event(event)
-                if not event.consumed:
-                    if event.type == pygame.QUIT:
-                        self.running = False
-                        break
-                    if event.type == pygame.VIDEORESIZE and not (
-                        bf.const.FLAGS & pygame.SCALED
-                    ):
-                        bf.const.set_resolution((event.w, event.h))
             # update
-            self.timeManager.update(dt)
-            self.cutsceneManager.update(dt)
             self.update(dt)
             # render
-            self.screen.fill((0, 0, 0))
             self.draw(self.screen)
             pygame.display.flip()
             dt = self.clock.tick(bf.const.FPS) / 1000
@@ -99,22 +117,10 @@ class Manager(bf.SceneManager):
         dt: float = 0
         while self.running:
             for event in pygame.event.get():
-                event.consumed = False
                 self.process_event(event)
-                if not event.consumed:
-                    if event.type == pygame.QUIT:
-                        self.running = False
-                        break
-                    if event.type == pygame.VIDEORESIZE and not (
-                        bf.const.FLAGS & pygame.SCALED
-                    ):
-                        bf.const.set_resolution((event.w, event.h))
             # update
-            self.timeManager.update(dt)
-            self.cutsceneManager.update(dt)
             self.update(dt)
             # render
-            self.screen.fill((0, 0, 0))
             self.draw(self.screen)
             pygame.display.flip()
             dt = self.clock.tick(bf.const.FPS) / 1000
