@@ -15,7 +15,7 @@ class Label(Shape):
         # Enable/Disable antialiasing
         self.antialias: bool = bf.FontManager().DEFAULT_ANTIALIAS
 
-        self.text_size = bf.FontManager().DEFAULT_TEXT_SIZE
+        self.text_size = bf.FontManager().DEFAULT_FONT_SIZE
 
         self.auto_wraplength: bool = False
 

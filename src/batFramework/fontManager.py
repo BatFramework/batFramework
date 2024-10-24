@@ -9,17 +9,17 @@ import batFramework as bf
 class FontManager(metaclass=Singleton):
     def __init__(self):
         pygame.font.init()
-        self.DEFAULT_TEXT_SIZE = 16
+        self.DEFAULT_FONT_SIZE = 16
         self.MIN_FONT_SIZE = 8
         self.MAX_FONT_SIZE = 64
         self.DEFAULT_ANTIALIAS = False
         self.FONTS = {}
 
-    def set_antialias(self, value: bool):
+    def set_default_antialias(self, value: bool):
         self.DEFAULT_ANTIALIAS = value
 
     def set_default_text_size(self, size: int):
-        self.DEFAULT_TEXT_SIZE = size
+        self.DEFAULT_FONT_SIZE = size
 
     def init_font(self, raw_path: str | None):
         try:
