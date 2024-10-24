@@ -1,4 +1,3 @@
-from .constraints import *
 from .widget import Widget
 from .styleManager import StyleManager
 from .style import Style
@@ -10,7 +9,7 @@ from .root import Root
 from .shape import Shape
 from .meter import Meter
 from .label import Label
-from .dialogueBox import DialogueBox
+from .animatedLabel import AnimatedLabel
 from .textInput import TextInput
 from .button import Button
 from .debugger import *
