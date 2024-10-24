@@ -1,6 +1,5 @@
 import pygame
 import batFramework as bf
-import sys
 from .constants import Constants as const
 from .utils import Singleton
 from .enums import *
@@ -11,7 +10,7 @@ from .tileset import Tileset
 from .timeManager import TimeManager,Timer,SceneTimer
 from .easingController import EasingController
 from .cutscene import Cutscene, CutsceneManager
-from .cutsceneBlocks import *
+import batFramework.cutsceneBlocks
 from .audioManager import AudioManager
 import batFramework.transition as transition
 from .action import Action
@@ -29,7 +28,7 @@ from .animatedSprite import AnimatedSprite
 from .character import Character
 from .stateMachine import State, StateMachine
 from .scene import Scene
-from .gui import *
+from  .gui import *
 from .sceneManager import SceneManager
 from .manager import Manager
 from .templates import *
@@ -47,8 +46,6 @@ def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
         f"Window : {resolution[0]}x{resolution[1]}"
     )
 
-
-
 def print_version():
     package_name = "batFramework"
     try:
@@ -57,19 +54,18 @@ def print_version():
     except importlib.metadata.PackageNotFoundError:
         print(f"{package_name} is not installed")
 
-
 def init(
     resolution: tuple[int, int],
     flags: int = 0,
-    vsync: int = 0,
-    default_text_size=None,
-    default_font=None,
+    window_caption: str = "BatFramework Project",
     resource_path: str | None = None,
-    window_title: str = "BatFramework Project",
+    default_font_size=None,
+    default_font=None,
     fps_limit: int = 0,
+    vsync: int = 0,
 ):
     print_version()
-    pygame.display.set_caption(window_title)
+    pygame.display.set_caption(window_caption)
     init_screen(resolution, flags, vsync)
 
     ResourceManager().set_resource_path(
@@ -77,8 +73,8 @@ def init(
     )
     if resource_path is not None:
         ResourceManager().load_dir(ResourceManager().RESOURCE_PATH)
-    if default_text_size is not None:
-        FontManager().set_default_text_size(default_text_size)
+    if default_font_size is not None:
+        FontManager().set_default_text_size(default_font_size)
     FontManager().init_font(default_font)
     const.BF_INITIALIZED = True
     const.set_fps_limit(fps_limit)
