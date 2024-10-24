@@ -169,18 +169,7 @@ class SceneManager:
         return bf.debugMode(next_index)
 
     def process_event(self, event: pygame.Event):
-        keys = pygame.key.get_pressed()
-        if (
-            keys[pygame.K_LCTRL]
-            and keys[pygame.K_LSHIFT]
-            and event.type == pygame.KEYDOWN
-        ):
-            if event.key == pygame.K_d:
-                bf.ResourceManager().set_sharedVar("debug_mode", self.cycle_debug_mode())
-                return
-            if event.key == pygame.K_p:
-                self.print_status()
-                return
+
         if event.type in self.shared_events:
             [s.process_event(event) for s in self.scenes]
         else:
