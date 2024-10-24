@@ -598,6 +598,95 @@ class MarginRight(Constraint):
             other.margin == self.margin
         )
 
+class RectMarginBottom(Constraint):
+    def __init__(self, margin: float):
+        super().__init__()
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return (
+            child_widget.rect.bottom == parent_widget.rect.bottom - self.margin
+        )
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(
+            child_widget.rect.x,
+            parent_widget.rect.bottom- child_widget.rect.h - self.margin,
+        )
+
+    def __eq__(self,other:"Constraint")->bool:
+        if not isinstance(other,self.__class__):
+            return False
+        return (
+            other.name == self.name and
+            other.margin == self.margin
+        )
+
+class RectMarginTop(Constraint):
+    def __init__(self, margin: float):
+        super().__init__()
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.top == parent_widget.rect.top + self.margin
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(
+            child_widget.rect.x, parent_widget.rect.top + self.margin
+        )
+
+    def __eq__(self,other:"Constraint")->bool:
+        if not isinstance(other,self.__class__):
+            return False
+        return (
+            other.name == self.name and
+            other.margin == self.margin
+        )
+
+class RectMarginLeft(Constraint):
+    def __init__(self, margin: float):
+        super().__init__()
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.left == parent_widget.rect.left + self.margin
+
+    def apply_constraint(self, parent_widget, child_widget):
+        if not self.evaluate(parent_widget, child_widget):
+            child_widget.set_position(
+                parent_widget.rect.left + self.margin, child_widget.rect.y
+            )
+
+    def __eq__(self,other:"Constraint")->bool:
+        if not isinstance(other,self.__class__):
+            return False
+        return (
+            other.name == self.name and
+            other.margin == self.margin
+        )
+
+class RectMarginRight(Constraint):
+    def __init__(self, margin: float):
+        super().__init__()
+        self.margin = margin
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.right == parent_widget.rect.right - self.margin
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(
+            parent_widget.rect.right - child_widget.rect.w - self.margin,
+            child_widget.rect.y,
+        )
+
+    def __eq__(self,other:"Constraint")->bool:
+        if not isinstance(other,self.__class__):
+            return False
+        return (
+            other.name == self.name and
+            other.margin == self.margin
+        )
+
 class PercentageMarginBottom(Constraint):
     def __init__(self, margin: float):
         super().__init__()
