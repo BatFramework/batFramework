@@ -146,67 +146,69 @@ class TextInput(Label, InteractiveWidget):
         return (len(lines[-1]), len(lines) - 1)
 
     def do_handle_event(self, event):
-        if not self.is_focused:
-            return
-
-        if event.type not in [pygame.TEXTINPUT, pygame.KEYDOWN]:
+        if not self.is_focused or event.type not in [pygame.TEXTINPUT, pygame.KEYDOWN]:
             return
 
         text = self.get_text()
-        current = self.cursor_to_absolute(self.cursor_position)
+        current_pos = self.cursor_to_absolute(self.cursor_position)
+        pressed = pygame.key.get_pressed()
+
         if event.type == pygame.TEXTINPUT:
-            self.set_text(text[:current] + event.text + text[current:])
-            self.set_cursor_position(self.absolute_to_cursor(current + len(event.text)))
+            # Insert text at the current cursor position
+            self.set_text(f"{text[:current_pos]}{event.text}{text[current_pos:]}")
+            self.set_cursor_position(self.absolute_to_cursor(current_pos + len(event.text)))
+
         elif event.type == pygame.KEYDOWN:
-            pressed = pygame.key.get_pressed()
-            if event.key == pygame.K_ESCAPE:
-                self.lose_focus()
-            elif event.key == pygame.K_BACKSPACE:
-                if current > 0:
-                    self.set_text(text[:current - 1] + text[current:])
-                    self.set_cursor_position(self.absolute_to_cursor(current - 1))
-            elif event.key == pygame.K_DELETE:
-                if current < len(text):
-                    self.set_text(text[:current] + text[current + 1:])
-            elif event.key == pygame.K_RIGHT:
-                if self.cursor_to_absolute(self.cursor_position)>=len(self.text):
-                    return
-                if self.cursor_position[0] == len(self.get_line(self.cursor_position[1])):
-                    self.set_cursor_position((0, self.cursor_position[1] + 1))
-                else:
-                    if pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]:
-                        index = find_next_word(self.text,current)
-                        if index ==-1 : index = current+1
-                        self.set_cursor_position(self.absolute_to_cursor(index))
-                    else:
-                        self.set_cursor_position(self.absolute_to_cursor(current + 1))
-            elif event.key == pygame.K_LEFT:
+            match event.key:
+                case pygame.K_ESCAPE:
+                    self.lose_focus()
 
+                case pygame.K_BACKSPACE if current_pos > 0:
+                    # Remove the character before the cursor
+                    self.set_text(f"{text[:current_pos - 1]}{text[current_pos:]}")
+                    self.set_cursor_position(self.absolute_to_cursor(current_pos - 1))
 
-                if self.cursor_position[0] == 0 and self.cursor_position[1] > 0:
-                    self.set_cursor_position((len(self.get_line(self.cursor_position[1] - 1)), self.cursor_position[1] - 1))
-                else:
-                    if pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]:
-                        index = find_prev_word(self.text,current-1)
-                        if index ==-1 : index = current-1
-                        self.set_cursor_position(self.absolute_to_cursor(index))
-                    else:
-                        self.set_cursor_position(self.absolute_to_cursor(current - 1))
-            elif event.key == pygame.K_UP:
-                x, y = self.cursor_position
-                self.set_cursor_position((x, y - 1))
-            elif event.key == pygame.K_DOWN:
-                x, y = self.cursor_position
-                self.set_cursor_position((x, y + 1))
-            elif event.key == pygame.K_RETURN:
-                self.set_text(text[:current] + '\n' + text[current:])
-                self.set_cursor_position(self.absolute_to_cursor(current + 1))
-            else:
-                return
-        else:
-            return
+                case pygame.K_DELETE if current_pos < len(text):
+                    # Remove the character at the cursor
+                    self.set_text(f"{text[:current_pos]}{text[current_pos + 1:]}")
+
+                case pygame.K_RIGHT:
+                    if current_pos < len(text):
+                        self.handle_cursor_movement(pressed, current_pos, direction="right")
+
+                case pygame.K_LEFT:
+                    if current_pos > 0:
+                        self.handle_cursor_movement(pressed, current_pos, direction="left")
+
+                case pygame.K_UP:
+                    # Move cursor up one line
+                    self.set_cursor_position((self.cursor_position[0], self.cursor_position[1] - 1))
+
+                case pygame.K_DOWN:
+                    # Move cursor down one line
+                    self.set_cursor_position((self.cursor_position[0], self.cursor_position[1] + 1))
+
+                case pygame.K_RETURN:
+                    # Insert a newline at the current cursor position
+                    self.set_text(f"{text[:current_pos]}\n{text[current_pos:]}")
+                    self.set_cursor_position(self.absolute_to_cursor(current_pos + 1))
 
         event.consumed = True
+
+    def handle_cursor_movement(self, pressed, current_pos, direction):
+        if direction == "right":
+            if pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]:
+                next_word_pos = find_next_word(self.text, current_pos)
+                self.set_cursor_position(self.absolute_to_cursor(next_word_pos if next_word_pos != -1 else current_pos + 1))
+            else:
+                self.set_cursor_position(self.absolute_to_cursor(current_pos + 1))
+        elif direction == "left":
+            if pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]:
+                prev_word_pos = find_prev_word(self.text, current_pos - 1)
+                self.set_cursor_position(self.absolute_to_cursor(prev_word_pos if prev_word_pos != -1 else current_pos - 1))
+            else:
+                self.set_cursor_position(self.absolute_to_cursor(current_pos - 1))
+
 
     def set_text(self, text: str) -> Self:
         if self.on_modify:
