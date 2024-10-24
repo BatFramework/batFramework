@@ -16,6 +16,12 @@ class Constants:
     DEFAULT_CLICK_CURSOR = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
 
     BF_INITIALIZED: bool = False
+    ALLOW_DEBUG : bool = True
+
+    @staticmethod
+    def set_allow_debug(allow_debug:bool):
+        Constants.ALLOW_DEBUG = allow_debug
+
 
     @staticmethod
     def set_resolution(resolution: tuple[int, int]):
