@@ -37,14 +37,13 @@ class CutsceneManager(metaclass=bf.Singleton):
             self.current_cutscene.on_enter()
             self.current_cutscene.init_blocks()
             self.current_cutscene.play()
-        self.manager.set_sharedVar("in_cutscene", True)
 
     def enable_player_control(self) -> None:
-        self.manager.set_sharedVar("player_has_control", True)
+        pass
 
     def disable_player_control(self) -> None:
-        self.manager.set_sharedVar("player_has_control", False)
-
+        pass
+    
     def update(self, dt):
         if not self.current_cutscene is None:
             self.current_cutscene.update(dt)
@@ -56,7 +55,6 @@ class CutsceneManager(metaclass=bf.Singleton):
                     self.play(self.cutscenes.pop(0))
                 else:
                     self.current_cutscene = None
-                    self.manager.set_sharedVar("in_cutscene", False)
 
 
 class Cutscene:
