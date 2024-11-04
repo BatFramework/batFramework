@@ -171,7 +171,6 @@ class Container(Shape, InteractiveWidget):
             self.dirty_children = any(c.dirty_shape for c in self.children)
 
         if self.dirty_children:
-            print("dirty children",self.children)
             if self.layout:
                 self.layout.arrange()
             self.dirty_children = False
