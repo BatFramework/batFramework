@@ -74,7 +74,10 @@ class Container(Shape, InteractiveWidget):
         tmp = self.layout
         self.layout = layout
         if self.layout != tmp:
+            tmp.set_parent(None)
+            self.layout.set_parent(self)
             self.dirty_children = True
+            
         return self
 
     def get_interactive_children(self) -> list[InteractiveWidget]:
@@ -168,6 +171,7 @@ class Container(Shape, InteractiveWidget):
             self.dirty_children = any(c.dirty_shape for c in self.children)
 
         if self.dirty_children:
+            print("dirty children",self.children)
             if self.layout:
                 self.layout.arrange()
             self.dirty_children = False
