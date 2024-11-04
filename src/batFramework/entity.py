@@ -12,7 +12,7 @@ class Entity:
     __available_uid = set()
     __used_uid = set()
 
-    def __init__(self) -> None:
+    def __init__(self,*args,**kwargs) -> None:
         self.rect = pygame.FRect(0, 0, 0, 0)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None

@@ -73,11 +73,11 @@ class Container(Shape, InteractiveWidget):
     def set_layout(self, layout: Layout) -> Self:
         tmp = self.layout
         self.layout = layout
+        
         if self.layout != tmp:
             tmp.set_parent(None)
             self.layout.set_parent(self)
             self.dirty_children = True
-            
         return self
 
     def get_interactive_children(self) -> list[InteractiveWidget]:

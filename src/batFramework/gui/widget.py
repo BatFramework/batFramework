@@ -28,9 +28,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.clip_children: bool = True
         self.padding = (0, 0, 0, 0)
         self.dirty_surface: bool = True  #  if true will call paint before drawing
-        self.dirty_shape: bool = (
-            True  #    if true will call (build+paint) before drawing
-        )
+        self.dirty_shape: bool = True  #    if true will call (build+paint) before drawing
         self.dirty_constraints: bool = False
         self.is_root: bool = False
         self.autoresize_w, self.autoresize_h = True, True

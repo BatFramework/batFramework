@@ -14,11 +14,12 @@ class Manager(bf.SceneManager):
         self.is_async_running : bool = False
         self.running = False
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
-        self.do_pre_init()
-        self.init_scenes(*initial_scene_list)
         bf.ResourceManager().set_sharedVar("clock", self.clock)
         bf.ResourceManager().set_sharedVar("debug_mode", self.debug_mode)
-
+        
+        self.do_pre_init()
+        if initial_scene_list:
+            self.init_scenes(*initial_scene_list)
         self.do_init()
 
     @staticmethod
@@ -89,8 +90,10 @@ class Manager(bf.SceneManager):
 
 
     async def run_async(self):
+        if len(self.scenes) == 0:
+            raise Exception("Manager can't start without scenes")
         if self.running:
-            print("Error : Already running")
+            raise Exception("Error : Already running")
             return
         self.is_async_running = True
         self.running = True
@@ -104,14 +107,16 @@ class Manager(bf.SceneManager):
             self.draw(self.screen)
             pygame.display.flip()
             dt = self.clock.tick(bf.const.FPS) / 1000
-            # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time
+            dt = min(dt, 0.02) # dirty fix for dt being too high when window not focused for a long time
             await asyncio.sleep(0)
         pygame.quit()
 
 
     def run(self) -> None:
+        if len(self.scenes) == 0:
+            raise Exception("Manager can't start without scenes")
         if self.running:
-            print("Error : Already running")
+            raise Exception("Error : Already running")
             return
         self.running = True
         dt: float = 0
@@ -124,5 +129,5 @@ class Manager(bf.SceneManager):
             self.draw(self.screen)
             pygame.display.flip()
             dt = self.clock.tick(bf.const.FPS) / 1000
-            # dt = min(dt, 0.02) dirty fix for dt being too high when window not focused for a long time
+            dt = min(dt, 0.02) # dirty fix for dt being too high when window not focused for a long time
         pygame.quit()

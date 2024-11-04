@@ -16,7 +16,7 @@ class ScrollingSprite(bf.Sprite):
 
         # Use integer values for the starting points, converted from floating point scroll values
 
-        super().__init__(data, size, convert_alpha)
+        super().__init__(size, data, convert_alpha)
         self.original_width, self.original_height = self.original_surface.get_size()
 
     def get_debug_outlines(self):

@@ -66,7 +66,7 @@ class Drawable(Entity):
         """
         Draw the entity onto the camera surface
         """
-        if not self.visible or not camera.rect.colliderect(self.rect):
+        if not self.visible or not camera.rect.colliderect(self.rect) or self.surface.get_alpha() == 0:
             return
         camera.surface.blit(
             self.surface,
