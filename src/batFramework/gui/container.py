@@ -160,8 +160,6 @@ class Container(Shape, InteractiveWidget):
         if self.dirty_constraints:
             highest = self.find_highest_dirty_constraints_widget()
             highest.visit(lambda c : self.selective_down(c))
-            print(self, " found highest is : ",highest)
-
             constraints_updated = True
             self.dirty_constraints = False
 
