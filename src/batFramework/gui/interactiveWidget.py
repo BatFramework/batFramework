@@ -197,5 +197,7 @@ class InteractiveWidget(Widget):
             camera.surface,
             "white",
             self.rect.move(-camera.rect.x, -camera.rect.y),#.inflate(delta, delta),
-            1,
+            2,
+            *self.border_radius
         )
+        
