@@ -213,7 +213,7 @@ class Camera:
 
         return surface
 
-    def resize(self, size: tuple[int, int] | None = None) -> Self:
+    def set_size(self, size: tuple[int, int] | None = None) -> Self:
         if size is None:
             size = bf.const.RESOLUTION
         self.target_size = size
