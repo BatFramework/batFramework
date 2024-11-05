@@ -219,7 +219,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             if capture != self.__constraints_capture:
                 self.__constraints_capture = capture
                 self.__constraint_to_ignore = []
-
+                
         constraints = self.constraints.copy()
         # If all are resolved early exit
         if all(c.evaluate(self.parent,self) for c in constraints if c not in self.__constraint_to_ignore):
@@ -255,7 +255,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         if self.__constraints_to_ignore:
             print("Constraints ignored : ",[str(c) for c in self.__constraints_to_ignore])
         
-
         self.dirty_constraints = False
 
     def has_constraint(self, name: str) -> bool:
@@ -359,22 +358,26 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         if self.parent:
             self.parent.visit_up(func, *args, **kwargs)
 
-    def selective_up(self, widget: "Widget"):
-        # if returns True then stop climbing widget tree
-        if widget.parent and widget.parent.dirty_constraints:
-            return False
-        widget.visit(self.selective_down)
-        return True
 
-    def selective_down(self, widget: "Widget"):
+    def update_children_size(self, widget: "Widget"):
         if widget.constraints:
             widget.resolve_constraints()
-        else:
-            widget.dirty_constraints = False
+        widget.dirty_constraints = False
         if widget.dirty_shape:
             widget.build()
             widget.dirty_shape = False
             self.dirty_surface = True
+
+    def find_highest_dirty_constraints_widget(self) -> "Widget":
+        w = self
+        tmp = w
+        while not tmp.is_root:
+            if tmp.dirty_constraints or tmp.dirty_shape:
+                w = tmp
+            if not tmp.parent:
+                break
+            tmp = tmp.parent
+        return w
 
     def draw(self, camera: bf.Camera) -> None:
         if self.dirty_shape:
@@ -386,10 +389,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                 child.dirty_constraints = True
 
         if self.dirty_constraints:
-            if self.parent and self.parent.dirty_constraints:
-                self.parent.visit_up(self.selective_up)
-            else:
-                self.visit(lambda c: c.resolve_constraints())
+            highest = self.find_highest_dirty_constraints_widget()
+            highest.visit(lambda c : self.update_children_size(c),False)
 
         if self.dirty_surface:
             self.paint()
