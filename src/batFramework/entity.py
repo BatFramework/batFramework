@@ -25,7 +25,6 @@ class Entity:
         self.debug_color: tuple | str = "red"
 
     def __del__(self):
-        print(self,"removed")
         Entity._available_uids.add(self.uid)
 
     def set_position(self, x, y) -> Self:
