@@ -159,7 +159,7 @@ class Container(Shape, InteractiveWidget):
         # Step 2: Handle constraints if any are marked as dirty
         if self.dirty_constraints:
             highest = self.find_highest_dirty_constraints_widget()
-            highest.visit(lambda c : self.selective_down(c))
+            highest.visit(lambda c : self.update_children_size(c))
             constraints_updated = True
             self.dirty_constraints = False
 
