@@ -107,9 +107,6 @@ class Container(Shape, InteractiveWidget):
         self.dirty_children = True
         return self
 
-    def resolve_constraints(self) -> None:
-        super().resolve_constraints()
-
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         if self.visible and self.rect.collidepoint(x, y):
             if self.children:
@@ -148,7 +145,8 @@ class Container(Shape, InteractiveWidget):
         return len(self.get_interactive_children()) != 0 and self.visible
 
     def draw(self, camera: bf.Camera) -> None:
-        constraints_down = False
+        # Step 1: Resolve constraints if the shape or layout is dirty
+        constraints_updated = False
         if self.dirty_shape:
             self.dirty_constraints = True
             self.dirty_children = True
@@ -158,40 +156,40 @@ class Container(Shape, InteractiveWidget):
                 child.dirty_constraints = True
             self.dirty_shape = False
 
+        # Step 2: Handle constraints if any are marked as dirty
         if self.dirty_constraints:
-            if self.parent and self.parent.dirty_constraints:
-                self.parent.visit_up(self.selective_up)
-            else:
-                constraints_down = True
-                
-        if constraints_down:
-            self.visit(lambda c: c.resolve_constraints())
+            highest = self.find_highest_dirty_constraints_widget()
+            highest.visit(lambda c : self.selective_down(c))
+            print(self, " found highest is : ",highest)
 
-        if not self.dirty_children:
-            self.dirty_children = any(c.dirty_shape for c in self.children)
+            constraints_updated = True
+            self.dirty_constraints = False
 
-        if self.dirty_children:
+        # Step 3: Arrange layout if any children are dirty or constraints have changed
+        if self.dirty_children or constraints_updated:
             if self.layout:
                 self.layout.arrange()
             self.dirty_children = False
 
-
+        # Step 4: Paint the surface if it's marked as dirty
         if self.dirty_surface:
             self.paint()
             self.dirty_surface = False
 
+        # Step 5: Draw the container itself
         bf.Drawable.draw(self, camera)
 
+        # Step 6: Set clip for children if needed
         if self.clip_children:
             new_clip = camera.world_to_screen(self.get_padded_rect())
             old_clip = camera.surface.get_clip()
             new_clip = new_clip.clip(old_clip)
             camera.surface.set_clip(new_clip)
-        # Draw children with adjusted positions
-        _ = [
-            child.draw(camera)
-            for child in sorted(self.children, key=lambda c: c.render_order)
-        ]
 
+        # Step 7: Draw children, sorted by render order
+        for child in sorted(self.children, key=lambda c: c.render_order):
+            child.draw(camera)
+
+        # Restore previous clip if children were clipped
         if self.clip_children:
             camera.surface.set_clip(old_clip)
