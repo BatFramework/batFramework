@@ -69,7 +69,7 @@ class Manager(bf.SceneManager):
             and event.type == pygame.KEYDOWN
         ):
             if event.key == pygame.K_d:
-                bf.ResourceManager().set_sharedVar("debug_mode", self.cycle_debug_mode())
+                self.cycle_debug_mode()
                 return
             if event.key == pygame.K_p:
                 self.print_status()

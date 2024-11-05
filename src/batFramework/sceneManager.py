@@ -166,6 +166,7 @@ class SceneManager:
     def cycle_debug_mode(self):
         current_index = bf.ResourceManager().get_sharedVar("debug_mode").value
         next_index = (current_index + 1) % len(bf.debugMode)
+        bf.ResourceManager().set_sharedVar("debug_mode", bf.debugMode(next_index))
         return bf.debugMode(next_index)
 
     def process_event(self, event: pygame.Event):
