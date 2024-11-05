@@ -8,26 +8,25 @@ if TYPE_CHECKING:
 
 
 class Entity:
-    __count = 0
-    __available_uid = set()
-    __used_uid = set()
+    _count: int = 0
+    _available_uids: set[int] = set()
+
 
     def __init__(self,*args,**kwargs) -> None:
+        if Entity._available_uids:
+            self.uid = Entity._available_uids.pop()
+        else:
+            self.uid = Entity._count
+            Entity._count += 1
+
         self.rect = pygame.FRect(0, 0, 0, 0)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
         self.debug_color: tuple | str = "red"
-        self.uid: int = Entity.__count
-        Entity.__used_uid.add(self.uid)
-
-        if Entity.__available_uid:
-            self.name = Entity.__available_uid.pop()
-        else:
-            self.name = Entity.__count
-            Entity.__count += 1
 
     def __del__(self):
-        Entity.__available_uid.add(self.uid)
+        print(self,"removed")
+        Entity._available_uids.add(self.uid)
 
     def set_position(self, x, y) -> Self:
         self.rect.topleft = x, y
@@ -59,16 +58,6 @@ class Entity:
 
     def do_when_removed(self):
         pass
-
-    def set_uid(self, uid: int) -> Self:
-        if uid in Entity.__used_uid:
-            print(f"set_uid error : UID '{uid}' is already in use")
-            return self
-        self.uid = uid
-        if uid in Entity.__used_uid:
-            Entity.__used_uid.remove(uid)
-        Entity.__used_uid.add(uid)
-        return self
 
     def add_tags(self, *tags) -> Self:
         for tag in tags:
