@@ -27,6 +27,11 @@ class ClickableWidget(Shape, InteractiveWidget):
         self.set_debug_color("cyan")
         self.set_relief(self.unpressed_relief)
 
+    def get_min_required_size(self) -> tuple[float, float]:
+        return self.rect.size.inflate(0,self.unpressed_relief)
+
+
+
     def set_unpressed_relief(self, relief: int) -> Self:
         if relief == self.unpressed_relief:
             return self

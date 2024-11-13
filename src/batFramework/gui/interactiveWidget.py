@@ -2,7 +2,7 @@ from .widget import Widget
 from typing import Self
 from typing import TYPE_CHECKING
 import pygame
-from math import cos
+from math import cos,floor,ceil
 
 if TYPE_CHECKING:
     from .container import Container
@@ -56,6 +56,8 @@ class InteractiveWidget(Widget):
 
     def on_get_focus(self) -> None:
         self.is_focused = True
+        if isinstance(self.parent,bf.Container):
+            self.parent.layout.scroll_to_widget(self) 
         self.do_on_get_focus()
 
     def on_lose_focus(self) -> None:
@@ -111,27 +113,15 @@ class InteractiveWidget(Widget):
         if self.parent and isinstance(self.parent,InteractiveWidget):
             self.parent.focus_prev_tab(self)
 
-    def focus_next_sibling(self) -> None:
-        if isinstance(self.parent, bf.Container):
-            self.parent.focus_next_child()
-
-    def focus_prev_sibling(self) -> None:
-        if isinstance(self.parent, bf.Container):
-            self.parent.focus_prev_child()
-
     def on_key_down(self, key) -> bool:
-        if key == pygame.K_DOWN:
-            self.focus_next_sibling()
-        elif key == pygame.K_UP:
-            self.focus_prev_sibling()
-        elif key == pygame.K_TAB and self.parent:
+        if key == pygame.K_TAB and self.parent:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
 
                 self.focus_prev_tab(self)
             else:
                 self.focus_next_tab(self)
-
+            return True
         else:
 
             return self.do_on_key_down(key)
@@ -192,12 +182,38 @@ class InteractiveWidget(Widget):
         pass
 
     def draw_focused(self, camera: bf.Camera) -> None:
-        #delta = 4 + ((2 * cos(pygame.time.get_ticks() / 100)) // 2) * 2
-        pygame.draw.rect(
-            camera.surface,
-            "white",
-            self.rect.move(-camera.rect.x, -camera.rect.y),#.inflate(delta, delta),
-            2,
-            *self.border_radius
-        )
+
+        proportion = 16
+        surface = pygame.Surface(self.rect.inflate(proportion,proportion).size)
+        surface.fill("black")
+
+        delta = proportion*0.75 - int(proportion * cos(pygame.time.get_ticks() / 100) /4)
+        delta = delta//2 * 2
+        # Base rect centered in tmp surface
+        base_rect = surface.get_frect()
         
+        # Expanded white rectangle for border effect
+        white_rect = base_rect.inflate(-delta,-delta)
+        white_rect.center = base_rect.center
+        pygame.draw.rect(surface, "white", white_rect, 2, *self.border_radius)
+        
+        # Black cutout rectangles to create the effect around the edges
+        black_rect_1 = white_rect.copy()
+        black_rect_1.w -= proportion
+        black_rect_1.centerx = white_rect.centerx
+        
+        black_rect_2 = white_rect.copy()
+        black_rect_2.h -= proportion
+        black_rect_2.centery = white_rect.centery
+        
+        surface.fill("black", black_rect_1)
+        surface.fill("black", black_rect_2)
+
+        base_rect.center = self.rect.center
+    
+        # Blit the tmp surface onto the camera surface with adjusted position
+        camera.surface.blit(
+            surface,
+            base_rect.move(-camera.rect.x, -camera.rect.y),
+            special_flags=pygame.BLEND_RGB_MAX
+        )

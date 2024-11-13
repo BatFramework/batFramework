@@ -13,7 +13,7 @@ class AnimatedLabel(Label):
         self.set_autoresize(False)
         self.set_alignment(bf.alignment.LEFT)
         super().__init__("")
-        self.say(text)
+        self.set_text(text)
 
     def __str__(self) -> str:
         return "AnimatedLabel"
@@ -55,15 +55,18 @@ class AnimatedLabel(Label):
         return [text]
 
 
-    def say(self, message: str) -> Self:
-        self.original_text = message
-        self.is_over = False
+    def _set_text_internal(self,text:str)->Self:
+        super().set_text(text)
         return self
+
+    def set_text(self,text:str)->Self:
+        self.original_text = text
+        self.is_over = False
+        self.cursor_position = 0
 
     def set_size(self, size):
         super().set_size(size)
-        self.set_text('\n'.join(self.cut_text_to_width(self.original_text[: int(self.cursor_position)])))
-
+        self._set_text_internal('\n'.join(self.cut_text_to_width(self.original_text[: int(self.cursor_position)])))
 
     def do_update(self, dt):
         if self.is_over:
@@ -75,4 +78,4 @@ class AnimatedLabel(Label):
             self.cursor_position + self.text_speed * dt, len(self.original_text)
         )
         # self.set_text(self.original_text[: int(self.cursor_position)])
-        self.set_text('\n'.join(self.cut_text_to_width(self.original_text[: int(self.cursor_position)])))
+        self._set_text_internal('\n'.join(self.cut_text_to_width(self.original_text[: int(self.cursor_position)])))

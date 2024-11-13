@@ -111,3 +111,4 @@ class textMode(Enum):
     ALPHABETICAL = 0
     NUMERICAL = 1
     ALPHANUMERICAL = 3
+    

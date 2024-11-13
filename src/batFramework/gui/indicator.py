@@ -29,11 +29,11 @@ class Indicator(Shape):
 
 class ToggleIndicator(Indicator):
     def __init__(self, default_value: bool) -> None:
+        super().__init__((20, 20))
         self.value: bool = default_value
         self.callback = lambda val: self.set_color("green" if val else "red")
-        super().__init__((20, 20))
         self.set_value(default_value)
-
+        self.callback(default_value)
         # TODO aspect ratio would be good right about here
         # self.add_constraint(ConstraintAspectRatio(1))
 
@@ -55,3 +55,4 @@ class ToggleIndicator(Indicator):
         if r is self:
             return None
         return r
+

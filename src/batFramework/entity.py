@@ -25,8 +25,10 @@ class Entity:
         self.debug_color: tuple | str = "red"
 
     def __del__(self):
-        Entity._available_uids.add(self.uid)
-
+        try:
+            Entity._available_uids.add(self.uid)
+        except AttributeError:
+            pass
     def set_position(self, x, y) -> Self:
         self.rect.topleft = x, y
         return self
@@ -74,10 +76,7 @@ class Entity:
     def get_tags(self) -> list[str]:
         return self.tags
 
-    def process_event(self, event: pygame.Event) -> bool:
-        """
-        Returns bool : True if the method is blocking (no propagation to next Entity of the scene)
-        """
+    def process_event(self, event: pygame.Event) -> None:
         if event.consumed:
             return
         self.do_process_actions(event)

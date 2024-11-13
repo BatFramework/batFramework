@@ -47,6 +47,8 @@ class Shape(Widget):
         self.relief = relief
         return self
 
+
+
     def set_texture(
         self, surface: pygame.SurfaceType, subsize: tuple[int, int] | None = None
     ) -> Self:

@@ -14,7 +14,6 @@ class Toggle(Button):
         super().__init__(text, callback)
         self.add(self.indicator)
         self.set_clip_children(False)
-        # self.set_gap(int(max(4, self.get_padded_width() / 3)))
 
     def set_visible(self, value: bool) -> Self:
         self.indicator.set_visible(value)
@@ -77,7 +76,6 @@ class Toggle(Button):
             0, 0, self.text_rect.w + gap + self.indicator.rect.w, self.text_rect.h 
         )
 
-
         if self.autoresize_h or self.autoresize_w:
             target_rect = self.inflate_rect_by_padding(joined_rect)
             if not self.autoresize_w:
@@ -86,8 +84,7 @@ class Toggle(Button):
                 target_rect.h = self.rect.h
             if self.rect.size != target_rect.size:
                 self.set_size(target_rect.size)
-                self.build()
-                return
+                self.apply_updates()
 
         # ------------------------------------ size is ok
 

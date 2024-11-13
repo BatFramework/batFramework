@@ -26,7 +26,7 @@ class Layout(ABC):
 
     def notify_parent(self) -> None:
         if self.parent:
-            self.parent.dirty_children = True
+            self.parent.dirty_layout = True
 
     def arrange(self) -> None:
         return
@@ -48,24 +48,19 @@ class Layout(ABC):
             target_size[1] = self.parent.rect.h
         return target_size
 
-    def focus_next_child(self) -> None:
-        pass
-
-    def focus_prev_child(self) -> None:
-        pass
-
     def scroll_to_widget(self, widget: Widget) -> None:
-        padded = self.parent.get_padded_rect()
-        r = widget.rect
-        if padded.contains(r):
+        padded = self.parent.get_padded_rect() # le carré intérieur
+        r = widget.rect # le carré du widget = Button
+        if padded.contains(r): # le widget ne depasse pas -> OK
             return
         clamped = r.clamp(padded)
-        dx, dy = clamped.move(-r.x, -r.y).topleft
-        self.parent.scroll_by((-dx, -dy))
+        # clamped.move_ip(-self.parent.rect.x,-self.parent.rect.y)
+        dx,dy = clamped.x - r.x,clamped.y-r.y
 
+        self.parent.scroll_by((-dx, -dy)) # on scroll la différence pour afficher le bouton en entier
+        
     def handle_event(self, event):
         pass
-
 
 class SingleAxisLayout(Layout):
     def focus_next_child(self) -> None:
@@ -81,6 +76,7 @@ class SingleAxisLayout(Layout):
         focused = l[self.parent.focused_index]
         focused.get_focus()
         self.scroll_to_widget(focused)
+
 
 
 class Column(SingleAxisLayout):
@@ -128,13 +124,19 @@ class Column(SingleAxisLayout):
                 child.add_constraints(*self.child_constraints)
         self.children_rect = self.parent.get_padded_rect()
 
-        if self.parent.autoresize_w or self.parent.autoresize_h:
-            width, height = self.get_auto_size()
-            if self.parent.rect.size != (width, height):
-                self.parent.set_size((width, height))
-                self.parent.build()
-                self.arrange()
-                return
+        width, height = self.get_auto_size()
+        if self.parent.autoresize_w and self.parent.rect.w !=width:
+            self.parent.set_size((width,None))
+        if self.parent.autoresize_h and self.parent.rect.h !=height:
+            self.parent.set_size((None,height))
+        
+        # if self.parent.dirty_shape:
+            # print("parent set dirty shape")
+            # self.parent.dirty_layout = True
+            # self.parent.apply_updates()
+            # self.arrange()
+            # return
+            
         self.children_rect.move_ip(-self.parent.scroll.x, -self.parent.scroll.y)
         y = self.children_rect.top
         for child in self.parent.children:
@@ -142,13 +144,17 @@ class Column(SingleAxisLayout):
             y += child.get_min_required_size()[1] + self.gap
 
     def handle_event(self, event):
-        if self.parent.autoresize_h or not self.parent.visible:
-            return
-
         if not self.parent.children:
             return
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_DOWN:
+                self.focus_next_child()
+            elif event.key == pygame.K_UP:
+                self.focus_prev_child()
+            else:
+                return
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             r = self.parent.get_root()
             if not r:
                 return
@@ -162,9 +168,12 @@ class Column(SingleAxisLayout):
                     self.parent.scroll_by((0, 10))
                 else:
                     return
-                event.consumed = True
                 self.parent.clamp_scroll()
-
+            else:
+                return
+        else:
+            return
+        event.consumed = True
 
 class Row(SingleAxisLayout):
     def __init__(self, gap: int = 0, spacing: bf.spacing = bf.spacing.MANUAL):
@@ -226,13 +235,18 @@ class Row(SingleAxisLayout):
             x += child.get_min_required_size()[0] + self.gap
 
     def handle_event(self, event):
-        if self.parent.autoresize_w or not self.parent.visible:
-            return
-
         if not self.parent.children:
             return
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RIGHT:
+                self.focus_next_child()
+            elif event.key == pygame.K_LEFT:
+                self.focus_prev_child()
+            else:
+                return
+                
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             r = self.parent.get_root()
             if not r:
                 return
@@ -245,17 +259,26 @@ class Row(SingleAxisLayout):
                     self.parent.scroll_by((10, 0))
                 else:
                     return
-                event.consumed = True
                 self.parent.clamp_scroll()
+            else:
+                return
+        else:
+            return
 
+
+        event.consumed = True
 
 class RowFill(Row):
     def __init__(self, gap: int = 0, spacing: bf.spacing = bf.spacing.MANUAL):
         super().__init__(gap, spacing)
 
     def arrange(self) -> None:
+        if self.parent.autoresize_h :
+           super().arrange() 
+           return
         if not self.parent or not self.parent.children:
             return
+
         if self.child_constraints:
             for child in self.parent.children:
                 child.add_constraints(*self.child_constraints)
@@ -284,6 +307,8 @@ class RowFill(Row):
 
     def get_raw_size(self) -> tuple[float, float]:
         """Calculate total size with children widths filling the available space."""
+        if self.parent.autoresize_h :
+           return super().get_raw_size()
         len_children = len(self.parent.children)
         if not len_children:
             return self.parent.rect.size
@@ -297,6 +322,9 @@ class ColumnFill(Column):
         super().__init__(gap, spacing)
 
     def arrange(self) -> None:
+        if self.parent.autoresize_h :
+           super().arrange() 
+           return
         if not self.parent or not self.parent.children:
             return
         if self.child_constraints:
@@ -327,6 +355,8 @@ class ColumnFill(Column):
 
     def get_raw_size(self) -> tuple[float, float]:
         """Calculate total size with children heights filling the available space."""
+        if self.parent.autoresize_w :
+           return super().get_raw_size()
         len_children = len(self.parent.children)
         if not len_children:
             return self.parent.rect.size
@@ -344,20 +374,11 @@ class DoubleAxisLayout(Layout):
         """Arrange child widgets across both axes, implementation required in subclasses."""
         pass
 
-    def focus_next_child(self) -> None:
-        # Implement focus navigation in a grid layout (can be extended further)
-        l = self.parent.get_interactive_children()
-        self.parent.focused_index = min(self.parent.focused_index + 1, len(l) - 1)
-        focused = l[self.parent.focused_index]
-        focused.get_focus()
-        self.scroll_to_widget(focused)
+    def focus_up_child(self) -> None:...
+    def focus_down_child(self) -> None:...
+    def focus_right_child(self) -> None:...
+    def focus_left_child(self) -> None:...
 
-    def focus_prev_child(self) -> None:
-        l = self.parent.get_interactive_children()
-        self.parent.focused_index = max(self.parent.focused_index - 1, 0)
-        focused = l[self.parent.focused_index]
-        focused.get_focus()
-        self.scroll_to_widget(focused)
 
 
 class Grid(DoubleAxisLayout):
@@ -418,10 +439,19 @@ class Grid(DoubleAxisLayout):
             child.set_size((cell_width, cell_height))
 
     def handle_event(self, event):
-        if not self.parent.visible:
-            return
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_DOWN:
+                self.focus_down_child()
+            elif event.key == pygame.K_UP:
+                self.focus_up_child()
+            elif event.key == pygame.K_LEFT:
+                self.focus_left_child()
+            elif event.key == pygame.K_RIGHT:
+                self.focus_right_child()         
+            else:
+                return
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             r = self.parent.get_root()
             if not r:
                 return
@@ -435,15 +465,57 @@ class Grid(DoubleAxisLayout):
                     self.parent.scroll_by((0, 10))
                 else:
                     return
-                event.consumed = True
                 self.parent.clamp_scroll()
+            else:
+                return
+        else:
+            return
+        event.consumed = True
 
-class GridFill(DoubleAxisLayout):
+    def focus_down_child(self) -> None:
+        l = self.parent.get_interactive_children()
+        new_index = self.parent.focused_index + self.cols
+        if new_index >= len(l):
+            return
+        self.parent.focused_index = new_index
+        focused = l[self.parent.focused_index]
+        focused.get_focus()
+        self.scroll_to_widget(focused)
+
+    def focus_up_child(self) -> None:
+        l = self.parent.get_interactive_children()
+        new_index = self.parent.focused_index - self.cols
+        if new_index < 0:
+            return
+        self.parent.focused_index = new_index
+        focused = l[self.parent.focused_index]
+        focused.get_focus()
+        self.scroll_to_widget(focused)
+
+    def focus_left_child(self) -> None:
+        l = self.parent.get_interactive_children()
+        new_index = (self.parent.focused_index % self.cols) -1
+        if new_index < 0:
+            return
+        self.parent.focused_index -=1
+        focused = l[self.parent.focused_index]
+        focused.get_focus()
+        self.scroll_to_widget(focused)
+
+    def focus_right_child(self) -> None:
+        l = self.parent.get_interactive_children()
+        new_index = (self.parent.focused_index % self.cols) +1
+        if new_index >= self.cols or self.parent.focused_index+1 >= len(l):
+            return
+        self.parent.focused_index += 1
+        focused = l[self.parent.focused_index]
+        focused.get_focus()
+        self.scroll_to_widget(focused)
+
+
+class GridFill(Grid):
     def __init__(self, rows: int, cols: int, gap: int = 0):
-        super().__init__()
-        self.rows = rows
-        self.cols = cols
-        self.gap = gap
+        super().__init__(rows,cols,gap)
 
     def arrange(self) -> None:
         """Arrange widgets to fill each grid cell, adjusting to available space."""

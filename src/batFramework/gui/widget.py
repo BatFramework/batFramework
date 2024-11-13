@@ -11,9 +11,7 @@ MAX_CONSTRAINTS = 10
 
 class WidgetMeta(type):
     def __call__(cls, *args, **kwargs):
-        """Called when you call MyNewClass()"""
         obj = type.__call__(cls, *args, **kwargs)
-        # obj.new_init()
         bf.StyleManager().register_widget(obj)
         return obj
 
@@ -29,7 +27,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.padding = (0, 0, 0, 0)
         self.dirty_surface: bool = True  #  if true will call paint before drawing
         self.dirty_shape: bool = True  #    if true will call (build+paint) before drawing
-        self.dirty_constraints: bool = False
+        self.dirty_constraints: bool = False # if true will call resolve_constraints
+
         self.is_root: bool = False
         self.autoresize_w, self.autoresize_h = True, True
         self.__constraint_iteration = 0
@@ -238,6 +237,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                 for c in constraints:
                     if c in self.__constraints_to_ignore:continue
                     if not c.evaluate(self.parent,self) :
+                        # print(c," is applied")
                         c.apply(self.parent,self)
             # second pass where we check conflicts
             for c in constraints:
@@ -254,8 +254,10 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
         if self.__constraints_to_ignore:
             print("Constraints ignored : ",[str(c) for c in self.__constraints_to_ignore])
-        
+            
         self.dirty_constraints = False
+        # print(self,self.uid,"resolve constraints : Success")
+
 
     def has_constraint(self, name: str) -> bool:
         return any(c.name == name for c in self.constraints)
@@ -310,17 +312,16 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             size[0] = self.rect.w
         if size[1] is None:
             size[1] = self.rect.h
-        if size == self.rect.size:
+        if (int(size[0]),int(size[1])) == (int(self.rect.w),int(self.rect.h)):
             return self
         self.rect.size = size
         self.dirty_shape = True
         return self
 
-    def process_event(self, event: pygame.Event) -> bool:
+    def process_event(self, event: pygame.Event) -> None:
         # First propagate to children
         for child in self.children:
             child.process_event(event)
-        # return True if the method is blocking (no propagation to next children of the scene)
         super().process_event(event)
 
     def update(self, dt) -> None:
@@ -348,7 +349,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         if top_down:
             func(self, *args, **kwargs)
         for child in self.children:
-            child.visit(func, top_down)
+            child.visit(func, top_down,*args,**kwargs)
         if not top_down:
             func(self, *args, **kwargs)
 
@@ -358,15 +359,20 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         if self.parent:
             self.parent.visit_up(func, *args, **kwargs)
 
+    """
+    1 : 
+    bottom up -> only build children
 
+    """
     def update_children_size(self, widget: "Widget"):
-        if widget.constraints:
-            widget.resolve_constraints()
-        widget.dirty_constraints = False
+        # print(widget,widget.uid,"constraints resolve in update size func")
+
+        widget.resolve_constraints()
         if widget.dirty_shape:
+            # print(widget,widget.uid,"build in update size func")
             widget.build()
             widget.dirty_shape = False
-            self.dirty_surface = True
+            widget.dirty_surface = True
 
     def find_highest_dirty_constraints_widget(self) -> "Widget":
         w = self
@@ -379,36 +385,43 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             tmp = tmp.parent
         return w
 
-    def draw(self, camera: bf.Camera) -> None:
+
+    def apply_updates(self) -> None:
+        # Step 1: Build shape if needed
         if self.dirty_shape:
-            self.dirty_constraints = True
-            self.dirty_surface = True
-            self.build()
+            self.build()  # Finalize widget size
             self.dirty_shape = False
+            self.dirty_surface = True
+            # Propagate dirty_constraints to children in case size affects their position
             for child in self.children:
                 child.dirty_constraints = True
 
+        # Step 2: Resolve constraints now that size is finalized
         if self.dirty_constraints:
-            highest = self.find_highest_dirty_constraints_widget()
-            highest.visit(lambda c : self.update_children_size(c),False)
+            self.resolve_constraints()  # Finalize positioning based on final size
+            self.dirty_constraints = False
 
+        # Step 3: Paint the surface if flagged as dirty
         if self.dirty_surface:
             self.paint()
             self.dirty_surface = False
+    
 
+
+    def draw(self, camera: bf.Camera) -> None:
+        self.apply_updates()
+        # Draw widget and handle clipping if necessary
         super().draw(camera)
 
         if self.clip_children:
-
             new_clip = camera.world_to_screen(self.get_padded_rect())
             old_clip = camera.surface.get_clip()
             new_clip = new_clip.clip(old_clip)
             camera.surface.set_clip(new_clip)
 
-        _ = [
+        # Draw each child widget, sorted by render order
+        for child in sorted(self.children, key=lambda c: c.render_order):
             child.draw(camera)
-            for child in sorted(self.children, key=lambda c: c.render_order)
-        ]
 
         if self.clip_children:
             camera.surface.set_clip(old_clip)

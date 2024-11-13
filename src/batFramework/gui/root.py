@@ -70,10 +70,10 @@ class Root(InteractiveWidget):
         return res
 
     def focus_next_tab(self, widget):
-        return True
+        return
 
     def focus_prev_tab(self, widget):
-        return True
+        return
 
     def get_by_uid(self, uid: int) -> "Widget":
         def helper(w: "Widget", uid: int) -> "Widget":
@@ -91,7 +91,6 @@ class Root(InteractiveWidget):
         if not force:
             return self
         self.rect.size = size
-        # self.build(resolve_constraints=True)
         return self
 
     def do_handle_event(self, event):

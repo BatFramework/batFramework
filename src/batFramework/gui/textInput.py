@@ -58,7 +58,7 @@ class TextInput(Label, InteractiveWidget):
     def __init__(self) -> None:
         self.cursor_position = (0, 0)
         self.old_key_repeat = (0, 0)
-        self.cursor_timer = bf.Timer(0.3, self._cursor_toggle, loop=True).start()
+        self.cursor_timer = bf.Timer(0.2, self._cursor_toggle, loop=True).start()
         self.cursor_timer.pause()
         self.show_cursor = False
         self.on_modify: Callable[[str], str] = None
@@ -110,6 +110,14 @@ class TextInput(Label, InteractiveWidget):
             return None
         return lines[line]
 
+    def get_debug_outlines(self):
+        if self.visible:
+            offset = self._get_outline_offset() if self.show_text_outline else (0,0)
+            yield (self.text_rect.move(self.rect.x - offset[0] - self.scroll.x,self.rect.y - offset[1] - self.scroll.y), "purple")
+        yield from super().get_debug_outlines()
+        yield (self.get_cursor_rect().move(-self.scroll+self.rect.topleft),"green")
+
+
     def set_cursor_position(self, position: tuple[int, int]) -> Self:
         x, y = position
 
@@ -117,11 +125,29 @@ class TextInput(Label, InteractiveWidget):
         y = max(0, min(y, len(lines) - 1))
         line_length = len(lines[y])
         x = max(0, min(x, line_length))
-
-        self.cursor_position = (x, y)
         self.show_cursor = True
-        self.dirty_shape = True
+        self.cursor_position = (x,y)
+        self.dirty_surface = True
+        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
+        padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
+        self.align_text(self.text_rect,padded,self.alignment)
         return self
+
+    def get_cursor_rect(self)->pygame.FRect:
+        if not self.font_object:
+            return pygame.FRect(0,0,0,0)
+
+        lines = self.text.split('\n')
+        line_x, line_y = self.cursor_position
+
+        height = self.font_object.get_point_size()
+
+        cursor_y = self.get_padded_rect().__getattribute__(self.alignment.value)[1] - self.rect.top
+        cursor_y += line_y * height
+        cursor_x = self.text_rect.x
+        cursor_x += self.font_object.size(lines[line_y][:line_x])[0] if line_x > 0 else 0
+        cursor_rect = pygame.Rect(cursor_x, cursor_y, 1, height)
+        return cursor_rect
 
     def cursor_to_absolute(self, position: tuple[int, int]) -> int:
         x, y = position
@@ -192,6 +218,8 @@ class TextInput(Label, InteractiveWidget):
                     # Insert a newline at the current cursor position
                     self.set_text(f"{text[:current_pos]}\n{text[current_pos:]}")
                     self.set_cursor_position(self.absolute_to_cursor(current_pos + 1))
+                case _ :
+                    return
 
         event.consumed = True
 
@@ -218,32 +246,39 @@ class TextInput(Label, InteractiveWidget):
     def _paint_cursor(self) -> None:
         if not self.font_object or not self.show_cursor:
             return
+        cursor_rect = self.get_cursor_rect()
+        cursor_rect.move_ip(-self.scroll)
 
-        lines = self.text.split('\n')
-        line_x, line_y = self.cursor_position
+        
+        pygame.draw.rect(self.surface, bf.color.CLOUD, cursor_rect.inflate(2,2))
 
-        cursor_y = self.padding[1] 
-        cursor_y += line_y * self.font_object.get_linesize()
-        cursor_x = self.padding[0]
-        cursor_x += self.font_object.size(lines[line_y][:line_x])[0] if line_x > 0 else 0
-
-        cursor_rect = pygame.Rect(cursor_x, cursor_y, 2, self.font_object.get_height())
         pygame.draw.rect(self.surface, self.text_color, cursor_rect)
 
     def paint(self) -> None:
         super().paint()
         self._paint_cursor()
 
-    # def set_alignment(self, alignment: bf.alignment) -> Self:
-    #     return self
+    def align_text(
+        self, text_rect: pygame.FRect, area: pygame.FRect, alignment: bf.alignment
+    ):
+        cursor_rect = self.get_cursor_rect()
+        
+        if alignment == bf.alignment.LEFT:
+            alignment = bf.alignment.MIDLEFT
+        elif alignment == bf.alignment.MIDRIGHT:
+            alignment = bf.alignment.MIDRIGHT
+        pos = area.__getattribute__(alignment.value)
+        text_rect.__setattr__(alignment.value, pos)
 
-    # def align_text(
-    #     self, text_rect: pygame.FRect, area: pygame.FRect, alignment: bf.alignment
-    # ):
-    #     if alignment == bf.alignment.LEFT:
-    #         alignment = bf.alignment.MIDLEFT
-    #     elif alignment == bf.alignment.MIDRIGHT:
-    #         alignment = bf.alignment.MIDRIGHT
-    #     pos = area.__getattribute__(alignment.value)
-    #     text_rect.__setattr__(alignment.value, pos)
-    #     return
+        
+        if cursor_rect.right > area.right+self.scroll.x:
+            self.scroll.x=cursor_rect.right - area.right
+        elif cursor_rect.x < self.scroll.x+area.left:
+            self.scroll.x= cursor_rect.left - area.left 
+        self.scroll.x = max(self.scroll.x,0)
+
+        if cursor_rect.bottom > area.bottom + self.scroll.y:
+            self.scroll.y = cursor_rect.bottom - area.bottom
+        elif cursor_rect.y < self.scroll.y + area.top:
+            self.scroll.y = cursor_rect.top - area.top
+        self.scroll.y = max(self.scroll.y, 0)
