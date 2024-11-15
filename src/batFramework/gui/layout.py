@@ -423,6 +423,15 @@ class Grid(DoubleAxisLayout):
             for child in self.parent.children:
                 child.add_constraints(*self.child_constraints)
 
+
+        if self.parent.autoresize_w or self.parent.autoresize_h:
+            width, height = self.get_auto_size()
+            if self.parent.rect.size != (width, height):
+                self.parent.set_size((width, height))
+                self.parent.build()
+                self.arrange()
+                return
+
         self.child_rect = self.parent.get_padded_rect()
 
         # Calculate cell width and height based on parent size and gaps

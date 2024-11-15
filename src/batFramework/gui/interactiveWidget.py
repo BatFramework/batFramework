@@ -210,10 +210,11 @@ class InteractiveWidget(Widget):
         surface.fill("black", black_rect_2)
 
         base_rect.center = self.rect.center
+
+        surface.set_colorkey("black")
     
         # Blit the tmp surface onto the camera surface with adjusted position
         camera.surface.blit(
             surface,
             base_rect.move(-camera.rect.x, -camera.rect.y),
-            special_flags=pygame.BLEND_RGB_MAX
         )
