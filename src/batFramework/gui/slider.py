@@ -198,6 +198,7 @@ class Slider(Button):
 
         if self.autoresize_h or self.autoresize_w:
             target_rect = self.inflate_rect_by_padding(joined_rect)
+            target_rect.h += self.unpressed_relief
             if not self.autoresize_w:
                 target_rect.w = self.rect.w
             if not self.autoresize_h:

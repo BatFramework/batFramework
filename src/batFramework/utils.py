@@ -81,7 +81,6 @@ class Utils:
 
 
     @staticmethod
-    @cache
     def create_spotlight(inside_color, outside_color, radius, radius_stop=None, dest_surf=None,size=None):
         """
         Creates a spotlight effect on a surface with a gradient from inside_color to outside_color.
