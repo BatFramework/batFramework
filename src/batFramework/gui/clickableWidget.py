@@ -1,6 +1,6 @@
 from .label import Label
 import batFramework as bf
-from typing import Self, Callable
+from typing import Self, Callable, Any
 from .interactiveWidget import InteractiveWidget
 from .shape import Shape
 import pygame
@@ -10,7 +10,7 @@ from math import ceil
 class ClickableWidget(Shape, InteractiveWidget):
     _cache: dict = {}
 
-    def __init__(self, callback: None | Callable = None, *args, **kwargs) -> None:
+    def __init__(self, callback: Callable[[],Any] = None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.callback = callback
         self.is_pressed: bool = False
@@ -111,7 +111,7 @@ class ClickableWidget(Shape, InteractiveWidget):
     def is_enabled(self) -> bool:
         return self.enabled
 
-    def set_callback(self, callback: Callable) -> Self:
+    def set_callback(self, callback: Callable[[],Any]) -> Self:
         self.callback = callback
         return self
 

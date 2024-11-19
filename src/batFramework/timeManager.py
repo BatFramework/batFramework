@@ -1,13 +1,12 @@
 import batFramework as bf
-from typing import Self
-from typing import Callable, Union, Self
+from typing import Callable, Union, Self,Any
 
 
 class Timer:
     _count: int = 0
     _available_ids: set[int] = set()
 
-    def __init__(self, duration: Union[float, int], end_callback: Callable, loop: bool = False, register: str = "global") -> None:
+    def __init__(self, duration: Union[float, int], end_callback: Callable[[],Any], loop: bool = False, register: str = "global") -> None:
         if Timer._available_ids:
             self.uid = Timer._available_ids.pop()
         else:

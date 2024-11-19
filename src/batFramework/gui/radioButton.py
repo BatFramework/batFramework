@@ -45,9 +45,9 @@ class RadioVariable:
     def __init__(self) -> None:
         self.buttons: list[RadioButton] = []
         self.value = None
-        self.modify_callback: Callable[[Any],] = None
+        self.modify_callback: Callable[[bool],Any] = None
 
-    def set_modify_callback(self, callback) -> Self:
+    def set_modify_callback(self, callback:Callable[[bool],Any]) -> Self:
         self.modify_callback = callback
         return self
 

@@ -2,6 +2,7 @@ import pygame
 import batFramework as bf
 from functools import lru_cache
 from .enums import easing
+from typing import Callable,Any
 
 
 @lru_cache(maxsize=None)
@@ -22,11 +23,11 @@ class EasingController(bf.Timer):
         easing_function: easing = easing.LINEAR,
         duration: float = 1,
         update_callback=None,
-        end_callback=None,
+        end_callback: Callable[[],Any]=None,
         loop: bool = False,
     ) -> None:
         self.easing_function = easing_function
-        self.update_callback = update_callback
+        self.update_callback: Callable[[float],Any] = update_callback
         self.value: float = 0.0
         super().__init__(duration, end_callback, loop)
 

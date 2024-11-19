@@ -1,12 +1,12 @@
 from .button import Button
 from .indicator import Indicator, ToggleIndicator
 import batFramework as bf
-from typing import Self
+from typing import Self,Callable,Any
 import pygame
 
 
 class Toggle(Button):
-    def __init__(self, text: str = "", callback=None, default_value: bool = False) -> None:
+    def __init__(self, text: str = "", callback : Callable[[bool],Any]=None, default_value: bool = False) -> None:
         self.value: bool = default_value
         self.indicator: ToggleIndicator = ToggleIndicator(default_value)
         self.gap: float | int = 0

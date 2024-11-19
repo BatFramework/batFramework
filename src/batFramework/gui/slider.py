@@ -66,7 +66,7 @@ class Slider(Button):
         super().__init__(text, None)
         self.gap: float | int = 0
         self.spacing: bf.spacing = bf.spacing.MANUAL
-        self.modified_callback = None
+        self.modified_callback : Callable[[float],Any] = None
         self.meter: SliderMeter = SliderMeter()
         self.handle = SliderHandle()
         self.add(self.meter, self.handle)
@@ -102,7 +102,7 @@ class Slider(Button):
         self.dirty_shape = True
         return self
 
-    def set_modify_callback(self, callback) -> Self:
+    def set_modify_callback(self, callback : Callable[[float],Any]) -> Self:
         self.modified_callback = callback
         return self
 

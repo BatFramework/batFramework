@@ -1,5 +1,5 @@
 from .shape import Shape
-from typing import Any, Self
+from typing import Any, Self, Callable
 import pygame
 from .widget import Widget
 from .interactiveWidget import InteractiveWidget
@@ -37,7 +37,7 @@ class ToggleIndicator(Indicator):
         # TODO aspect ratio would be good right about here
         # self.add_constraint(ConstraintAspectRatio(1))
 
-    def set_callback(self, callback) -> Self:
+    def set_callback(self, callback : Callable[[bool],Any]) -> Self:
         self.callback = callback
         return self
 

@@ -1,5 +1,5 @@
 import batFramework as bf
-from typing import Self
+from typing import Self,Callable,Any
 import pygame
 
 """
@@ -23,24 +23,24 @@ class Transition:
             update_callback=self.update,
             end_callback=self.end,
         )
-        self.start_callback = None
-        self.update_callback = None
-        self.end_callback = None
+        self.start_callback : Callable[[],Any] = None
+        self.update_callback : Callable[[float],Any]= None
+        self.end_callback : Callable[[],Any]= None
         self.source: pygame.Surface = None
         self.dest: pygame.Surface = None
 
     def __repr__(self) -> str:
         return f"Transition {self.__class__},{self.duration}"
 
-    def set_start_callback(self, func) -> Self:
+    def set_start_callback(self, func : Callable[[],Any]) -> Self:
         self.start_callback = func
         return self
 
-    def set_update_callback(self, func) -> Self:
+    def set_update_callback(self, func : Callable[[float],Any]) -> Self:
         self.update_callback = func
         return self
 
-    def set_end_callback(self, func) -> Self:
+    def set_end_callback(self, func : Callable[[],Any]) -> Self:
         self.end_callback = func
         return self
 
@@ -118,7 +118,7 @@ class FadeColor(Transition):
     def transition_to_end(self):
         self.next_step(self.end)
 
-    def next_step(self, callback=None) -> None:
+    def next_step(self, callback : Callable[[],Any]=None) -> None:
         self.index += 1
         if callback:
             callback()
