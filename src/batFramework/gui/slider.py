@@ -175,6 +175,7 @@ class Slider(Button):
         if not self.text_rect:
             self.text_rect.size = self._get_text_rect_required_size()
         w, h = self.text_rect.size
+        h+=self.unpressed_relief
         return self.inflate_rect_by_padding((0, 0, w + gap + self.meter.get_min_required_size()[1], h)).size
 
     def _build_layout(self) -> None:
