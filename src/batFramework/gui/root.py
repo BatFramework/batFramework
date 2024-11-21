@@ -138,6 +138,12 @@ class Root(InteractiveWidget):
         if self.hovered and isinstance(self.hovered, InteractiveWidget):
             self.hovered.on_enter()
 
+    def apply_updates(self):
+        if self.dirty_constraints:
+            self.resolve_constraints()
+            self.dirty_constraints = False
+        super().apply_updates()
+
     def draw(self, camera: bf.Camera) -> None:
         super().draw(camera)
         if (

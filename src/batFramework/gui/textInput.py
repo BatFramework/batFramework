@@ -140,7 +140,7 @@ class TextInput(Label, InteractiveWidget):
         lines = self.text.split('\n')
         line_x, line_y = self.cursor_position
 
-        height = self.font_object.get_point_size()
+        height = self.font_object.get_linesize()
 
         cursor_y = self.get_padded_rect().__getattribute__(self.alignment.value)[1] - self.rect.top
         cursor_y += line_y * height
@@ -248,10 +248,8 @@ class TextInput(Label, InteractiveWidget):
             return
         cursor_rect = self.get_cursor_rect()
         cursor_rect.move_ip(-self.scroll)
-
         
         pygame.draw.rect(self.surface, bf.color.CLOUD, cursor_rect.inflate(2,2))
-
         pygame.draw.rect(self.surface, self.text_color, cursor_rect)
 
     def paint(self) -> None:
@@ -272,9 +270,9 @@ class TextInput(Label, InteractiveWidget):
 
         
         if cursor_rect.right > area.right+self.scroll.x:
-            self.scroll.x=cursor_rect.right - area.right
+            self.scroll.x=cursor_rect.right - area.right - cursor_rect.w*2
         elif cursor_rect.x < self.scroll.x+area.left:
-            self.scroll.x= cursor_rect.left - area.left 
+            self.scroll.x= cursor_rect.left - area.left
         self.scroll.x = max(self.scroll.x,0)
 
         if cursor_rect.bottom > area.bottom + self.scroll.y:
