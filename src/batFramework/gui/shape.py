@@ -75,7 +75,9 @@ class Shape(Widget):
     def __str__(self) -> str:
         return "Shape"
 
-    def set_color(self, color: tuple[int, int, int] | str) -> Self:
+    def set_color(self, color: tuple[int, int, int, int] | str) -> Self:
+        if (len(color) == 3):
+            color = color + (255,)
         self.color = color
         self.dirty_surface = True
         return self
