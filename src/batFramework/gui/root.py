@@ -139,10 +139,13 @@ class Root(InteractiveWidget):
             self.hovered.on_enter()
 
     def apply_updates(self):
-        if self.dirty_constraints:
-            self.resolve_constraints()
-            self.dirty_constraints = False
-        super().apply_updates()
+        if any(child.dirty_shape for child in self.children):
+            self.dirty_shape = True  # Mark layout as dirty if any child changed size
+
+        if self.dirty_shape:
+            for child in self.children:
+                child.apply_updates()
+            self.dirty_shape = False
 
     def draw(self, camera: bf.Camera) -> None:
         super().draw(camera)
