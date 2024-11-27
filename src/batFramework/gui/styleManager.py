@@ -39,6 +39,12 @@ class StyleManager(metaclass=Singleton):
         self.lookup = {key: False for key in self.lookup}
         self.update()
 
+    def update_forced(self):
+       for widget in self.widgets:
+            for style in self.styles:
+                style.apply(widget)
+            self.lookup[widget] = True
+
     def update(self):
         for widget in self.widgets:
             if self.lookup[widget]:

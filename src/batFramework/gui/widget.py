@@ -174,11 +174,11 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return self.rect.bottom - self.padding[3]
 
     def get_debug_outlines(self):
-        if not self.visible:
-            return
-        yield (self.rect, self.debug_color)
-        if any(self.padding):
-            yield (self.get_padded_rect(), self.debug_color)
+        if self.visible:
+            if any(self.padding):
+                yield (self.get_padded_rect(), self.debug_color)
+            else:
+                yield (self.rect, self.debug_color)
         for child in self.children:
             yield from child.get_debug_outlines()
 
@@ -272,11 +272,11 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         if self.children:
             for child in reversed(self.children):
-                if child.visible:
-                    r = child.top_at(x, y)
-                    if r is not None:
-                        return r
-        return self if self.visible and self.rect.collidepoint(x, y) else None
+                # if child.visible:
+                r = child.top_at(x, y)
+                if r is not None:
+                    return r
+        return self if  self.rect.collidepoint(x, y) else None
 
     def add(self, *children: "Widget") -> Self:
         self.children.extend(children)
@@ -387,19 +387,26 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
 
     def apply_updates(self) -> None:
-        # Step 1: Build shape if needed
+
+        if self.dirty_constraints:
+            self.resolve_constraints()  # Finalize positioning based on final size
+            self.dirty_constraints = False
+
+        # Build shape if needed
         if self.dirty_shape:
             self.build()  # Finalize widget size
             self.dirty_shape = False
             self.dirty_surface = True
+            self.dirty_constraints = True
             # Propagate dirty_constraints to children in case size affects their position
             for child in self.children:
                 child.dirty_constraints = True
 
-        # Step 2: Resolve constraints now that size is finalized
+        # Resolve constraints now that size is finalized
         if self.dirty_constraints:
             self.resolve_constraints()  # Finalize positioning based on final size
             self.dirty_constraints = False
+
 
         # Step 3: Paint the surface if flagged as dirty
         if self.dirty_surface:

@@ -1,5 +1,5 @@
 from .label import Label
-from typing import Self
+from typing import Self,Callable,Any
 import batFramework as bf
 import pygame
 
@@ -11,8 +11,8 @@ def convert_to_int(*args):
 class Debugger(Label):
     def __init__(self) -> None:
         super().__init__("")
-        self.static_data: dict = {}
-        self.dynamic_data: dict = {}
+        self.static_data: dict[str,Any] = {}
+        self.dynamic_data: dict[str,Callable[[],str]] = {}
         self.refresh_rate = 10
         self.refresh_counter: float = 0
         self.add_tags("debugger")
@@ -26,18 +26,18 @@ class Debugger(Label):
         self.static_data[key] = str(data)
         self.update_text()
 
-    def add_dynamic(self, key: str, func) -> None:
+    def add_dynamic(self, key: str, func:Callable[[],str]) -> None:
         self.dynamic_data[key] = func
         self.update_text()
 
-    def remove_static(self, key) -> bool:
+    def remove_static(self, key:str) -> bool:
         try:
             self.static_data.pop(key)
             return True
         except KeyError:
             return False
 
-    def remove_dynamic(self, key) -> bool:
+    def remove_dynamic(self, key:str) -> bool:
         try:
             self.dynamic_data.pop(key)
             return True

@@ -273,7 +273,7 @@ class RowFill(Row):
         super().__init__(gap, spacing)
 
     def arrange(self) -> None:
-        if self.parent.autoresize_h :
+        if self.parent.autoresize_w :
            super().arrange() 
            return
         if not self.parent or not self.parent.children:

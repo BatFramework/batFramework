@@ -106,7 +106,7 @@ class Container(Shape, InteractiveWidget):
         return self
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
-        if self.visible and self.rect.collidepoint(x, y):
+        if self.rect.collidepoint(x, y):
             for child in reversed(self.children):
                 result = child.top_at(x, y)
                 if result is not None:

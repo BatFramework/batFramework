@@ -1,7 +1,7 @@
 import batFramework as bf
 import pygame
 
-pygame.mixer.init()
+
 
 
 class AudioManager(metaclass=bf.Singleton):

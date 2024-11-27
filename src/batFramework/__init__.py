@@ -67,7 +67,8 @@ def init(
     print_version()
     pygame.display.set_caption(window_caption)
     init_screen(resolution, flags, vsync)
-
+    pygame.mixer.init()
+    
     ResourceManager().set_resource_path(
         resource_path if resource_path is not None else "."
     )

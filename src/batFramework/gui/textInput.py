@@ -270,7 +270,7 @@ class TextInput(Label, InteractiveWidget):
 
         
         if cursor_rect.right > area.right+self.scroll.x:
-            self.scroll.x=cursor_rect.right - area.right - cursor_rect.w*2
+            self.scroll.x=cursor_rect.right - area.right - cursor_rect.w*2 
         elif cursor_rect.x < self.scroll.x+area.left:
             self.scroll.x= cursor_rect.left - area.left
         self.scroll.x = max(self.scroll.x,0)

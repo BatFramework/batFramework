@@ -41,16 +41,16 @@ class MinWidth(Constraint):
         self.min_width = width
 
     def on_removal(self, child_widget: Widget) -> None:
-            child_widget.set_autoresize_w(False)
+            return
+            # child_widget.set_autoresize_w(False)
 
     def evaluate(self, parent_widget, child_widget):
         res =  child_widget.rect.width >= self.min_width
-        if not res:
-            child_widget.set_autoresize_w(False)
+        # if not res:
+            # child_widget.set_autoresize_w(False)
         return res
 
     def apply_constraint(self, parent_widget, child_widget):
-        child_widget.set_autoresize_w(True)
         child_widget.set_size((self.min_width, None))
 
     def __eq__(self,other:"Constraint")->bool:

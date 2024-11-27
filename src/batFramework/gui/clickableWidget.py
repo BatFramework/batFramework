@@ -28,8 +28,15 @@ class ClickableWidget(Shape, InteractiveWidget):
         self.set_relief(self.unpressed_relief)
 
     def get_min_required_size(self) -> tuple[float, float]:
-        return self.rect.size.inflate(0,self.unpressed_relief)
-
+        if not (self.autoresize_w or self.autoresize_h):
+            return self.rect.size
+        
+        res = super().get_min_required_size()
+        res = res[0],res[1]+self.unpressed_relief
+        print("hey",res)
+        return res[0] if self.autoresize_w else self.rect.w, (
+            res[1] if self.autoresize_h else self.rect.h
+        )
 
 
     def set_unpressed_relief(self, relief: int) -> Self:
