@@ -11,7 +11,7 @@ class AudioManager(metaclass=bf.Singleton):
         self.current_music: str | None = None
         self.music_volume: float = 1
         self.sound_volume: float = 1
-        # pygame.mixer.music.set_endevent(bf.const.MUSIC_END_EVENT)
+        pygame.mixer.music.set_endevent(bf.const.MUSIC_END_EVENT)
 
     def free_sounds(self, force: bool = False):
         if force:
@@ -30,7 +30,7 @@ class AudioManager(metaclass=bf.Singleton):
 
     def set_music_volume(self, volume: float):
         self.music_volume = volume
-        pygame.mixer_music.set_volume(volume)
+        pygame.mixer.music.set_volume(volume)
 
     def get_music_volume(self) -> float:
         return self.music_volume
@@ -96,8 +96,8 @@ class AudioManager(metaclass=bf.Singleton):
         returns True if the sound was played
         """
         try:
-            pygame.mixer_music.load(self.musics[name])
-            pygame.mixer_music.play(loop, fade_ms=fade)
+            pygame.mixer.music.load(self.musics[name])
+            pygame.mixer.music.play(loop, fade_ms=fade)
             self.current_music = name
             return True
         except KeyError:
@@ -107,22 +107,22 @@ class AudioManager(metaclass=bf.Singleton):
     def stop_music(self):
         if not self.current_music:
             return
-        pygame.mixer_music.stop()
+        pygame.mixer.music.stop()
 
     def fadeout_music(self, fade_ms: int):
         if not self.current_music:
             return
-        pygame.mixer_music.fadeout(fade_ms)
+        pygame.mixer.music.fadeout(fade_ms)
 
     def pause_music(self):
         if not self.current_music:
             return
-        pygame.mixer_music.pause()
+        pygame.mixer.music.pause()
 
     def resume_music(self):
         if not self.current_music:
             return
-        pygame.mixer_music.unpause()
+        pygame.mixer.music.unpause()
 
     def get_current_music(self) -> str | None:
         return self.current_music
