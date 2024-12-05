@@ -74,6 +74,8 @@ class Manager(bf.SceneManager):
             if event.key == pygame.K_p:
                 self.print_status()
                 return
+        self.cutsceneManager.process_event(event)
+        if event.consumed: return
         super().process_event(event)
         if not event.consumed:
             if event.type == pygame.QUIT:

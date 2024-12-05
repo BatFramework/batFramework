@@ -8,13 +8,13 @@ from typing import Self, Iterator, Callable
 """
 
 
-class RenderGroup(bf.Entity):
+class RenderGroup(bf.Drawable):
     def __init__(
-        self, entity_iterator: Callable[[], Iterator[bf.Entity]], blit_flags: int = 0
+        self, entity_iterator: Callable[[], Iterator[bf.Drawable]], blit_flags: int = 0
     ) -> None:
         super().__init__()
         self.entity_iterator = entity_iterator
-        self.set_blit_flags(blit_flags)
+        # self.set_blit_flags(blit_flags)
         self.set_debug_color("white")
 
     def get_debug_outlines(self):

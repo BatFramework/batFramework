@@ -1,4 +1,8 @@
 from enum import Enum
+import pygame
+
+playerInput = [pygame.KEYDOWN,pygame.MOUSEBUTTONDOWN,pygame.KEYUP,pygame.MOUSEBUTTONUP]
+
 
 
 class color:
@@ -111,4 +115,6 @@ class textMode(Enum):
     ALPHABETICAL = 0
     NUMERICAL = 1
     ALPHANUMERICAL = 3
-    
+
+
+

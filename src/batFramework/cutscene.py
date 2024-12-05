@@ -1,129 +1,44 @@
 import batFramework as bf
-from typing import TYPE_CHECKING,Self
-
-class CutsceneBlock: ...
-
-if TYPE_CHECKING:
-    from .cutsceneBlocks import CutsceneBlock
-
-
-class Cutscene: ...
-
-
-class CutsceneManager(metaclass=bf.Singleton):
-    def __init__(self) -> None:
-        self.current_cutscene: Cutscene = None
-        self.cutscenes: list[bf.Cutscene] = []
-        self.manager: bf.Manager = None
-
-    def set_manager(self, manager):
-        self.manager = manager
-
-    def get_flag(self, flag):
-        return None
-
-    def process_event(self, event):
-        if self.current_cutscene:
-            self.current_cutscene.process_event(event)
-
-    def queue(self, *cutscenes):
-        self.cutscenes.extend(cutscenes)
-        if self.current_cutscene is None:
-            self.play(self.cutscenes.pop(0))
-
-    def play(self, cutscene: Cutscene):
-        if self.current_cutscene is None:
-            self.current_cutscene = cutscene
-            self.current_cutscene.on_enter()
-            self.current_cutscene.init_blocks()
-            self.current_cutscene.play()
-
-    def enable_player_control(self) -> None:
-        pass
-
-    def disable_player_control(self) -> None:
-        pass
-    
-    def update(self, dt):
-        if not self.current_cutscene is None:
-            self.current_cutscene.update(dt)
-            # print("cutscene manager update")
-            if self.current_cutscene.has_ended():
-                self.current_cutscene.on_exit()
-                self.current_cutscene = None
-                if self.cutscenes:
-                    self.play(self.cutscenes.pop(0))
-                else:
-                    self.current_cutscene = None
-
 
 class Cutscene:
-    def __init__(self) -> None:
-        self.cutscene_blocks : list[CutsceneBlock] = []
-        self.block_index = 0
-        self.end_blocks: list[CutsceneBlock] = []
-        self.ended = False
+    def __init__(self,*cutscenes):
+        self.is_over : bool = False
+        self.sub_cutscenes : list[Cutscene] = list(cutscenes)
+        self.sub_index = -1
 
-    def on_enter(self):
-        pass
-
-    def on_exit(self):
-        pass
-
-    def init_blocks(self):
-        pass
-
-    def add_blocks(self, *blocks: CutsceneBlock)->Self:
-        self.cutscene_blocks.extend(blocks)
-        return self
-        
-    def add_end_blocks(self, *blocks: CutsceneBlock)->Self:
-        _ = [block.set_parent_cutscene(self) for block in blocks]
-        self.end_blocks.extend(blocks)
-        return self
-        
-    def get_scene_at(self, index):
-        return bf.CutsceneManager().manager.scenes[index]
-
-    def get_current_scene(self):
-        return bf.CutsceneManager().manager.get_current_scene()
-
-    def set_scene(self, name, index=0):
-        return bf.CutsceneManager().manager.set_scene(name, index)
-
-    def get_scene(self, name):
-        return bf.CutsceneManager().manager.get_scene(name)
-
-    def add_block(self, *blocks: CutsceneBlock):
-        for block in blocks:
-            block.set_parent_cutscene(self)
-            self.cutscene_blocks.append(block)
-
-    def process_event(self, event):
-        if not self.ended and self.block_index < len(self.cutscene_blocks):
-            self.cutscene_blocks[self.block_index].process_event(event)
-
-    def play(self):
-        self.block_index = 0
-        if self.cutscene_blocks:
-            self.cutscene_blocks[self.block_index].start()
+    def start(self):
+        if self.sub_cutscenes:
+            self.sub_index = 0
+            self.sub_cutscenes[self.sub_index].start()
         else:
-            self.ended
+            self.end()
 
-    def update(self, dt):
-        if self.ended:
-            return
-        self.cutscene_blocks[self.block_index].update(dt)
-        if self.cutscene_blocks[self.block_index].has_ended():
-            self.block_index += 1
-            if self.block_index == len(self.cutscene_blocks):
-                if not self.end_blocks:
-                    self.ended = True
-                    return
-                else:
-                    self.cutscene_blocks.extend(self.end_blocks)
-                    self.end_blocks = []
-            self.cutscene_blocks[self.block_index].start()
+    def process_event(self,event):
+        if self.sub_index > 0: 
+            self.sub_cutscenes[self.sub_index].process_event(event)
+            
+    def update(self,dt):
+        if self.sub_index > 0: 
+            self.sub_cutscenes[self.sub_index].update(dt)
+            if self.sub_cutscenes[self.sub_index].is_over:
+                self.sub_index +=1
+                if self.sub_index >= len(self.sub_cutscenes):
+                    self.end()
+            
+    def end(self):
+        self.is_over = True
 
-    def has_ended(self):
-        return self.ended
+
+class Wait(Cutscene):
+    def __init__(self,duration:float,scene_name:str="global"):
+        super().__init__()
+        self.duration = duration
+        self.scene_name = scene_name
+    def start(self):
+        self.timer = bf.SceneTimer(duration=self.duration,end_callback=self.end,scene_name=self.scene_name)
+        self.timer.start()
+
+
+
+# class TransitionToScene(bf.Cutscene):
+    # def __init__(self,scene_name:str,)

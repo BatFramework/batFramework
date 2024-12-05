@@ -171,6 +171,9 @@ class SceneManager:
 
     def process_event(self, event: pygame.Event):
 
+        if self.current_transitions and event in bf.enums.playerInput:
+            return
+
         if event.type in self.shared_events:
             [s.process_event(event) for s in self.scenes]
         else:
