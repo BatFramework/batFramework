@@ -11,7 +11,7 @@ class AudioManager(metaclass=bf.Singleton):
         self.current_music: str | None = None
         self.music_volume: float = 1
         self.sound_volume: float = 1
-        pygame.mixer_music.set_endevent(bf.const.MUSIC_END_EVENT)
+        # pygame.mixer.music.set_endevent(bf.const.MUSIC_END_EVENT)
 
     def free_sounds(self, force: bool = False):
         if force:
