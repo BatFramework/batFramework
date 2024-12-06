@@ -44,8 +44,8 @@ class TransitionToScene(bf.Cutscene):
     def __init__(self,scene_name:str,transition:bf.transition):
         super().__init__()
         self.scene_name = scene_name
-        self.transition = transition
+        self.transition: bf.transition = transition
 
     def start(self):
         bf.CutsceneManager().manager.transition_to_scene(self.scene_name,self.transition)
-
+        bf.Timer(self.transition.duration,end_callback=self.end).start()
