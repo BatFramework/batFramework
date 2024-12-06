@@ -17,19 +17,15 @@ class ScrollingSprite(bf.Sprite):
         # Use integer values for the starting points, converted from floating point scroll values
 
         super().__init__(size, data, convert_alpha)
-        self.original_width, self.original_height = self.original_surface.get_size()
+        if self.original_surface:
+            self.original_width, self.original_height = self.original_surface.get_size()
+
 
     def get_debug_outlines(self):
         yield from super().get_debug_outlines()
         for r in self._get_mosaic_rect_list():
             yield r.move(*self.rect.topleft)
 
-    def set_image(
-        self, data: pygame.Surface | str, size: None | tuple[int, int] = None
-    ) -> Self:
-        super().set_image(data, size)
-        self.original_width, self.original_height = self.original_surface.get_size()
-        return self
 
     def set_autoscroll(self, x: float, y: float) -> Self:
         self.auto_scroll.update(x, y)

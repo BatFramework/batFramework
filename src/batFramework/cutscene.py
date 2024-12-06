@@ -1,5 +1,5 @@
 import batFramework as bf
-
+from .transition import Transition
 class Cutscene:
     def __init__(self,*cutscenes):
         self.is_over : bool = False
@@ -18,12 +18,14 @@ class Cutscene:
             self.sub_cutscenes[self.sub_index].process_event(event)
             
     def update(self,dt):
-        if self.sub_index > 0: 
+        if self.sub_index >= 0: 
             self.sub_cutscenes[self.sub_index].update(dt)
             if self.sub_cutscenes[self.sub_index].is_over:
                 self.sub_index +=1
                 if self.sub_index >= len(self.sub_cutscenes):
                     self.end()
+                    return
+                self.sub_cutscenes[self.sub_index].start()
             
     def end(self):
         self.is_over = True
@@ -40,11 +42,11 @@ class Wait(Cutscene):
 
 
 
-class TransitionToScene(bf.Cutscene):
-    def __init__(self,scene_name:str,transition:bf.transition):
+class TransitionToScene(Cutscene):
+    def __init__(self,scene_name:str,transition:Transition):
         super().__init__()
         self.scene_name = scene_name
-        self.transition: bf.transition = transition
+        self.transition: Transition = transition
 
     def start(self):
         bf.CutsceneManager().manager.transition_to_scene(self.scene_name,self.transition)
