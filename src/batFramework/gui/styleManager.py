@@ -25,7 +25,7 @@ class StyleManager(metaclass=Singleton):
 
     def refresh_widget(self, widget: Widget):
         if widget in self.widgets:
-            self.lookup[widget] = True
+            self.lookup[widget] = False
             self.update()
 
     def remove_widget(self, widget: Widget):

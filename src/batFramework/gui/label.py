@@ -246,9 +246,9 @@ class Label(Shape):
 
     def _build_layout(self) -> None:
 
+        # print(self.text_rect.size,self._get_text_rect_required_size(),repr(self.text))
         self.text_rect.size = self._get_text_rect_required_size()
-        # self.text_rect.w = ceil(self.text_rect.w)
-        # self.text_rect.h = ceil(self.text_rect.h) 
+
         if self.autoresize_h or self.autoresize_w:
             target_rect = self.inflate_rect_by_padding((0, 0, *self.text_rect.size))
             if not self.autoresize_w:
@@ -256,9 +256,10 @@ class Label(Shape):
             if not self.autoresize_h:
                 target_rect.h = self.rect.h
             if self.rect.size != target_rect.size:
+                # print("Size not good ! ",self.rect.size,target_rect.size,repr(self.text))
                 self.set_size(target_rect.size)
                 self.apply_updates()
-                return
+
         offset = self._get_outline_offset() if self.show_text_outline else (0,0)
         padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
         self.align_text(self.text_rect, padded, self.alignment)
@@ -271,7 +272,6 @@ class Label(Shape):
         if self.font_object is None:
             print(f"No font for widget with text : '{self}' :(")
             return
-
         params = {
             "font_name": self.font_object.name,
             "text": self.text,
@@ -333,6 +333,3 @@ class Label(Shape):
         super().paint()
         if self.font_object:
             self._paint_text()
-
-    # def set_alignment(self, alignment: bf.alignment) -> Self:
-    #     return self
