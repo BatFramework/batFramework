@@ -249,7 +249,7 @@ class TextInput(Label, InteractiveWidget):
         cursor_rect = self.get_cursor_rect()
         cursor_rect.move_ip(-self.scroll)
         
-        pygame.draw.rect(self.surface, bf.color.CLOUD, cursor_rect.inflate(2,2))
+        pygame.draw.rect(self.surface, self.text_outline_color, cursor_rect.inflate(2,2))
         pygame.draw.rect(self.surface, self.text_color, cursor_rect)
 
     def paint(self) -> None:

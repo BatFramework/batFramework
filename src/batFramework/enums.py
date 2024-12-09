@@ -61,6 +61,7 @@ class easing(Enum):
         self.control_points = control_points
 
 
+
 class axis(Enum):
     HORIZONTAL = "horizontal"
     VERTICAL = "vertical"

@@ -38,7 +38,7 @@ class Scene:
         self.camera: bf.Camera = bf.Camera(convert_alpha=world_convert_alpha)
         self.hud_camera: bf.Camera = bf.Camera(convert_alpha=hud_convert_alpha)
         self.should_sort :bool = True
-        self.root: bf.Root = bf.Root(self.hud_camera)
+        self.root: bf.gui.Root = bf.gui.Root(self.hud_camera)
         self.root.rect.center = self.hud_camera.get_center()
         self.add_hud_entity(self.root)
         self.entities_to_remove = []
@@ -54,7 +54,7 @@ class Scene:
     def get_hud_entity_count(self) -> int:
         n = 0
 
-        def adder(e):
+        def adder(e:bf.gui.Widget):
             nonlocal n
             n += len(e.children)
 
@@ -181,7 +181,7 @@ class Scene:
                 return entity
         return None
 
-    def _recursive_search_by_uid(self, uid, widget) -> bf.Entity | None:
+    def _recursive_search_by_uid(self, uid, widget:bf.gui.Widget) -> bf.Entity | None:
         """Recursively search for entity by uid in the widget's children."""
         if widget.uid == uid:
             return widget
@@ -212,6 +212,10 @@ class Scene:
         self.early_actions.process_event(event)
         if event.consumed:
             return
+        
+        if self.manager.current_transition and event.type in bf.enums.playerInput:
+            return 
+
         for entity in itertools.chain(
             self.hud_entities.keys(), self.world_entities.keys()
         ):

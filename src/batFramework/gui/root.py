@@ -23,7 +23,7 @@ class Root(InteractiveWidget):
         return "Root"
 
     def set_parent_scene(self, parent_scene: bf.Scene) -> Self:
-        bf.StyleManager().register_widget(self)
+        bf.gui.StyleManager().register_widget(self)
         return super().set_parent_scene(parent_scene)
 
     def get_focused(self) -> Widget | None:

@@ -695,8 +695,8 @@ class PercentageMarginBottom(Constraint):
     def evaluate(self, parent_widget, child_widget):
         return (
             child_widget.rect.bottom
-            == parent_widget.get_padded_top()
-            + parent_widget.get_padded_height() * self.margin
+            == parent_widget.get_padded_bottom()
+            - parent_widget.get_padded_height() * self.margin
         )
 
     def apply_constraint(self, parent_widget, child_widget):

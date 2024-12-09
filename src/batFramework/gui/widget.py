@@ -12,7 +12,7 @@ MAX_CONSTRAINTS = 10
 class WidgetMeta(type):
     def __call__(cls, *args, **kwargs):
         obj = type.__call__(cls, *args, **kwargs)
-        bf.StyleManager().register_widget(obj)
+        bf.gui.StyleManager().register_widget(obj)
         return obj
 
 
@@ -112,7 +112,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def set_parent_scene(self, parent_scene: bf.Scene | None) -> Self:
         super().set_parent_scene(parent_scene)
         if parent_scene is None:
-            bf.StyleManager().remove_widget(self)
+            bf.gui.StyleManager().remove_widget(self)
 
         for c in self.children:
             c.set_parent_scene(parent_scene)

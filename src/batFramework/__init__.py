@@ -10,7 +10,7 @@ from .tileset import Tileset
 from .timeManager import TimeManager,Timer,SceneTimer
 from .easingController import EasingController
 from .cutsceneManager import CutsceneManager
-from .cutscene import *
+import batFramework.cutscene as cutscenes
 from .audioManager import AudioManager
 import batFramework.transition as transition
 from .action import Action
@@ -28,7 +28,7 @@ from .animatedSprite import AnimatedSprite
 from .character import Character
 from .stateMachine import State, StateMachine
 from .scene import Scene
-from  .gui import *
+import batFramework.gui as gui
 from .sceneManager import SceneManager
 from .manager import Manager
 from .templates import *
@@ -73,7 +73,7 @@ def init(
         resource_path if resource_path is not None else "."
     )
     if resource_path is not None:
-        ResourceManager().load_dir(ResourceManager().RESOURCE_PATH)
+        ResourceManager().load_resources(ResourceManager().RESOURCE_PATH)
     if default_font_size is not None:
         FontManager().set_default_text_size(default_font_size)
     FontManager().init_font(default_font)

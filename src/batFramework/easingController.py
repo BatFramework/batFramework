@@ -23,11 +23,11 @@ class EasingController(bf.Timer):
         easing_function: easing = easing.LINEAR,
         duration: float = 1,
         update_callback=None,
-        end_callback: Callable[[],Any]=None,
+        end_callback: Callable[[], Any] = None,
         loop: bool = False,
     ) -> None:
         self.easing_function = easing_function
-        self.update_callback: Callable[[float],Any] = update_callback
+        self.update_callback: Callable[[float], Any] = update_callback
         self.value: float = 0.0
         super().__init__(duration, end_callback, loop)
 
@@ -47,9 +47,9 @@ class EasingController(bf.Timer):
         if self.easing_function == easing.LINEAR:
             self.value = self.get_progression()
         else:
-            self.value = process_value(
-                self.get_progression(), *self.easing_function.control_points
-            )
+            # Pass control points as tuples to process_value
+            self.value = process_value(self.get_progression(), *self.easing_function.control_points)
+        
         if self.update_callback:
             self.update_callback(self.value)
 

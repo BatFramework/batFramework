@@ -56,7 +56,7 @@ class InteractiveWidget(Widget):
 
     def on_get_focus(self) -> None:
         self.is_focused = True
-        if isinstance(self.parent,bf.Container):
+        if isinstance(self.parent,bf.gui.Container):
             self.parent.layout.scroll_to_widget(self) 
         self.do_on_get_focus()
 
@@ -69,7 +69,7 @@ class InteractiveWidget(Widget):
         if previous_widget != self and self.visible:
             if (
                 isinstance(self, InteractiveWidget)
-                and not isinstance(self, bf.Container)
+                and not isinstance(self, bf.gui.Container)
                 and self.allow_focus_to_self()
             ):
                 self.focus_next_sibling()

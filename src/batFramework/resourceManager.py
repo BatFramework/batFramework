@@ -3,8 +3,10 @@ import os
 import pygame
 import sys
 import json
-from typing import Any
+from typing import Any, Callable
 from .utils import Singleton
+import asyncio
+
 
 if getattr(sys, "frozen", False):
     # If the application is run as a bundle, the PyInstaller bootloader
@@ -17,32 +19,50 @@ else:
 
 class ResourceManager(metaclass=Singleton):
     def __init__(self):
-        self.shared_variables: dict[str,Any] = {}
+        self.shared_variables: dict[str, Any] = {}
         self.convert_image_cache = {}
         self.convert_alpha_image_cache = {}
         self.sound_cache = {}
         self.RESOURCE_PATH = "."
+        self.loading_thread = None
 
-    def load_dir(self, path) -> None:
+    def load_resources(self, path: str, progress_callback: Callable[[float], Any] = None):
+        """
+        loads resources from a directory.
+        Progress is reported through the callback.
+        Supposed to be asynchronous but don't use it as such yet
+        """
+        self.progress_callback = progress_callback
+
+        total_files = sum(
+            len(files) for _, _, files in os.walk(path) if not any(f.startswith(".") for f in files)
+        )
+
+        loaded_files = 0
+
         for root, dirs, files in os.walk(path):
-            files = [f for f in files if not f[0] == "."]
-            dirs[:] = [d for d in dirs if not d[0] == "."]
-
+            files = [f for f in files if not f.startswith(".")]
+            dirs[:] = [d for d in dirs if not (d.startswith(".") or d.startswith("__"))]
             for file in files:
                 file_path = os.path.join(root, file)
+
+                # Simulate resource loading
+                # await asyncio.sleep(0)  # Yield control to the event loop
+
                 if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
                     self.load_image(file_path)
-                    # print(f"Loaded image : '{file_path}'")
-
-                elif file.lower().endswith((".mp3", ".wav")):
+                elif file.lower().endswith((".mp3", ".wav", ".ogg")):
                     bf.AudioManager().load_sound(file.split(".")[0], file_path)
-                    # print(f"Loaded sound : '{file_path}'")
-
                 elif file.lower().endswith((".ttf", ".otf")):
                     bf.FontManager().load_font(file_path, file.split(".")[0])
-                    # print(f"Loaded font : '{file_path}'")
 
-        print(f"Loaded resources in directory : '{path}'")
+                loaded_files += 1
+                # Report progress
+                # if self.progress_callback:
+                    # self.progress_callback(loaded_files / total_files)
+
+        print(f"Loaded resources in directory: '{path}'")
+
 
     def set_resource_path(self, path: str):
         self.RESOURCE_PATH = os.path.join(application_path, path)
@@ -59,6 +79,7 @@ class ResourceManager(metaclass=Singleton):
             return
         self.convert_image_cache[key] = pygame.image.load(path).convert()
         self.convert_alpha_image_cache[key] = pygame.image.load(path).convert_alpha()
+
 
     def get_image(self, path, convert_alpha: bool = False) -> pygame.Surface | None:
         key = self.get_path(path)

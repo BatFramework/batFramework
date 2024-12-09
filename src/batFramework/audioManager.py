@@ -42,6 +42,9 @@ class AudioManager(metaclass=bf.Singleton):
         return name in self.sounds
 
     def load_sound(self, name, path, persistent=False) -> pygame.mixer.Sound:
+        """
+        if persistent==True the sound won't be unloaded when sounds are freed (unless force is used)
+        """
         if name in self.sounds:
             return self.sounds[name]["sound"]
         path = bf.ResourceManager().get_path(path)
@@ -52,8 +55,8 @@ class AudioManager(metaclass=bf.Singleton):
         }
         return self.sounds[name]["sound"]
 
-    def load_sounds(self, sound_data_list: list[tuple[str, str, bool]]) -> None:
-        for data in sound_data_list:
+    def load_sounds(self, sound_data: tuple[str, str, bool]) -> None:
+        for data in sound_data:
             self.load_sound(*data)
         return
 
@@ -83,8 +86,8 @@ class AudioManager(metaclass=bf.Singleton):
         self.musics[name] = bf.ResourceManager().get_path(path)
         return
 
-    def load_musics(self, music_data_list: list[tuple[str, str]]):
-        for data in music_data_list:
+    def load_musics(self, *music_data:tuple[str, str]):
+        for data in music_data:
             self.load_music(*data)
         return
 

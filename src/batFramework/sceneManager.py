@@ -10,7 +10,7 @@ class SceneManager:
     def __init__(self) -> None:
         self.scenes: list[bf.Scene] = []
         self.shared_events = {pygame.WINDOWRESIZED}
-        self.current_transitions: dict[str, bf.transition.Transition] = {}
+        self.current_transition : tuple[str,bf.transition.Transition,int] | None= None
 
     def init_scenes(self, *initial_scenes:bf.Scene):
         for index, s in enumerate(initial_scenes):
@@ -56,7 +56,7 @@ class SceneManager:
         print("\n" + "=" * 50)
         print(" DEBUGGING STATUS".center(50))
         print("=" * 50)
-        print(f"[Debugging Mode] = {self.debug_mode}")
+        print(f"[Debugging Mode] = {bf.ResourceManager().get_sharedVar("debug_mode")}")
 
         # Print shared variables
         print("\n" + "=" * 50)
@@ -113,33 +113,30 @@ class SceneManager:
         transition: bf.transition.Transition = bf.transition.Fade(0.1),
         index: int = 0,
     ):
-        target_scene = self.get_scene(scene_name)
-        if not target_scene:
+        
+        if not (target_scene := self.get_scene(scene_name)):
             print(f"Scene '{scene_name}' does not exist")
             return
-        if len(self.scenes) == 0 or index >= len(self.scenes) or index < 0:
-            return
+        if not (source_scene := self.get_scene_at(index)):
+            print(f"No scene exists at index {index}.")
+            return       
+        
         source_surface = bf.const.SCREEN.copy()
         dest_surface = bf.const.SCREEN.copy()
 
-        # self.draw(source_surface)
-        target_scene.draw(dest_surface)
-        target_scene.do_on_enter_early()
-        self.get_scene_at(index).do_on_exit_early()
-        self.current_transitions = {"scene_name": scene_name, "transition": transition}
-        transition.set_start_callback(lambda: self._start_transition(target_scene))
-        transition.set_end_callback(lambda: self._end_transition(scene_name, index))
+        target_scene.draw(dest_surface) # draw at least once to ensure smooth transition
+        target_scene.set_active(True)
+        target_scene.set_visible(True)
+
+        target_scene.do_on_enter_early() 
+        source_scene.do_on_exit_early()
+
+        self.current_transition :tuple[str,bf.transition.Transition]=(scene_name,transition,index)
         transition.set_source(source_surface)
         transition.set_dest(dest_surface)
         transition.start()
 
-    def _start_transition(self, target_scene: bf.Scene):
-        target_scene.set_active(True)
-        target_scene.set_visible(True)
 
-    def _end_transition(self, scene_name, index):
-        self.set_scene(scene_name, index, True)
-        self.current_transitions.clear()
 
     def set_scene(self, scene_name, index=0, ignore_early: bool = False):
         target_scene = self.get_scene(scene_name)
@@ -171,9 +168,6 @@ class SceneManager:
 
     def process_event(self, event: pygame.Event):
 
-        if self.current_transitions and event in bf.enums.playerInput:
-            return
-
         if event.type in self.shared_events:
             [s.process_event(event) for s in self.scenes]
         else:
@@ -182,21 +176,21 @@ class SceneManager:
     def update(self, dt: float) -> None:
         for scene in self.active_scenes:
             scene.update(dt)
+        if self.current_transition and self.current_transition[1].is_over:
+            self.set_scene(self.current_transition[0],self.current_transition[2],True)
+            self.current_transition = None
         self.do_update(dt)
 
     def do_update(self, dt: float):
         pass
 
-    def draw(self, surface) -> None:
+    def draw(self, surface:pygame.Surface) -> None:
         for scene in self.visible_scenes:
             scene.draw(surface)
-        if self.current_transitions:
-            self._draw_transition(surface)
+        if self.current_transition is not None:
+            self.current_transition[1].set_source(surface)
+            tmp = surface.copy()
+            self.get_scene(self.current_transition[0]).draw(tmp)
+            self.current_transition[1].set_dest(tmp)
+            self.current_transition[1].draw(surface)
 
-    def _draw_transition(self, surface):
-        self.current_transitions["transition"].set_source(surface)
-        tmp = bf.const.SCREEN.copy()
-        self.get_scene(self.current_transitions["scene_name"]).draw(tmp)
-        self.current_transitions["transition"].set_dest(tmp)
-        self.current_transitions["transition"].draw(surface)
-        return
