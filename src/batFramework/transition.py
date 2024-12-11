@@ -63,18 +63,19 @@ class Transition:
 
 
 class FadeColor(Transition):
-    def __init__(self,color, duration:float,color_start:float,color_end:float, easing_function = bf.easing.LINEAR):
+    def __init__(self,duration:float,color=(0,0,0),color_start:float=0.3,color_end:float=0.7, easing_function = bf.easing.LINEAR):
         super().__init__(duration, easing_function)
         self.color = color
         self.color_start = color_start
         self.color_end = color_end
+
     def start(self):
         super().start()
         self.color_surf = pygame.Surface(self.source.get_size())
         self.color_surf.fill(self.color)
 
     def draw(self, surface):
-        v = self.controller.get_progression()
+        v = self.controller.get_value()
         if v < self.color_start:
             v = v/(self.color_start)
             self.color_surf.set_alpha(255*v)
@@ -101,7 +102,6 @@ class Fade(Transition):
         self.dest.set_alpha(dest_alpha)
         surface.blit(self.source, (0, 0))
         surface.blit(self.dest, (0, 0))
-
 
 class GlideRight(Transition):
     def draw(self, surface):

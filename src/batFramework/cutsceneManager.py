@@ -9,7 +9,7 @@ class CutsceneManager(metaclass=bf.Singleton):
     def __init__(self) -> None:
         self.current_cutscene: Cutscene = None
         self.manager: bf.Manager = None
-
+        self.is_playing : bool = False
     def set_manager(self, manager):
         self.manager = manager
 
@@ -21,11 +21,14 @@ class CutsceneManager(metaclass=bf.Singleton):
 
     def play(self,cutscene:Cutscene):
         if self.current_cutscene is not None:return
+        
         self.current_cutscene = cutscene
         cutscene.start()
-
+        self.is_playing = True
+        
     def update(self,dt):
         if self.current_cutscene:
             self.current_cutscene.update(dt)
             if self.current_cutscene.is_over:
                 self.current_cutscene = None
+                self.is_playing = False

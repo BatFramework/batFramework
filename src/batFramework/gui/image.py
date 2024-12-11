@@ -37,12 +37,6 @@ class Image(Shape):
             )
         super().build()
 
-    def get_min_required_size(self) -> tuple[float, float]:
-        res = self.rect.size
-        return self.inflate_rect_by_padding((0, 0, *res)).size
-
-
-
 
     def from_path(self, path: str) -> Self:
         tmp = bf.ResourceManager().get_image(path, self.convert_alpha)
@@ -60,6 +54,5 @@ class Image(Shape):
         self.original_surface = surface
         size = self.original_surface.get_size()
         self.set_size(size)
-
         self.dirty_surface = True
         return self

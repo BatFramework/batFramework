@@ -93,7 +93,7 @@ class InteractiveWidget(Widget):
         if previous_widget != self and self.visible:
             if (
                 isinstance(self, InteractiveWidget)
-                and not isinstance(self, bf.Container)
+                and not isinstance(self, bf.gui.Container)
                 and self.allow_focus_to_self()
             ):
                 self.get_focus()

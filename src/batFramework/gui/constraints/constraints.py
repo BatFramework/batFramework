@@ -374,9 +374,9 @@ class AspectRatio(Constraint):
             self.ratio = ratio
         elif isinstance(ratio, pygame.rect.FRect):
             self.ratio = (
-                (ratio.w / ratio.h)
+                round(ratio.w / ratio.h,2)
                 if reference_axis == bf.axis.HORIZONTAL
-                else (ratio.h / ratio.w)
+                else round(ratio.h / ratio.w,2)
             )
         else:
             raise TypeError(f"Ratio must be float or FRect")
@@ -387,9 +387,9 @@ class AspectRatio(Constraint):
 
     def evaluate(self, parent_widget, child_widget):
         if self.ref_axis == bf.axis.HORIZONTAL:
-            return self.ratio == child_widget.rect.h / child_widget.rect.w
+            return self.ratio == round(child_widget.rect.h / child_widget.rect.w,2)
         if self.ref_axis == bf.axis.VERTICAL:
-            return self.ratio == child_widget.rect.w / child_widget.rect.h
+            return self.ratio == round(child_widget.rect.w / child_widget.rect.h,2)
 
 
     def apply_constraint(self, parent_widget, child_widget):
@@ -414,6 +414,10 @@ class AspectRatio(Constraint):
                 child_widget.set_autoresize_h(False)
 
             child_widget.set_size((None, child_widget.rect.w * self.ratio))
+
+    def __str__(self) -> str:
+        return f"{self.name.upper()}[ratio = {self.ratio}, ref = {'Vertical' if self.ref_axis == bf.axis.VERTICAL else 'Horizontal'}]"
+
 
     def __eq__(self,other:"Constraint")->bool:
         if not isinstance(other,self.__class__):

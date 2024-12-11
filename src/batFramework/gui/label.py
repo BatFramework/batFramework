@@ -31,6 +31,7 @@ class Label(Shape):
 
         self._text_outline_mask = pygame.Mask((3, 3), fill=True)
 
+        self.lign_alignment = pygame.FONT_LEFT
         # font name (given when loaded by utils) to use for the text
         self.font_name = None
         # reference to the font object
@@ -61,6 +62,11 @@ class Label(Shape):
 
     def set_text_color(self, color) -> Self:
         self.text_color = color
+        self.dirty_surface = True
+        return self
+
+    def set_lign_alignment(self,alignment:pygame.FONT_LEFT|pygame.FONT_RIGHT|pygame.FONT_CENTER)->Self:
+        self.lign_alignment = alignment
         self.dirty_surface = True
         return self
 
@@ -203,28 +209,33 @@ class Label(Shape):
             old_italic = self.font_object.get_italic()
             old_bold = self.font_object.get_bold()
             old_underline = self.font_object.get_underline()
-
+            old_align = self.font_object.align
             # setup font
             self.font_object.set_italic(self.is_italic)
             self.font_object.set_bold(self.is_bold)
             self.font_object.set_underline(self.is_underlined)
-
+            self.font_object.align = self.lign_alignment
             surf = self.font_object.render(**params)
 
             # reset font
             self.font_object.set_italic(old_italic)
             self.font_object.set_bold(old_bold)
             self.font_object.set_underline(old_underline)
+            self.font_object.align = old_align
         else:
             params.pop("font_name")
             surf = self.font_object.render(**params)
 
         return surf
+
+    def _get_outline_offset(self)->tuple[int,int]:
+        mask_size = self._text_outline_mask.get_size()
+        return  mask_size[0]//2,mask_size[1]//2
         
     def _get_text_rect_required_size(self):
-        font_height = self.font_object.get_linesize()
+        # font_height = self.font_object.get_height()
+        font_height = self.font_object.get_ascent() - self.font_object.get_descent()
         if not self.text:
-            # font_height = self.font_object.get_ascent() - self.font_object.get_ascent()
             size = (0,font_height)
         else:
             tmp_text = self.text
@@ -241,6 +252,7 @@ class Label(Shape):
 
             size = self._render_font(params).get_size()
             size = size[0],max(font_height,size[1])
+        # print(self.text,size)
         s = self._get_outline_offset() if self.show_text_outline else (0,0)
         return size[0] + s[0]*2, size[1] + s[1]*2
 
@@ -263,10 +275,6 @@ class Label(Shape):
         offset = self._get_outline_offset() if self.show_text_outline else (0,0)
         padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
         self.align_text(self.text_rect, padded, self.alignment)
-
-    def _get_outline_offset(self)->tuple[int,int]:
-        mask_size = self._text_outline_mask.get_size()
-        return  mask_size[0]//2,mask_size[1]//2
 
     def _paint_text(self) -> None:
         if self.font_object is None:
