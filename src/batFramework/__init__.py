@@ -36,7 +36,7 @@ import importlib.metadata
 
 
 def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
-    const.RESOLUTION = resolution
+    const.set_resolution(resolution)
     const.FLAGS = flags
     const.VSYNC = vsync
     const.SCREEN = pygame.display.set_mode(
