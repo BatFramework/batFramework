@@ -127,10 +127,9 @@ class TextInput(Label, InteractiveWidget):
         x = max(0, min(x, line_length))
         self.show_cursor = True
         self.cursor_position = (x,y)
+        # self.apply_updates()
         self.dirty_surface = True
-        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-        padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
-        self.align_text(self.text_rect,padded,self.alignment)
+
         return self
 
     def get_cursor_rect(self)->pygame.FRect:
@@ -183,7 +182,6 @@ class TextInput(Label, InteractiveWidget):
             # Insert text at the current cursor position
             self.set_text(f"{text[:current_pos]}{event.text}{text[current_pos:]}")
             self.set_cursor_position(self.absolute_to_cursor(current_pos + len(event.text)))
-
         elif event.type == pygame.KEYDOWN:
             match event.key:
                 case pygame.K_ESCAPE:
@@ -191,33 +189,45 @@ class TextInput(Label, InteractiveWidget):
 
                 case pygame.K_BACKSPACE if current_pos > 0:
                     # Remove the character before the cursor
-                    self.set_text(f"{text[:current_pos - 1]}{text[current_pos:]}")
-                    self.set_cursor_position(self.absolute_to_cursor(current_pos - 1))
+                    delta = current_pos-1
+                    if pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]:
+                        delta = find_prev_word(self.text,current_pos-1)
+                        if delta <0: delta = 0
+                        
+                    self.set_text(f"{text[:delta]}{text[current_pos:]}")
+                    self.set_cursor_position(self.absolute_to_cursor(delta))
+                    self._cursor_toggle(True)
 
                 case pygame.K_DELETE if current_pos < len(text):
                     # Remove the character at the cursor
                     self.set_text(f"{text[:current_pos]}{text[current_pos + 1:]}")
+                    self._cursor_toggle(True)
 
                 case pygame.K_RIGHT:
                     if current_pos < len(text):
                         self.handle_cursor_movement(pressed, current_pos, direction="right")
-
+                    self._cursor_toggle(True)
+                    
                 case pygame.K_LEFT:
                     if current_pos > 0:
                         self.handle_cursor_movement(pressed, current_pos, direction="left")
+                    self._cursor_toggle(True)
 
                 case pygame.K_UP:
                     # Move cursor up one line
                     self.set_cursor_position((self.cursor_position[0], self.cursor_position[1] - 1))
+                    self._cursor_toggle(True)
 
                 case pygame.K_DOWN:
                     # Move cursor down one line
                     self.set_cursor_position((self.cursor_position[0], self.cursor_position[1] + 1))
+                    self._cursor_toggle(True)
 
                 case pygame.K_RETURN:
                     # Insert a newline at the current cursor position
                     self.set_text(f"{text[:current_pos]}\n{text[current_pos:]}")
                     self.set_cursor_position(self.absolute_to_cursor(current_pos + 1))
+                    self._cursor_toggle(True)
                 case _ :
                     return
 
@@ -254,6 +264,9 @@ class TextInput(Label, InteractiveWidget):
 
     def paint(self) -> None:
         super().paint()
+        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
+        padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
+        self.align_text(self.text_rect,padded,self.alignment)
         self._paint_cursor()
 
     def align_text(
@@ -270,7 +283,7 @@ class TextInput(Label, InteractiveWidget):
 
         
         if cursor_rect.right > area.right+self.scroll.x:
-            self.scroll.x=cursor_rect.right - area.right - cursor_rect.w*2 
+            self.scroll.x=cursor_rect.right - area.right
         elif cursor_rect.x < self.scroll.x+area.left:
             self.scroll.x= cursor_rect.left - area.left
         self.scroll.x = max(self.scroll.x,0)
