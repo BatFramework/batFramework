@@ -127,8 +127,10 @@ class TextInput(Label, InteractiveWidget):
         x = max(0, min(x, line_length))
         self.show_cursor = True
         self.cursor_position = (x,y)
-        # self.apply_updates()
-        self.dirty_surface = True
+        self.apply_updates()
+        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
+        padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
+        self.align_text(self.text_rect,padded,self.alignment)
 
         return self
 
@@ -264,9 +266,6 @@ class TextInput(Label, InteractiveWidget):
 
     def paint(self) -> None:
         super().paint()
-        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-        padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
-        self.align_text(self.text_rect,padded,self.alignment)
         self._paint_cursor()
 
     def align_text(
@@ -288,8 +287,8 @@ class TextInput(Label, InteractiveWidget):
             self.scroll.x= cursor_rect.left - area.left
         self.scroll.x = max(self.scroll.x,0)
 
-        if cursor_rect.bottom > area.bottom + self.scroll.y:
-            self.scroll.y = cursor_rect.bottom - area.bottom
+        if cursor_rect.bottom > self.scroll.y + area.bottom:
+            self.scroll.y = cursor_rect.bottom - area.bottom + cursor_rect.h//2
         elif cursor_rect.y < self.scroll.y + area.top:
             self.scroll.y = cursor_rect.top - area.top
         self.scroll.y = max(self.scroll.y, 0)
