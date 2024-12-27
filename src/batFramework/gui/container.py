@@ -123,9 +123,14 @@ class Container(Shape, InteractiveWidget):
         self.focused_index = min(self.focused_index, len(interactive_children) - 1)
         return interactive_children[self.focused_index].get_focus()
 
+    def children_has_focus(self)->bool:
+        return any(child.is_focused for child in self.get_interactive_children())
+
+
     def do_handle_event(self, event) -> None:
-        if any(child.is_focused for child in self.get_interactive_children()):
-            self.layout.handle_event(event)
+        if event.consumed:
+            return
+        self.layout.handle_event(event)
 
     def set_focused_child(self, child: InteractiveWidget) -> bool:
         interactive_children = self.get_interactive_children()

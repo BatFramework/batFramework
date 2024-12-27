@@ -10,6 +10,10 @@ class Label(Shape):
     def __init__(self, text: str = "") -> None:
         self.text = text
 
+        # Allows scrolling the text
+        self.allow_scroll : bool = True
+
+        # Scroll variable
         self.scroll :pygame.Vector2 = pygame.Vector2(0,0)
 
         self.resized_flag: bool = False
@@ -31,7 +35,7 @@ class Label(Shape):
 
         self._text_outline_mask = pygame.Mask((3, 3), fill=True)
 
-        self.lign_alignment = pygame.FONT_LEFT
+        self.line_alignment = pygame.FONT_LEFT
         # font name (given when loaded by utils) to use for the text
         self.font_name = None
         # reference to the font object
@@ -60,13 +64,20 @@ class Label(Shape):
     def __str__(self) -> str:
         return f"Label({repr(self.text)})"
 
+
+    def set_allow_scroll(self, value:bool)->Self:
+        if self.allow_scroll == value: return self
+        self.allow_scroll = value
+        self.dirty_shape = True
+        return self
+
     def set_text_color(self, color) -> Self:
         self.text_color = color
         self.dirty_surface = True
         return self
 
-    def set_lign_alignment(self,alignment:pygame.FONT_LEFT|pygame.FONT_RIGHT|pygame.FONT_CENTER)->Self:
-        self.lign_alignment = alignment
+    def set_line_alignment(self,alignment:pygame.FONT_LEFT|pygame.FONT_RIGHT|pygame.FONT_CENTER)->Self:
+        self.line_alignment = alignment
         self.dirty_surface = True
         return self
 
@@ -143,8 +154,10 @@ class Label(Shape):
 
     def get_debug_outlines(self):
         if self.visible:
-            offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-            yield (self.text_rect.move(self.rect.x - offset[0] - self.scroll.x,self.rect.y - offset[1] - self.scroll.y), "purple")
+            yield (self.text_rect.move(self.rect.x - self.scroll.x,self.rect.y - self.scroll.y), "purple")
+            
+            # offset = self._get_outline_offset() if self.show_text_outline else (0,0)
+            # yield (self.text_rect.move(self.rect.x - offset[0] - self.scroll.x,self.rect.y - offset[1] - self.scroll.y), "purple")
         yield from super().get_debug_outlines()
 
     def set_font(self, font_name: str = None, force: bool = False) -> Self:
@@ -187,15 +200,9 @@ class Label(Shape):
         return self
 
     def get_min_required_size(self) -> tuple[float, float]:
-        if not (self.autoresize_w or self.autoresize_h):
-            return self.rect.size
-        if not self.text_rect:
-            self.text_rect.size = self._get_text_rect_required_size()
-        res = self.inflate_rect_by_padding((0, 0, *self.text_rect.size)).size
-        
-        return res[0] if self.autoresize_w else self.rect.w, (
-            res[1] if self.autoresize_h else self.rect.h
-        )
+        return self.inflate_rect_by_padding(
+            (0, 0, *self._get_text_rect_required_size())
+        ).size
 
     def get_text(self) -> str:
         return self.text
@@ -214,7 +221,7 @@ class Label(Shape):
             self.font_object.set_italic(self.is_italic)
             self.font_object.set_bold(self.is_bold)
             self.font_object.set_underline(self.is_underlined)
-            self.font_object.align = self.lign_alignment
+            self.font_object.align = self.line_alignment
             surf = self.font_object.render(**params)
 
             # reset font
@@ -230,10 +237,9 @@ class Label(Shape):
 
     def _get_outline_offset(self)->tuple[int,int]:
         mask_size = self._text_outline_mask.get_size()
-        return  mask_size[0]//2,mask_size[1]//2
-        
+        return  mask_size[0]//2,mask_size[1]//2 
+    
     def _get_text_rect_required_size(self):
-        # font_height = self.font_object.get_height()
         font_height = self.font_object.get_ascent() - self.font_object.get_descent()
         if not self.text:
             size = (0,font_height)
@@ -252,41 +258,35 @@ class Label(Shape):
 
             size = self._render_font(params).get_size()
             size = size[0],max(font_height,size[1])
+            
         # print(self.text,size)
         s = self._get_outline_offset() if self.show_text_outline else (0,0)
         return size[0] + s[0]*2, size[1] + s[1]*2
 
     def _build_layout(self) -> None:
+        target_size = self.get_min_required_size()
+        # print(target_size,self.rect.size)
+        if (self.autoresize_w or self.autoresize_h) and self.rect.size != target_size:
+            self.set_size(target_size)
+            self.apply_updates(skip_draw=True)
+            return
 
-        # print(self.text_rect.size,self._get_text_rect_required_size(),repr(self.text))
         self.text_rect.size = self._get_text_rect_required_size()
-
-        if self.autoresize_h or self.autoresize_w:
-            target_rect = self.inflate_rect_by_padding((0, 0, *self.text_rect.size))
-            if not self.autoresize_w:
-                target_rect.w = self.rect.w
-            if not self.autoresize_h:
-                target_rect.h = self.rect.h
-            if self.rect.size != target_rect.size:
-                # print("Size not good ! ",self.rect.size,target_rect.size,repr(self.text))
-                self.set_size(target_rect.size)
-                self.apply_updates()
-
-        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-        padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
+        padded = self.get_local_padded_rect()
         self.align_text(self.text_rect, padded, self.alignment)
 
     def _paint_text(self) -> None:
         if self.font_object is None:
             print(f"No font for widget with text : '{self}' :(")
             return
+        wrap = int(self.get_padded_width()) if self.auto_wraplength and not self.autoresize_w else 0
         params = {
             "font_name": self.font_object.name,
             "text": self.text,
             "antialias": self.antialias,
             "color": self.text_color,
-            "bgcolor": None,  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
-            "wraplength": int(self.get_padded_width()) if self.auto_wraplength and not self.autoresize_w else 0,
+            "bgcolor": None, 
+            "wraplength": wrap,
         }
 
         self.text_surface = self._render_font(params)
@@ -297,27 +297,22 @@ class Label(Shape):
                 .to_surface(setcolor=self.text_outline_color, unsetcolor=(0, 0, 0, 0))
             )
 
-        outline_offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-
-
-        # prepare fblit list
-        l = []
-        if self.show_text_outline:
-            l.append(
-                (self.text_outline_surface,
-                (self.text_rect.x - outline_offset[0] - self.scroll.x,self.text_rect.y - outline_offset[1] - self.scroll.y))
-            )
-        l.append(
-            (self.text_surface, self.text_rect.move(-self.scroll))
-        )
+            outline_offset = list(self._get_outline_offset())
+            outline_offset[0]-=self.scroll.x
+            outline_offset[1]-=self.scroll.y
+            l = [
+                (self.text_outline_surface,(self.text_rect.x  - self.scroll.x,self.text_rect.y - self.scroll.y)),
+                (self.text_surface, self.text_rect.move(*outline_offset))
+            ]
+        else:
+            l = [(self.text_surface, self.text_rect.move(-self.scroll))]        
 
         # clip surface
         
         old = self.surface.get_clip()
-        self.surface.set_clip(self.get_padded_rect().move(-self.rect.x,-self.rect.y))
+        self.surface.set_clip(self.get_local_padded_rect())
         self.surface.fblits(l)
         self.surface.set_clip(old)
-
         
     def align_text(
         self, text_rect: pygame.FRect, area: pygame.FRect, alignment: bf.alignment
@@ -330,8 +325,6 @@ class Label(Shape):
         pos = area.__getattribute__(alignment.value)
         text_rect.__setattr__(alignment.value, pos)
         text_rect.y = ceil(text_rect.y)
-
-
 
     def build(self) -> None:
         super().build()

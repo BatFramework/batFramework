@@ -496,7 +496,7 @@ class AnchorRight(Constraint):
     def apply_constraint(self, parent_widget, child_widget):
         child_widget.set_position(
             parent_widget.get_padded_right() - child_widget.rect.w,
-            child_widget.rect.top,
+            None,
         )
 
 
@@ -509,7 +509,7 @@ class AnchorLeft(Constraint):
 
     def apply_constraint(self, parent_widget, child_widget):
         child_widget.set_position(
-            parent_widget.get_padded_left(), child_widget.rect.top
+            parent_widget.get_padded_left(), None
         )
 
 
@@ -697,11 +697,12 @@ class PercentageMarginBottom(Constraint):
         self.margin = margin
 
     def evaluate(self, parent_widget, child_widget):
-        return (
+        return abs(
             child_widget.rect.bottom
-            == parent_widget.get_padded_bottom()
-            - parent_widget.get_padded_height() * self.margin
-        )
+            - (
+                parent_widget.get_padded_bottom()- 
+                parent_widget.get_padded_height() * self.margin)
+        ) < 0.01
 
     def apply_constraint(self, parent_widget, child_widget):
         child_widget.set_position(
@@ -725,11 +726,12 @@ class PercentageMarginTop(Constraint):
         self.margin = margin
 
     def evaluate(self, parent_widget, child_widget):
-        return (
+        return abs(
             child_widget.rect.top
-            == parent_widget.get_padded_top()
-            + parent_widget.get_padded_height() * self.margin
-        )
+            - (
+                parent_widget.get_padded_top()+ 
+                parent_widget.get_padded_height() * self.margin)
+        ) < 0.01
 
     def apply_constraint(self, parent_widget, child_widget):
         child_widget.set_position(

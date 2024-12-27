@@ -10,7 +10,7 @@ Both surfaces to transition need to be the same size
 
 class Transition:
     def __init__(
-        self, duration: float, easing_function: bf.easing = bf.easing.LINEAR
+        self, duration: float=1, easing: bf.easing = bf.easing.LINEAR
     ) -> None:
         """
         duration : time in seconds
@@ -18,7 +18,7 @@ class Transition:
         """
         self.duration: float = duration
         self.controller = bf.EasingController( # main controller for the transition progression
-            easing_function,duration,
+            duration,easing,
             update_callback=self.update,end_callback=self.end,
         )
         self.source: pygame.Surface = None
@@ -63,8 +63,8 @@ class Transition:
 
 
 class FadeColor(Transition):
-    def __init__(self,duration:float,color=(0,0,0),color_start:float=0.3,color_end:float=0.7, easing_function = bf.easing.LINEAR):
-        super().__init__(duration, easing_function)
+    def __init__(self,duration:float,color=(0,0,0),color_start:float=0.3,color_end:float=0.7, easing = bf.easing.LINEAR):
+        super().__init__(duration, easing)
         self.color = color
         self.color_start = color_start
         self.color_end = color_end
@@ -96,6 +96,9 @@ class Fade(Transition):
     def end(self):
         self.dest.set_alpha(255)
         return super().end()
+
+    def start(self):
+        super().start()
 
     def draw(self, surface):
         dest_alpha = 255 * self.controller.get_value()

@@ -93,7 +93,13 @@ class Root(InteractiveWidget):
         self.rect.size = size
         return self
 
-    def do_handle_event(self, event):
+    def process_event(self,event):
+        if event.consumed : return
+        self.do_handle_event_early(event)
+        if event.consumed : return
+        super().process_event(event)
+        
+    def do_handle_event_early(self, event):
         if self.focused:
             if event.type == pygame.KEYDOWN:
                 if self.focused.on_key_down(event.key):

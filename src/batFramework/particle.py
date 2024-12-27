@@ -82,6 +82,7 @@ class ParticleGenerator(bf.Drawable):
     def __init__(self) -> None:
         super().__init__((0, 0))
         self.particles: list[Particle] = []
+        self.count = 0
 
     def get_debug_outlines(self):
         return
@@ -96,10 +97,11 @@ class ParticleGenerator(bf.Drawable):
         particle.generator = self
         particle.do_when_added()
         self.particles.append(particle)
+        self.count += 1
 
     def clear(self):
         self.particles = []
-
+        self.count = 0
     def update(self, dt: float):
         particles_to_remove = []
         for particle in self.particles:
@@ -108,6 +110,7 @@ class ParticleGenerator(bf.Drawable):
                 particles_to_remove.append(particle)
         for p in particles_to_remove:
             self.particles.remove(p)
+            self.count -= 1
 
     def draw(self, camera) -> None:
         camera.surface.fblits(

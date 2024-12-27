@@ -19,4 +19,5 @@ from .indicator import *
 from .toggle import Toggle
 from .radioButton import RadioButton, RadioVariable
 from .slider import Slider
+from .selector import Selector
 import batFramework.gui.constraints as constraints

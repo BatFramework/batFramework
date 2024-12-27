@@ -110,10 +110,11 @@ class SceneManager:
     def transition_to_scene(
         self,
         scene_name: str,
-        transition: bf.transition.Transition = bf.transition.Fade(0.1),
+        transition: bf.transition.Transition = None,
         index: int = 0,
     ):
-        
+        if transition is None:
+            transition = bf.transition.Fade(0.1)
         if not (target_scene := self.get_scene(scene_name)):
             print(f"Scene '{scene_name}' does not exist")
             return

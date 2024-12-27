@@ -64,54 +64,71 @@ class InteractiveWidget(Widget):
         self.is_focused = False
         self.do_on_lose_focus()
 
+        
+
+    def get_interactive_widgets(self):
+        """Retrieve all interactive widgets in the tree, in depth-first order."""
+        widgets = []
+        stack = [self]
+        while stack:
+            widget = stack.pop()
+            if isinstance(widget, InteractiveWidget) and widget.allow_focus_to_self():
+                widgets.append(widget)
+            stack.extend(reversed(widget.children))  # Add children in reverse for left-to-right traversal
+        return widgets
+
+    def find_next_widget(self, current):
+        """Find the next interactive widget, considering parent and sibling relationships."""
+        if current.is_root:
+            return None  # Root has no parent
+
+        siblings = current.parent.children
+        start_index = siblings.index(current)
+        good_index = -1
+        for i in range(start_index + 1, len(siblings)):
+            if isinstance(siblings[i], InteractiveWidget) and siblings[i].allow_focus_to_self():
+                good_index = i
+                break
+        if good_index >= 0:
+            # Not the last child, return the next sibling
+            return siblings[good_index]
+        else:
+            # Current is the last child, move to parent's next sibling
+            return self.find_next_widget(current.parent)
+
+    def find_prev_widget(self, current):
+        """Find the previous interactive widget, considering parent and sibling relationships."""
+        if current.is_root:
+            return None  # Root has no parent
+
+        # siblings = [c for c in current.parent.children if isinstance(c,InteractiveWidget) and c.allow_focus_to_self()]
+        siblings = current.parent.children
+        start_index = siblings.index(current)
+        good_index = -1
+        for i in range(start_index-1,-1,-1):
+            if isinstance(siblings[i],InteractiveWidget) and siblings[i].allow_focus_to_self():
+                good_index = i
+                break
+        if good_index >= 0:
+            # Not the first child, return the previous sibling
+            return siblings[good_index]
+        else:
+            # Current is the first child, move to parent's previous sibling
+            return self.find_prev_widget(current.parent)
+
     def focus_next_tab(self, previous_widget):
-
-        if previous_widget != self and self.visible:
-            if (
-                isinstance(self, InteractiveWidget)
-                and not isinstance(self, bf.gui.Container)
-                and self.allow_focus_to_self()
-            ):
-                self.focus_next_sibling()
-                return
-            i_children = [
-                c
-                for c in self.children
-                if isinstance(c, InteractiveWidget) and c.visible
-            ]
-            if i_children:
-                index = i_children.index(previous_widget)
-                if index < len(i_children) - 1:
-
-                    i_children[index + 1].get_focus()
-                    return
-
-        if self.parent and isinstance(self.parent,InteractiveWidget):
-            self.parent.focus_next_tab(self)
+        """Focus the next interactive widget."""
+        if previous_widget:
+            next_widget = self.find_next_widget(previous_widget)
+            if next_widget:
+                next_widget.get_focus()
 
     def focus_prev_tab(self, previous_widget):
-        if previous_widget != self and self.visible:
-            if (
-                isinstance(self, InteractiveWidget)
-                and not isinstance(self, bf.gui.Container)
-                and self.allow_focus_to_self()
-            ):
-                self.get_focus()
-                return
-            i_children = [
-                c
-                for c in self.children
-                if isinstance(c, InteractiveWidget) and c.visible
-            ]
-
-            if i_children:
-                index = i_children.index(previous_widget)
-                if index > 0:
-                    i_children[index - 1].get_focus()
-                    return
-
-        if self.parent and isinstance(self.parent,InteractiveWidget):
-            self.parent.focus_prev_tab(self)
+        """Focus the previous interactive widget."""
+        if previous_widget:
+            prev_widget = self.find_prev_widget(previous_widget)
+            if prev_widget:
+                prev_widget.get_focus()
 
     def on_key_down(self, key) -> bool:
         if key == pygame.K_TAB and self.parent:

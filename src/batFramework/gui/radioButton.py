@@ -3,7 +3,6 @@ from typing import Self, Any, Callable
 from .toggle import Toggle
 
 
-class RadioVariable: ...
 
 
 class RadioButton(Toggle):

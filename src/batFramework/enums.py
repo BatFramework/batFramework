@@ -60,7 +60,13 @@ class easing(Enum):
     def __init__(self, *control_points):
         self.control_points = control_points
 
-
+    @classmethod
+    def create(cls, *control_points):
+        """Create a custom easing instance."""
+        instance = object.__new__(cls)  
+        instance._value_ = control_points
+        instance.control_points = control_points
+        return instance
 
 class axis(Enum):
     HORIZONTAL = "horizontal"

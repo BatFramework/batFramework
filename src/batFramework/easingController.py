@@ -1,7 +1,6 @@
 import pygame
 import batFramework as bf
 from functools import lru_cache
-from .enums import easing
 from typing import Callable,Any
 
 
@@ -20,13 +19,13 @@ def process_value(progress: float, p0: float, p1: float, p2: float, p3: float) -
 class EasingController(bf.Timer):
     def __init__(
         self,
-        easing_function: easing = easing.LINEAR,
         duration: float = 1,
+        easing: bf.easing = bf.easing.LINEAR,
         update_callback=None,
         end_callback: Callable[[], Any] = None,
         loop: bool = False,
     ) -> None:
-        self.easing_function = easing_function
+        self.easing_function = easing
         self.update_callback: Callable[[float], Any] = update_callback
         self.value: float = 0.0
         super().__init__(duration, end_callback, loop)
@@ -44,10 +43,9 @@ class EasingController(bf.Timer):
         super().update(dt)
         if self.get_progression() == 0:
             return
-        if self.easing_function == easing.LINEAR:
+        if self.easing_function == bf.easing.LINEAR: # avoid calculating if linear (just use progression as is)
             self.value = self.get_progression()
         else:
-            # Pass control points as tuples to process_value
             self.value = process_value(self.get_progression(), *self.easing_function.control_points)
         
         if self.update_callback:

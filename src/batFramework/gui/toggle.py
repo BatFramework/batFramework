@@ -1,9 +1,10 @@
 from .button import Button
 from .indicator import Indicator, ToggleIndicator
+from .shape import Shape
 import batFramework as bf
 from typing import Self,Callable,Any
 import pygame
-
+from math import ceil
 
 class Toggle(Button):
     def __init__(self, text: str = "", callback : Callable[[bool],Any]=None, default_value: bool = False) -> None:
@@ -52,59 +53,74 @@ class Toggle(Button):
         self.set_value(not self.value, do_callback=True)
 
     def get_min_required_size(self) -> tuple[float, float]:
+        gap = self.gap if self.text else 0
         if not self.text_rect:
             self.text_rect.size = self._get_text_rect_required_size()
-        size = (
-            max(
-                self.indicator.get_min_required_size()[0],
-                self.text_rect.w + self.font_object.point_size + (self.gap if self.text else 0),
-            ),
-            self.text_rect.h+self.unpressed_relief,
-        )
-        return self.inflate_rect_by_padding((0, 0, *size)).size
+        w, h = self.text_rect.size
+        h+=self.unpressed_relief
+        return self.inflate_rect_by_padding((0, 0, w + gap + self.indicator.get_min_required_size()[1], h)).size
+
+
+
+    def _build_composed_layout(self,other:Shape):
+
+        gap = self.gap if self.text else 0
+        full_rect = self.text_rect.copy()
+
+        other_height = min(self.text_rect.h, self.font_object.get_height()+1)
+        other.set_size_if_autoresize((other_height,other_height))
+        
+        full_rect.w += other.rect.w + gap
+        
+        if self.autoresize_h or self.autoresize_w:
+            target_rect = self.inflate_rect_by_padding((0, 0, *full_rect.size))
+            target_rect.h += self.unpressed_relief # take into account the relief when calculating target rect
+            tmp = self.rect.copy()
+            self.set_size_if_autoresize(target_rect.size)
+            if self.rect.size != tmp.size:
+                self.apply_updates(skip_draw=True)
+                return
+
+        self._align_composed(other)
+
+    def _align_composed(self,other:Shape):
+        
+        full_rect = self.get_local_padded_rect()
+        left_rect = self.text_rect
+        right_rect = other.rect
+        gap = {
+            bf.spacing.MIN: 0,
+            bf.spacing.HALF: (full_rect.width - left_rect.width - right_rect.width) // 2,
+            bf.spacing.MAX: full_rect.width - left_rect.width - right_rect.width,
+            bf.spacing.MANUAL: self.gap
+        }.get(self.spacing, 0)
+
+        gap = max(0, gap)
+        combined_width = left_rect.width + right_rect.width + gap
+
+        group_x = {
+            bf.alignment.LEFT: full_rect.left,
+            bf.alignment.MIDLEFT: full_rect.left,
+            bf.alignment.RIGHT: full_rect.right - combined_width,
+            bf.alignment.MIDRIGHT: full_rect.right - combined_width,
+            bf.alignment.CENTER: full_rect.centerx - combined_width // 2
+        }.get(self.alignment, full_rect.left)
+
+        left_rect.x, right_rect.x = group_x, group_x + left_rect.width + gap
+
+        if self.alignment in {bf.alignment.TOP, bf.alignment.TOPLEFT, bf.alignment.TOPRIGHT}:
+            left_rect.top = right_rect.top = full_rect.top
+        elif self.alignment in {bf.alignment.BOTTOM, bf.alignment.BOTTOMLEFT, bf.alignment.BOTTOMRIGHT}:
+            left_rect.bottom = right_rect.bottom = full_rect.bottom
+        else:
+            left_rect.centery = right_rect.centery = full_rect.centery
+
+        right_rect.move_ip(*self.rect.topleft)
+
+
 
     def _build_layout(self) -> None:
-        gap = self.gap if self.text else 0
         self.text_rect.size = self._get_text_rect_required_size()
+        self._build_composed_layout(self.indicator)
 
-        #right part size
-        right_part_height = min(self.text_rect.h, self.font_object.point_size)
-        self.indicator.set_size_if_autoresize((right_part_height,right_part_height))
 
-        #join left and right
-        joined_rect = pygame.FRect(
-            0, 0, self.text_rect.w + gap + self.indicator.rect.w, self.text_rect.h 
-        )
-
-        if self.autoresize_h or self.autoresize_w:
-            target_rect = self.inflate_rect_by_padding(joined_rect)
-            target_rect.h += self.unpressed_relief
-            if not self.autoresize_w:
-                target_rect.w = self.rect.w
-            if not self.autoresize_h:
-                target_rect.h = self.rect.h
-            if self.rect.size != target_rect.size:
-                self.set_size(target_rect.size)
-                self.apply_updates()
-
-        # ------------------------------------ size is ok
-
-        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-        padded_rect = self.get_padded_rect()
-        padded_relative = padded_rect.move(-self.rect.x, -self.rect.y)
-
-        self.align_text(joined_rect, padded_relative.move( offset), self.alignment)
-        self.text_rect.midleft = joined_rect.midleft
-
-        if self.text:
-            match self.spacing:
-                case bf.spacing.MAX:
-                    gap = padded_relative.right - self.text_rect.right - self.indicator.rect.w
-                case bf.spacing.MIN:
-                    gap = 0
-
-        pos = self.text_rect.move(
-                self.rect.x + gap -offset[0],
-                self.rect.y + (self.text_rect.h / 2) - (right_part_height/ 2) -offset[1],
-            ).topright
-        self.indicator.rect.topleft = pos

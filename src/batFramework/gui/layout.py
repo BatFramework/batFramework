@@ -4,6 +4,7 @@ from .constraints.constraints import *
 from typing import Self, TYPE_CHECKING
 from abc import ABC,abstractmethod
 import pygame
+from .interactiveWidget import InteractiveWidget
 
 if TYPE_CHECKING:
     from .container import Container
@@ -147,7 +148,7 @@ class Column(SingleAxisLayout):
         if not self.parent.children:
             return
 
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN and self.parent.children_has_focus():
             if event.key == pygame.K_DOWN:
                 self.focus_next_child()
             elif event.key == pygame.K_UP:
@@ -238,7 +239,7 @@ class Row(SingleAxisLayout):
         if not self.parent.children:
             return
 
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN and self.parent.children_has_focus():
             if event.key == pygame.K_RIGHT:
                 self.focus_next_child()
             elif event.key == pygame.K_LEFT:
@@ -449,7 +450,7 @@ class Grid(DoubleAxisLayout):
 
     def handle_event(self, event):
 
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN and self.parent.children_has_focus():
             if event.key == pygame.K_DOWN:
                 self.focus_down_child()
             elif event.key == pygame.K_UP:
@@ -482,44 +483,64 @@ class Grid(DoubleAxisLayout):
         event.consumed = True
 
     def focus_down_child(self) -> None:
-        l = self.parent.get_interactive_children()
-        new_index = self.parent.focused_index + self.cols
-        if new_index >= len(l):
-            return
-        self.parent.focused_index = new_index
-        focused = l[self.parent.focused_index]
-        focused.get_focus()
-        self.scroll_to_widget(focused)
+        children = self.parent.children
+        initial_index = self.parent.children.index(
+            self.parent.get_interactive_children()[self.parent.focused_index]
+        )
+        new_index = initial_index + self.cols
+        while new_index < len(children):
+            if isinstance(children[new_index], InteractiveWidget):
+                self.parent.focused_index = new_index
+                focused = children[self.parent.focused_index]
+                focused.get_focus()
+                self.scroll_to_widget(focused)
+                return
+            new_index += self.cols  # Continue moving down
 
     def focus_up_child(self) -> None:
-        l = self.parent.get_interactive_children()
-        new_index = self.parent.focused_index - self.cols
-        if new_index < 0:
-            return
-        self.parent.focused_index = new_index
-        focused = l[self.parent.focused_index]
-        focused.get_focus()
-        self.scroll_to_widget(focused)
+        children = self.parent.children
+        initial_index = self.parent.children.index(
+            self.parent.get_interactive_children()[self.parent.focused_index]
+        )
+        new_index = initial_index - self.cols
+        while new_index >= 0:
+            if isinstance(children[new_index], InteractiveWidget):
+                self.parent.focused_index = new_index
+                focused = children[self.parent.focused_index]
+                focused.get_focus()
+                self.scroll_to_widget(focused)
+                return
+            new_index -= self.cols  # Continue moving up
 
     def focus_left_child(self) -> None:
-        l = self.parent.get_interactive_children()
-        new_index = (self.parent.focused_index % self.cols) -1
-        if new_index < 0:
-            return
-        self.parent.focused_index -=1
-        focused = l[self.parent.focused_index]
-        focused.get_focus()
-        self.scroll_to_widget(focused)
+        children = self.parent.children
+        initial_index = self.parent.children.index(
+            self.parent.get_interactive_children()[self.parent.focused_index]
+        )
+        new_index = initial_index - 1
+        while new_index >= 0 and new_index // self.cols == self.parent.focused_index // self.cols:
+            if isinstance(children[new_index], InteractiveWidget):
+                self.parent.focused_index = new_index
+                focused = children[self.parent.focused_index]
+                focused.get_focus()
+                self.scroll_to_widget(focused)
+                return
+            new_index -= 1  # Continue moving left
 
     def focus_right_child(self) -> None:
-        l = self.parent.get_interactive_children()
-        new_index = (self.parent.focused_index % self.cols) +1
-        if new_index >= self.cols or self.parent.focused_index+1 >= len(l):
-            return
-        self.parent.focused_index += 1
-        focused = l[self.parent.focused_index]
-        focused.get_focus()
-        self.scroll_to_widget(focused)
+        children = self.parent.children
+        initial_index = self.parent.children.index(
+            self.parent.get_interactive_children()[self.parent.focused_index]
+        )
+        new_index = initial_index + 1
+        while new_index < len(children) and new_index // self.cols == self.parent.focused_index // self.cols:
+            if isinstance(children[new_index], InteractiveWidget):
+                self.parent.focused_index = new_index
+                focused = children[self.parent.focused_index]
+                focused.get_focus()
+                self.scroll_to_widget(focused)
+                return
+            new_index += 1  # Continue moving right
 
 
 class GridFill(Grid):

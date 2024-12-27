@@ -8,6 +8,12 @@ import batFramework as bf
 
 
 class Indicator(Shape):
+    """
+    Shape intended to be used as icons/indicators
+    due to its nature, it overrides the top_at function (it can not be 'seen' by the mouse)
+    
+    """
+    
     def __init__(self, size: tuple[int | float] = (10, 10)) -> None:
         super().__init__(size)
         self.debug_color = "magenta"
@@ -35,7 +41,7 @@ class ToggleIndicator(Indicator):
         self.set_value(default_value)
         self.callback(default_value)
         # TODO aspect ratio would be good right about here
-        # self.add_constraint(ConstraintAspectRatio(1))
+        self.add_constraints(bf.gui.AspectRatio(1,reference_axis=bf.axis.VERTICAL))
 
     def set_callback(self, callback : Callable[[bool],Any]) -> Self:
         self.callback = callback
@@ -55,4 +61,60 @@ class ToggleIndicator(Indicator):
         if r is self:
             return None
         return r
+
+class ArrowIndicator(Indicator):
+    def __init__(self,direction:bf.direction):
+        super().__init__()
+        self.direction : bf.direction = direction
+        self.arrow_color = bf.color.WHITE
+        self.width : int = 1
+        self.angle : float  = 135
+        self.spread : float = None 
+        self.draw_stem : bool = True
+        
+    def set_draw_stem(self,value:bool)->Self:
+        self.draw_stem = value
+        self.dirty_surface = False
+        return self
+
+    def set_spread(self,value:float)->Self:
+        self.spread = value
+        self.dirty_surface = True
+        return self
+
+    def set_angle(self,value:float)->Self:
+        self.angle = value
+        self.dirty_surface = True
+        return self
+        
+    def set_arrow_color(self,color)-> Self:
+        self.arrow_color = color
+        self.dirty_surface = True
+        return self
+
+    def set_direction(self,direction:bf.direction)->Self:
+        self.direction = direction
+        self.dirty_surface = True
+        return self
+
+    def set_width(self,value:int)->Self:
+        self.width = value
+        self.dirty_surface = True
+        return self
+        
+    def paint(self):
+        super().paint()
+        r = self.get_local_padded_rect()
+        bf.utils.draw_direction_arrow(
+            surface = self.surface,
+            color = self.arrow_color,
+            rect =r,
+            arrow_direction = self.direction,
+            angle = self.angle,
+            spread =self.spread,
+            width = self.width,
+            draw_stem = self.draw_stem
+        )
+        
+
 

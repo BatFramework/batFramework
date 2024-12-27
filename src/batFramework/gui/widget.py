@@ -162,7 +162,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return self.rect.left + self.padding[0]
 
     def get_padded_right(self) -> float:
-        return self.rect.right + self.padding[2]
+        return self.rect.right - self.padding[2]
 
     def get_padded_center(self) -> tuple[float, float]:
         return self.get_padded_rect().center
@@ -272,11 +272,11 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         if self.children:
             for child in reversed(self.children):
-                # if child.visible:
-                r = child.top_at(x, y)
-                if r is not None:
-                    return r
-        return self if  self.rect.collidepoint(x, y) else None
+                if child.visible:
+                    r = child.top_at(x, y)
+                    if r is not None:
+                        return r
+        return self if self.visible and self.rect.collidepoint(x, y) else None
 
     def add(self, *children: "Widget") -> Self:
         self.children.extend(children)
@@ -300,10 +300,10 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             self.parent.do_sort_children = True
 
     def set_size_if_autoresize(self, size: tuple[float, float]) -> Self:
-        size = list(size)
-        size[0] = size[0] if self.autoresize_w else None
-        size[1] = size[1] if self.autoresize_h else None
-        self.set_size(size)
+        self.set_size((
+            size[0] if self.autoresize_w else None,
+            size[1] if self.autoresize_h else None
+        ))
         return self
 
     def set_size(self, size: tuple) -> Self:
@@ -340,6 +340,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             if self.convert_alpha:
                 self.surface = self.surface.convert_alpha()
             self.surface.set_alpha(old_alpha)
+
 
     def paint(self) -> None:
         self.surface.fill((0, 0, 0, 0))
@@ -386,7 +387,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return w
 
 
-    def apply_updates(self) -> None:
+    def apply_updates(self,skip_draw=False) -> None:
 
         if self.dirty_constraints:
             self.resolve_constraints()  # Finalize positioning based on final size
@@ -409,7 +410,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
 
         # Step 3: Paint the surface if flagged as dirty
-        if self.dirty_surface:
+        if self.dirty_surface and not skip_draw:
             self.paint()
             self.dirty_surface = False
     
@@ -428,7 +429,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
         # Draw each child widget, sorted by render order
         for child in sorted(self.children, key=lambda c: c.render_order):
-            child.draw(camera)
-
+            if (not self.clip_children) or (child.rect.colliderect(self.rect)):
+                child.draw(camera)
         if self.clip_children:
             camera.surface.set_clip(old_clip)

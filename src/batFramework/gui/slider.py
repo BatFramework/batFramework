@@ -61,6 +61,34 @@ class SliderMeter(Meter, InteractiveWidget):
                 self.parent.set_value(self.parent.position_to_value(pos))
         self.do_on_click_down(button)
 
+    def apply_updates(self,skip_draw:bool=False):
+        if self.dirty_constraints:
+            self.resolve_constraints()  # Finalize positioning based on final size
+            self.dirty_constraints = False
+
+        # Build shape if needed
+        if self.dirty_shape:
+            self.build()  # Finalize widget size
+            self.dirty_shape = False
+            self.dirty_surface = True
+            self.dirty_constraints = True
+            # Propagate dirty_constraints to children in case size affects their position
+            for child in self.children:
+                child.dirty_constraints = True
+            self.parent.dirty_shape = True
+        # Resolve constraints now that size is finalized
+        if self.dirty_constraints:
+            self.resolve_constraints()  # Finalize positioning based on final size
+            self.dirty_constraints = False
+
+
+        # Step 3: Paint the surface if flagged as dirty
+        if self.dirty_surface and not skip_draw:
+            self.paint()
+            self.dirty_surface = False
+
+
+
 class Slider(Button):
     def __init__(self, text: str, default_value: float = 1.0) -> None:
         super().__init__(text, None)
@@ -176,67 +204,81 @@ class Slider(Button):
             self.text_rect.size = self._get_text_rect_required_size()
         w, h = self.text_rect.size
         h+=self.unpressed_relief
-        return self.inflate_rect_by_padding((0, 0, w + gap + self.meter.get_min_required_size()[1], h)).size
+        return self.inflate_rect_by_padding((0, 0, w + gap + self.meter.get_min_required_size()[0], h)).size
 
-    def _build_layout(self) -> None:
+
+    def _build_composed_layout(self,other:Shape):
+
 
         gap = self.gap if self.text else 0
-        self.text_rect.size = self._get_text_rect_required_size()
+        full_rect = self.text_rect.copy()
 
-        #right part size
-        meter_width = self.text_rect.h * 10
+        other_height = min(self.text_rect.h, self.font_object.get_height()+1)
         if not self.autoresize_w:
-            meter_width = self.get_padded_width() - self.text_rect.w - gap
-        right_part_height = min(self.text_rect.h, self.font_object.point_size)
-        self.meter.set_size_if_autoresize((meter_width,right_part_height))
-        self.handle.set_size_if_autoresize((None,right_part_height))
-
-
-        #join left and right
-        joined_rect = pygame.FRect(
-            0, 0, self.text_rect.w + gap + meter_width, self.text_rect.h
-        )
-
+            other.set_size_if_autoresize(( self.get_padded_width() - self.text_rect.w - gap,other_height))
+        else:
+            other.set_size_if_autoresize((other_height*10,other_height))
+        
+        self.handle.set_size_if_autoresize((other_height,other_height))
+        
+        full_rect.w += other.rect.w + gap
+        
         if self.autoresize_h or self.autoresize_w:
-            target_rect = self.inflate_rect_by_padding(joined_rect)
-            target_rect.h += self.unpressed_relief
-            if not self.autoresize_w:
-                target_rect.w = self.rect.w
-            if not self.autoresize_h:
-                target_rect.h = self.rect.h
-            if self.rect.size != target_rect.size:
-                self.set_size(target_rect.size)
-                self.build()
+            target_rect = self.inflate_rect_by_padding((0, 0, *full_rect.size))
+            target_rect.h += self.unpressed_relief # take into account the relief when calculating target rect
+            tmp = self.rect.copy()
+            self.set_size_if_autoresize(target_rect.size)
+            if self.rect.size != tmp.size:
+                self.apply_updates(skip_draw=True)
                 return
 
-        # ------------------------------------ size is ok
+        self._align_composed(other)
+
+
+    def _align_composed(self,other:Shape):
         
+        full_rect = self.get_local_padded_rect()
+        left_rect = self.text_rect
+        right_rect = other.rect.copy()
+        gap = {
+            bf.spacing.MIN: 0,
+            bf.spacing.HALF: (full_rect.width - left_rect.width - right_rect.width) // 2,
+            bf.spacing.MAX: full_rect.width - left_rect.width - right_rect.width,
+            bf.spacing.MANUAL: self.gap
+        }.get(self.spacing, 0)
 
-        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-        padded_rect = self.get_padded_rect()
-        padded_relative = padded_rect.move(-self.rect.x, -self.rect.y)
+        gap = max(0, gap)
+        combined_width = left_rect.width + right_rect.width + gap
 
-        self.align_text(joined_rect, padded_relative.move( offset), self.alignment)
-        self.text_rect.midleft = joined_rect.midleft
+        group_x = {
+            bf.alignment.LEFT: full_rect.left,
+            bf.alignment.MIDLEFT: full_rect.left,
+            bf.alignment.RIGHT: full_rect.right - combined_width,
+            bf.alignment.MIDRIGHT: full_rect.right - combined_width,
+            bf.alignment.CENTER: full_rect.centerx - combined_width // 2
+        }.get(self.alignment, full_rect.left)
 
-        if self.text:
-            match self.spacing:
-                case bf.spacing.MAX:
-                    gap = padded_relative.right - self.text_rect.right - self.meter.rect.w
-                case bf.spacing.MIN:
-                    gap = 0
+        left_rect.x, right_rect.x = group_x, group_x + left_rect.width + gap
 
-        # place meter
+        if self.alignment in {bf.alignment.TOP, bf.alignment.TOPLEFT, bf.alignment.TOPRIGHT}:
+            left_rect.top = right_rect.top = full_rect.top
+        elif self.alignment in {bf.alignment.BOTTOM, bf.alignment.BOTTOMLEFT, bf.alignment.BOTTOMRIGHT}:
+            left_rect.bottom = right_rect.bottom = full_rect.bottom
+        else:
+            left_rect.centery = right_rect.centery = full_rect.centery
 
-        pos = self.text_rect.move(
-                self.rect.x + gap -offset[0],
-                self.rect.y + (self.text_rect.h / 2) - (right_part_height / 2) -offset[1],
-            ).topright
-        self.meter.rect.topleft = pos
-        # place handle
+        right_rect.move_ip(*self.rect.topleft)
+        other.set_position(*right_rect.topleft)
+        # print("align composed",full_rect.w,left_rect.w,right_rect.w)
 
-        x = self.value_to_position(self.meter.value)
-        r = self.meter.get_padded_rect()
-        self.handle.set_center(x, r.centery)
+    def _build_layout(self) -> None:
+        self.text_rect.size = self._get_text_rect_required_size()
+        self._build_composed_layout(self.meter)
+        # print("finish build layout")
+        self.handle.set_center(self.value_to_position(self.meter.value),self.meter.rect.centery)
 
-        # self.handle.set_center(x,self.rect.top)
+
+
+    
+
+

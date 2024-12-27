@@ -27,13 +27,10 @@ class ClickableWidget(Shape, InteractiveWidget):
         self.set_debug_color("cyan")
         self.set_relief(self.unpressed_relief)
 
+
     def get_min_required_size(self) -> tuple[float, float]:
-        if not (self.autoresize_w or self.autoresize_h):
-            return self.rect.size
-        
         res = super().get_min_required_size()
         res = res[0],res[1]+self.unpressed_relief
-        print("hey",res)
         return res[0] if self.autoresize_w else self.rect.w, (
             res[1] if self.autoresize_h else self.rect.h
         )
@@ -208,12 +205,19 @@ class ClickableWidget(Shape, InteractiveWidget):
     def get_padded_rect(self) -> pygame.FRect:
         return pygame.FRect(
             self.rect.x + self.padding[0],
-            self.rect.y
-            + self.padding[1]
-            + (self.unpressed_relief - self.pressed_relief if self.is_pressed else 0),
+            self.rect.y + self.padding[1] + (self.unpressed_relief - self.pressed_relief if self.is_pressed else 0),
             self.rect.w - self.padding[2] - self.padding[0],
-            self.rect.h - self.unpressed_relief - self.padding[1] - self.padding[3],  #
+            self.rect.h - self.unpressed_relief - self.padding[1] - self.padding[3],
         )
+
+    def get_local_padded_rect(self) -> pygame.FRect:
+        return pygame.FRect(
+            self.padding[0],
+            self.padding[1] + (self.unpressed_relief - self.pressed_relief if self.is_pressed else 0),
+            self.rect.w - self.padding[2] - self.padding[0],
+            self.rect.h - self.unpressed_relief - self.padding[1] - self.padding[3],
+        )
+
 
     def _get_elevated_rect(self) -> pygame.FRect:
         return pygame.FRect(

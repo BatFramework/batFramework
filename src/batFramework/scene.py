@@ -277,7 +277,8 @@ class Scene:
             else:
                 rect = data[0]
                 color = data[1]
-            pygame.draw.rect(camera.surface, color, camera.world_to_screen(rect), 1)
+            if camera.intersects(rect):
+                pygame.draw.rect(camera.surface, color, camera.world_to_screen(rect), 1)
 
         [draw_rect(data) for data in entity.get_debug_outlines()]
 

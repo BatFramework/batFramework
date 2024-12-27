@@ -10,7 +10,7 @@ from .tileset import Tileset
 from .timeManager import TimeManager,Timer,SceneTimer
 from .easingController import EasingController
 from .cutsceneManager import CutsceneManager
-import batFramework.cutscene as cutscenes
+import batFramework.cutscene as cutscene
 from .audioManager import AudioManager
 import batFramework.transition as transition
 from .action import Action
