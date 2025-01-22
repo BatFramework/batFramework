@@ -24,7 +24,7 @@ class Timer:
         self.do_delete: bool = False
 
     def __bool__(self)->bool:
-        return self.elapsed_time==-1 or self.is_over
+        return self.elapsed_time!=-1 and self.is_over
 
     def __str__(self) -> str:
         return f"Timer ({self.uid}) {self.elapsed_time}/{self.duration} | {'loop ' if self.is_looping else ''} {'(D) ' if self.do_delete else ''}"

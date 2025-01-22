@@ -68,7 +68,7 @@ class ArrowIndicator(Indicator):
         self.direction : bf.direction = direction
         self.arrow_color = bf.color.WHITE
         self.width : int = 1
-        self.angle : float  = 135
+        self.angle : float  = 45
         self.spread : float = None 
         self.draw_stem : bool = True
         

@@ -63,6 +63,8 @@ class Layout(ABC):
     def handle_event(self, event):
         pass
 
+class FreeLayout(Layout):...
+
 class SingleAxisLayout(Layout):
     def focus_next_child(self) -> None:
         l = self.parent.get_interactive_children()

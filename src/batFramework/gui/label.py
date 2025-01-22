@@ -329,6 +329,7 @@ class Label(Shape):
     def build(self) -> None:
         super().build()
         self._build_layout()
+        # print("here",self.text,self.rect)
 
     def paint(self) -> None:
         super().paint()

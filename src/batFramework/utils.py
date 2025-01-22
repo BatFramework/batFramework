@@ -250,6 +250,8 @@ class Utils:
     @staticmethod
     def distance_point(a:tuple[float,float],b:tuple[float,float]):
         return math.sqrt((a[0]-b[0]) ** 2 + (a[1]-b[1])**2)
+
+
     @staticmethod
     def draw_direction_arrow(surface, color, rect: pygame.Rect | pygame.FRect, arrow_direction, angle: float = 135, spread: float = None, width: int = 1, draw_stem: bool = True):
         # Base arrow direction vector (pointing to the right initially)
@@ -271,19 +273,15 @@ class Utils:
             spread = min(rect.width, rect.height) * 0.2
 
         # Calculate arrowhead size and base length
-        arrow_length = min(rect.width, rect.height) - spread * 2 
-        base_length = arrow_length / 2 if draw_stem else arrow_length/4
-        # print(arrow_length,base_length)
+        arrow_length = min(rect.width, rect.height) - spread * 2
+        base_length = arrow_length / 2 if draw_stem else arrow_length / 4
 
-        # Define base arrowhead points (initially pointing right)
+        # Define base arrowhead tip (initially pointing right)
         arrow_tip = Vector2(rect.centerx + base_length, rect.centery)
-        left_wing = Vector2(arrow_tip.x - spread, arrow_tip.y - spread)
-        right_wing = Vector2(arrow_tip.x - spread, arrow_tip.y + spread)
 
-
-        # Rotate the arrow to match the desired direction
-        rotation_angle = direction_angles[arrow_direction]
-        rotation_center = Vector2(rect.center)
+        # Calculate left and right wing positions relative to the arrow tip
+        left_wing = Vector2(arrow_tip.x - spread, arrow_tip.y)
+        right_wing = Vector2(arrow_tip.x - spread, arrow_tip.y)
 
         def rotate_point(point, angle, center):
             radians = math.radians(angle)
@@ -294,12 +292,19 @@ class Utils:
             )
             return rotated_point + center
 
-        # print(arrow_tip)
+        # Rotate wings relative to the arrow tip
+        left_wing = rotate_point(left_wing, -angle, arrow_tip)
+        right_wing = rotate_point(right_wing, angle, arrow_tip)
+
+        # Rotate the arrow to match the desired direction
+        rotation_angle = direction_angles[arrow_direction]
+        rotation_center = Vector2(rect.center)
+
         arrow_tip = rotate_point(arrow_tip, rotation_angle, rotation_center)
-        # print(arrow_tip)
-        # arrow_tip = round(arrow_tip)
         left_wing = rotate_point(left_wing, rotation_angle, rotation_center)
         right_wing = rotate_point(right_wing, rotation_angle, rotation_center)
+
+
 
         # Draw arrow stem if needed
         if draw_stem:
@@ -308,5 +313,5 @@ class Utils:
             pygame.draw.line(surface, color, start_point, arrow_tip, width)
 
         # Draw the arrowhead
-        pygame.draw.line(surface, color, left_wing, arrow_tip, width)
-        pygame.draw.line(surface, color, right_wing, arrow_tip, width)
+        points = [left_wing.xy, arrow_tip.xy, right_wing.xy]
+        pygame.draw.lines(surface, color, False, points, width)

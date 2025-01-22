@@ -16,34 +16,31 @@ class MyArrow(ArrowIndicator,ClickableWidget):
 class Selector(Button):
     def __init__(self,options:list[str]=None,default_value:str=None,allow_cycle:bool=False):
         self.allow_cycle = allow_cycle
-        self.default_value = default_value
         self.current_index = 0
-        self.on_modify_callback : Callable[[str,int],Any] = None 
+        self.on_modify_callback : Callable[[str,int],Any] = None
         self.options = options if options else []
         self.gap : int = 2
         text_value = ""
-        if default_value is None or default_value not in self.options: 
-            self.default_value = options[0]
-            text_value = self.default_value  
-            self.current_index = self.options.index(self.default_value)
+        if not (default_value is not None and default_value in self.options): 
+            default_value = options[0]
+            
+        text_value = default_value  
+        self.current_index = self.options.index(default_value)
 
         super().__init__(text = text_value)
-        self.left_indicator = (MyArrow(bf.direction.LEFT)
-            .add_constraints(bf.gui.AnchorLeft(),bf.gui.CenterY(),bf.gui.FillY())
+        self.left_indicator : ClickableWidget = (MyArrow(bf.direction.LEFT)
             .set_draw_stem(False)
             .set_color((0,0,0,0)).set_arrow_color(self.text_color)
             .set_callback(lambda : self.set_by_index(self.get_current_index()-1))
         )
 
-        self.right_indicator=(MyArrow(bf.direction.RIGHT)
-            .add_constraints(bf.gui.AnchorRight(),bf.gui.CenterY(),bf.gui.FillY())
+        self.right_indicator:ClickableWidget =(MyArrow(bf.direction.RIGHT)
             .set_draw_stem(False)
             .set_color((0,0,0,0)).set_arrow_color(self.text_color)
             .set_callback(lambda : self.set_by_index(self.get_current_index()+1))
         )
         
         self.add(self.left_indicator,self.right_indicator)
-        self.set_clip_children(False)
 
     def set_gap(self,value:int)->Self:
         self.gap = value
@@ -72,6 +69,17 @@ class Selector(Button):
         return res[0] if self.autoresize_w else self.rect.w, (
             res[1] if self.autoresize_h else self.rect.h
         )
+
+    def build(self):
+        super().build()
+        padded = self.get_padded_rect()
+
+        self.right_indicator.set_size((None,padded.h))
+        self.right_indicator.set_position(padded.right - self.right_indicator.rect.w,None)
+        self.left_indicator.set_size((None,padded.h))
+        self.left_indicator.set_position(padded.left,None)
+        self.left_indicator.set_center(None,padded.centery)        
+        self.right_indicator.set_center(None,padded.centery)        
 
     def get_current_index(self)->int:
         return self.current_index

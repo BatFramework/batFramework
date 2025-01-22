@@ -24,11 +24,12 @@ class EasingController(bf.Timer):
         update_callback=None,
         end_callback: Callable[[], Any] = None,
         loop: bool = False,
+        register:str="global"
     ) -> None:
         self.easing_function = easing
         self.update_callback: Callable[[float], Any] = update_callback
         self.value: float = 0.0
-        super().__init__(duration, end_callback, loop)
+        super().__init__(duration, end_callback, loop, register)
 
     def get_value(self) -> float:
         return self.value

@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 from ..widget import Widget
 import batFramework as bf
 import pygame
@@ -143,7 +145,7 @@ class CenterX(Constraint):
 
     def evaluate(self, parent_widget, child_widget):
         return (
-            int(child_widget.rect.centerx - parent_widget.get_padded_center()[0]) == 0
+            child_widget.rect.centerx - parent_widget.get_padded_center()[0] == 0
         )
 
     def apply_constraint(self, parent_widget, child_widget):
@@ -158,7 +160,7 @@ class CenterY(Constraint):
 
     def evaluate(self, parent_widget, child_widget):
         return (
-            int(child_widget.rect.centery - parent_widget.get_padded_center()[1]) == 0
+            child_widget.rect.centery - parent_widget.get_padded_center()[1] == 0
         )
 
     def apply_constraint(self, parent_widget, child_widget):
@@ -173,9 +175,8 @@ class Center(Constraint):
 
     def evaluate(self, parent_widget, child_widget):
         return (
-            int(child_widget.rect.centerx - parent_widget.get_padded_center()[0]) == 0
-            and int(child_widget.rect.centery - parent_widget.get_padded_center()[1])
-            == 0
+            child_widget.rect.centerx - parent_widget.get_padded_center()[0] == 0
+            and child_widget.rect.centery - parent_widget.get_padded_center()[1] == 0
         )
 
     def apply_constraint(self, parent_widget, child_widget):
@@ -466,6 +467,16 @@ class AnchorTopRight(Constraint):
         topright = parent_widget.get_padded_rect().topright
         child_widget.set_position(topright[0] - child_widget.rect.w,topright[1])
         # print("after",child_widget.rect.topright, parent_widget.get_padded_rect().topright)
+
+class AnchorTopLeft(Constraint):
+    def __init__(self):
+        super().__init__()
+
+    def evaluate(self, parent_widget, child_widget):
+        return child_widget.rect.topleft == parent_widget.get_padded_rect().topleft
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_position(*parent_widget.get_padded_rect().topleft)
 
 
 class AnchorBottomRight(Constraint):
@@ -908,3 +919,50 @@ class PercentageRectMarginRight(Constraint):
             other.name == self.name and
             other.margin == self.margin
         )
+
+
+
+
+class Grow(Constraint, ABC):
+
+    @abstractmethod
+    def evaluate(self, parent_widget, child_widget):
+        pass
+
+    @abstractmethod
+    def apply_constraint(self, parent_widget, child_widget):
+        pass
+
+    def __eq__(self, other: "Constraint") -> bool:
+        return isinstance(other, self.__class__)
+
+
+class GrowH(Grow):
+
+    def evaluate(self, parent_widget, child_widget):
+        siblings = [s for s in parent_widget.children if s != child_widget]
+        sibling_width = sum(s.rect.w for s in siblings)
+        return abs(parent_widget.get_padded_width() - (child_widget.rect.w + sibling_width)) == 0
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_autoresize_w(False)
+        siblings = [s for s in parent_widget.children if s != child_widget]
+        sibling_width = sum(s.rect.w for s in siblings)
+        # print(parent_widget.get_padded_width() - sibling_width," is new size")
+        child_widget.set_size((parent_widget.get_padded_width() - sibling_width, None))
+
+
+class GrowV(Grow):
+
+    def evaluate(self, parent_widget, child_widget):
+        siblings = [s for s in parent_widget.children if s != child_widget]
+        sibling_height = sum(max(s.rect.h, s.get_min_required_size()[1]) for s in siblings)
+        # print(sibling_height, parent_widget.get_padded_height())
+        return abs(parent_widget.get_padded_height() - (child_widget.get_min_required_size()[1] + sibling_height)) == 0
+
+    def apply_constraint(self, parent_widget, child_widget):
+        child_widget.set_autoresize_h(False)
+        siblings = [s for s in parent_widget.children if s != child_widget]
+        sibling_height = sum(max(s.rect.h, s.get_min_required_size()[1]) for s in siblings)
+        if parent_widget.get_padded_height() >= child_widget.get_min_required_size()[1] + sibling_height:
+            child_widget.set_size((None, parent_widget.get_padded_height() - sibling_height))

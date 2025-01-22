@@ -6,7 +6,6 @@ import pygame
 if TYPE_CHECKING:
     from .constraints.constraints import Constraint
     from .root import Root
-MAX_CONSTRAINTS = 10
 
 
 class WidgetMeta(type):
@@ -210,7 +209,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         if self.parent is None or not self.constraints:
             self.dirty_constraints = False
             return
-
         if not self.__constraint_iteration:
             self.__constraints_capture = None
         else:
@@ -312,8 +310,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             size[0] = self.rect.w
         if size[1] is None:
             size[1] = self.rect.h
-        if (int(size[0]),int(size[1])) == (int(self.rect.w),int(self.rect.h)):
-            return self
+        if size[0] == self.rect.w and size[1] == self.rect.h : return self
         self.rect.size = size
         self.dirty_shape = True
         return self
@@ -388,9 +385,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
 
     def apply_updates(self,skip_draw=False) -> None:
-
         if self.dirty_constraints:
-            self.resolve_constraints()  # Finalize positioning based on final size
+            self.resolve_constraints() 
             self.dirty_constraints = False
 
         # Build shape if needed
@@ -402,6 +398,16 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             # Propagate dirty_constraints to children in case size affects their position
             for child in self.children:
                 child.dirty_constraints = True
+
+            # Apply updates to siblings if they have to grow
+            from .constraints.constraints import Grow  # Import inside the method to avoid circular import
+            growers = [
+                sibling for sibling in self.parent.children
+                if sibling != self and any(isinstance(c, Grow) for c in sibling.constraints)
+            ]
+            for sibling in growers:
+                sibling.dirty_constraints = True
+                    
 
         # Resolve constraints now that size is finalized
         if self.dirty_constraints:
@@ -429,7 +435,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
         # Draw each child widget, sorted by render order
         for child in sorted(self.children, key=lambda c: c.render_order):
-            if (not self.clip_children) or (child.rect.colliderect(self.rect)):
+            if (not self.clip_children) or (child.rect.colliderect(self.rect) or not child.rect):
                 child.draw(camera)
         if self.clip_children:
             camera.surface.set_clip(old_clip)

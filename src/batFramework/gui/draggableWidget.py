@@ -22,6 +22,7 @@ class DraggableWidget(InteractiveWidget):
     ) -> None:
         self.set_position(drag_end[0] - self.offset[0], drag_end[1] - self.offset[1])
 
+
     def update(self, dt: float):
         if self.drag_action.active and self.is_clicked_down:
             r = self.get_root()
@@ -29,10 +30,9 @@ class DraggableWidget(InteractiveWidget):
             if self.drag_start == None and self.drag_action.active:
                 self.offset = x - self.rect.x, y - self.rect.y
                 self.drag_start = x, y
-                return
             else:
                 self.do_on_drag(self.drag_start, (x, y))
-                return
+                
         else:
             self.drag_start = None
             self.offset = None

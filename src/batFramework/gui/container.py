@@ -162,6 +162,17 @@ class Container(Shape, InteractiveWidget):
             for child in self.children:
                 child.dirty_constraints = True
 
+
+            from .constraints.constraints import Grow  # Import inside the method to avoid circular import
+            growers = [
+                sibling for sibling in self.parent.children
+                if sibling != self and any(isinstance(c, Grow) for c in sibling.constraints)
+            ]
+            for sibling in growers:
+                # print("_"*20,"\nsibling is : ",str(sibling))
+                sibling.dirty_constraints = True
+                    
+
         for child in self.children:
             child.apply_updates()
 
