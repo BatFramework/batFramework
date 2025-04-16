@@ -1,6 +1,6 @@
 from .label import Label
 import batFramework as bf
-from typing import Self
+from typing import Self,Callable,Any
 
 
 class AnimatedLabel(Label):
@@ -10,6 +10,7 @@ class AnimatedLabel(Label):
         self.is_over: bool = True
         self.is_paused: bool = False
         self.original_text = ""
+        self.end_callback : Callable[[],Any]= None
         self.set_autoresize(False)
         self.set_alignment(bf.alignment.LEFT)
         super().__init__("")
@@ -17,6 +18,9 @@ class AnimatedLabel(Label):
 
     def __str__(self) -> str:
         return "AnimatedLabel"
+
+    def set_end_callback(self,callback:Callable[[],Any]):
+        self.end_callback = callback
 
     def pause(self) -> Self:
         self.is_paused = True
@@ -72,7 +76,11 @@ class AnimatedLabel(Label):
         if self.is_over:
             return
         if not self.is_over and self.cursor_position == len(self.original_text):
+            if len(self.original_text) == 0:
+                self._set_text_internal("")
             self.is_over = True
+            if self.end_callback is not None:
+                self.end_callback()
             return
         self.cursor_position = min(
             self.cursor_position + self.text_speed * dt, len(self.original_text)

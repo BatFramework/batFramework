@@ -49,6 +49,9 @@ class color:
     LIGHT_GB = (73, 107, 34)
     LIGHTER_GB = (154, 158, 63)
 
+    @staticmethod
+    def mult(color:tuple[int,int,int],factor:float):
+        return tuple(min(max(0,int(i*factor)),255) for i in color)
 
 class easing(Enum):
     LINEAR = (0, 0, 1, 1)

@@ -11,7 +11,7 @@ class Drawable(Entity):
 
     def __init__(
         self,
-        size: None | tuple[int, int] = None,
+        size: None | tuple[int|float] = None,
         surface_flags: int = 0,
         convert_alpha: bool = False,
         *args,
@@ -20,7 +20,8 @@ class Drawable(Entity):
         super().__init__()
         self.visible: bool = True
         self.render_order: int = 0
-        self.rect.size = (10, 10) if size is None else size
+        if size is not None:
+            self.rect.size = size
         self.convert_alpha: bool = convert_alpha
         self.surface_flags: int = surface_flags
         self.blit_flags: int = 0
@@ -54,8 +55,8 @@ class Drawable(Entity):
 
     def set_render_order(self, render_order: int) -> Self:
         self.render_order = render_order
-        if self.parent_scene:
-            self.parent_scene.sort_entities()
+        if self.parent_layer:
+            self.parent_layer.update_draw_order()
         return self
 
     def set_visible(self, value: bool) -> Self:

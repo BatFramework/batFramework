@@ -104,8 +104,8 @@ class AudioManager(metaclass=bf.Singleton):
             self.current_music = name
             return True
         except KeyError:
+            print(f"Music '{name}' not loaded in AudioManager.")
             return False
-            # print(f"Music '{name}' not loaded in AudioManager.")
 
     def stop_music(self):
         if not self.current_music:

@@ -161,4 +161,10 @@ class Root(InteractiveWidget):
             and self.focused
             and self.focused != self
         ):
+            clip:bool =self.focused.parent and self.focused.parent.clip_children
+            if clip:
+                old_clip = camera.surface.get_clip()
+                camera.surface.set_clip(camera.world_to_screen(self.focused.parent.rect))    
             self.focused.draw_focused(camera)
+            if clip:
+                camera.surface.set_clip(old_clip)

@@ -111,11 +111,18 @@ class TextInput(Label, InteractiveWidget):
         return lines[line]
 
     def get_debug_outlines(self):
-        if self.visible:
-            offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-            yield (self.text_rect.move(self.rect.x - offset[0] - self.scroll.x,self.rect.y - offset[1] - self.scroll.y), "purple")
         yield from super().get_debug_outlines()
+        # if self.visible:
+            # offset = self._get_outline_offset() if self.show_text_outline else (0,0)
+            # yield (self.text_rect.move(self.rect.x - offset[0] - self.scroll.x,self.rect.y - offset[1] - self.scroll.y), "purple")
         yield (self.get_cursor_rect().move(-self.scroll+self.rect.topleft),"green")
+
+
+    def get_min_required_size(self) -> tuple[float, float]:
+        size = self._get_text_rect_required_size()
+        return self.inflate_rect_by_padding(
+            (0, 0,size[0]+self.get_cursor_rect().w,size[1])
+        ).size
 
 
     def set_cursor_position(self, position: tuple[int, int]) -> Self:
@@ -127,11 +134,10 @@ class TextInput(Label, InteractiveWidget):
         x = max(0, min(x, line_length))
         self.show_cursor = True
         self.cursor_position = (x,y)
-        self.apply_updates()
+        self.apply_updates(skip_draw=True)
         offset = self._get_outline_offset() if self.show_text_outline else (0,0)
         padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
         self.align_text(self.text_rect,padded,self.alignment)
-
         return self
 
     def get_cursor_rect(self)->pygame.FRect:
@@ -141,13 +147,15 @@ class TextInput(Label, InteractiveWidget):
         lines = self.text.split('\n')
         line_x, line_y = self.cursor_position
 
-        height = self.font_object.get_linesize()
+        height = self.font_object.get_height()
 
         cursor_y = self.get_padded_rect().__getattribute__(self.alignment.value)[1] - self.rect.top
         cursor_y += line_y * height
         cursor_x = self.text_rect.x
         cursor_x += self.font_object.size(lines[line_y][:line_x])[0] if line_x > 0 else 0
         cursor_rect = pygame.Rect(cursor_x, cursor_y, 1, height)
+        offset = self._get_outline_offset()
+        cursor_rect.move_ip(offset[0] if self.cursor_position[0] >0 else 0,offset[1] if self.cursor_position[1] > 0 else 0)
         return cursor_rect
 
     def cursor_to_absolute(self, position: tuple[int, int]) -> int:

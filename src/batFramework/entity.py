@@ -11,7 +11,6 @@ class Entity:
     _count: int = 0
     _available_uids: set[int] = set()
 
-
     def __init__(self,*args,**kwargs) -> None:
         if Entity._available_uids:
             self.uid = Entity._available_uids.pop()
@@ -19,9 +18,10 @@ class Entity:
             self.uid = Entity._count
             Entity._count += 1
 
-        self.rect = pygame.FRect(0, 0, 0, 0)
+        self.rect = pygame.FRect(0, 0, 10, 10)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
+        self.parent_layer: bf.SceneLayer | None = None
         self.debug_color: tuple | str = "red"
 
     def __del__(self):
@@ -43,6 +43,16 @@ class Entity:
     def set_debug_color(self, color) -> Self:
         self.debug_color = color
         return self
+
+    def kill(self):
+        """
+        Removes the entity from a scene layer
+        """
+        if self.parent_layer:
+            self.parent_layer._remove(self)
+
+    def set_parent_layer(self, layer):
+        self.parent_layer = layer
 
     def set_parent_scene(self, scene) -> Self:
         if scene == self.parent_scene:
@@ -71,7 +81,16 @@ class Entity:
         self.tags = [tag for tag in self.tags if tag not in tags]
 
     def has_tags(self, *tags) -> bool:
+        """
+        return True if entity contains all given tags
+        """
         return all(tag in self.tags for tag in tags)
+
+    def has_any_tags(self, *tags) -> bool:
+        """
+        return True if entity contains any of given tags
+        """
+        return any(tag in self.tags for tag in tags)
 
     def get_tags(self) -> list[str]:
         return self.tags

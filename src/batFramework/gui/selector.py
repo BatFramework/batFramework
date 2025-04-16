@@ -21,6 +21,7 @@ class Selector(Button):
         self.options = options if options else []
         self.gap : int = 2
         text_value = ""
+        
         if not (default_value is not None and default_value in self.options): 
             default_value = options[0]
             
@@ -49,37 +50,66 @@ class Selector(Button):
         
     def get_min_required_size(self) -> tuple[float, float]:
         old_text = self.text
+        # Calculate the maximum size needed for the text
         res = self.text_rect.size if self.text_rect else self._get_text_rect_required_size()
         for option in self.options:
             self.text = option
             tmp = self.inflate_rect_by_padding(
                 (0, 0, *self._get_text_rect_required_size())
             ).size
-            res = max(res[0],tmp[0]),max(res[1],tmp[1])
+            res = max(res[0], tmp[0]), max(res[1], tmp[1])
         self.text = old_text
 
+        # Get minimum sizes for indicators
+        left_min_size = self.left_indicator.get_min_required_size()
+        right_min_size = self.right_indicator.get_min_required_size()
 
-        res = res[0],res[1]+self.unpressed_relief
-        
-        min_right = self.right_indicator.get_min_required_size()[0]
-        min_left =self.left_indicator.get_min_required_size()[0]
+        # Include relief for height
+        res = [res[0], res[1] + self.unpressed_relief]
+
+        # Calculate total width including indicators and gaps
         if self.autoresize_w:
-            res = (res[0] + self.gap*2 + min_left + min_right, res[1])
-        
-        return res[0] if self.autoresize_w else self.rect.w, (
+            indicator_width = max(left_min_size[0], right_min_size[0])
+            res = (res[0] + self.gap * 2 + indicator_width * 2, res[1])
+
+        return (
+            res[0] if self.autoresize_w else self.rect.w,
             res[1] if self.autoresize_h else self.rect.h
         )
+
 
     def build(self):
         super().build()
         padded = self.get_padded_rect()
 
-        self.right_indicator.set_size((None,padded.h))
-        self.right_indicator.set_position(padded.right - self.right_indicator.rect.w,None)
-        self.left_indicator.set_size((None,padded.h))
-        self.left_indicator.set_position(padded.left,None)
-        self.left_indicator.set_center(None,padded.centery)        
-        self.right_indicator.set_center(None,padded.centery)        
+        # Calculate indicator size based on selector height
+        indicator_height = padded.h + self.unpressed_relief
+        # Use a proportion of the height for width (e.g., 0.6 * height) to keep indicators compact
+        indicator_width = max(
+            indicator_height * 0.6,  # Proportional scaling
+            max(
+                self.left_indicator.get_min_required_size()[0],
+                self.right_indicator.get_min_required_size()[0]
+            )  # Respect minimum size
+        )
+
+        # Set indicator sizes
+        self.left_indicator.set_size((indicator_width, indicator_height))
+        self.right_indicator.set_size((indicator_width, indicator_height))
+
+        # Position indicators
+        # Left indicator: Align left edge with padded.left, center vertically
+        self.left_indicator.set_position(padded.left, None)
+        self.left_indicator.set_center(None, padded.centery)
+
+        # Right indicator: Align right edge with padded.right, center vertically
+        self.right_indicator.set_position(padded.right - indicator_width, None)
+        self.right_indicator.set_center(None, padded.centery)
+
+        # Ensure indicators are within the selector's bounds
+        self.left_indicator.rect.clamp_ip(self.rect)
+        self.right_indicator.rect.clamp_ip(self.rect)
+
 
     def get_current_index(self)->int:
         return self.current_index

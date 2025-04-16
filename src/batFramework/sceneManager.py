@@ -8,7 +8,7 @@ def swap(lst, index1, index2):
 
 class SceneManager:
     def __init__(self) -> None:
-        self.scenes: list[bf.Scene] = []
+        self.scenes: list[bf.BaseScene] = []
         self.shared_events = {pygame.WINDOWRESIZED}
         self.current_transition : tuple[str,bf.transition.Transition,int] | None= None
 

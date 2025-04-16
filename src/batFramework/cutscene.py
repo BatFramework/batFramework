@@ -3,40 +3,73 @@ from .transition import Transition
 from typing import Callable,Any
 
 class Cutscene:
-    def __init__(self,*cutscenes):
-        self.is_over : bool = False
-        self.sub_cutscenes : list[Cutscene] = list(cutscenes)
-        self.sub_index = -1
+    def __init__(self):
+        """
+        Create a base Cutscene (ends immediately)
+        """
 
     def start(self):
-        if self.sub_cutscenes:
-            self.sub_index = 0
-            self.sub_cutscenes[self.sub_index].start()
-        else:
-            self.end()
+        """
+        Called by the manager or the parent cutscene
+        Has to return to blank init state
+        """
+        self.end()
 
     def process_event(self,event):
-        if self.sub_index > 0: 
-            self.sub_cutscenes[self.sub_index].process_event(event)
+        pass
             
     def update(self,dt):
-        if self.sub_index >= 0: 
-            self.sub_cutscenes[self.sub_index].update(dt)
-            if self.sub_cutscenes[self.sub_index].is_over:
-                self.sub_index +=1
-                if self.sub_index >= len(self.sub_cutscenes):
+        pass
+
+
+    def end(self):
+        """
+        Mark self as over
+        """
+        self.is_over = True
+
+class Sequence(Cutscene):
+    def __init__(self,*cutscenes):
+        self.sub_cutscenes :list[Cutscene] = list(cutscenes)
+        self.index = 0
+
+    def start(self):
+        self.is_over = False
+        self.index = 0
+        if self.sub_cutscenes:
+            self.sub_cutscenes[0].start()
+
+    def process_event(self,event):
+        """
+        propagate process event for current sub cutscene
+        """
+        if self.index >0 and not self.is_over:
+            self.sub_cutscenes[self.index].process_event(event)
+
+        
+
+    def update(self,dt):
+        """
+        Update current sub cutscene (if any)
+        if current is over, start next one
+        if current was last, then end self
+        """
+        if self.index < len(self.sub_cutscenes):
+            self.sub_cutscenes[self.index].update(dt)
+            if self.sub_cutscenes[self.index].is_over:
+                self.index += 1
+                if self.index == len(self.sub_cutscenes):
                     self.end()
                     return
-                self.sub_cutscenes[self.sub_index].start()
-            
-    def end(self):
-        self.is_over = True
+                self.sub_cutscenes[self.index].start()
+
 
 class Parallel(Cutscene):
     def __init__(self,*cutscenes:Cutscene):
-        super().__init__(*cutscenes)
+        self.sub_cutscenes : list[Cutscene] = list(cutscenes) 
 
     def start(self):
+        self.is_over = False
         if not self.sub_cutscenes:
             self.end()
         for s in self.sub_cutscenes:
@@ -50,10 +83,10 @@ class Parallel(Cutscene):
 
 class Wait(Cutscene):
     def __init__(self,duration:float,scene_name:str="global"):
-        super().__init__()
         self.duration = duration
         self.scene_name = scene_name
     def start(self):
+        self.is_over = False
         self.timer = bf.SceneTimer(duration=self.duration,end_callback=self.end,scene_name=self.scene_name)
         self.timer.start()
 
@@ -61,11 +94,11 @@ class Wait(Cutscene):
 
 class TransitionToScene(Cutscene):
     def __init__(self,scene_name:str,transition:Transition):
-        super().__init__()
         self.scene_name = scene_name
         self.transition: Transition = transition
 
     def start(self):
+        self.is_over = False
         bf.CutsceneManager().manager.transition_to_scene(self.scene_name,self.transition)
         bf.Timer(self.transition.duration,end_callback=self.end).start()
 
@@ -85,6 +118,7 @@ class GlideWorldCameraFromTo(Cutscene):
 
 
     def start(self):
+        self.is_over = False
         if self.scene_name is None:
             self.scene_name = bf.CutsceneManager().manager.get_scene_at(0).name
 
@@ -96,7 +130,6 @@ class GlideWorldCameraFromTo(Cutscene):
         self.scene.camera.set_center(
             self.start_pos[0]+progression*(self.stop_pos[0]-self.start_pos[0]),
             self.start_pos[1]+progression*(self.stop_pos[1]-self.start_pos[1])
-
         )
 
     def end(self):
@@ -130,8 +163,8 @@ class Function(Cutscene):
         self.function:Callable[[],Any] = function
         self.args = args
         self.kwargs = kwargs
+        
     def start(self):
+        self.is_over = False
         self.function(*self.args,**self.kwargs)
         self.end()
-
-

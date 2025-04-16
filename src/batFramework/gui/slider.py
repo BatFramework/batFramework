@@ -147,7 +147,6 @@ class Slider(Button):
     def set_value(self, value, no_callback: bool = False) -> Self:
         if self.meter.value != value:
             self.meter.set_value(value)
-            self.dirty_shape = True
         if self.modified_callback and (not no_callback):
             self.modified_callback(self.meter.value)
         return self
@@ -187,7 +186,7 @@ class Slider(Button):
         """
         Converts a position on the meter to a value, considering the step size.
         """
-        handle_half = self.handle.rect.w / 2
+        handle_half = self.handle.rect.w // 2
         rect = self.meter.get_padded_rect()
         position = max(rect.left + handle_half, min(position, rect.right - handle_half))
 
@@ -207,7 +206,7 @@ class Slider(Button):
         return self.inflate_rect_by_padding((0, 0, w + gap + self.meter.get_min_required_size()[0], h)).size
 
 
-    def _build_composed_layout(self,other:Shape):
+    def _build_composed_layout(self,other:Shape) ->bool:
 
 
         gap = self.gap if self.text else 0
@@ -215,24 +214,25 @@ class Slider(Button):
 
         other_height = min(self.text_rect.h, self.font_object.get_height()+1)
         if not self.autoresize_w:
-            other.set_size_if_autoresize(( self.get_padded_width() - self.text_rect.w - gap,other_height))
+            other.set_size(other.resolve_size(( self.get_padded_width() - self.text_rect.w - gap,other_height)))
         else:
-            other.set_size_if_autoresize((other_height*10,other_height))
+            other.set_size(other.resolve_size((other_height*10,other_height)))
         
-        self.handle.set_size_if_autoresize((other_height,other_height))
+        self.handle.set_size(self.handle.resolve_size((other_height,other_height)))
         
         full_rect.w += other.rect.w + gap
+        full_rect.h += self.unpressed_relief
         
-        if self.autoresize_h or self.autoresize_w:
-            target_rect = self.inflate_rect_by_padding((0, 0, *full_rect.size))
-            target_rect.h += self.unpressed_relief # take into account the relief when calculating target rect
-            tmp = self.rect.copy()
-            self.set_size_if_autoresize(target_rect.size)
-            if self.rect.size != tmp.size:
-                self.apply_updates(skip_draw=True)
-                return
 
+        # take into account the relief when calculating target size
+        inflated = self.inflate_rect_by_padding((0, 0, *full_rect.size)).size
+        target_size = self.resolve_size(inflated)
+        if self.rect.size != target_size:
+            self.set_size(target_size)
+            self.apply_updates(skip_draw=True)
+            return
         self._align_composed(other)
+        self.handle.set_center(self.value_to_position(self.meter.value),self.meter.rect.centery)
 
 
     def _align_composed(self,other:Shape):
@@ -274,8 +274,8 @@ class Slider(Button):
     def _build_layout(self) -> None:
         self.text_rect.size = self._get_text_rect_required_size()
         self._build_composed_layout(self.meter)
-        # print("finish build layout")
-        self.handle.set_center(self.value_to_position(self.meter.value),self.meter.rect.centery)
+
+
 
 
 

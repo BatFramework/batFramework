@@ -1,2 +1,1 @@
-from .character import *
-from .states import *
+from .controller import *

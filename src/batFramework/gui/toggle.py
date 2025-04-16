@@ -68,20 +68,21 @@ class Toggle(Button):
         full_rect = self.text_rect.copy()
 
         other_height = min(self.text_rect.h, self.font_object.get_height()+1)
-        other.set_size_if_autoresize((other_height,other_height))
+        other.set_size((other_height,other_height))
         
         full_rect.w += other.rect.w + gap
+        full_rect.h += self.unpressed_relief
         
-        if self.autoresize_h or self.autoresize_w:
-            target_rect = self.inflate_rect_by_padding((0, 0, *full_rect.size))
-            target_rect.h += self.unpressed_relief # take into account the relief when calculating target rect
-            tmp = self.rect.copy()
-            self.set_size_if_autoresize(target_rect.size)
-            if self.rect.size != tmp.size:
-                self.apply_updates(skip_draw=True)
-                return
 
+        # take into account the relief when calculating target size
+        inflated = self.inflate_rect_by_padding((0, 0, *full_rect.size)).size
+        target_size = self.resolve_size(inflated)
+        if self.rect.size != target_size:
+            self.set_size(target_size)
+            self.apply_updates(skip_draw=True)
+            return
         self._align_composed(other)
+        
 
     def _align_composed(self,other:Shape):
         

@@ -6,8 +6,8 @@ from typing import Self
 class Sprite(bf.Drawable):
     def __init__(
         self,
-        size: None | tuple[int, int] = None,
         path=None,
+        size: None | tuple[int, int] = None,
         convert_alpha: bool = True,
     ):
         self.original_surface: pygame.Surface = None

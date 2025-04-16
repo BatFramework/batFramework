@@ -43,7 +43,7 @@ class Action:
             value (bool): True to activate the action, False to deactivate it.
         """
         self.active = value
-        # self._holding = set()
+        
 
     def add_event_control(self, *events) -> Self:
         self._event_control.update(events)

@@ -32,7 +32,7 @@ class Image(Shape):
 
     def build(self) -> None:
         if self.original_surface is not None:
-            self.set_size_if_autoresize(
+            self.set_size(
                 self.inflate_rect_by_padding((0,0,*self.original_surface.get_size())).size
             )
         super().build()

@@ -29,7 +29,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.dirty_constraints: bool = False # if true will call resolve_constraints
 
         self.is_root: bool = False
-        self.autoresize_w, self.autoresize_h = True, True
+        self.autoresize_w, self.autoresize_h = True, True # if True, the widget will have dynamic size depending on its contents
         self.__constraint_iteration = 0
         self.__constraints_to_ignore = []
         self.__constraints_capture = None
@@ -297,12 +297,11 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         if self.parent:
             self.parent.do_sort_children = True
 
-    def set_size_if_autoresize(self, size: tuple[float, float]) -> Self:
-        self.set_size((
-            size[0] if self.autoresize_w else None,
-            size[1] if self.autoresize_h else None
-        ))
-        return self
+    def resolve_size(self, target_size):
+        return (
+            target_size[0] if self.autoresize_w else self.rect.w,
+            target_size[1] if self.autoresize_h else self.rect.h
+        )
 
     def set_size(self, size: tuple) -> Self:
         size = list(size)
@@ -330,7 +329,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
     def build(self) -> None:
         new_size = tuple(map(int, self.rect.size))
-        if self.surface.get_size() != new_size:
+        if self.surface.size != new_size:
             old_alpha = self.surface.get_alpha()
             new_size = [max(0, i) for i in new_size]
             self.surface = pygame.Surface(new_size, self.surface_flags)

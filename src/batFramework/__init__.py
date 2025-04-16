@@ -25,9 +25,10 @@ from .scrollingSprite import ScrollingSprite
 from .particle import *
 from .animation import Animation
 from .animatedSprite import AnimatedSprite
-from .character import Character
 from .stateMachine import State, StateMachine
+from .sceneLayer import SceneLayer
 from .scene import Scene
+from .baseScene import BaseScene
 import batFramework.gui as gui
 from .sceneManager import SceneManager
 from .manager import Manager

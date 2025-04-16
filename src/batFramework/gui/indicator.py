@@ -67,7 +67,7 @@ class ArrowIndicator(Indicator):
         super().__init__()
         self.direction : bf.direction = direction
         self.arrow_color = bf.color.WHITE
-        self.width : int = 1
+        self.line_width : int = 1
         self.angle : float  = 45
         self.spread : float = None 
         self.draw_stem : bool = True
@@ -97,23 +97,22 @@ class ArrowIndicator(Indicator):
         self.dirty_surface = True
         return self
 
-    def set_width(self,value:int)->Self:
-        self.width = value
+    def set_line_width(self,value:int)->Self:
+        self.line_width = value
         self.dirty_surface = True
         return self
         
     def paint(self):
         super().paint()
         r = self.get_local_padded_rect()
-        bf.utils.draw_direction_arrow(
+        r.inflate_ip(-2,-2)
+        r.normalize()
+        # r.move_ip(-self.rect.left,-self.rect.right)
+        bf.utils.draw_triangle(
             surface = self.surface,
             color = self.arrow_color,
             rect =r,
-            arrow_direction = self.direction,
-            angle = self.angle,
-            spread =self.spread,
-            width = self.width,
-            draw_stem = self.draw_stem
+            direction = self.direction,
         )
         
 

@@ -72,14 +72,18 @@ class Debugger(Label):
     def update(self, dt: float) -> None:
         if not self.parent_scene:
             return
+        
         if bf.ResourceManager().get_sharedVar("debug_mode") != bf.debugMode.DEBUGGER:
             self.set_visible(False)
             return
+        
         self.set_visible(True)
         self.refresh_counter = self.refresh_counter + (dt * 60)
+        
         if self.refresh_counter > self.refresh_rate:
             self.refresh_counter = 0
             self.update_text()
+
 
     def __str__(self) -> str:
         return "Debugger"

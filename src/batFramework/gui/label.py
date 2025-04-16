@@ -1,7 +1,7 @@
 import batFramework as bf
 import pygame
 from .shape import Shape
-from typing import Self
+from typing import Self,Union
 from math import ceil
 
 class Label(Shape):
@@ -76,7 +76,7 @@ class Label(Shape):
         self.dirty_surface = True
         return self
 
-    def set_line_alignment(self,alignment:pygame.FONT_LEFT|pygame.FONT_RIGHT|pygame.FONT_CENTER)->Self:
+    def set_line_alignment(self,alignment:Union[pygame.FONT_LEFT|pygame.FONT_RIGHT|pygame.FONT_CENTER])->Self:
         self.line_alignment = alignment
         self.dirty_surface = True
         return self
@@ -153,12 +153,12 @@ class Label(Shape):
         return self
 
     def get_debug_outlines(self):
+        yield from super().get_debug_outlines()
         if self.visible:
             yield (self.text_rect.move(self.rect.x - self.scroll.x,self.rect.y - self.scroll.y), "purple")
             
             # offset = self._get_outline_offset() if self.show_text_outline else (0,0)
             # yield (self.text_rect.move(self.rect.x - offset[0] - self.scroll.x,self.rect.y - offset[1] - self.scroll.y), "purple")
-        yield from super().get_debug_outlines()
 
     def set_font(self, font_name: str = None, force: bool = False) -> Self:
         if font_name == self.font_name and not force:
@@ -172,13 +172,12 @@ class Label(Shape):
         return self
 
     def set_text_size(self, text_size: int) -> Self:
-        text_size = round(text_size / 2) * 2
+        text_size = (text_size // 2) * 2
         if text_size == self.text_size:
             return self
         self.text_size = text_size
         self.font_object = bf.FontManager().get_font(self.font_name, self.text_size)
-        if self.autoresize_h or self.autoresize_w:
-            self.dirty_shape = True
+        self.dirty_shape = True
         return self
 
     def get_text_size(self) -> int:
@@ -237,7 +236,7 @@ class Label(Shape):
 
     def _get_outline_offset(self)->tuple[int,int]:
         mask_size = self._text_outline_mask.get_size()
-        return  mask_size[0]//2,mask_size[1]//2 
+        return  mask_size[0]//2,mask_size[1]//2
     
     def _get_text_rect_required_size(self):
         font_height = self.font_object.get_ascent() - self.font_object.get_descent()
@@ -264,12 +263,16 @@ class Label(Shape):
         return size[0] + s[0]*2, size[1] + s[1]*2
 
     def _build_layout(self) -> None:
-        target_size = self.get_min_required_size()
-        # print(target_size,self.rect.size)
-        if (self.autoresize_w or self.autoresize_h) and self.rect.size != target_size:
+        target_size = self.resolve_size(self.get_min_required_size())
+
+        if self.rect.size != target_size :
             self.set_size(target_size)
             self.apply_updates(skip_draw=True)
             return
+        """
+        I want to check if rect.size == target_size (only for dimensions not dependent)
+        
+        """
 
         self.text_rect.size = self._get_text_rect_required_size()
         padded = self.get_local_padded_rect()

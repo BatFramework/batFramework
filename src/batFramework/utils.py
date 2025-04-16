@@ -251,67 +251,57 @@ class Utils:
     def distance_point(a:tuple[float,float],b:tuple[float,float]):
         return math.sqrt((a[0]-b[0]) ** 2 + (a[1]-b[1])**2)
 
-
     @staticmethod
-    def draw_direction_arrow(surface, color, rect: pygame.Rect | pygame.FRect, arrow_direction, angle: float = 135, spread: float = None, width: int = 1, draw_stem: bool = True):
-        # Base arrow direction vector (pointing to the right initially)
-        base_vector = Vector2(1, 0)
+    def rotate_point(point: Vector2, angle: float, center: Vector2) -> Vector2:
+        """Rotate a point around a center by angle (in degrees)."""
+        rad = math.radians(angle)
+        translated = point - center
+        rotated = Vector2(
+            translated.x * math.cos(rad) - translated.y * math.sin(rad),
+            translated.x * math.sin(rad) + translated.y * math.cos(rad)
+        )
+        return rotated + center
 
-        # Map directions to rotation angles (in degrees)
-        direction_angles = {
-            direction.RIGHT: 0,
-            direction.UP: -90,
-            direction.LEFT: 180,
-            direction.DOWN: 90
-        }
+ 
+    def draw_triangle(surface:pygame.Surface, color, rect:pygame.FRect|pygame.Rect, direction:bf.enums.direction=bf.enums.direction.RIGHT,width:int=0):
+        """
+        Draw a filled triangle inside a rectangle on a Pygame surface, pointing in the specified direction.
+        
+        Args:
+            surface: The Pygame surface to draw on.
+            color: The color of the triangle (e.g., (255, 0, 0) for red).
+            rect: A pygame.Rect object defining the rectangle's position and size.
+            direction: A string ('up', 'down', 'left', 'right') indicating the triangle's orientation.
+        """
+        # Define the three vertices of the triangle based on direction
+        rect = rect.copy()
+        rect.inflate_ip(-1,-1)
+        if direction == direction.UP:
+            points = [
+                (rect.left, rect.bottom),      # Bottom-left corner
+                (rect.right, rect.bottom),     # Bottom-right corner
+                (rect.centerx, rect.top)       # Top center (apex)
+            ]
+        elif direction == direction.DOWN:
+            points = [
+                (rect.left, rect.top),         # Top-left corner
+                (rect.right, rect.top),        # Top-right corner
+                (rect.centerx, rect.bottom)    # Bottom center (apex)
+            ]
+        elif direction == direction.LEFT:
+            points = [
+                (rect.right, rect.top),        # Top-right corner
+                (rect.right, rect.bottom),     # Bottom-right corner
+                (rect.left, rect.centery)      # Left center (apex)
+            ]
+        elif direction == direction.RIGHT:
+            points = [
+                (rect.left, rect.top),         # Top-left corner
+                (rect.left, rect.bottom),      # Bottom-left corner
+                (rect.right, rect.centery)     # Right center (apex)
+            ]
+        else:
+            raise ValueError("Invalid direction")
 
-        if arrow_direction not in direction_angles:
-            raise ValueError(f"Unsupported direction {arrow_direction}")
-
-        # Calculate spread if not provided
-        if spread is None:
-            spread = min(rect.width, rect.height) * 0.2
-
-        # Calculate arrowhead size and base length
-        arrow_length = min(rect.width, rect.height) - spread * 2
-        base_length = arrow_length / 2 if draw_stem else arrow_length / 4
-
-        # Define base arrowhead tip (initially pointing right)
-        arrow_tip = Vector2(rect.centerx + base_length, rect.centery)
-
-        # Calculate left and right wing positions relative to the arrow tip
-        left_wing = Vector2(arrow_tip.x - spread, arrow_tip.y)
-        right_wing = Vector2(arrow_tip.x - spread, arrow_tip.y)
-
-        def rotate_point(point, angle, center):
-            radians = math.radians(angle)
-            translated_point = point - center
-            rotated_point = Vector2(
-                translated_point.x * math.cos(radians) - translated_point.y * math.sin(radians),
-                translated_point.x * math.sin(radians) + translated_point.y * math.cos(radians)
-            )
-            return rotated_point + center
-
-        # Rotate wings relative to the arrow tip
-        left_wing = rotate_point(left_wing, -angle, arrow_tip)
-        right_wing = rotate_point(right_wing, angle, arrow_tip)
-
-        # Rotate the arrow to match the desired direction
-        rotation_angle = direction_angles[arrow_direction]
-        rotation_center = Vector2(rect.center)
-
-        arrow_tip = rotate_point(arrow_tip, rotation_angle, rotation_center)
-        left_wing = rotate_point(left_wing, rotation_angle, rotation_center)
-        right_wing = rotate_point(right_wing, rotation_angle, rotation_center)
-
-
-
-        # Draw arrow stem if needed
-        if draw_stem:
-            start_point = Vector2(rect.centerx - base_length, rect.centery)
-            start_point = rotate_point(start_point, rotation_angle, rotation_center)
-            pygame.draw.line(surface, color, start_point, arrow_tip, width)
-
-        # Draw the arrowhead
-        points = [left_wing.xy, arrow_tip.xy, right_wing.xy]
-        pygame.draw.lines(surface, color, False, points, width)
+        # Draw the filled triangle
+        pygame.draw.polygon(surface, color, points,width=width)

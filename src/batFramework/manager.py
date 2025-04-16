@@ -3,7 +3,7 @@ import pygame
 import asyncio
 
 class Manager(bf.SceneManager):
-    def __init__(self, *initial_scene_list) -> None:
+    def __init__(self, *initial_scenes) -> None:
         super().__init__()
         self.debug_mode: bf.enums.debugMode = bf.debugMode.HIDDEN
         self.screen: pygame.Surface | None = bf.const.SCREEN
@@ -18,8 +18,8 @@ class Manager(bf.SceneManager):
         bf.ResourceManager().set_sharedVar("debug_mode", self.debug_mode)
         
         self.do_pre_init()
-        if initial_scene_list:
-            self.init_scenes(*initial_scene_list)
+        if initial_scenes:
+            self.init_scenes(*initial_scenes)
         self.do_init()
 
     @staticmethod
@@ -96,7 +96,6 @@ class Manager(bf.SceneManager):
             raise Exception("Manager can't start without scenes")
         if self.running:
             raise Exception("Error : Already running")
-            return
         self.is_async_running = True
         self.running = True
         dt: float = 0
