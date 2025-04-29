@@ -112,10 +112,10 @@ class TextInput(Label, InteractiveWidget):
 
     def get_debug_outlines(self):
         yield from super().get_debug_outlines()
-        # if self.visible:
+        if self.visible:
             # offset = self._get_outline_offset() if self.show_text_outline else (0,0)
             # yield (self.text_rect.move(self.rect.x - offset[0] - self.scroll.x,self.rect.y - offset[1] - self.scroll.y), "purple")
-        yield (self.get_cursor_rect().move(-self.scroll+self.rect.topleft),"green")
+            yield (self.get_cursor_rect().move(-self.scroll+self.rect.topleft),"green")
 
 
     def get_min_required_size(self) -> tuple[float, float]:
@@ -239,6 +239,8 @@ class TextInput(Label, InteractiveWidget):
                     self.set_cursor_position(self.absolute_to_cursor(current_pos + 1))
                     self._cursor_toggle(True)
                 case _ :
+                    if event.unicode:
+                        event.consumed = True
                     return
 
         event.consumed = True
@@ -269,7 +271,8 @@ class TextInput(Label, InteractiveWidget):
         cursor_rect = self.get_cursor_rect()
         cursor_rect.move_ip(-self.scroll)
         
-        pygame.draw.rect(self.surface, self.text_outline_color, cursor_rect.inflate(2,2))
+        if self.show_text_outline:
+            pygame.draw.rect(self.surface, self.text_outline_color, cursor_rect.inflate(2,2))
         pygame.draw.rect(self.surface, self.text_color, cursor_rect)
 
     def paint(self) -> None:

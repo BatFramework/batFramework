@@ -49,7 +49,7 @@ class Entity:
         Removes the entity from a scene layer
         """
         if self.parent_layer:
-            self.parent_layer._remove(self)
+            self.parent_layer.remove(self)
 
     def set_parent_layer(self, layer):
         self.parent_layer = layer

@@ -305,3 +305,61 @@ class Utils:
 
         # Draw the filled triangle
         pygame.draw.polygon(surface, color, points,width=width)
+
+    def draw_arc_by_points(surface, color, start_pos, end_pos, tightness=0.5, width=1, resolution=0.5):
+        """
+        Draw a smooth circular arc connecting start_pos and end_pos.
+        `tightness` controls curvature: 0 is straight line, 1 is semicircle, higher = more bulge.
+        Negative tightness flips the bulge direction.
+
+        Args:
+            surface     - pygame Surface
+            color       - RGB or RGBA
+            start_pos   - (x, y)
+            end_pos     - (x, y)
+            tightness   - curvature control, 0 = straight, 1 = half circle
+            width       - line width
+            resolution  - approx pixels per segment
+        Returns:
+            pygame.Rect bounding the drawn arc
+        """
+        p0 = pygame.Vector2(start_pos)
+        p1 = pygame.Vector2(end_pos)
+        chord = p1 - p0
+        if chord.length_squared() == 0:
+            return pygame.draw.circle(surface, color, p0, width // 2)
+
+        # Midpoint and perpendicular
+        mid = (p0 + p1) * 0.5
+        perp = pygame.Vector2(-chord.y, chord.x).normalize()
+
+        # Distance of center from midpoint, based on tightness
+        h = chord.length() * tightness
+        center = mid + perp * h
+
+        # Radius and angles
+        r = (p0 - center).length()
+        ang0 = math.atan2(p0.y - center.y, p0.x - center.x)
+        ang1 = math.atan2(p1.y - center.y, p1.x - center.x)
+
+        # Normalize sweep direction based on sign of tightness
+        sweep = ang1 - ang0
+        if tightness > 0 and sweep < 0:
+            sweep += 2 * math.pi
+        elif tightness < 0 and sweep > 0:
+            sweep -= 2 * math.pi
+
+        # Number of points
+        arc_len = abs(sweep * r)
+        segs = max(2, int(arc_len / max(resolution, 1)))
+
+        points = []
+        for i in range(segs + 1):
+            t = i / segs
+            a = ang0 + sweep * t
+            points.append((
+                center.x + math.cos(a) * r,
+                center.y + math.sin(a) * r
+            ))
+
+        return pygame.draw.lines(surface, color, False, points, width)

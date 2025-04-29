@@ -22,12 +22,17 @@ class Constants:
     def set_allow_debug(allow_debug:bool):
         Constants.ALLOW_DEBUG = allow_debug
 
-
     @staticmethod
     def set_resolution(resolution: tuple[int, int]):
         Constants.RESOLUTION = resolution
         Constants.WIDTH = resolution[0]
         Constants.HEIGHT = resolution[1]
+        Constants.update_screen()
+
+    @staticmethod
+    def update_screen():
+        if Constants.BF_INITIALIZED:
+            Constants.SCREEN = pygame.display.set_mode(Constants.RESOLUTION,Constants.FLAGS,vsync=Constants.VSYNC)
 
     @staticmethod
     def set_default_cursor(cursor: pygame.Cursor):

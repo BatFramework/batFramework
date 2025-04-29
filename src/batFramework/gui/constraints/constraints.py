@@ -18,6 +18,10 @@ class Constraint:
 
 
     def set_priority(self, priority) -> "Constraint":
+        """
+        Highest priority is used if 2 constraints are in conflict
+        Default is 0
+        """
         self.priority = priority
         return self
 

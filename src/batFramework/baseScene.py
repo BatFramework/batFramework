@@ -44,6 +44,11 @@ class BaseScene:
     def remove_layer(self,index=0):
         self.scene_layers.pop(index)
 
+    def set_layer(self,layer):
+        for i,l in enumerate(self.scene_layers[::]):
+            if l.name == layer:
+                self.scene_layers[i] = layer
+
     def get_layer(self,name:str)->bf.SceneLayer:
         for s in self.scene_layers:
             if s.name == name:
@@ -52,13 +57,13 @@ class BaseScene:
 
     def add(self,layer:str,*entities):
         l = self.get_layer(layer)
-        if not l : return 
-        l._add(*entities)
+        if l is None : return 
+        l.add(*entities)
 
     def remove(self,layer:str,*entities):
         l = self.get_layer(layer)
-        if not l : return
-        l._remove(*entities)
+        if l is None : return
+        l.remove(*entities)
 
     def __str__(self)->str:
         return f"Scene({self.name})"

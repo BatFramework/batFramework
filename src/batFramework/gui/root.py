@@ -15,12 +15,30 @@ class Root(InteractiveWidget):
         self.rect.size = pygame.display.get_surface().get_size()
         self.focused: InteractiveWidget | None = self
         self.hovered: Widget | None = self
+        self.show_tooltip : bool = True
+        self.tooltip = bf.gui.Label("")  # Tooltip label
+        self.tooltip.set_visible(False)  # Initially hidden
+        self.tooltip.set_color(bf.color.CLOUD)  # Background color for the tooltip
+        self.tooltip.set_text_color(bf.color.LIGHT_GRAY)  # Text color for the tooltip
+        self.add(self.tooltip)  # Add tooltip to the root
+        self.tooltip.set_border_radius((2,0,2,2))
+        self.tooltip.set_render_order(sys.maxsize)
+        self.tooltip.top_at = lambda *args : None
         self.set_debug_color("yellow")
-        self.set_render_order(sys.maxsize)
         self.clip_children = False
 
+    def toogle_tooltip(self,value:bool)->Self:
+        self.show_tooltip = value
+        return self
+    
     def __str__(self) -> str:
         return "Root"
+    
+    def to_ascii_tree(self)->str:
+        def f(w,depth):
+            tmp = '\n'.join(f(c,depth+1) for c in w.children) if w.children else None
+            return '\t'*depth + str(w) + (("\n"+tmp) if tmp else "")
+        return f(self,0)
 
     def set_parent_scene(self, parent_scene: bf.Scene) -> Self:
         bf.gui.StyleManager().register_widget(self)
@@ -91,6 +109,8 @@ class Root(InteractiveWidget):
         if not force:
             return self
         self.rect.size = size
+        self.dirty_shape = True
+        self.dirty_constraints = True
         return self
 
     def process_event(self,event):
@@ -100,6 +120,8 @@ class Root(InteractiveWidget):
         super().process_event(event)
         
     def do_handle_event_early(self, event):
+        if event.type == pygame.VIDEORESIZE:
+            self.set_size((event.w,event.h),force=True)
         if self.focused:
             if event.type == pygame.KEYDOWN:
                 if self.focused.on_key_down(event.key):
@@ -118,7 +140,6 @@ class Root(InteractiveWidget):
         elif event.type == pygame.MOUSEBUTTONUP:
             if self.hovered.on_click_up(event.button):
                 event.consumed = True
-
     def do_on_click_down(self, button: int) -> None:
         if button == 1:
             self.clear_focused()
@@ -136,6 +157,18 @@ class Root(InteractiveWidget):
         old = self.hovered
         transposed = self.drawing_camera.screen_to_world(pygame.mouse.get_pos())
         self.hovered = self.top_at(*transposed) if self.top_at(*transposed) else None
+
+        # Tooltip logic
+        if self.hovered and self.hovered.tooltip_text is not None:
+            # Show tooltip if the hovered widget has a tooltip
+            self.tooltip.set_text(self.hovered.tooltip_text)
+            self.tooltip.set_visible(True)
+            mouse_pos = pygame.mouse.get_pos()
+            self.tooltip.set_position(*self.drawing_camera.world_to_screen_point(mouse_pos))  # Offset tooltip slightly
+        else:
+            # Hide tooltip if no widget with a tooltip is hovered
+            self.tooltip.set_visible(False)
+
         if old == self.hovered and isinstance(self.hovered, InteractiveWidget):
             self.hovered.on_mouse_motion(*transposed)
             return
@@ -149,6 +182,8 @@ class Root(InteractiveWidget):
             self.dirty_shape = True  # Mark layout as dirty if any child changed size
 
         if self.dirty_shape:
+            for child in self.children:
+                child.dirty_constraints = True
             for child in self.children:
                 child.apply_updates()
             self.dirty_shape = False

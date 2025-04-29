@@ -75,15 +75,15 @@ class Manager(bf.SceneManager):
                 self.print_status()
                 return
         self.cutsceneManager.process_event(event)
+        if event.type == pygame.VIDEORESIZE :
+            bf.const.set_resolution((event.w, event.h))
+
         if event.consumed: return
+        
         super().process_event(event)
         if not event.consumed:
             if event.type == pygame.QUIT:
                 self.running = False
-            elif event.type == pygame.VIDEORESIZE and not (
-                bf.const.FLAGS & pygame.SCALED
-            ):
-                bf.const.set_resolution((event.w, event.h))
 
     def update(self, dt: float) -> None:
         self.timeManager.update(dt)

@@ -28,11 +28,16 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.dirty_shape: bool = True  #    if true will call (build+paint) before drawing
         self.dirty_constraints: bool = False # if true will call resolve_constraints
 
+        self.tooltip_text : str | None = None # if is not none, will display a text when hovered
         self.is_root: bool = False
         self.autoresize_w, self.autoresize_h = True, True # if True, the widget will have dynamic size depending on its contents
-        self.__constraint_iteration = 0
-        self.__constraints_to_ignore = []
-        self.__constraints_capture = None
+        self._constraint_iteration = 0
+        self._constraints_to_ignore = []
+        self._constraints_capture = None
+
+    def set_tooltip_text(self,text:str|None)->Self:
+        self.tooltip_text = text
+        return self
 
     def show(self) -> Self:
         self.visit(lambda w: w.set_visible(True))
@@ -41,6 +46,14 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def hide(self) -> Self:
         self.visit(lambda w: w.set_visible(False))
         return self
+
+    def kill(self):
+        if self.parent:
+            self.parent.remove(self)
+        if self.parent_scene:
+            self.parent_scene.remove(self.parent_layer.name,self)
+            
+        return super().kill()
 
     def set_clip_children(self, value: bool) -> Self:
         self.clip_children = value
@@ -115,6 +128,12 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
         for c in self.children:
             c.set_parent_scene(parent_scene)
+        return self
+
+    def set_parent_layer(self, layer):
+        super().set_parent_layer(layer)
+        for c in self.children:
+            c.set_parent_layer(layer)
         return self
 
     def set_parent(self, parent: "Widget") -> Self:
@@ -192,7 +211,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.constraints = result
         self.constraints.sort(key=lambda c: c.priority)
         self.dirty_constraints = True
-        self.__constraint_to_ignore = []
+        self._constraints_to_ignore = []
 
         return self
 
@@ -202,24 +221,24 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             if c.name in names:
                 c.on_removal(self)
         self.constraints = [c for c in self.constraints if c.name not in names]
-        self.__constraint_to_ignore = []
+        self._constraints_to_ignore = []
         return self
 
     def resolve_constraints(self) -> None:
         if self.parent is None or not self.constraints:
             self.dirty_constraints = False
             return
-        if not self.__constraint_iteration:
-            self.__constraints_capture = None
+        if not self._constraint_iteration:
+            self._constraints_capture = None
         else:
             capture = tuple([c.priority for c in self.constraints])
-            if capture != self.__constraints_capture:
-                self.__constraints_capture = capture
-                self.__constraint_to_ignore = []
+            if capture != self._constraints_capture:
+                self._constraints_capture = capture
+                self._constraints_to_ignore = []
                 
         constraints = self.constraints.copy()
         # If all are resolved early exit
-        if all(c.evaluate(self.parent,self) for c in constraints if c not in self.__constraint_to_ignore):
+        if all(c.evaluate(self.parent,self) for c in constraints if c not in self._constraints_to_ignore):
             self.dirty_constraints = False
             return
         
@@ -233,25 +252,25 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             # first pass with 2 iterations to sort out the transformative constraints
             for _ in range(2):
                 for c in constraints:
-                    if c in self.__constraints_to_ignore:continue
+                    if c in self._constraints_to_ignore:continue
                     if not c.evaluate(self.parent,self) :
                         # print(c," is applied")
                         c.apply(self.parent,self)
             # second pass where we check conflicts
             for c in constraints:
-                if c in self.__constraints_to_ignore:
+                if c in self._constraints_to_ignore:
                     continue
                 if not c.evaluate(self.parent,self):
                     # first pass invalidated this constraint
-                    self.__constraints_to_ignore.append(c)
+                    self._constraints_to_ignore.append(c)
                     stop = False
                     break
 
             if stop: 
                 break
 
-        if self.__constraints_to_ignore:
-            print("Constraints ignored : ",[str(c) for c in self.__constraints_to_ignore])
+        if self._constraints_to_ignore:
+            print("Constraints ignored : ",[str(c) for c in self._constraints_to_ignore])
             
         self.dirty_constraints = False
         # print(self,self.uid,"resolve constraints : Success")
@@ -280,10 +299,9 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.children.extend(children)
         i = len(self.children)
         for child in children:
-
-            child.set_render_order(i).set_parent(self).set_parent_scene(
-                self.parent_scene
-            )
+            child.set_render_order(i).set_parent(self)
+            child.set_parent_layer(self.parent_layer)
+            child.set_parent_scene(self.parent_scene)
             i += 1
         if self.parent:
             self.parent.do_sort_children = True
@@ -292,7 +310,9 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def remove(self, *children: "Widget") -> Self:
         for child in self.children:
             if child in children:
-                child.set_parent(None).set_parent_scene(None)
+                child.set_parent(None)
+                child.set_parent_scene(None)
+                child.set_parent_layer(None)
                 self.children.remove(child)
         if self.parent:
             self.parent.do_sort_children = True

@@ -149,9 +149,15 @@ class InteractiveWidget(Widget):
         return self.do_on_key_up(key)
 
     def do_on_key_down(self, key) -> bool:
+        """
+        return True to stop event progpagation
+        """
         return False
 
     def do_on_key_up(self, key) -> bool:
+        """
+        return True to stop event progpagation
+        """
         return False
 
     def do_on_get_focus(self) -> None:

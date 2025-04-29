@@ -2,6 +2,7 @@ from .label import Label
 from typing import Self,Callable,Any
 import batFramework as bf
 import pygame
+import sys
 
 
 def convert_to_int(*args):
@@ -46,7 +47,7 @@ class Debugger(Label):
 
     def set_parent_scene(self, scene) -> Self:
         super().set_parent_scene(scene)
-        self.set_render_order(99)
+        self.set_render_order(sys.maxsize-100)
         self.update_text()
         return self
 
@@ -116,21 +117,6 @@ class BasicDebugger(FPSDebugger):
         parent_scene = self.parent_scene
 
         self.add_dynamic("Mouse", pygame.mouse.get_pos)
-        self.add_dynamic(
-            "World",
-            lambda: convert_to_int(
-                *parent_scene.camera.screen_to_world(pygame.mouse.get_pos())
-            ),
-        )
-        self.add_dynamic(
-            "Hud",
-            lambda: convert_to_int(
-                *parent_scene.hud_camera.screen_to_world(pygame.mouse.get_pos())
-            ),
-        )
-        self.add_dynamic("W. Ent.", lambda: parent_scene.get_world_entity_count())
-        self.add_dynamic("H. Ent.", lambda: parent_scene.get_hud_entity_count())
-
         self.add_dynamic(
             "Hover",
             lambda: (

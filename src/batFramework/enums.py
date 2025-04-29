@@ -93,6 +93,8 @@ class alignment(Enum):
     TOPRIGHT = "topright"
     MIDLEFT = "midleft"
     MIDRIGHT = "midright"
+    MIDTOP = "midtop"
+    MIDBOTTOM = "midbottom"
     BOTTOMLEFT = "bottomleft"
     BOTTOMRIGHT = "bottomright"
 

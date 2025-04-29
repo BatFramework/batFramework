@@ -84,6 +84,7 @@ class Container(Shape, InteractiveWidget):
             tmp.set_parent(None)
             self.layout.set_parent(self)
             self.dirty_layout = True
+            self.reset_scroll()
         return self
 
     def get_interactive_children(self) -> list[InteractiveWidget]:

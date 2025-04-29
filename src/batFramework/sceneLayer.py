@@ -19,8 +19,8 @@ class SceneLayer:
         self.scene = None
         self.name = name
         self.entities : dict[int,Entity] = {}
-        self.entity_to_add = set()
-        self.entity_to_remove = set()
+        self.entities_to_add : set[Entity]= set()
+        self.entities_to_remove : set[Entity]= set()
         self.draw_order : list[int] = []
         self.camera = bf.Camera(convert_alpha=convert_alpha)
 
@@ -30,45 +30,59 @@ class SceneLayer:
     def set_scene(self, scene:BaseScene):
         self.scene = scene
 
-    def _add(self,*entities:Entity):
+    def add(self,*entities:Entity):
         for e in entities:
-            if e.uid not in self.entities and e not in self.entity_to_add:
-                self.entity_to_add.add(e)
-                e.set_parent_scene(self.scene)
-                e.set_parent_layer(self)
+            if e.uid not in self.entities and e not in self.entities_to_add:
+                self.entities_to_add.add(e)
+
 
     def get_by_tags(self,*tags)->list[Entity]:
-        return [v for k,v in self.entities.items() if v.has_tags(tags) ]
+        return [v for v in self.entities.values() if v.has_tags(tags) ]
 
     def get_by_uid(self,uid:int)->Entity|None:
         return self.entities.get(uid,None)
 
-    def _remove(self,*entities:Entity):
+    def remove(self,*entities:Entity):
         for e in entities:
-            if e.uid in self.entities and e not in self.entity_to_remove:
-                self.entity_to_remove.add(e)
-                e.set_parent_scene(None)
+            if e.uid in self.entities and e not in self.entities_to_remove:
+                self.entities_to_remove.add(e)
 
     def process_event(self,event:pygame.Event):
+        if event.type == pygame.VIDEORESIZE:
+            self.camera.set_size(bf.const.RESOLUTION)
+
         for e in self.entities.values():
             e.process_event(event)
             if event.consumed : return
 
-    def update(self,dt):
-        
+    def update(self, dt):
+        # Update all entities
         for e in self.entities.values():
             e.update(dt)
-        for e in self.entity_to_remove:
-            self.entities.pop(e.uid)
-        self.entity_to_remove.clear()
+
+        # Remove entities marked for removal
+        for e in self.entities_to_remove:
+            print(self.entities_to_remove)
+            if e.uid in self.entities.keys():
+                e.set_parent_scene(None)
+                self.entities.pop(e.uid)
+        self.entities_to_remove.clear()
+
+        # Add new entities
         reorder = False
-        for e in self.entity_to_add:
+        for e in self.entities_to_add:
             self.entities[e.uid] = e
-            if not reorder and isinstance(e,Drawable):
+            e.set_parent_layer(self)
+            e.set_parent_scene(self.scene)
+            if not reorder and isinstance(e, Drawable):
                 reorder = True
-        self.entity_to_add.clear()
+        self.entities_to_add.clear()
+
+        # Reorder draw order if necessary
         if reorder:
             self.update_draw_order()
+
+        # Update the camera
         self.camera.update(dt)
 
     def clear(self):
@@ -77,16 +91,20 @@ class SceneLayer:
         """
         self.camera.clear()
 
-    def draw(self,surface:pygame.Surface):
+    def draw(self, surface: pygame.Surface):
         debugMode = bf.ResourceManager().get_sharedVar("debug_mode")
 
+        # Draw entities in the correct order
         for uid in self.draw_order:
-            self.entities[uid].draw(self.camera)
+            if uid in self.entities and not self.entities[uid].drawn_by_group:  # Ensure the entity still exists
+                self.entities[uid].draw(self.camera)
 
+        # Draw debug outlines if in debug mode
         if debugMode == bf.debugMode.OUTLINES:
-            [self.debug_entity(uid) for uid in self.draw_order]
+            [self.debug_entity(uid) for uid in self.draw_order if uid in self.entities]
 
-        surface.blit(self.camera.surface,(0,0))
+        # Blit the camera surface onto the provided surface
+        surface.blit(self.camera.surface, (0, 0))
 
     def update_draw_order(self):
         self.draw_order = sorted(

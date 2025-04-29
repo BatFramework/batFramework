@@ -25,6 +25,7 @@ class Drawable(Entity):
         self.convert_alpha: bool = convert_alpha
         self.surface_flags: int = surface_flags
         self.blit_flags: int = 0
+        self.drawn_by_group : bool = False # flag for render group  
         self.surface: pygame.Surface = pygame.Surface(self.rect.size, surface_flags)
         if convert_alpha:
             self.surface = self.surface.convert_alpha()
@@ -67,7 +68,7 @@ class Drawable(Entity):
         """
         Draw the entity onto the camera surface
         """
-        if not self.visible or not camera.rect.colliderect(self.rect) or self.surface.get_alpha() == 0:
+        if not self.visible or self.drawn_by_group or not camera.rect.colliderect(self.rect) or self.surface.get_alpha() == 0:
             return
         camera.surface.blit(
             self.surface,
