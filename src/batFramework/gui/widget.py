@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Self, Callable
+from typing import TYPE_CHECKING, Self, Callable, Any
 from collections.abc import Iterable
 import batFramework as bf
 import pygame
@@ -195,8 +195,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         if self.visible:
             if any(self.padding):
                 yield (self.get_padded_rect(), self.debug_color)
-            else:
-                yield (self.rect, self.debug_color)
+            # else:
+            yield (self.rect, self.debug_color)
         for child in self.children:
             yield from child.get_debug_outlines()
 
@@ -224,7 +224,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self._constraints_to_ignore = []
         return self
 
-    def resolve_constraints(self) -> None:
+    def resolve_constraints(self,size_only:bool=False,position_only:bool=False) -> None:
         if self.parent is None or not self.constraints:
             self.dirty_constraints = False
             return
@@ -236,7 +236,15 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                 self._constraints_capture = capture
                 self._constraints_to_ignore = []
                 
-        constraints = self.constraints.copy()
+        def constraint_filter(c:"Constraint"):
+            if size_only:
+                return c.affects_size
+            elif position_only:
+                return c.affects_position
+            return True  # default: apply all
+        
+        # constraints = self.constraints.copy()
+        constraints = [c for c in self.constraints if constraint_filter(c)]
         # If all are resolved early exit
         if all(c.evaluate(self.parent,self) for c in constraints if c not in self._constraints_to_ignore):
             self.dirty_constraints = False
@@ -299,7 +307,9 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.children.extend(children)
         i = len(self.children)
         for child in children:
-            child.set_render_order(i).set_parent(self)
+            if child.render_order == 0:
+                child.set_render_order(i+1)
+            child.set_parent(self)
             child.set_parent_layer(self.parent_layer)
             child.set_parent_scene(self.parent_scene)
             i += 1
@@ -362,7 +372,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.surface.fill((0, 0, 0, 0))
         return self
 
-    def visit(self, func: Callable, top_down: bool = True, *args, **kwargs) -> None:
+    def visit(self, func: Callable[["Widget"],Any], top_down: bool = True, *args, **kwargs) -> None:
         if top_down:
             func(self, *args, **kwargs)
         for child in self.children:
@@ -403,46 +413,57 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return w
 
 
-    def apply_updates(self,skip_draw=False) -> None:
+    def apply_updates(self,pass_type):
+        # print(f"Apply updates {pass_type} called on {self}")
+        if pass_type == "pre":
+            self.apply_pre_updates()
+            for child in self.children:
+                child.apply_updates("pre")
+        elif pass_type == "post":
+            for child in self.children:
+                child.apply_updates("post")
+            self.apply_post_updates()
+
+    def apply_pre_updates(self):
+        """
+        TOP TO BOTTOM
+        for cases when widget attributes depends on parent attributes
+        """
         if self.dirty_constraints:
-            self.resolve_constraints() 
+            self.resolve_constraints(size_only=True)
             self.dirty_constraints = False
 
-        # Build shape if needed
+    def apply_post_updates(self,skip_draw:bool=False):
+        """
+        BOTTOM TO TOP
+        for cases when widget attributes depend on children attributes
+        """
+
         if self.dirty_shape:
-            self.build()  # Finalize widget size
+            self.build()
             self.dirty_shape = False
             self.dirty_surface = True
+            if self.parent :
+                self.parent.dirty_constraints = True
+            # trigger layout or constraint updates in parent
+
+            # from .container import Container
+            # if self.parent and isinstance(self.parent, Container):
+            #     self.parent.dirty_layout = True
+
+            # force recheck of constraints
             self.dirty_constraints = True
-            # Propagate dirty_constraints to children in case size affects their position
-            for child in self.children:
-                child.dirty_constraints = True
 
-            # Apply updates to siblings if they have to grow
-            from .constraints.constraints import Grow  # Import inside the method to avoid circular import
-            growers = [
-                sibling for sibling in self.parent.children
-                if sibling != self and any(isinstance(c, Grow) for c in sibling.constraints)
-            ]
-            for sibling in growers:
-                sibling.dirty_constraints = True
-                    
-
-        # Resolve constraints now that size is finalized
         if self.dirty_constraints:
-            self.resolve_constraints()  # Finalize positioning based on final size
+            self.resolve_constraints(position_only=True)
             self.dirty_constraints = False
 
-
-        # Step 3: Paint the surface if flagged as dirty
         if self.dirty_surface and not skip_draw:
             self.paint()
             self.dirty_surface = False
-    
 
 
     def draw(self, camera: bf.Camera) -> None:
-        self.apply_updates()
         # Draw widget and handle clipping if necessary
         super().draw(camera)
 

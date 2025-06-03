@@ -105,14 +105,25 @@ class ArrowIndicator(Indicator):
     def paint(self):
         super().paint()
         r = self.get_local_padded_rect()
-        r.inflate_ip(-2,-2)
-        r.normalize()
+        size = min(r.width, r.height)
+        if size %2 == 0:
+            size -= 1
+        r.width = size
+        r.height = size
+        if (self.padding[1]+self.padding[3] )%2 ==0:
+            r.height-=1
+        if (self.padding[0]+self.padding[2] )%2 ==0:
+            r.width-=1
+        r.center = self.get_local_padded_rect().center
+        # r.inflate_ip(3,3)
+        # r.normalize()
         # r.move_ip(-self.rect.left,-self.rect.right)
         bf.utils.draw_triangle(
             surface = self.surface,
             color = self.arrow_color,
             rect =r,
             direction = self.direction,
+
         )
         
 

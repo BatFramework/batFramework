@@ -23,7 +23,7 @@ class EasingController(bf.Timer):
         easing: bf.easing = bf.easing.LINEAR,
         update_callback=None,
         end_callback: Callable[[], Any] = None,
-        loop: bool = False,
+        loop: int = 0,
         register:str="global"
     ) -> None:
         self.easing_function = easing

@@ -114,9 +114,14 @@ class BasicDebugger(FPSDebugger):
             "Resolution", lambda: "x".join(str(i) for i in bf.const.RESOLUTION)
         )
         super().do_when_added()
+        self.add_dynamic("Mouse", pygame.mouse.get_pos)
+
+        if not hasattr(self.parent_scene,"root"):
+            print("Debugger couldn't find 'root' widget in parent scene")
+            return
+        
         parent_scene = self.parent_scene
 
-        self.add_dynamic("Mouse", pygame.mouse.get_pos)
         self.add_dynamic(
             "Hover",
             lambda: (

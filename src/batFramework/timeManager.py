@@ -5,7 +5,7 @@ class Timer:
     _count: int = 0
     _available_ids: set[int] = set()
 
-    def __init__(self, duration: float, end_callback: Callable[[], Any], loop: bool = False, register: str = "global") -> None:
+    def __init__(self, duration: float, end_callback: Callable[[], Any], loop: int = 0, register: str = "global") -> None:
         if Timer._available_ids:
             self.uid = Timer._available_ids.pop()
         else:
@@ -18,7 +18,7 @@ class Timer:
 
         self.elapsed_time: float = 0
         self.is_over: bool = False
-        self.is_looping: bool = loop
+        self.loop: int = loop  # Number of loops (-1 for infinite)
         self.is_paused: bool = False
         self.do_delete: bool = False
         self.is_stopped: bool = True
@@ -27,7 +27,8 @@ class Timer:
         return self.elapsed_time != -1 and self.is_over
 
     def __str__(self) -> str:
-        return f"Timer ({self.uid}) {self.elapsed_time}/{self.duration} | {'loop ' if self.is_looping else ''} {'(D) ' if self.do_delete else ''}"
+        loop_info = "infinite" if self.loop == -1 else f"{self.loop} loops left"
+        return f"Timer ({self.uid}) {self.elapsed_time}/{self.duration} | {loop_info} {'(D) ' if self.do_delete else ''}"
 
     def stop(self) -> Self:
         """
@@ -45,7 +46,7 @@ class Timer:
         """
         Starts the timer only if not already started (unless force is used, which resets it).
         """
-        if self.elapsed_time>0 and not force:
+        if self.elapsed_time > 0 and not force:
             return self
         if not bf.TimeManager().add_timer(self, self.register):
             return self
@@ -63,7 +64,7 @@ class Timer:
         return self
 
     def resume(self) -> Self:
-        """"
+        """
         Resumes from a paused state.
         """
         self.is_paused = False
@@ -107,14 +108,21 @@ class Timer:
         If it is looping, it will restart the timer **only if it wasn't stopped**.
         """
         self.is_over = True
-        if self.end_callback :
+        if self.end_callback:
             self.end_callback()
-        self.elapsed_time = 0
-        
-        # Restart if looping, but only if it wasn't manually stopped
-        if self.is_looping and not self.is_stopped:
+
+        # Handle looping
+        if self.loop == -1:  # Infinite looping
+            self.elapsed_time = 0
             self.start()
             return
+        elif self.loop > 0:  # Decrease loop count and restart
+            self.loop -= 1
+            self.elapsed_time = 0
+            self.start()
+            return
+
+        # Stop the timer if no loops are left
         self.is_stopped = True
 
     def should_delete(self) -> bool:
@@ -131,7 +139,7 @@ class SceneTimer(Timer):
     """
     A timer that is only updated while the given scene is active (being updated)
     """
-    def __init__(self, duration: float | int, end_callback, loop: bool = False, scene_name:str = "global") -> None:
+    def __init__(self, duration: float | int, end_callback, loop: int = 0, scene_name:str = "global") -> None:
         super().__init__(duration, end_callback, loop, scene_name)
 
 class TimeManager(metaclass=bf.Singleton):

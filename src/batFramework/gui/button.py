@@ -2,8 +2,6 @@ from .label import Label
 import batFramework as bf
 from typing import Self, Callable,Any
 from .clickableWidget import ClickableWidget
-import pygame
-from math import ceil
 
 
 class Button(Label, ClickableWidget):
@@ -23,4 +21,3 @@ class Button(Label, ClickableWidget):
         return res[0] if self.autoresize_w else self.rect.w, (
             res[1] if self.autoresize_h else self.rect.h
         )
-

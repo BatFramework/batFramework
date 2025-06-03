@@ -1,7 +1,7 @@
 import batFramework as bf
 import pygame
 from .shape import Shape
-from typing import Self,Union
+from typing import Literal, Self,Union
 from math import ceil
 
 class Label(Shape):
@@ -76,7 +76,7 @@ class Label(Shape):
         self.dirty_surface = True
         return self
 
-    def set_line_alignment(self,alignment:Union[pygame.FONT_LEFT|pygame.FONT_RIGHT|pygame.FONT_CENTER])->Self:
+    def set_line_alignment(self, alignment: Union[Literal["left"], Literal["right"], Literal["center"]]) -> Self:
         self.line_alignment = alignment
         self.dirty_surface = True
         return self
@@ -267,12 +267,8 @@ class Label(Shape):
 
         if self.rect.size != target_size :
             self.set_size(target_size)
-            self.apply_updates(skip_draw=True)
+            self.apply_post_updates(skip_draw=True)
             return
-        """
-        I want to check if rect.size == target_size (only for dimensions not dependent)
-        
-        """
 
         self.text_rect.size = self._get_text_rect_required_size()
         padded = self.get_local_padded_rect()
@@ -330,8 +326,8 @@ class Label(Shape):
         text_rect.y = ceil(text_rect.y)
 
     def build(self) -> None:
-        super().build()
         self._build_layout()
+        super().build()
         # print("here",self.text,self.rect)
 
     def paint(self) -> None:

@@ -9,6 +9,7 @@ from .utils import Utils as utils
 from .tileset import Tileset
 from .timeManager import TimeManager,Timer,SceneTimer
 from .easingController import EasingController
+from .propertyEaser import PropertyEaser
 from .cutsceneManager import CutsceneManager
 import batFramework.cutscene as cutscene
 from .audioManager import AudioManager

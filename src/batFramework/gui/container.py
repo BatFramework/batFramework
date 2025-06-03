@@ -4,7 +4,6 @@ from .shape import Shape
 from .interactiveWidget import InteractiveWidget
 from .layout import Layout, Column
 from typing import Self
-import pygame
 from pygame.math import Vector2
 
 
@@ -67,14 +66,20 @@ class Container(Shape, InteractiveWidget):
         if not self.children:
             return self
         r = self.get_padded_rect()
-        size = self.children[0].rect.unionall([child.rect for child in self.children[1:]]).size
+        # Compute the bounding rect of all children in one go
+        children_rect = self.children[0].rect.copy()
+        for child in self.children[1:]:
+            children_rect.union_ip(child.rect)
+        max_scroll_x = max(0, children_rect.width - r.width)
+        max_scroll_y = max(0, children_rect.height - r.height)
 
-        max_scroll_x = max(0, size[0] - r.width)
-        max_scroll_y = max(0, size[1] - r.height)
+        # Clamp scroll values only if needed
+        new_x = min(max(self.scroll.x, 0), max_scroll_x)
+        new_y = min(max(self.scroll.y, 0), max_scroll_y)
 
-        self.scroll.x = max(0, min(self.scroll.x, max_scroll_x))
-        self.scroll.y = max(0, min(self.scroll.y, max_scroll_y))
-        self.dirty_layout = True
+        if self.scroll.x != new_x or self.scroll.y != new_y:
+            self.scroll.x = new_x
+            self.scroll.y = new_y
         return self
 
     def set_layout(self, layout: Layout) -> Self:
@@ -83,8 +88,8 @@ class Container(Shape, InteractiveWidget):
         if self.layout != tmp:
             tmp.set_parent(None)
             self.layout.set_parent(self)
-            self.dirty_layout = True
             self.reset_scroll()
+            self.dirty_layout = True
         return self
 
     def get_interactive_children(self) -> list[InteractiveWidget]:
@@ -97,13 +102,13 @@ class Container(Shape, InteractiveWidget):
     def add(self, *child: Widget) -> Self:
         super().add(*child)
         self.dirty_shape = True
-        self.clamp_scroll()
+        self.dirty_layout = True
         return self
 
     def remove(self, *child: Widget) -> Self:
         super().remove(*child)
         self.dirty_shape = True
-        self.clamp_scroll()
+        self.dirty_layout = True
         return self
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
@@ -138,6 +143,8 @@ class Container(Shape, InteractiveWidget):
         try:
             index = interactive_children.index(child)
             self.focused_index = index
+            if self.layout : 
+                self.layout.scroll_to_widget(child)
             return True
         except ValueError:
             return False
@@ -145,55 +152,55 @@ class Container(Shape, InteractiveWidget):
     def allow_focus_to_self(self) -> bool:
         return bool(self.get_interactive_children()) and self.visible
 
-
-    def apply_updates(self):
-        if any(child.dirty_shape for child in self.children):
-            self.dirty_layout = True  # Mark layout as dirty if any child changed size
-
-        if self.dirty_constraints:
-            self.resolve_constraints()  # Finalize positioning based on size
     
-        # Step 1: Build shape if needed
-        if self.dirty_shape:
-            self.build()  # Finalize size of the container
-            self.dirty_shape = False
-            self.dirty_surface = True  # Mark surface for repaint
-            self.dirty_layout = True  # Mark layout for arrangement
-            # Flag all children to update constraints after size is finalized
-            for child in self.children:
-                child.dirty_constraints = True
+    def build(self) -> None:
+        if self.layout is not None and  (self.autoresize_w or self.autoresize_h):
+            size = self.inflate_rect_by_padding((0,0,*self.layout.get_auto_size())).size
+            if self.rect.size != size:
+                self.set_size(size)
+        super().build()
 
 
-            from .constraints.constraints import Grow  # Import inside the method to avoid circular import
-            growers = [
-                sibling for sibling in self.parent.children
-                if sibling != self and any(isinstance(c, Grow) for c in sibling.constraints)
-            ]
-            for sibling in growers:
-                # print("_"*20,"\nsibling is : ",str(sibling))
-                sibling.dirty_constraints = True
-                    
-
-        for child in self.children:
-            child.apply_updates()
-
-        # Step 2: Arrange layout if marked as dirty
-        if self.dirty_layout:
-            self.layout.arrange()
-            self.dirty_surface = True
-            self.dirty_layout = False
-            # Constraints may need to adjust based on the layout change
-            self.dirty_constraints = True
-
-        # Step 3: Resolve constraints now that size and layout are finalized
-        if self.dirty_constraints:
-            self.resolve_constraints()  # Finalize positioning based on size
-            for child in self.children:
-                child.dirty_constraints = True  # Children inherit updated positioning
+    def apply_pre_updates(self):
+        if self.dirty_constraints or self.dirty_shape:
+            self.resolve_constraints(size_only=True)
             self.dirty_constraints = False
 
-        # Step 4: Paint the surface if marked as dirty
-        if self.dirty_surface:
-            # print("PAINT !!")
+        if self.dirty_layout:
+            self.layout.arrange()
+            self.dirty_layout = False
+
+
+    def apply_post_updates(self,skip_draw:bool=False):
+        """
+        BOTTOM TO TOP
+        for cases when widget attributes depend on children attributes
+        """
+
+        if self.dirty_shape:
+            self.layout.update_child_constraints()
+            self.build()
+            self.dirty_shape = False
+            self.dirty_surface = True
+            self.dirty_layout =  True
+
+            # trigger layout or constraint updates in parent
+            
+            # from .container import Container
+            # if self.parent and isinstance(self.parent, Container):
+            #     self.parent.dirty_layout = True
+
+            # force recheck of constraints
+            self.dirty_constraints = True
+
+
+        if self.dirty_constraints:
+            self.resolve_constraints(position_only=True)
+            self.dirty_constraints = False
+
+
+        if self.dirty_surface and not skip_draw:
             self.paint()
             self.dirty_surface = False
+  
+

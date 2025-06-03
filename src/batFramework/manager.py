@@ -75,7 +75,7 @@ class Manager(bf.SceneManager):
                 self.print_status()
                 return
         self.cutsceneManager.process_event(event)
-        if event.type == pygame.VIDEORESIZE :
+        if event.type == pygame.VIDEORESIZE and not (bf.const.FLAGS & pygame.SCALED):
             bf.const.set_resolution((event.w, event.h))
 
         if event.consumed: return

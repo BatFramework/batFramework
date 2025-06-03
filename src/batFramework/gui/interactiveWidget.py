@@ -96,7 +96,7 @@ class InteractiveWidget(Widget):
             # Current is the last child, move to parent's next sibling
             return self.find_next_widget(current.parent)
 
-    def find_prev_widget(self, current):
+    def find_prev_widget(self, current : "Widget"):
         """Find the previous interactive widget, considering parent and sibling relationships."""
         if current.is_root:
             return None  # Root has no parent
@@ -106,9 +106,11 @@ class InteractiveWidget(Widget):
         start_index = siblings.index(current)
         good_index = -1
         for i in range(start_index-1,-1,-1):
-            if isinstance(siblings[i],InteractiveWidget) and siblings[i].allow_focus_to_self():
-                good_index = i
-                break
+            sibling = siblings[i]
+            if isinstance(sibling,InteractiveWidget):
+                if sibling.allow_focus_to_self():
+                    good_index = i
+                    break
         if good_index >= 0:
             # Not the first child, return the previous sibling
             return siblings[good_index]
@@ -130,23 +132,25 @@ class InteractiveWidget(Widget):
             if prev_widget:
                 prev_widget.get_focus()
 
+
+    
     def on_key_down(self, key) -> bool:
-        if key == pygame.K_TAB and self.parent:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-
-                self.focus_prev_tab(self)
-            else:
-                self.focus_next_tab(self)
-            return True
-        else:
-
-            return self.do_on_key_down(key)
-
-        return False
+        """
+        return True to stop event progpagation
+        """
+        return self.do_on_key_down(key)
 
     def on_key_up(self, key) -> bool:
+        """
+        return True to stop event progpagation
+        """
         return self.do_on_key_up(key)
+
+    def do_on_get_focus(self) -> None:
+        pass
+
+    def do_on_lose_focus(self) -> None:
+        pass
 
     def do_on_key_down(self, key) -> bool:
         """
@@ -160,24 +164,31 @@ class InteractiveWidget(Widget):
         """
         return False
 
-    def do_on_get_focus(self) -> None:
-        pass
-
-    def do_on_lose_focus(self) -> None:
-        pass
 
     def on_click_down(self, button: int) -> bool:
+        """
+        return True to stop event progpagation
+        """
         self.is_clicked_down = True
         return self.do_on_click_down(button)
 
     def on_click_up(self, button: int) -> bool:
+        """
+        return True to stop event progpagation
+        """
         self.is_clicked_down = False
         return self.do_on_click_up(button)
 
     def do_on_click_down(self, button: int) -> bool:
+        """
+        return True to stop event progpagation
+        """
         return False
 
     def do_on_click_up(self, button: int) -> bool:
+        """
+        return True to stop event progpagation
+        """
         return False
 
     def on_enter(self) -> None:
@@ -205,39 +216,22 @@ class InteractiveWidget(Widget):
         pass
 
     def draw_focused(self, camera: bf.Camera) -> None:
+        prop = 16
+        pulse = int(prop * 0.75 - (prop * cos(pygame.time.get_ticks() / 100) / 4))
+        delta = (pulse // 2) * 2  # ensure even
 
-        proportion = 16
-        surface = pygame.Surface(self.rect.inflate(proportion,proportion).size)
-        surface.fill("black")
+        # Get rect in screen space, inflated for visual effect
+        screen_rect = camera.world_to_screen(self.rect.inflate(prop, prop))
 
-        delta = proportion*0.75 - int(proportion * cos(pygame.time.get_ticks() / 100) /4)
-        delta = delta//2 * 2
-        # Base rect centered in tmp surface
-        base_rect = surface.get_frect()
-        
-        # Expanded white rectangle for border effect
-        white_rect = base_rect.inflate(-delta,-delta)
-        white_rect.center = base_rect.center
-        pygame.draw.rect(surface, "white", white_rect, 2, *self.border_radius)
-        
-        # Black cutout rectangles to create the effect around the edges
-        black_rect_1 = white_rect.copy()
-        black_rect_1.w -= proportion
-        black_rect_1.centerx = white_rect.centerx
-        
-        black_rect_2 = white_rect.copy()
-        black_rect_2.h -= proportion
-        black_rect_2.centery = white_rect.centery
-        
-        surface.fill("black", black_rect_1)
-        surface.fill("black", black_rect_2)
+        # Shrink for inner pulsing border
+        inner = screen_rect.inflate(-delta, -delta)
+        inner.topleft = 0,0
+        surface = pygame.Surface(inner.size)
+        surface.set_colorkey((0,0,0))
+        pygame.draw.rect(surface, "white", inner, 2, *self.border_radius)
+        pygame.draw.rect(surface, "black", inner.inflate(-16,0), 2)
+        pygame.draw.rect(surface, "black", inner.inflate(0,-16), 2)
+        inner.center = screen_rect.center
+        camera.surface.blit(surface,inner)
 
-        base_rect.center = self.rect.center
-
-        surface.set_colorkey("black")
-    
-        # Blit the tmp surface onto the camera surface with adjusted position
-        camera.surface.blit(
-            surface,
-            base_rect.move(-camera.rect.x, -camera.rect.y),
-        )
+        # pygame.draw.rect(camera.surface, "white", inner, 2, *self.border_radius)

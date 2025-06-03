@@ -139,23 +139,6 @@ class GlideWorldCameraFromTo(Cutscene):
         super().end()
 
 
-class GlideWorldCameraTo(GlideWorldCameraFromTo):
-    def __init__(self, stop:tuple[float,float],duration:float=1,easing:bf.easing=bf.easing.EASE_IN_OUT,scene_name:str=None):
-        super().__init__((0,0),stop,duration,easing,scene_name)
-
-    def start(self):
-        super().start()
-        self.start_pos = self.scene.camera.get_center()
-
-
-class GlideWorldCameraBy(GlideWorldCameraFromTo):
-    def __init__(self, delta:tuple[float,float],duration:float=1,easing:bf.easing=bf.easing.EASE_IN_OUT,scene_name:str=None):
-        super().__init__((0,0),(0,0),duration,easing,scene_name)
-        self.delta = delta
-    def start(self):
-        super().start()
-        self.start_pos = self.scene.camera.get_center()
-        self.stop_pos = self.scene.camera.rect.move(*self.delta).center
 
 class Function(Cutscene):
     def __init__(self, function:Callable[[],Any],*args,**kwargs):
@@ -168,3 +151,103 @@ class Function(Cutscene):
         self.is_over = False
         self.function(*self.args,**self.kwargs)
         self.end()
+
+class GlideCamera(Cutscene):
+    def __init__(
+        self,
+        start: tuple[float, float] | None = None,
+        stop: tuple[float, float] | None = None,
+        delta: tuple[float, float] | None = None,
+        duration: float = 1,
+        easing: bf.easing = bf.easing.EASE_IN_OUT,
+        scene_name: str | None = None,
+        layer_name: str = "world",
+    ):
+        super().__init__()
+        self.scene = None
+        self.layer = None
+        self.scene_name = scene_name
+        self.layer_name = layer_name
+        self.start_pos = start
+        self.stop_pos = stop
+        self.delta = delta
+        self.controller = bf.EasingController(
+            duration, easing, update_callback=self.internal, end_callback=self.end
+        )
+
+    def start(self):
+        self.is_over = False
+
+        if self.scene_name is None:
+            self.scene_name = bf.CutsceneManager().manager.get_scene_at(0).name
+
+        self.scene = bf.CutsceneManager().manager.get_scene(self.scene_name)
+        self.layer = self.scene.get_layer(self.layer_name)
+
+        if not self.layer:
+            raise ValueError(f"Layer '{self.layer_name}' not found in scene '{self.scene_name}'.")
+
+        # Fallback to current camera position
+        if self.start_pos is None:
+            self.start_pos = self.layer.camera.get_center()
+
+        # Compute stop_pos if not set
+        if self.stop_pos is None:
+            if self.delta is not None:
+                self.stop_pos = (
+                    self.start_pos[0] + self.delta[0],
+                    self.start_pos[1] + self.delta[1],
+                )
+            else:
+                raise ValueError("Must specify either stop or delta position")
+
+        self.controller.start()
+
+    def internal(self, progression: float):
+        self.layer.camera.set_center(
+            self.start_pos[0] + progression * (self.stop_pos[0] - self.start_pos[0]),
+            self.start_pos[1] + progression * (self.stop_pos[1] - self.start_pos[1]),
+        )
+
+    def end(self):
+        if self.layer:
+            self.layer.camera.set_center(*self.stop_pos)
+        super().end()
+
+class GlideCameraTo(GlideCamera):
+    def __init__(
+        self,
+        stop: tuple[float, float],
+        duration: float = 1,
+        easing: bf.easing = bf.easing.EASE_IN_OUT,
+        scene_name: str | None = None,
+        layer_name: str = "world",
+    ):
+        super().__init__(
+            start=None,
+            stop=stop,
+            delta=None,
+            duration=duration,
+            easing=easing,
+            scene_name=scene_name,
+            layer_name=layer_name,
+        )
+        
+class GlideCameraBy(GlideCamera):
+    def __init__(
+        self,
+        delta: tuple[float, float],
+        duration: float = 1,
+        easing: bf.easing = bf.easing.EASE_IN_OUT,
+        scene_name: str | None = None,
+        layer_name: str = "world",
+    ):
+        super().__init__(
+            start=None,
+            stop=None,
+            delta=delta,
+            duration=duration,
+            easing=easing,
+            scene_name=scene_name,
+            layer_name=layer_name,
+        )

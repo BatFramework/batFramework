@@ -23,7 +23,7 @@ class BaseScene:
         self.manager: Manager | None = None
         self.active = False
         self.visible = False
-        self.clear_color = bf.color.BLACK
+        self.clear_color = None
         self.actions: bf.ActionContainer = bf.ActionContainer()
         self.early_actions: bf.ActionContainer = bf.ActionContainer()
         self.scene_layers : list[SceneLayer] = []
@@ -44,10 +44,11 @@ class BaseScene:
     def remove_layer(self,index=0):
         self.scene_layers.pop(index)
 
-    def set_layer(self,layer):
+    def set_layer(self,layername,layer):
         for i,l in enumerate(self.scene_layers[::]):
-            if l.name == layer:
+            if l.name == layername:
                 self.scene_layers[i] = layer
+                layer.set_scene(self)
 
     def get_layer(self,name:str)->bf.SceneLayer:
         for s in self.scene_layers:
@@ -75,6 +76,11 @@ class BaseScene:
     def get_scene_index(self) -> int:
         """Get the scene index."""
         return self.scene_index
+
+    def when_added(self):
+        for s in self.scene_layers:
+            s.flush_entity_changes()
+        self.do_when_added()
 
     def do_when_added(self):
         pass
@@ -183,8 +189,6 @@ class BaseScene:
     def draw(self, surface: pygame.Surface):
         if self.clear_color is not None:
             surface.fill(self.clear_color)
-        for l in self.scene_layers:
-            l.clear()
 
         self.do_early_draw(surface)
 

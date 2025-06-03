@@ -69,31 +69,31 @@ class SliderMeter(Meter, InteractiveWidget):
                 self.parent.set_value(self.parent.position_to_value(pos))
         self.do_on_click_down(button)
 
-    def apply_updates(self,skip_draw:bool=False):
-        if self.dirty_constraints:
-            self.resolve_constraints()  # Finalize positioning based on final size
-            self.dirty_constraints = False
+    # def apply_updates(self,skip_draw:bool=False):
+    #     if self.dirty_constraints:
+    #         self.resolve_constraints()  # Finalize positioning based on final size
+    #         self.dirty_constraints = False
 
-        # Build shape if needed
-        if self.dirty_shape:
-            self.build()  # Finalize widget size
-            self.dirty_shape = False
-            self.dirty_surface = True
-            self.dirty_constraints = True
-            # Propagate dirty_constraints to children in case size affects their position
-            for child in self.children:
-                child.dirty_constraints = True
-            self.parent.dirty_shape = True
-        # Resolve constraints now that size is finalized
-        if self.dirty_constraints:
-            self.resolve_constraints()  # Finalize positioning based on final size
-            self.dirty_constraints = False
+    #     # Build shape if needed
+    #     if self.dirty_shape:
+    #         self.build()  # Finalize widget size
+    #         self.dirty_shape = False
+    #         self.dirty_surface = True
+    #         self.dirty_constraints = True
+    #         # Propagate dirty_constraints to children in case size affects their position
+    #         for child in self.children:
+    #             child.dirty_constraints = True
+    #         self.parent.dirty_shape = True
+    #     # Resolve constraints now that size is finalized
+    #     if self.dirty_constraints:
+    #         self.resolve_constraints()  # Finalize positioning based on final size
+    #         self.dirty_constraints = False
 
 
-        # Step 3: Paint the surface if flagged as dirty
-        if self.dirty_surface and not skip_draw:
-            self.paint()
-            self.dirty_surface = False
+    #     # Step 3: Paint the surface if flagged as dirty
+    #     if self.dirty_surface and not skip_draw:
+    #         self.paint()
+    #         self.dirty_surface = False
 
 
 
@@ -109,6 +109,11 @@ class Slider(Button):
         self.add(self.meter, self.handle)
         self.meter.set_debug_color(bf.color.RED)
         self.set_value(default_value, True)
+
+    def set_tooltip_text(self, text):
+        # self.meter.set_tooltip_text(text)
+        # self.handle.set_tooltip_text(text)
+        return super().set_tooltip_text(text)
 
     def set_fill_color(self,color)->Self:
         self.meter.content.set_color(color)
@@ -168,24 +173,36 @@ class Slider(Button):
             self.meter.set_value(value)
         if self.modified_callback and (not no_callback):
             self.modified_callback(self.meter.value)
+            self.handle.set_tooltip_text(str(self.get_value()))
+            self.meter.set_tooltip_text(str(self.get_value()))
+
         return self
 
     def get_value(self) -> float:
         return self.meter.get_value()
 
-    def do_on_key_down(self, key):
+    def on_key_down(self, key):
+        if super().on_key_down(key):
+            return True
         if not self.is_enabled(): 
-            return
+            return False
         if self.axis == bf.axis.HORIZONTAL:
             if key == pygame.K_RIGHT:
                 self.set_value(self.meter.get_value() + self.meter.step)
             elif key == pygame.K_LEFT:
                 self.set_value(self.meter.get_value() - self.meter.step)
+            else:
+                return False
+            return True
         else:
             if key == pygame.K_UP:
                 self.set_value(self.meter.get_value() + self.meter.step)
             elif key == pygame.K_DOWN:
                 self.set_value(self.meter.get_value() - self.meter.step)
+            else:
+                return False
+
+            return True
 
     def do_on_click_down(self, button) -> None:
         if not self.is_enabled(): 
@@ -258,40 +275,51 @@ class Slider(Button):
             return self.inflate_rect_by_padding((0, 0, w, h+ gap + self.meter.get_min_required_size()[1])).size
         
     def _build_composed_layout(self, other: Shape) -> bool:
+        """
+        Builds the layout for the slider, ensuring that child elements (handle and meter)
+        are only resized after the slider's size is confirmed to be correct.
+        """
         gap = self.gap if self.text else 0
-        if not self.text : self.text_rect.w = 0
+        if not self.text:
+            self.text_rect.w = 0
 
+        # Step 1: Calculate the required size for the slider
         full_rect = self.text_rect.copy()
 
         if self.axis == bf.axis.HORIZONTAL:
             other_height = min(self.text_rect.h, self.font_object.get_height() + 1)
-            if not self.autoresize_w:
-                other.set_size(other.resolve_size((self.get_padded_width() - self.text_rect.w - gap, other_height)))
-            else:
-                other.set_size(other.resolve_size((other_height * 10, other_height)))
-            self.handle.set_size(self.handle.resolve_size((other_height, other_height)))
-            full_rect.w += other.rect.w + gap
-            full_rect.h += self.unpressed_relief
-
+            full_rect.w += self.meter.get_min_required_size()[0] + gap
+            full_rect.h = max(full_rect.h, other_height) + self.unpressed_relief
         else:  # VERTICAL
             other_width = self.text_rect.h
-            full_rect.h += other.get_min_required_size()[1] + gap
-            if not self.autoresize_h:
-                other.set_size(other.resolve_size((other_width, self.get_padded_height() - self.text_rect.h - gap)))
-            else:
-                other.set_size(other.resolve_size((other_width, other_width * 10)))
-            self.handle.set_size(self.handle.resolve_size((other.rect.w, other.rect.w)))
-            full_rect.w = max(full_rect.w, other.rect.w)
+            full_rect.h += self.meter.get_min_required_size()[1] + gap
+            full_rect.w = max(full_rect.w, other_width)
             full_rect.h += self.unpressed_relief
 
+        # Step 2: Inflate the rect by padding and resolve the target size
         inflated = self.inflate_rect_by_padding((0, 0, *full_rect.size)).size
         target_size = self.resolve_size(inflated)
+
+        # Step 3: If the slider's size is not confirmed, update it and return
         if self.rect.size != target_size:
             self.set_size(target_size)
-            self.apply_updates(skip_draw=True)
+            self.apply_post_updates(skip_draw=True)
             return
+
+        # Step 4: Update the sizes of child elements (handle and meter) only after the slider's size is confirmed
+        if self.axis == bf.axis.HORIZONTAL:
+            other_height = min(self.text_rect.h, self.font_object.get_height() + 1)
+            self.meter.set_size(self.meter.resolve_size((self.get_padded_width() - self.text_rect.w - gap, other_height)))
+            self.handle.set_size(self.handle.resolve_size((other_height, other_height)))
+        else:  # VERTICAL
+            other_width = self.text_rect.h
+            self.meter.set_size(self.meter.resolve_size((other_width, self.get_padded_height() - self.text_rect.h - gap)))
+            self.handle.set_size(self.handle.resolve_size((other_width, other_width)))
+
+        # Step 5: Align the composed elements
         self._align_composed(other)
 
+        # Step 6: Position the handle based on the current value
         if self.axis == bf.axis.HORIZONTAL:
             self.handle.set_center(self.value_to_position(self.meter.value), self.meter.rect.centery)
         else:
@@ -359,7 +387,22 @@ class Slider(Button):
 
 
 
+    def apply_pre_updates(self):
+        # Step 1: Constraints and shape/size
+        super().apply_pre_updates()
+        # Build text rect size
+        self.text_rect.size = self._get_text_rect_required_size()
+        # Compose layout for meter (but not handle position yet)
+        self._build_composed_layout(self.meter)
+        # Meter and handle may need to update their own pre-updates
+        self.meter.apply_pre_updates()
+        self.handle.apply_pre_updates()
 
-    
 
-
+    def apply_post_updates(self, skip_draw: bool = False):
+        # Step 2: Final alignment and painting
+        super().apply_post_updates(skip_draw=skip_draw)
+        # Align handle to value (now that sizes are final)
+        self._align_composed(self.meter)
+        self.handle.apply_post_updates(skip_draw=skip_draw)
+        self.meter.apply_post_updates(skip_draw=skip_draw)

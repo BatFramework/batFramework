@@ -87,5 +87,5 @@ class Meter(Shape):
 
 
     def build(self) -> None:
-        super().build()
         self._build_content()
+        super().build()

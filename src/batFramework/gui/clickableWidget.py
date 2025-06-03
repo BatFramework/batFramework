@@ -140,28 +140,50 @@ class ClickableWidget(Shape, InteractiveWidget):
 
     def click(self, force=False) -> None:
         if not self.enabled and not force:
-            return
+            return False
         if self.callback is not None:
             self.callback()
+            return True
+        return False
 
-    def do_on_click_down(self, button) -> None:
+    def on_key_down(self, key):
+        if key == pygame.K_SPACE:
+            self.on_click_down(1)
+            return True
+        return self.do_on_key_down(key)
+    
+    def on_key_up(self, key):
+        if key == pygame.K_SPACE:
+            self.on_click_up(1)
+            return True
+        return self.do_on_key_down(key)
+        
+
+    def on_click_down(self, button) -> None:
+        if super().on_click_down(button):
+            return True
         if self.enabled and button == 1:
             if not self.get_focus():
-                return
+                return False
             self.is_pressed = True
             if self.click_down_sound:
                 bf.AudioManager().play_sound(self.click_down_sound)
             pygame.mouse.set_cursor(self.click_cursor)
             self.set_relief(self.pressed_relief)
+            return True
+        return False
 
-    def do_on_click_up(self, button) -> None:
+    def on_click_up(self, button) -> None:
+        if super().on_click_up(button):
+            return True
         if self.enabled and button == 1 and self.is_pressed:
             self.is_pressed = False
             if self.click_up_sound:
                 bf.AudioManager().play_sound(self.click_up_sound)
             self.set_relief(self.unpressed_relief)
-            self.click()
-
+            return self.click()
+        return False
+    
     def on_enter(self) -> None:
         if not self.enabled:
             return
@@ -182,15 +204,6 @@ class ClickableWidget(Shape, InteractiveWidget):
         super().on_lose_focus()
         self.on_exit()
 
-    def on_key_down(self, key):
-        if key == pygame.K_SPACE:
-            self.on_click_down(1)
-        super().on_key_down(key)
-
-    def on_key_up(self, key):
-        if key == pygame.K_SPACE:
-            self.on_click_up(1)
-        super().on_key_up(key)
 
     def _paint_disabled(self) -> None:
         self.surface.blit(

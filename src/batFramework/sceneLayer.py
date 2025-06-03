@@ -37,7 +37,7 @@ class SceneLayer:
 
 
     def get_by_tags(self,*tags)->list[Entity]:
-        return [v for v in self.entities.values() if v.has_tags(tags) ]
+        return [v for v in self.entities.values() if v.has_tags(*tags) ]
 
     def get_by_uid(self,uid:int)->Entity|None:
         return self.entities.get(uid,None)
@@ -60,9 +60,20 @@ class SceneLayer:
         for e in self.entities.values():
             e.update(dt)
 
+        self.flush_entity_changes()
+
+        # Update the camera
+        self.camera.update(dt)
+
+    def flush_entity_changes(self):
+        """
+        Synchronizes entity changes by removing entities marked for removal,
+        adding new entities, and updating the draw order if necessary.
+        """
+
+
         # Remove entities marked for removal
         for e in self.entities_to_remove:
-            print(self.entities_to_remove)
             if e.uid in self.entities.keys():
                 e.set_parent_scene(None)
                 self.entities.pop(e.uid)
@@ -82,9 +93,6 @@ class SceneLayer:
         if reorder:
             self.update_draw_order()
 
-        # Update the camera
-        self.camera.update(dt)
-
     def clear(self):
         """
         Clear the camera surface
@@ -92,8 +100,8 @@ class SceneLayer:
         self.camera.clear()
 
     def draw(self, surface: pygame.Surface):
+        self.camera.clear()
         debugMode = bf.ResourceManager().get_sharedVar("debug_mode")
-
         # Draw entities in the correct order
         for uid in self.draw_order:
             if uid in self.entities and not self.entities[uid].drawn_by_group:  # Ensure the entity still exists
@@ -108,7 +116,7 @@ class SceneLayer:
 
     def update_draw_order(self):
         self.draw_order = sorted(
-            (k for k,v in self.entities.items() if isinstance(v,Drawable)),
+            (k for k,v in self.entities.items() if isinstance(v,Drawable) and not v.drawn_by_group),
             key= lambda uid : self.entities[uid].render_order
         )
 
@@ -126,4 +134,5 @@ class SceneLayer:
             if self.camera.intersects(rect):
                 pygame.draw.rect(self.camera.surface, color, self.camera.world_to_screen(rect), 1)
 
-        [draw_rect(data) for data in entity.get_debug_outlines()]
+        for data in entity.get_debug_outlines():
+            draw_rect(data)

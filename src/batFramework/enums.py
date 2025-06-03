@@ -3,55 +3,58 @@ import pygame
 
 playerInput = [pygame.KEYDOWN,pygame.MOUSEBUTTONDOWN,pygame.KEYUP,pygame.MOUSEBUTTONUP]
 
-
-
 class color:
-    WHITE = (255, 255, 255)
-    LIGHTER_GRAY = (236, 240, 241)
-    LIGHT_GRAY = (189, 195, 199)
-    DARK_GRAY = (66, 66, 66)
-    DARKER_GRAY = (23, 23, 23)
-    BLACK = (0, 0, 0)
+    WHITE = pygame.Color(255, 255, 255)
+    LIGHTER_GRAY = pygame.Color(236, 240, 241)
+    LIGHT_GRAY = pygame.Color(189, 195, 199)
+    DARK_GRAY = pygame.Color(66, 66, 66)
+    DARKER_GRAY = pygame.Color(23, 23, 23)
+    BLACK = pygame.Color(0, 0, 0)
 
-    TURQUOISE = (26, 188, 156)
-    TURQUOISE_SHADE = (22, 160, 133)
+    TURQUOISE = pygame.Color(26, 188, 156)
+    TURQUOISE_SHADE = pygame.Color(22, 160, 133)
 
-    GREEN = (46, 204, 113)
-    GREEN_SHADE = (39, 174, 96)
+    GREEN = pygame.Color(46, 204, 113)
+    GREEN_SHADE = pygame.Color(39, 174, 96)
 
-    BLUE = (52, 152, 219)
-    BLUE_SHADE = (41, 128, 185)
+    BLUE = pygame.Color(52, 152, 219)
+    BLUE_SHADE = pygame.Color(41, 128, 185)
 
-    PURPLE = (155, 89, 182)
-    PURPLE_SHADE = (142, 68, 173)
+    PURPLE = pygame.Color(155, 89, 182)
+    PURPLE_SHADE = pygame.Color(142, 68, 173)
 
-    CHARCOAL = (52, 73, 94)
-    CHARCOAL_SHADE = (44, 62, 80)
+    CHARCOAL = pygame.Color(52, 73, 94)
+    CHARCOAL_SHADE = pygame.Color(44, 62, 80)
 
-    GOLD = (241, 196, 15)
-    GOLD_SHADE = (243, 156, 18)
+    GOLD = pygame.Color(241, 196, 15)
+    GOLD_SHADE = pygame.Color(243, 156, 18)
 
-    ORANGE = (230, 126, 34)
-    ORANGE_SHADE = (211, 84, 0)
+    ORANGE = pygame.Color(230, 126, 34)
+    ORANGE_SHADE = pygame.Color(211, 84, 0)
 
-    RED = (231, 76, 60)
-    RED_SHADE = (192, 57, 43)
+    RED = pygame.Color(231, 76, 60)
+    RED_SHADE = pygame.Color(192, 57, 43)
 
-    CLOUD = (236, 240, 241)
-    CLOUD_SHADE = (189, 195, 199)
+    CLOUD = pygame.Color(236, 240, 241)
+    CLOUD_SHADE = pygame.Color(189, 195, 199)
 
-    CONCRETE = (149, 165, 166)
-    CONCRETE_SHADE = (127, 140, 141)
+    CONCRETE = pygame.Color(149, 165, 166)
+    CONCRETE_SHADE = pygame.Color(127, 140, 141)
 
     # GB
-    DARKER_GB = (27, 42, 9)
-    DARK_GB = (14, 69, 11)
-    LIGHT_GB = (73, 107, 34)
-    LIGHTER_GB = (154, 158, 63)
+    DARKER_GB = pygame.Color(27, 42, 9)
+    DARK_GB = pygame.Color(14, 69, 11)
+    LIGHT_GB = pygame.Color(73, 107, 34)
+    LIGHTER_GB = pygame.Color(154, 158, 63)
 
     @staticmethod
-    def mult(color:tuple[int,int,int],factor:float):
-        return tuple(min(max(0,int(i*factor)),255) for i in color)
+    def mult(color: pygame.Color, factor: float):
+        return pygame.Color(
+            min(max(0, int(color.r * factor)), 255),
+            min(max(0, int(color.g * factor)), 255),
+            min(max(0, int(color.b * factor)), 255),
+            color.a
+        )
 
 class easing(Enum):
     LINEAR = (0, 0, 1, 1)

@@ -237,13 +237,13 @@ class Utils:
 
         Args:
             margin (int): Margin from the screen edges, where the point won't be generated. 
-                        If margin is less than 0 or greater than the screen resolution, returns (0, 0).
+                        If margin is less than 0 or greater than half the screen resolution, returns (0, 0).
 
         Returns:
             tuple[int, int]: A tuple representing a random point (x, y) on the screen within the screen 
             resolution minus the margin.
         """
-        if margin < 0 or margin > bf.const.RESOLUTION[0] or margin > bf.const.RESOLUTION[1]:
+        if margin < 0 or margin > bf.const.RESOLUTION[0]//2 or margin > bf.const.RESOLUTION[1]//2:
             return 0, 0
         return random.randint(margin, bf.const.RESOLUTION[0] - margin), random.randint(margin, bf.const.RESOLUTION[1] - margin)
 

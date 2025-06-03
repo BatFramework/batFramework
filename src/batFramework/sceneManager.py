@@ -86,7 +86,7 @@ class SceneManager:
         if scene in self.scenes and not self.has_scene(scene.name):
             return
         scene.set_manager(self)
-        scene.do_when_added()
+        scene.when_added()
         self.scenes.insert(0, scene)
 
     def remove_scene(self, name: str):

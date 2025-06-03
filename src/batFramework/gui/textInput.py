@@ -134,7 +134,7 @@ class TextInput(Label, InteractiveWidget):
         x = max(0, min(x, line_length))
         self.show_cursor = True
         self.cursor_position = (x,y)
-        self.apply_updates(skip_draw=True)
+        self.apply_post_updates(skip_draw=True)
         offset = self._get_outline_offset() if self.show_text_outline else (0,0)
         padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
         self.align_text(self.text_rect,padded,self.alignment)
@@ -147,13 +147,13 @@ class TextInput(Label, InteractiveWidget):
         lines = self.text.split('\n')
         line_x, line_y = self.cursor_position
 
-        height = self.font_object.get_height()
+        height = self.font_object.get_linesize()
 
         cursor_y = self.get_padded_rect().__getattribute__(self.alignment.value)[1] - self.rect.top
         cursor_y += line_y * height
         cursor_x = self.text_rect.x
         cursor_x += self.font_object.size(lines[line_y][:line_x])[0] if line_x > 0 else 0
-        cursor_rect = pygame.Rect(cursor_x, cursor_y, 1, height)
+        cursor_rect = pygame.Rect(cursor_x, cursor_y, 1, height-1)
         offset = self._get_outline_offset()
         cursor_rect.move_ip(offset[0] if self.cursor_position[0] >0 else 0,offset[1] if self.cursor_position[1] > 0 else 0)
         return cursor_rect
@@ -292,14 +292,14 @@ class TextInput(Label, InteractiveWidget):
         text_rect.__setattr__(alignment.value, pos)
 
         
-        if cursor_rect.right > area.right+self.scroll.x:
-            self.scroll.x=cursor_rect.right - area.right
-        elif cursor_rect.x < self.scroll.x+area.left:
-            self.scroll.x= cursor_rect.left - area.left
-        self.scroll.x = max(self.scroll.x,0)
+        # if cursor_rect.right > area.right+self.scroll.x:
+        #     self.scroll.x=cursor_rect.right - area.right
+        # elif cursor_rect.x < self.scroll.x+area.left:
+        #     self.scroll.x= cursor_rect.left - area.left
+        # self.scroll.x = max(self.scroll.x,0)
 
         if cursor_rect.bottom > self.scroll.y + area.bottom:
-            self.scroll.y = cursor_rect.bottom - area.bottom + cursor_rect.h//2
+            self.scroll.y = cursor_rect.bottom - area.bottom
         elif cursor_rect.y < self.scroll.y + area.top:
             self.scroll.y = cursor_rect.top - area.top
         self.scroll.y = max(self.scroll.y, 0)

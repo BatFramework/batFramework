@@ -3,8 +3,6 @@ from .indicator import Indicator, ToggleIndicator
 from .shape import Shape
 import batFramework as bf
 from typing import Self,Callable,Any
-import pygame
-from math import ceil
 
 class Toggle(Button):
     def __init__(self, text: str = "", callback : Callable[[bool],Any]=None, default_value: bool = False) -> None:
@@ -53,13 +51,17 @@ class Toggle(Button):
         self.set_value(not self.value, do_callback=True)
 
     def get_min_required_size(self) -> tuple[float, float]:
-        gap = self.gap if self.text else 0
         if not self.text_rect:
             self.text_rect.size = self._get_text_rect_required_size()
-        w, h = self.text_rect.size
-        h+=self.unpressed_relief
-        return self.inflate_rect_by_padding((0, 0, w + gap + self.indicator.get_min_required_size()[1], h)).size
 
+        text_width, text_height = self.text_rect.size
+        indicator_size = self.indicator.get_min_required_size()[1]
+        gap = self.gap if self.text else 0
+
+        total_width = text_width + gap + indicator_size
+        total_height = text_height + self.unpressed_relief
+
+        return self.inflate_rect_by_padding((0, 0, total_width, total_height)).size
 
 
     def _build_composed_layout(self,other:Shape):
@@ -79,7 +81,7 @@ class Toggle(Button):
         target_size = self.resolve_size(inflated)
         if self.rect.size != target_size:
             self.set_size(target_size)
-            self.apply_updates(skip_draw=True)
+            self.apply_post_updates(skip_draw=True)
             return
         self._align_composed(other)
         

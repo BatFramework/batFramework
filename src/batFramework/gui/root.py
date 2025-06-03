@@ -15,33 +15,28 @@ class Root(InteractiveWidget):
         self.rect.size = pygame.display.get_surface().get_size()
         self.focused: InteractiveWidget | None = self
         self.hovered: Widget | None = self
-        self.show_tooltip : bool = True
-        self.tooltip = bf.gui.Label("")  # Tooltip label
-        self.tooltip.set_visible(False)  # Initially hidden
-        self.tooltip.set_color(bf.color.CLOUD)  # Background color for the tooltip
-        self.tooltip.set_text_color(bf.color.LIGHT_GRAY)  # Text color for the tooltip
-        self.add(self.tooltip)  # Add tooltip to the root
-        self.tooltip.set_border_radius((2,0,2,2))
-        self.tooltip.set_render_order(sys.maxsize)
-        self.tooltip.top_at = lambda *args : None
-        self.set_debug_color("yellow")
         self.clip_children = False
+        self.set_debug_color("yellow")
 
-    def toogle_tooltip(self,value:bool)->Self:
+        self.show_tooltip : bool = True
+        self.tooltip = bf.gui.ToolTip("").set_visible(False)
+        self.add(self.tooltip)
+
+    def toggle_tooltip(self,value:bool)->Self:
         self.show_tooltip = value
         return self
     
     def __str__(self) -> str:
         return "Root"
     
-    def to_ascii_tree(self)->str:
-        def f(w,depth):
-            tmp = '\n'.join(f(c,depth+1) for c in w.children) if w.children else None
-            return '\t'*depth + str(w) + (("\n"+tmp) if tmp else "")
-        return f(self,0)
+    def to_ascii_tree(self) -> str:
+        def f(w, depth):
+            prefix = " " * (depth * 4) + ("└── " if depth > 0 else "")
+            children = "\n".join(f(c, depth + 1) for c in w.children) if w.children else ""
+            return f"{prefix}{str(w)}\n{children}"
+        return f(self, 0)
 
     def set_parent_scene(self, parent_scene: bf.Scene) -> Self:
-        bf.gui.StyleManager().register_widget(self)
         return super().set_parent_scene(parent_scene)
 
     def get_focused(self) -> Widget | None:
@@ -124,22 +119,24 @@ class Root(InteractiveWidget):
             self.set_size((event.w,event.h),force=True)
         if self.focused:
             if event.type == pygame.KEYDOWN:
-                if self.focused.on_key_down(event.key):
+                if event.key == pygame.K_ESCAPE and self.focused is not None:
+                    self.focus_on(None)
                     event.consumed = True
+                else:    
+                    if not self._handle_alt_tab(event.key):
+                        event.consumed = self.focused.on_key_down(event.key)
             elif event.type == pygame.KEYUP:
-                if self.focused.on_key_up(event.key):
-                    event.consumed = True
+                event.consumed = self.focused.on_key_up(event.key)
 
         if not self.hovered or (not isinstance(self.hovered, InteractiveWidget)):
             return
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.hovered.on_click_down(event.button):
-                event.consumed = True
+            event.consumed = self.hovered.on_click_down(event.button)
 
         elif event.type == pygame.MOUSEBUTTONUP:
-            if self.hovered.on_click_up(event.button):
-                event.consumed = True
+            event.consumed = self.hovered.on_click_up(event.button)
+            
     def do_on_click_down(self, button: int) -> None:
         if button == 1:
             self.clear_focused()
@@ -154,39 +151,63 @@ class Root(InteractiveWidget):
 
     def update(self, dt: float) -> None:
         super().update(dt)
-        old = self.hovered
-        transposed = self.drawing_camera.screen_to_world(pygame.mouse.get_pos())
-        self.hovered = self.top_at(*transposed) if self.top_at(*transposed) else None
+        self.update_tree()
+
+        mouse_screen = pygame.mouse.get_pos()
+        mouse_world = self.drawing_camera.screen_to_world(mouse_screen)
+        prev_hovered = self.hovered
+        self.hovered = self.top_at(*mouse_world) or None
 
         # Tooltip logic
-        if self.hovered and self.hovered.tooltip_text is not None:
-            # Show tooltip if the hovered widget has a tooltip
+        if self.hovered and self.hovered.tooltip_text:
             self.tooltip.set_text(self.hovered.tooltip_text)
-            self.tooltip.set_visible(True)
-            mouse_pos = pygame.mouse.get_pos()
-            self.tooltip.set_position(*self.drawing_camera.world_to_screen_point(mouse_pos))  # Offset tooltip slightly
-        else:
-            # Hide tooltip if no widget with a tooltip is hovered
-            self.tooltip.set_visible(False)
 
-        if old == self.hovered and isinstance(self.hovered, InteractiveWidget):
-            self.hovered.on_mouse_motion(*transposed)
+            tooltip_size = self.tooltip.get_min_required_size()
+            screen_w, screen_h = self.drawing_camera.rect.size
+            tooltip_x, tooltip_y = self.drawing_camera.world_to_screen_point(mouse_world)
+
+            tooltip_x = min(tooltip_x, screen_w - tooltip_size[0])
+            tooltip_y = min(tooltip_y, screen_h - tooltip_size[1])
+            tooltip_x = max(0, tooltip_x)
+            tooltip_y = max(0, tooltip_y)
+
+            self.tooltip.set_position(tooltip_x, tooltip_y)
+            self.tooltip.fade_in()
+        else:
+            self.tooltip.fade_out()
+
+        if self.hovered == prev_hovered:
+            if isinstance(self.hovered, InteractiveWidget):
+                self.hovered.on_mouse_motion(*mouse_world)
             return
-        if old and isinstance(old, InteractiveWidget):
-            old.on_exit()
-        if self.hovered and isinstance(self.hovered, InteractiveWidget):
+
+        if isinstance(prev_hovered, InteractiveWidget):
+            prev_hovered.on_exit()
+        if isinstance(self.hovered, InteractiveWidget):
             self.hovered.on_enter()
 
-    def apply_updates(self):
-        if any(child.dirty_shape for child in self.children):
-            self.dirty_shape = True  # Mark layout as dirty if any child changed size
 
-        if self.dirty_shape:
-            for child in self.children:
-                child.dirty_constraints = True
-            for child in self.children:
-                child.apply_updates()
-            self.dirty_shape = False
+    def _handle_alt_tab(self,key):
+        if self.focused is None:
+            return False
+        if key == pygame.K_TAB and self.parent:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+                self.focused.focus_prev_tab(self)
+            else:
+                self.focused.focus_next_tab(self)
+            return True
+        return False
+
+    def update_tree(self):
+        # print("START updating tree")
+        self.apply_updates("pre")
+        self.apply_updates("post")
+        self.apply_updates("pre")
+        self.apply_updates("post")
+
+        # print("END updating tree")
+
 
     def draw(self, camera: bf.Camera) -> None:
         super().draw(camera)
@@ -200,6 +221,6 @@ class Root(InteractiveWidget):
             if clip:
                 old_clip = camera.surface.get_clip()
                 camera.surface.set_clip(camera.world_to_screen(self.focused.parent.rect))    
-            self.focused.draw_focused(camera)
             if clip:
                 camera.surface.set_clip(old_clip)
+            self.focused.draw_focused(camera)   

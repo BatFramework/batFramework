@@ -9,6 +9,7 @@ from .root import Root
 from .shape import Shape
 from .meter import Meter
 from .label import Label
+from .tooltip import ToolTip
 from .animatedLabel import AnimatedLabel
 from .textInput import TextInput
 from .button import Button
