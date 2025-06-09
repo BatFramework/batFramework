@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Set the release version'
+        description: 'Set the release version for master'
         required: true
         default: '1.0.0'
 
@@ -17,33 +17,28 @@ jobs:
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          ref: master  # Ensure it checks out the master branch
 
-      - name: Install dependencies
+      - name: Update version in version_master.json
         run: |
-          python -m pip install --upgrade pip
-          pip install toml build twine
+          echo "Updating master version to ${{ inputs.version }}"
+          jq ".version = \"${{ inputs.version }}\"" src/batFramework/version_master.json > src/batFramework/version_master.json.tmp
+          mv src/batFramework/version_master.json.tmp src/batFramework/version_master.json
 
-      - name: Update version
+      - name: Commit version update
         run: |
-          python update_version.py ${{ inputs.version }}
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add src/batFramework/version_master.json
+          git commit -m "Update master version to ${{ inputs.version }}"
+          git push origin master
 
       - name: Build and publish to PyPI
         run: |
           python -m build
           python -m twine upload dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ inputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
       - name: Confirm version update
         run: |
-          echo "Release version set to ${{ inputs.version }}."
+          echo "Master release version set to ${{ inputs.version }}."

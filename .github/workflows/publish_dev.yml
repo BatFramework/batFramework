@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Set the pre-release version'
+        description: 'Set the pre-release version for dev'
         required: true
         default: '1.0.0-alpha'
 
@@ -20,33 +20,25 @@ jobs:
         with:
           ref: dev  # Ensure it checks out the dev branch
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
-      - name: Install dependencies
+      - name: Update version in version_dev.json
         run: |
-          python -m pip install --upgrade pip
-          pip install toml build twine
+          echo "Updating dev version to ${{ inputs.version }}"
+          jq ".version = \"${{ inputs.version }}\"" src/batFramework/version_dev.json > src/batFramework/version_dev.json.tmp
+          mv src/batFramework/version_dev.json.tmp src/batFramework/version_dev.json
 
-      - name: Update version
+      - name: Commit version update
         run: |
-          python update_version.py ${{ inputs.version }}
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add src/batFramework/version_dev.json
+          git commit -m "Update dev version to ${{ inputs.version }}"
+          git push origin dev
 
       - name: Build and publish to Test PyPI
         run: |
           python -m build
           python -m twine upload dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }}
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ inputs.version }}
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
       - name: Confirm version update
         run: |
-          echo "Pre-release version set to ${{ inputs.version }}."
+          echo "Dev pre-release version set to ${{ inputs.version }}."
