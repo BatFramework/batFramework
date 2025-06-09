@@ -1,4 +1,6 @@
+import os
 import pygame
+import json
 import batFramework as bf
 from .constants import Constants as const
 from .utils import Singleton
@@ -34,7 +36,6 @@ import batFramework.gui as gui
 from .sceneManager import SceneManager
 from .manager import Manager
 from .templates import *
-import importlib.metadata
 
 
 def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
@@ -48,13 +49,19 @@ def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
         f"Window : {resolution[0]}x{resolution[1]}"
     )
 
+
 def print_version():
-    package_name = "batFramework"
+    # Dynamically construct the path to version.json
+    version_file = os.path.join(os.path.dirname(__file__), "version.json")
     try:
-        version = importlib.metadata.version(package_name)
-        print(f"{package_name} version: {version}")
-    except importlib.metadata.PackageNotFoundError:
-        print(f"{package_name} is not installed")
+        with open(version_file, "r") as f:
+            version_data = json.load(f)
+            version = version_data.get("version", "unknown")
+            print(f"BatFramework version: {version}")
+    except FileNotFoundError:
+        print(f"Version file not found: {version_file}")
+    except json.JSONDecodeError:
+        print(f"Error decoding version file: {version_file}")
 
 def init(
     resolution: tuple[int, int],
