@@ -36,7 +36,7 @@ In practice, users can inherit bf.Scene to create their own scenes, adding speci
 
 Users can leverage these functionalities to build games efficiently using batFramework.
 
-For more detailed usage and examples, please refer to the documentation or codebase.
+For more detailed usage and examples, please refer to the [documentation](https://batframework.github.io/batDocumentation/).
 
 
 # License
