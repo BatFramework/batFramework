@@ -31,13 +31,17 @@ jobs:
           echo "Updating pyproject.toml version to ${{ inputs.version }}"
           sed -i "s/^version = .*/version = \"${{ inputs.version }}\"/" pyproject.toml
 
-      - name: Commit version updates
+      - name: Commit version updates if changed
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add src/batFramework/version.json pyproject.toml
-          git commit -m "Update dev version to ${{ inputs.version }}"
-          git push origin dev
+          if ! git diff --cached --quiet; then
+            git commit -m "Update master version to ${{ inputs.version }}"
+            git push origin master
+          else
+            echo "No version changes to commit. Skipping push."
+          fi
 
       - name: Install build dependencies
         run: |
