@@ -20,7 +20,7 @@ class Layout(ABC):
         """
         return the space available for Growing widgets to use
         """
-        return self.parent.get_padded_rect()
+        return self.parent.get_inner_rect()
 
     def set_child_constraints(self, *constraints) -> Self:
         self.child_constraints = list(constraints)
@@ -38,13 +38,13 @@ class Layout(ABC):
 
     def update_children_rect(self):
         if self.parent.children:
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft,*self.parent.children[0].get_min_required_size())
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft,*self.parent.children[0].get_min_required_size())
             
             self.children_rect.unionall(
                 [pygame.FRect(0,0,*c.get_min_required_size()) for c in self.parent.children[1:]]
             )
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, 0, 0)
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 0, 0)
         self.children_rect.move_ip(-self.parent.scroll.x,-self.parent.scroll.y)
 
     def update_child_constraints(self):
@@ -58,7 +58,6 @@ class Layout(ABC):
         """
         return
 
-        
     def get_raw_size(self):
         """
         Returns the size the container should have to encapsulate perfectly all of its widgets
@@ -67,17 +66,18 @@ class Layout(ABC):
         self.update_children_rect()
         return self.children_rect.size
 
-
     def get_auto_size(self) -> tuple[float, float]:
         """
         Returns the final size the container should have (while keeping the width and height if they are non-resizable)
         """
         target_size = list(self.get_raw_size())
         if not self.parent.autoresize_w:
-            target_size[0] = self.parent.rect.w
+            target_size[0] = self.parent.get_inner_width()
         if not self.parent.autoresize_h:
-            target_size[1] = self.parent.rect.h
-        return target_size
+            target_size[1] = self.parent.get_inner_height()
+        
+        return self.parent.expand_rect_with_padding((0,0,*target_size)).size 
+        # return target_size
 
     def scroll_to_widget(self, widget: "Widget"):
         """
@@ -89,7 +89,7 @@ class Layout(ABC):
 
         while container and not container.is_root:
             target_rect = target.rect  # global
-            padded_rect = container.get_padded_rect()  # global
+            padded_rect = container.get_inner_rect()  # global
 
             dx = dy = 0
 
@@ -166,11 +166,16 @@ class Column(SingleAxisLayout):
 
     def update_children_rect(self):
         if self.parent.children:
-            width = max(child.get_min_required_size()[0] for child in self.parent.children)
+            width = max(child.get_min_required_size()[0] for child in self.parent.children )
             height = sum(child.get_min_required_size()[1] for child in self.parent.children) + self.gap * (len(self.parent.children) - 1)
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, width, height)
+
+            # width = max(child.rect.w for child in self.parent.children )
+            # height = sum(child.rect.h for child in self.parent.children) + self.gap * (len(self.parent.children) - 1)
+
+
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, 10, 10)
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 10, 10)
         self.children_rect.move_ip(-self.parent.scroll.x,-self.parent.scroll.y)
 
     def handle_event(self, event):
@@ -200,9 +205,9 @@ class Row(SingleAxisLayout):
         if self.parent.children:
             height = max(child.get_min_required_size()[1] for child in self.parent.children)
             width = sum(child.get_min_required_size()[0] for child in self.parent.children) + self.gap * (len(self.parent.children) - 1)
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, width, height)
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, 10,10)        
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 10,10)        
         self.children_rect.move_ip(-self.parent.scroll.x,-self.parent.scroll.y)
 
     def handle_event(self, event):
@@ -227,13 +232,13 @@ class Row(SingleAxisLayout):
 class RowFill(Row):
 
     def update_children_rect(self):
-        parent_width = self.parent.get_padded_width()
+        parent_width = self.parent.get_inner_width()
         if self.parent.children:
             height = max(child.get_min_required_size()[1] for child in self.parent.children)
             width = parent_width
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, width, height)
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, parent_width,10)        
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, parent_width,10)        
         self.children_rect.move_ip(-self.parent.scroll.x,-self.parent.scroll.y)
 
 
@@ -262,13 +267,13 @@ class RowFill(Row):
 class ColumnFill(Column):
 
     def update_children_rect(self):
-        parent_height = self.parent.get_padded_height()
+        parent_height = self.parent.get_inner_height()
         if self.parent.children:
             width = max(child.get_min_required_size()[0] for child in self.parent.children)
             height = parent_height
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, width, height)
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, 10, parent_height)
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 10, parent_height)
         self.children_rect.move_ip(-self.parent.scroll.x, -self.parent.scroll.y)
 
     def arrange(self) -> None:
@@ -305,9 +310,9 @@ class Grid(DoubleAxisLayout):
             cell_height = max(child.get_min_required_size()[1] for child in self.parent.children)
             width = self.cols * cell_width + self.gap * (self.cols - 1)
             height = self.rows * cell_height + self.gap * (self.rows - 1)
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, width, height)
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_padded_rect().topleft, 10, 10)
+            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 10, 10)
         self.children_rect.move_ip(-self.parent.scroll.x, -self.parent.scroll.y)
 
     def arrange(self) -> None:

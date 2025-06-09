@@ -58,7 +58,7 @@ class TextInput(Label, InteractiveWidget):
     def __init__(self) -> None:
         self.cursor_position = (0, 0)
         self.old_key_repeat = (0, 0)
-        self.cursor_timer = bf.Timer(0.2, self._cursor_toggle, loop=True).start()
+        self.cursor_timer = bf.Timer(0.2, self._cursor_toggle, loop=-1).start()
         self.cursor_timer.pause()
         self.show_cursor = False
         self.on_modify: Callable[[str], str] = None
@@ -82,8 +82,9 @@ class TextInput(Label, InteractiveWidget):
 
     def do_on_click_down(self, button):
         if button != 1:
-            return
+            return False
         self.get_focus()
+        return True
 
     def do_on_enter(self):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_IBEAM)
@@ -120,7 +121,7 @@ class TextInput(Label, InteractiveWidget):
 
     def get_min_required_size(self) -> tuple[float, float]:
         size = self._get_text_rect_required_size()
-        return self.inflate_rect_by_padding(
+        return self.expand_rect_with_padding(
             (0, 0,size[0]+self.get_cursor_rect().w,size[1])
         ).size
 
@@ -136,7 +137,7 @@ class TextInput(Label, InteractiveWidget):
         self.cursor_position = (x,y)
         self.apply_post_updates(skip_draw=True)
         offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-        padded = self.get_padded_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
+        padded = self.get_inner_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
         self.align_text(self.text_rect,padded,self.alignment)
         return self
 
@@ -149,7 +150,7 @@ class TextInput(Label, InteractiveWidget):
 
         height = self.font_object.get_linesize()
 
-        cursor_y = self.get_padded_rect().__getattribute__(self.alignment.value)[1] - self.rect.top
+        cursor_y = self.get_inner_rect().__getattribute__(self.alignment.value)[1] - self.rect.top
         cursor_y += line_y * height
         cursor_x = self.text_rect.x
         cursor_x += self.font_object.size(lines[line_y][:line_x])[0] if line_x > 0 else 0

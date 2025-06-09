@@ -101,6 +101,7 @@ class Selector(Button):
         # Ensure total_height is always an odd integer
         total_height = max(8, max_text_size[1] * 1.5)
         total_height += self.unpressed_relief
+        total_height += max(self.right_indicator.outline_width,self.left_indicator.outline_width)
         self.indicator_height = total_height
 
         # Calculate total width and height
@@ -110,7 +111,7 @@ class Selector(Button):
             self.gap * 2      # Gaps between text and indicators
         )
         # Inflate by padding at the very end
-        final_size = self.inflate_rect_by_padding((0, 0, total_width, total_height)).size
+        final_size = self.expand_rect_with_padding((0, 0, total_width, total_height)).size
 
         return final_size
 
@@ -123,7 +124,7 @@ class Selector(Button):
 
         # return
         # Step 1: Calculate the padded area for positioning
-        padded = self.get_padded_rect()
+        padded = self.get_inner_rect()
 
     
         # left_size = self.left_indicator.rect.size
@@ -215,8 +216,6 @@ class Selector(Button):
         return self
 
     def on_key_down(self, key: int) -> bool:
-        if super().on_key_down(key):
-            return True
         if not self.enabled:
             return False
 
@@ -234,8 +233,6 @@ class Selector(Button):
         return False
 
     def on_key_up(self, key: int) -> bool:
-        if super().on_key_up(key):
-            return True
         if not self.enabled:
             return False
 

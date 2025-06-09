@@ -5,18 +5,15 @@ import pygame
 
 class DraggableWidget(InteractiveWidget):
     def __init__(self, *args, **kwargs) -> None:
-        self.drag_action = bf.Action("dragging").add_mouse_control(1).set_holding()
 
         self.drag_start = None
         self.offset = None
         super().__init__(*args, **kwargs)
 
-    def do_process_actions(self, event: pygame.Event) -> None:
-        self.drag_action.process_event(event)
-
-    def do_reset_actions(self) -> None:
-        self.drag_action.reset()
-
+    def on_click_down(self, button):
+        if super().on_click_down(button)==False:
+            return button == 1 # capture event
+    
     def do_on_drag(
         self, drag_start: tuple[float, float], drag_end: tuple[float, float]
     ) -> None:
@@ -24,10 +21,10 @@ class DraggableWidget(InteractiveWidget):
 
 
     def update(self, dt: float):
-        if self.drag_action.active and self.is_clicked_down:
+        if self.is_clicked_down and pygame.mouse.get_pressed(3)[0]:
             r = self.get_root()
             x, y = r.drawing_camera.screen_to_world(pygame.mouse.get_pos())
-            if self.drag_start == None and self.drag_action.active:
+            if self.drag_start == None and self.is_clicked_down:
                 self.offset = x - self.rect.x, y - self.rect.y
                 self.drag_start = x, y
             else:

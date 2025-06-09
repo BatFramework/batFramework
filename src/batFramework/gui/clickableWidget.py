@@ -1,10 +1,8 @@
-from .label import Label
 import batFramework as bf
 from typing import Self, Callable, Any
 from .interactiveWidget import InteractiveWidget
 from .shape import Shape
 import pygame
-from math import ceil
 
 
 class ClickableWidget(Shape, InteractiveWidget):
@@ -31,10 +29,7 @@ class ClickableWidget(Shape, InteractiveWidget):
     def get_min_required_size(self) -> tuple[float, float]:
         res = super().get_min_required_size()
         res = res[0],res[1]+self.unpressed_relief
-        return res[0] if self.autoresize_w else self.rect.w, (
-            res[1] if self.autoresize_h else self.rect.h
-        )
-
+        return res
 
     def set_unpressed_relief(self, relief: int) -> Self:
         if relief == self.unpressed_relief:
@@ -215,7 +210,7 @@ class ClickableWidget(Shape, InteractiveWidget):
             self.get_surface_filter(), (0, 0), special_flags=pygame.BLEND_RGB_ADD
         )
 
-    def get_padded_rect(self) -> pygame.FRect:
+    def get_inner_rect(self) -> pygame.FRect:
         return pygame.FRect(
             self.rect.x + self.padding[0],
             self.rect.y + self.padding[1] + (self.unpressed_relief - self.pressed_relief if self.is_pressed else 0),

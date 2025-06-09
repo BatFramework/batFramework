@@ -41,6 +41,9 @@ class Camera:
         self.min_zoom = 0.1
         self.zoom(1)
 
+    def get_mouse_pos(self)->tuple[float,float]:
+        return self.screen_to_world(pygame.mouse.get_pos())
+
     def set_clear_color(self, color: pygame.Color | tuple | str) -> Self:
         """
         Set the clear color for the camera surface.
@@ -84,6 +87,7 @@ class Camera:
         """
         Clear the camera surface with the set clear color.
         """
+        if not self._clear_color: return
         self.surface.fill(self._clear_color)
 
     def get_center(self) -> tuple[float, float]:

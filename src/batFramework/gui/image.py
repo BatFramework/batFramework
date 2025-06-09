@@ -23,7 +23,7 @@ class Image(Shape):
         super().paint()
         if self.original_surface is None:
             return
-        padded = self.get_padded_rect().move(-self.rect.x,-self.rect.y)
+        padded = self.get_inner_rect().move(-self.rect.x,-self.rect.y)
         target_size = padded.size
         if self.original_surface.get_size() != target_size:
             self.surface.blit(pygame.transform.scale(self.original_surface, target_size), padded.topleft)
@@ -33,7 +33,7 @@ class Image(Shape):
     def build(self) -> None:
         if self.original_surface is not None:
             self.set_size(
-                self.inflate_rect_by_padding((0,0,*self.original_surface.get_size())).size
+                self.expand_rect_with_padding((0,0,*self.original_surface.get_size())).size
             )
         super().build()
 

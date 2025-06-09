@@ -105,7 +105,7 @@ class Root(InteractiveWidget):
             return self
         self.rect.size = size
         self.dirty_shape = True
-        self.dirty_constraints = True
+        self.dirty_size_constraints = True
         return self
 
     def process_event(self,event):
@@ -119,12 +119,9 @@ class Root(InteractiveWidget):
             self.set_size((event.w,event.h),force=True)
         if self.focused:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE and self.focused is not None:
-                    self.focus_on(None)
-                    event.consumed = True
-                else:    
-                    if not self._handle_alt_tab(event.key):
-                        event.consumed = self.focused.on_key_down(event.key)
+                event.consumed = self.focused.on_key_down(event.key)
+                if not event.consumed : 
+                    event.consumed = self._handle_alt_tab(event.key)
             elif event.type == pygame.KEYUP:
                 event.consumed = self.focused.on_key_up(event.key)
 
@@ -190,14 +187,14 @@ class Root(InteractiveWidget):
     def _handle_alt_tab(self,key):
         if self.focused is None:
             return False
-        if key == pygame.K_TAB and self.parent:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-                self.focused.focus_prev_tab(self)
-            else:
-                self.focused.focus_next_tab(self)
-            return True
-        return False
+        if key != pygame.K_TAB:
+            return False
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+            self.focused.focus_prev_tab(self.focused)
+        else:
+            self.focused.focus_next_tab(self.focused)
+        return True
 
     def update_tree(self):
         # print("START updating tree")
@@ -208,6 +205,11 @@ class Root(InteractiveWidget):
 
         # print("END updating tree")
 
+    def apply_pre_updates(self):
+        return 
+
+    def apply_post_updates(self, skip_draw = False):
+        return
 
     def draw(self, camera: bf.Camera) -> None:
         super().draw(camera)

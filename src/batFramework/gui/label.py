@@ -199,7 +199,7 @@ class Label(Shape):
         return self
 
     def get_min_required_size(self) -> tuple[float, float]:
-        return self.inflate_rect_by_padding(
+        return self.expand_rect_with_padding(
             (0, 0, *self._get_text_rect_required_size())
         ).size
 
@@ -252,7 +252,7 @@ class Label(Shape):
                 "antialias": self.antialias,
                 "color": self.text_color,
                 "bgcolor": None,  # if (self.has_alpha_color() or self.draw_mode == bf.drawMode.TEXTURED) else self.color,
-                "wraplength": int(self.get_padded_width()) if self.auto_wraplength and not self.autoresize_w else 0,
+                "wraplength": int(self.get_inner_width()) if self.auto_wraplength and not self.autoresize_w else 0,
             }
 
             size = self._render_font(params).get_size()
@@ -262,23 +262,26 @@ class Label(Shape):
         s = self._get_outline_offset() if self.show_text_outline else (0,0)
         return size[0] + s[0]*2, size[1] + s[1]*2
 
-    def _build_layout(self) -> None:
+    def _build_layout(self) -> bool:
+        ret = False
         target_size = self.resolve_size(self.get_min_required_size())
 
         if self.rect.size != target_size :
             self.set_size(target_size)
-            self.apply_post_updates(skip_draw=True)
-            return
+            ret = True
+            # self.apply_post_updates(skip_draw=True)
+            # return True
 
         self.text_rect.size = self._get_text_rect_required_size()
         padded = self.get_local_padded_rect()
         self.align_text(self.text_rect, padded, self.alignment)
+        return ret
 
     def _paint_text(self) -> None:
         if self.font_object is None:
             print(f"No font for widget with text : '{self}' :(")
             return
-        wrap = int(self.get_padded_width()) if self.auto_wraplength and not self.autoresize_w else 0
+        wrap = int(self.get_inner_width()) if self.auto_wraplength and not self.autoresize_w else 0
         params = {
             "font_name": self.font_object.name,
             "text": self.text,
@@ -325,10 +328,16 @@ class Label(Shape):
         text_rect.__setattr__(alignment.value, pos)
         text_rect.y = ceil(text_rect.y)
 
-    def build(self) -> None:
-        self._build_layout()
+    def build(self) -> bool:
+        """
+        return True if size changed
+        """
+        
+        size_changed = self._build_layout()
         super().build()
-        # print("here",self.text,self.rect)
+        return size_changed
+        
+        
 
     def paint(self) -> None:
         super().paint()

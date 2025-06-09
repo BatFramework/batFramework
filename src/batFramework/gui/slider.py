@@ -16,12 +16,14 @@ class SliderHandle(Indicator, DraggableWidget):
     def __str__(self) -> str:
         return "SliderHandle"
 
-    def on_click_down(self, button: int) -> None:
+    def on_click_down(self, button: int) -> bool:
         if not self.parent.is_enabled(): 
-            return
+            return False
         super().on_click_down(button)
         if button == 1:
             self.parent.get_focus()
+            return True
+        return False
 
     def on_exit(self) -> None:
         self.is_hovered = False
@@ -34,7 +36,7 @@ class SliderHandle(Indicator, DraggableWidget):
             return
         super().do_on_drag(drag_start, drag_end)
         m: Meter = self.parent.meter
-        r = m.get_padded_rect()
+        r = m.get_inner_rect()
 
         position = self.rect.centerx if self.parent.axis == bf.axis.HORIZONTAL else self.rect.centery
         self.rect.clamp_ip(r)
@@ -58,44 +60,35 @@ class SliderMeter(Meter, InteractiveWidget):
         super().__init__(min_value, max_value, step)
         self.set_padding(0)
 
-    def on_click_down(self, button: int) -> None:
+    def get_min_required_size(self):
+        size = list(super().get_min_required_size())
+        if self.parent.axis == bf.axis.HORIZONTAL:
+            size[0] = size[1]*3
+        else:
+            size[1] = size[0]*3
+        return self.resolve_size(size)
+
+    def on_click_down(self, button: int) -> True:
         if not self.parent.is_enabled(): 
-            return
-        if button == 1:
-            self.parent.get_focus()
-            r = self.get_root()
-            if r:
-                pos = r.drawing_camera.screen_to_world(pygame.mouse.get_pos())[0]
-                self.parent.set_value(self.parent.position_to_value(pos))
+            return False
+        if button != 1:
+            return False
+        
+        self.parent.get_focus()
+        r = self.get_root()
+        if r:
+            pos = r.drawing_camera.screen_to_world(pygame.mouse.get_pos())
+            if self.parent.axis == bf.axis.HORIZONTAL:
+                pos = pos[0]
+            else:
+                pos = pos[1]
+            new_value = self.parent.position_to_value(pos)
+            self.parent.set_value(new_value)
         self.do_on_click_down(button)
+        return True
 
-    # def apply_updates(self,skip_draw:bool=False):
-    #     if self.dirty_constraints:
-    #         self.resolve_constraints()  # Finalize positioning based on final size
-    #         self.dirty_constraints = False
-
-    #     # Build shape if needed
-    #     if self.dirty_shape:
-    #         self.build()  # Finalize widget size
-    #         self.dirty_shape = False
-    #         self.dirty_surface = True
-    #         self.dirty_constraints = True
-    #         # Propagate dirty_constraints to children in case size affects their position
-    #         for child in self.children:
-    #             child.dirty_constraints = True
-    #         self.parent.dirty_shape = True
-    #     # Resolve constraints now that size is finalized
-    #     if self.dirty_constraints:
-    #         self.resolve_constraints()  # Finalize positioning based on final size
-    #         self.dirty_constraints = False
-
-
-    #     # Step 3: Paint the surface if flagged as dirty
-    #     if self.dirty_surface and not skip_draw:
-    #         self.paint()
-    #         self.dirty_surface = False
-
-
+    def resolve_constraints(self, size_only = False, position_only = False):
+        return super().resolve_constraints(size_only, position_only)
 
 class Slider(Button):
     def __init__(self, text: str, default_value: float = 1.0) -> None:
@@ -111,8 +104,6 @@ class Slider(Button):
         self.set_value(default_value, True)
 
     def set_tooltip_text(self, text):
-        # self.meter.set_tooltip_text(text)
-        # self.handle.set_tooltip_text(text)
         return super().set_tooltip_text(text)
 
     def set_fill_color(self,color)->Self:
@@ -214,7 +205,7 @@ class Slider(Button):
         """
         Converts a value to a position on the meter, considering the step size.
         """
-        rect = self.meter.get_padded_rect()
+        rect = self.meter.get_inner_rect()
         value_range = self.meter.get_range()
         value = round(value / self.meter.step) * self.meter.step
         position_ratio = (value - self.meter.min_value) / value_range
@@ -235,7 +226,7 @@ class Slider(Button):
         """
         Converts a position on the meter to a value, considering the step size.
         """
-        rect = self.meter.get_padded_rect()
+        rect = self.meter.get_inner_rect()
         if self.axis == bf.axis.HORIZONTAL:
             if self.rect.w == self.handle.rect.w:
                 position_ratio = 0
@@ -262,74 +253,86 @@ class Slider(Button):
 
 
     def get_min_required_size(self) -> tuple[float, float]:
-        gap = self.gap if self.text else 0
-        if not self.text_rect:
-            self.text_rect.size = self._get_text_rect_required_size()
-        if not self.text : self.text_rect.w = 0
-        w, h = self.text_rect.size
-        h+=self.unpressed_relief
-        if self.axis == bf.axis.HORIZONTAL:
+        """
+        Calculates the minimum required size for the slider, considering the text, meter, and axis.
 
-            return self.inflate_rect_by_padding((0, 0, w + gap + self.meter.get_min_required_size()[0], h)).size
+        Returns:
+            tuple[float, float]: The width and height of the minimum required size.
+        """
+        gap = self.gap if self.text else 0
+        text_width, text_height = self._get_text_rect_required_size() if self.text else (0, 0)
+        meter_width, meter_height = self.meter.resolve_size(self.meter.get_min_required_size())
+
+        if self.axis == bf.axis.HORIZONTAL:
+            width = text_width + gap + meter_width
+            height = max(text_height, meter_height)
         else:
-            return self.inflate_rect_by_padding((0, 0, w, h+ gap + self.meter.get_min_required_size()[1])).size
+            width = max(text_width, meter_width)
+            height = text_height + gap + meter_height
+
+        return self.expand_rect_with_padding((0, 0, width, height)).size
         
-    def _build_composed_layout(self, other: Shape) -> bool:
+
+    def _build_composed_layout(self, other: Shape) -> None:
         """
         Builds the layout for the slider, ensuring that child elements (handle and meter)
-        are only resized after the slider's size is confirmed to be correct.
+        are resized and positioned correctly based on the slider's size and axis.
+
+        Args:
+            other (Shape): The shape object to align with the slider.
         """
+        size_changed = False
         gap = self.gap if self.text else 0
-        if not self.text:
-            self.text_rect.w = 0
 
-        # Step 1: Calculate the required size for the slider
         full_rect = self.text_rect.copy()
-
+        # Resolve the meter's size based on the axis and autoresize conditions
         if self.axis == bf.axis.HORIZONTAL:
-            other_height = min(self.text_rect.h, self.font_object.get_height() + 1)
-            full_rect.w += self.meter.get_min_required_size()[0] + gap
-            full_rect.h = max(full_rect.h, other_height) + self.unpressed_relief
+            meter_width = self.meter.get_min_required_size()[0] if self.meter.autoresize_w else self.meter.rect.w
+            full_rect.w = max(self.get_inner_width(), meter_width + gap + self.text_rect.w)
+            self.meter.set_size((meter_width, None))
+            full_rect.h = max(self.meter.rect.h, self.text_rect.h if self.text else self.meter.rect.h)
         else:  # VERTICAL
-            other_width = self.text_rect.h
-            full_rect.h += self.meter.get_min_required_size()[1] + gap
-            full_rect.w = max(full_rect.w, other_width)
-            full_rect.h += self.unpressed_relief
+            meter_height = self.meter.get_min_required_size()[1] if self.meter.autoresize_h else self.meter.rect.h
+            full_rect.h = max(self.get_inner_height(), meter_height + (gap + self.text_rect.h if self.text else 0))
+            self.meter.set_size((None, meter_height))
+            full_rect.w = max(self.meter.rect.w, self.text_rect.w if self.text else self.meter.rect.w)
 
-        # Step 2: Inflate the rect by padding and resolve the target size
-        inflated = self.inflate_rect_by_padding((0, 0, *full_rect.size)).size
+        # Inflate the rect by padding and resolve the target size
+        inflated = self.expand_rect_with_padding((0, 0, *full_rect.size)).size
         target_size = self.resolve_size(inflated)
 
-        # Step 3: If the slider's size is not confirmed, update it and return
+        # Update the slider's size if it doesn't match the target size
         if self.rect.size != target_size:
             self.set_size(target_size)
-            self.apply_post_updates(skip_draw=True)
-            return
+            size_changed = True
 
-        # Step 4: Update the sizes of child elements (handle and meter) only after the slider's size is confirmed
+        # Adjust the handle size based on the meter's size
         if self.axis == bf.axis.HORIZONTAL:
-            other_height = min(self.text_rect.h, self.font_object.get_height() + 1)
-            self.meter.set_size(self.meter.resolve_size((self.get_padded_width() - self.text_rect.w - gap, other_height)))
-            self.handle.set_size(self.handle.resolve_size((other_height, other_height)))
-        else:  # VERTICAL
-            other_width = self.text_rect.h
-            self.meter.set_size(self.meter.resolve_size((other_width, self.get_padded_height() - self.text_rect.h - gap)))
-            self.handle.set_size(self.handle.resolve_size((other_width, other_width)))
+            handle_size = self.meter.get_inner_height() 
+            self.handle.set_size(self.handle.resolve_size((handle_size, handle_size)))
+        else:
+            handle_size = self.meter.get_inner_width() 
+            self.handle.set_size(self.handle.resolve_size((handle_size, handle_size)))
 
-        # Step 5: Align the composed elements
+        # Align the composed elements (text and meter)
         self._align_composed(other)
 
-        # Step 6: Position the handle based on the current value
+        # Position the handle based on the current value
         if self.axis == bf.axis.HORIZONTAL:
             self.handle.set_center(self.value_to_position(self.meter.value), self.meter.rect.centery)
         else:
             self.handle.set_center(self.meter.rect.centerx, self.value_to_position(self.meter.value))
-
-
+        return size_changed
     def _align_composed(self, other: Shape):
+        if not self.text:
+            self.text_rect.size = (0,0)
+
+
         full_rect = self.get_local_padded_rect()
         left_rect = self.text_rect
         right_rect = other.rect.copy()
+
+
 
         if self.axis == bf.axis.HORIZONTAL:
             gap = {
@@ -382,10 +385,8 @@ class Slider(Button):
 
     def _build_layout(self) -> None:
         self.text_rect.size = self._get_text_rect_required_size()
-        self._build_composed_layout(self.meter)
-
-
-
+        return self._build_composed_layout(self.meter)
+        
 
     def apply_pre_updates(self):
         # Step 1: Constraints and shape/size

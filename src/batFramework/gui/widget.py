@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from .constraints.constraints import Constraint
     from .root import Root
 
+MAX_ITERATIONS = 10
 
 class WidgetMeta(type):
     def __call__(cls, *args, **kwargs):
@@ -24,16 +25,17 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.do_sort_children = False
         self.clip_children: bool = True
         self.padding = (0, 0, 0, 0)
-        self.dirty_surface: bool = True  #  if true will call paint before drawing
-        self.dirty_shape: bool = True  #    if true will call (build+paint) before drawing
-        self.dirty_constraints: bool = False # if true will call resolve_constraints
+        self.dirty_surface: bool = True  # If true, will call paint before drawing
+        self.dirty_shape: bool = True  # If true, will call (build+paint) before drawing
+        self.dirty_position_constraints: bool = True  # Flag for position-related constraints
+        self.dirty_size_constraints: bool = True  # Flag for size-related constraints
 
-        self.tooltip_text : str | None = None # if is not none, will display a text when hovered
+        self.tooltip_text: str | None = None  # If not None, will display a text when hovered
         self.is_root: bool = False
-        self.autoresize_w, self.autoresize_h = True, True # if True, the widget will have dynamic size depending on its contents
+        self.autoresize_w, self.autoresize_h = True, True  # If True, the widget will have dynamic size depending on its contents
         self._constraint_iteration = 0
-        self._constraints_to_ignore = []
-        self._constraints_capture = None
+        self._constraints_to_ignore: list[Constraint] = []
+        self._constraints_capture: list[Constraint] = []
 
     def set_tooltip_text(self,text:str|None)->Self:
         self.tooltip_text = text
@@ -84,7 +86,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             self.parent.do_sort_children = True
         return self
 
-    def inflate_rect_by_padding(
+    def expand_rect_with_padding(
         self, rect: pygame.Rect | pygame.FRect
     ) -> pygame.Rect | pygame.FRect:
         return pygame.FRect(
@@ -160,7 +162,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.dirty_shape = True
         return self
 
-    def get_padded_rect(self) -> pygame.FRect:
+    def get_inner_rect(self) -> pygame.FRect:
         r = self.rect.inflate(
             -self.padding[0] - self.padding[2], -self.padding[1] - self.padding[3]
         )
@@ -170,31 +172,31 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def get_min_required_size(self) -> tuple[float, float]:
         return self.rect.size
 
-    def get_padded_width(self) -> float:
+    def get_inner_width(self) -> float:
         return self.rect.w - self.padding[0] - self.padding[2]
 
-    def get_padded_height(self) -> float:
+    def get_inner_height(self) -> float:
         return self.rect.h - self.padding[1] - self.padding[3]
 
-    def get_padded_left(self) -> float:
+    def get_inner_left(self) -> float:
         return self.rect.left + self.padding[0]
 
-    def get_padded_right(self) -> float:
+    def get_inner_right(self) -> float:
         return self.rect.right - self.padding[2]
 
-    def get_padded_center(self) -> tuple[float, float]:
-        return self.get_padded_rect().center
+    def get_inner_center(self) -> tuple[float, float]:
+        return self.get_inner_rect().center
 
-    def get_padded_top(self) -> float:
+    def get_inner_top(self) -> float:
         return self.rect.y + self.padding[1]
 
-    def get_padded_bottom(self) -> float:
+    def get_inner_bottom(self) -> float:
         return self.rect.bottom - self.padding[3]
 
     def get_debug_outlines(self):
         if self.visible:
             if any(self.padding):
-                yield (self.get_padded_rect(), self.debug_color)
+                yield (self.get_inner_rect(), self.debug_color)
             # else:
             yield (self.rect, self.debug_color)
         for child in self.children:
@@ -210,7 +212,11 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                 seen.add(c.name)
         self.constraints = result
         self.constraints.sort(key=lambda c: c.priority)
-        self.dirty_constraints = True
+        size_c = any(c.affects_size for c in constraints)
+        position_c = any(c.affects_position for c in constraints)
+        if position_c : self.dirty_position_constraints = True
+        if size_c : self.dirty_size_constraints = True
+        
         self._constraints_to_ignore = []
 
         return self
@@ -224,64 +230,83 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self._constraints_to_ignore = []
         return self
 
-    def resolve_constraints(self,size_only:bool=False,position_only:bool=False) -> None:
+
+    def resolve_constraints(self, size_only: bool = False, position_only: bool = False) -> None:
+        """
+        Resolve constraints affecting size and/or position independently.
+
+        This system attempts to apply constraints iteratively until a stable solution is found,
+        or until MAX_ITERATIONS is reached.
+        """
         if self.parent is None or not self.constraints:
-            self.dirty_constraints = False
-            return
-        if not self._constraint_iteration:
-            self._constraints_capture = None
-        else:
-            capture = tuple([c.priority for c in self.constraints])
-            if capture != self._constraints_capture:
-                self._constraints_capture = capture
-                self._constraints_to_ignore = []
-                
-        def constraint_filter(c:"Constraint"):
             if size_only:
-                return c.affects_size
-            elif position_only:
-                return c.affects_position
-            return True  # default: apply all
-        
-        # constraints = self.constraints.copy()
-        constraints = [c for c in self.constraints if constraint_filter(c)]
-        # If all are resolved early exit
-        if all(c.evaluate(self.parent,self) for c in constraints if c not in self._constraints_to_ignore):
-            self.dirty_constraints = False
+                self.dirty_size_constraints = False
+            if position_only:
+                self.dirty_position_constraints = False
             return
-        
-        # # Here there might be a conflict between 2 or more constraints
-        # we have to determine which ones causes conflict and ignore the one with least priority
 
-        stop = False
+        # If not currently resolving constraints, reset tracking lists
+        if not self._constraint_iteration:
+            self._constraints_capture = []
+        else:
+            # Detect constraint priority changes since last resolution
+            current_priorities = [c.priority for c in self.constraints]
+            if current_priorities != self._constraints_capture:
+                self._constraints_capture = current_priorities
+                self._constraints_to_ignore = []
 
-        while True:
-            stop = True
-            # first pass with 2 iterations to sort out the transformative constraints
-            for _ in range(2):
-                for c in constraints:
-                    if c in self._constraints_to_ignore:continue
-                    if not c.evaluate(self.parent,self) :
-                        # print(c," is applied")
-                        c.apply(self.parent,self)
-            # second pass where we check conflicts
-            for c in constraints:
-                if c in self._constraints_to_ignore:
-                    continue
-                if not c.evaluate(self.parent,self):
-                    # first pass invalidated this constraint
-                    self._constraints_to_ignore.append(c)
-                    stop = False
-                    break
+        # Filter constraints based on what needs resolving
+        def is_relevant(c: "Constraint") -> bool:
+            return (
+                c.affects_size if size_only else
+                c.affects_position if position_only else
+                True
+            )
 
-            if stop: 
-                break
+        active_constraints = [c for c in self.constraints if is_relevant(c)]
+        active_constraints.sort(key=lambda c: c.priority, reverse=True)
 
-        if self._constraints_to_ignore:
-            print("Constraints ignored : ",[str(c) for c in self._constraints_to_ignore])
-            
-        self.dirty_constraints = False
-        # print(self,self.uid,"resolve constraints : Success")
+        resolved = []
+        for iteration in range(MAX_ITERATIONS):
+            self._constraint_iteration += 1
+            changed = False
+
+            for constraint in active_constraints:
+                if constraint in resolved:
+                    # Re-evaluate to confirm the constraint is still satisfied
+                    if not constraint.evaluate(self.parent, self):
+                        resolved.remove(constraint)
+                        changed = True
+                else:
+                    # Try applying unresolved constraint
+                    if constraint.apply(self.parent, self):
+                        resolved.append(constraint)
+                        changed = True
+
+            if not changed:
+                break  # All constraints stable — done
+
+        # If solution is still unstable, record the unresolved ones
+        if self._constraint_iteration >= MAX_ITERATIONS:
+            self._constraints_to_ignore += [
+                c for c in active_constraints if c not in resolved
+            ]
+
+        # Record final resolved constraints for debugging/tracking
+        self._constraints_capture.clear()
+        self._constraints_capture.extend(
+            (c, self._constraint_iteration) for c in resolved
+        )
+
+        # Clear appropriate dirty flags
+        if size_only:
+            self.dirty_size_constraints = False
+        if position_only:
+            self.dirty_position_constraints = False
+
+        # Debug print for ignored constraints
+        # if self._constraints_to_ignore:
+            # print(f"{self} ignored constraints: {[str(c) for c in self._constraints_to_ignore]}")
 
 
     def has_constraint(self, name: str) -> bool:
@@ -318,7 +343,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return self
 
     def remove(self, *children: "Widget") -> Self:
-        for child in self.children:
+        for child in self.children.copy():
             if child in children:
                 child.set_parent(None)
                 child.set_parent_scene(None)
@@ -357,16 +382,22 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         _ = [c.update(dt) for c in self.children]
         super().update(dt)
 
-    def build(self) -> None:
+    def build(self) -> bool:
+        """
+        Updates the size of the widget.
+        return True if size changed
+        """
         new_size = tuple(map(int, self.rect.size))
-        if self.surface.size != new_size:
-            old_alpha = self.surface.get_alpha()
-            new_size = [max(0, i) for i in new_size]
-            self.surface = pygame.Surface(new_size, self.surface_flags)
-            if self.convert_alpha:
-                self.surface = self.surface.convert_alpha()
-            self.surface.set_alpha(old_alpha)
-
+        if self.surface.size == new_size:
+            return False
+        
+        old_alpha = self.surface.get_alpha()
+        new_size = [max(0, i) for i in new_size]
+        self.surface = pygame.Surface(new_size, self.surface_flags)
+        if self.convert_alpha:
+            self.surface = self.surface.convert_alpha()
+        self.surface.set_alpha(old_alpha)
+        return True
 
     def paint(self) -> None:
         self.surface.fill((0, 0, 0, 0))
@@ -405,7 +436,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         w = self
         tmp = w
         while not tmp.is_root:
-            if tmp.dirty_constraints or tmp.dirty_shape:
+            if tmp.dirty_size_constraints or tmp.dirty_shape:
                 w = tmp
             if not tmp.parent:
                 break
@@ -427,36 +458,36 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def apply_pre_updates(self):
         """
         TOP TO BOTTOM
-        for cases when widget attributes depends on parent attributes
+        Resolves size-related constraints before propagating updates to children.
         """
-        if self.dirty_constraints:
+        if self.dirty_size_constraints:
             self.resolve_constraints(size_only=True)
-            self.dirty_constraints = False
+            self.dirty_size_constraints = False
+            self.dirty_position_constraints = True
 
-    def apply_post_updates(self,skip_draw:bool=False):
+    def apply_post_updates(self, skip_draw: bool = False):
         """
         BOTTOM TO TOP
-        for cases when widget attributes depend on children attributes
+        Resolves position-related constraints after propagating updates from children.
         """
 
         if self.dirty_shape:
-            self.build()
+            
+            if self.build():
+                self.dirty_size_constraints = True
+                self.dirty_position_constraints = True
+                if self.parent :
+                # trigger layout or constraint updates in parent
+                    from .container import Container
+                    if self.parent and isinstance(self.parent, Container):
+                        self.parent.dirty_layout = True
+                        self.parent.dirty_shape = True
             self.dirty_shape = False
             self.dirty_surface = True
-            if self.parent :
-                self.parent.dirty_constraints = True
-            # trigger layout or constraint updates in parent
 
-            # from .container import Container
-            # if self.parent and isinstance(self.parent, Container):
-            #     self.parent.dirty_layout = True
 
-            # force recheck of constraints
-            self.dirty_constraints = True
-
-        if self.dirty_constraints:
+        if self.dirty_position_constraints:
             self.resolve_constraints(position_only=True)
-            self.dirty_constraints = False
 
         if self.dirty_surface and not skip_draw:
             self.paint()
@@ -468,7 +499,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         super().draw(camera)
 
         if self.clip_children:
-            new_clip = camera.world_to_screen(self.get_padded_rect())
+            new_clip = camera.world_to_screen(self.get_inner_rect())
             old_clip = camera.surface.get_clip()
             new_clip = new_clip.clip(old_clip)
             camera.surface.set_clip(new_clip)

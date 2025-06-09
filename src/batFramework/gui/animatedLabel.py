@@ -35,7 +35,7 @@ class AnimatedLabel(Label):
         return self
 
     def cut_text_to_width(self, text: str) -> list[str]:
-        w = self.get_padded_width()
+        w = self.get_inner_width()
         if text == "" or not self.font_object or w < self.font_object.point_size:
             return [text]
         left = 0

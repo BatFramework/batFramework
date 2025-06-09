@@ -42,9 +42,6 @@ class Meter(Shape):
 
     def set_range(self, range_min: float, range_max: float) -> Self:
         if range_min >= range_max:
-            print(
-                f"[Warning] : minimum value {range_min} is greater than or equal to maximum value {range_max}"
-            )
             return self
         self.min_value = range_min
         self.max_value = range_max
@@ -71,7 +68,7 @@ class Meter(Shape):
         return (self.value-self.min_value) / (self.max_value - self.min_value)
 
     def _build_content(self) -> None:
-        padded = self.get_padded_rect()
+        padded = self.get_inner_rect()
         ratio = self.get_ratio()
 
         if self.axis == bf.axis.HORIZONTAL:

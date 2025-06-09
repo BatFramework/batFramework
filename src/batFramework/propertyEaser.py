@@ -46,6 +46,9 @@ class PropertyEaser(EasingController):
 
         super().__init__(duration, easing, update_all, end_callback, loop, register)
 
+    def __str__(self):
+        return f"(PROP){super().__str__()}"
+
     def add_attr(
         self,
         obj: Any,

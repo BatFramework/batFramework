@@ -65,7 +65,7 @@ class Container(Shape, InteractiveWidget):
     def clamp_scroll(self) -> Self:
         if not self.children:
             return self
-        r = self.get_padded_rect()
+        r = self.get_inner_rect()
         # Compute the bounding rect of all children in one go
         children_rect = self.children[0].rect.copy()
         for child in self.children[1:]:
@@ -132,7 +132,6 @@ class Container(Shape, InteractiveWidget):
     def children_has_focus(self)->bool:
         return any(child.is_focused for child in self.get_interactive_children())
 
-
     def do_handle_event(self, event) -> None:
         if event.consumed:
             return
@@ -151,52 +150,53 @@ class Container(Shape, InteractiveWidget):
 
     def allow_focus_to_self(self) -> bool:
         return bool(self.get_interactive_children()) and self.visible
-
     
     def build(self) -> None:
-        if self.layout is not None and  (self.autoresize_w or self.autoresize_h):
-            size = self.inflate_rect_by_padding((0,0,*self.layout.get_auto_size())).size
-            if self.rect.size != size:
-                self.set_size(size)
+        if self.layout is not None:
+            # print("I'm building !",self)
+            # size = self.expand_rect_with_padding((0,0,*self.layout.get_auto_size())).size
+            size = self.layout.get_auto_size()
+            self.set_size(self.resolve_size(size))
         super().build()
 
-
     def apply_pre_updates(self):
-        if self.dirty_constraints or self.dirty_shape:
+        if self.dirty_size_constraints or self.dirty_shape:
             self.resolve_constraints(size_only=True)
-            self.dirty_constraints = False
+            self.dirty_size_constraints = False
+            self.dirty_position_constraints = True
 
         if self.dirty_layout:
+            self.layout.update_child_constraints()
             self.layout.arrange()
             self.dirty_layout = False
-
 
     def apply_post_updates(self,skip_draw:bool=False):
         """
         BOTTOM TO TOP
         for cases when widget attributes depend on children attributes
         """
-
         if self.dirty_shape:
             self.layout.update_child_constraints()
             self.build()
             self.dirty_shape = False
             self.dirty_surface = True
             self.dirty_layout =  True
+            self.dirty_size_constraints = True
+            self.dirty_position_constraints = True
+            from .container import Container
+            if self.parent and isinstance(self.parent, Container):
+                self.parent.dirty_layout = True
+                self.parent.dirty_shape = True
 
             # trigger layout or constraint updates in parent
             
-            # from .container import Container
-            # if self.parent and isinstance(self.parent, Container):
-            #     self.parent.dirty_layout = True
 
             # force recheck of constraints
-            self.dirty_constraints = True
 
 
-        if self.dirty_constraints:
+        if self.dirty_position_constraints:
             self.resolve_constraints(position_only=True)
-            self.dirty_constraints = False
+            self.dirty_position_constraints= False
 
 
         if self.dirty_surface and not skip_draw:

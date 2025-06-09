@@ -18,13 +18,13 @@ class Shape(Widget):
         self.shadow_color: tuple[int, int, int] | str = (0, 0, 0, 255)
         self.draw_mode = bf.drawMode.SOLID
 
-    def get_padded_bottom(self) -> float:
+    def get_inner_bottom(self) -> float:
         return self.rect.bottom - self.padding[3] - self.relief
 
-    def get_padded_height(self) -> float:
+    def get_inner_height(self) -> float:
         return self.rect.h - self.padding[1] - self.padding[3] - self.relief
 
-    def get_padded_top(self) -> float:
+    def get_inner_top(self) -> float:
         return self.rect.y + self.padding[1]
 
     def get_local_padded_rect(self)->pygame.FRect:
@@ -35,7 +35,7 @@ class Shape(Widget):
             self.rect.h - self.padding[1] - self.padding[3] - self.relief,
         )
 
-    def get_padded_rect(self) -> pygame.FRect:
+    def get_inner_rect(self) -> pygame.FRect:
         return pygame.FRect(
             self.rect.x + self.padding[0],
             self.rect.y + self.padding[1],

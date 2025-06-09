@@ -1,14 +1,4 @@
-from __future__ import annotations
-from collections import OrderedDict
-import itertools
-
-from typing import TYPE_CHECKING, Any
-if TYPE_CHECKING:
-    from .manager import Manager
-    from .sceneManager import SceneManager
-
 from .baseScene import BaseScene
-import pygame
 import batFramework as bf
 
 
@@ -22,7 +12,7 @@ class Scene(BaseScene):
             name: Name of the scene.
         """
         super().__init__(name)
-        self.add_layer(bf.SceneLayer("world",False))
+        self.add_layer(bf.SceneLayer("world",True))
         hud_layer = bf.SceneLayer("hud",True)
         self.add_layer(hud_layer)
         self.root: bf.gui.Root = bf.gui.Root(hud_layer.camera)

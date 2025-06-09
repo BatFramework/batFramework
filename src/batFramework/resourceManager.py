@@ -114,6 +114,15 @@ class ResourceManager(metaclass=Singleton):
         self.shared_variables[name] = value
         return True
 
+    def set_sharedVars(self, variables: dict) -> bool:
+        """
+        Set multiple shared variables at once. This will be accessible (read/write) from any scene.
+        """
+        if not isinstance(variables, dict):
+            raise ValueError("Input must be a dictionary")
+        self.shared_variables.update(variables)
+        return True
+
     def get_sharedVar(self, name, error_value=None):
         """
         Get a shared variable

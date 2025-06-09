@@ -13,7 +13,6 @@ class SceneLayer:
     A scene layer is a 'dimension' bound to a scene
     Each layer contains its own entities and camera
     One common use would be to separate GUI and game into two separate layers
-    
     """
     def __init__(self,name:str,convert_alpha:bool = False):
         self.scene = None
@@ -112,7 +111,8 @@ class SceneLayer:
             [self.debug_entity(uid) for uid in self.draw_order if uid in self.entities]
 
         # Blit the camera surface onto the provided surface
-        surface.blit(self.camera.surface, (0, 0))
+        # surface.blit(self.camera.surface, (0, 0))
+        self.camera.draw(surface)
 
     def update_draw_order(self):
         self.draw_order = sorted(

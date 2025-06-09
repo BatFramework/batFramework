@@ -23,7 +23,7 @@ class BaseScene:
         self.manager: Manager | None = None
         self.active = False
         self.visible = False
-        self.clear_color = None
+        self.clear_color = bf.color.BLACK
         self.actions: bf.ActionContainer = bf.ActionContainer()
         self.early_actions: bf.ActionContainer = bf.ActionContainer()
         self.scene_layers : list[SceneLayer] = []
@@ -193,17 +193,24 @@ class BaseScene:
         self.do_early_draw(surface)
 
         # Draw all layers back to front
-        for l in reversed(self.scene_layers):
+        for i,l in enumerate(reversed(self.scene_layers)):
             #blit all layers onto surface
             l.draw(surface)
-        
+            if i < len(self.scene_layers)-1:
+                self.do_between_layer_draw(surface,l)
         self.do_final_draw(surface)
 
 
     def do_early_draw(self, surface: pygame.Surface):
+        """Called before any layer draw"""
+        pass
+
+    def do_between_layer_draw(self, surface: pygame.Surface,layer:SceneLayer):
+        """Called after drawing the argument layer (except the last layer)"""
         pass
 
     def do_final_draw(self, surface: pygame.Surface):
+        "Called after all layers"
         pass
 
     def on_enter(self):

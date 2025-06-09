@@ -10,14 +10,9 @@ class Button(Label, ClickableWidget):
         self.set_callback(callback)
 
     def __str__(self) -> str:
-        return f"Button({self.text})"
+        return f"Button('{self.text}')"
 
-    def get_min_required_size(self) -> tuple[float, float]:
-
-        res = self.inflate_rect_by_padding(
-                    (0, 0, *self._get_text_rect_required_size())
-                ).size
+    def get_min_required_size(self):
+        res = super().get_min_required_size()
         res = res[0],res[1]+self.unpressed_relief
-        return res[0] if self.autoresize_w else self.rect.w, (
-            res[1] if self.autoresize_h else self.rect.h
-        )
+        return res

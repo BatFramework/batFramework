@@ -61,7 +61,7 @@ class Toggle(Button):
         total_width = text_width + gap + indicator_size
         total_height = text_height + self.unpressed_relief
 
-        return self.inflate_rect_by_padding((0, 0, total_width, total_height)).size
+        return self.expand_rect_with_padding((0, 0, total_width, total_height)).size
 
 
     def _build_composed_layout(self,other:Shape):
@@ -70,19 +70,18 @@ class Toggle(Button):
         full_rect = self.text_rect.copy()
 
         other_height = min(self.text_rect.h, self.font_object.get_height()+1)
-        other.set_size((other_height,other_height))
+        other.set_size(other.resolve_size((other_height,other_height)))
         
         full_rect.w += other.rect.w + gap
         full_rect.h += self.unpressed_relief
         
 
         # take into account the relief when calculating target size
-        inflated = self.inflate_rect_by_padding((0, 0, *full_rect.size)).size
+        inflated = self.expand_rect_with_padding((0, 0, *full_rect.size)).size
         target_size = self.resolve_size(inflated)
         if self.rect.size != target_size:
             self.set_size(target_size)
-            self.apply_post_updates(skip_draw=True)
-            return
+
         self._align_composed(other)
         
 
