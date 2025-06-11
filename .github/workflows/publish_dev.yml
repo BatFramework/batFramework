@@ -37,8 +37,8 @@ jobs:
           git config user.email "actions@github.com"
           git add src/batFramework/version.json pyproject.toml
           if ! git diff --cached --quiet; then
-            git commit -m "Update master version to ${{ inputs.version }}"
-            git push origin master
+            git commit -m "Update dev version to ${{ inputs.version }}"
+            git push origin dev
           else
             echo "No version changes to commit. Skipping push."
           fi
