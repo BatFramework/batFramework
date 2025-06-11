@@ -18,10 +18,11 @@ def children_has_focus(widget)->bool:
 
 
 class InteractiveWidget(Widget):
+    __focus_effect_cache = {}
     def __init__(self, *args, **kwargs) -> None:
         self.is_focused: bool = False
         self.is_hovered: bool = False
-        self.is_clicked_down: bool = False
+        self.is_clicked_down: list[bool] = [False]*5
         self.focused_index = 0
         self.focusable = True
         super().__init__(*args, **kwargs)
@@ -136,13 +137,13 @@ class InteractiveWidget(Widget):
     
     def on_key_down(self, key) -> bool:
         """
-        return True to stop event progpagation
+        return True to stop event propagation
         """
         return self.do_on_key_down(key)
 
     def on_key_up(self, key) -> bool:
         """
-        return True to stop event progpagation
+        return True to stop event propagation
         """
         return self.do_on_key_up(key)
 
@@ -154,42 +155,37 @@ class InteractiveWidget(Widget):
 
     def do_on_key_down(self, key) -> bool:
         """
-        return True to stop event progpagation
+        return True to stop event propagation
         """
         return False
 
     def do_on_key_up(self, key) -> bool:
         """
-        return True to stop event progpagation
+        return True to stop event propagation
         """
         return False
 
-
     def on_click_down(self, button: int) -> bool:
         """
-        return True to stop event progpagation
+        return True to stop event propagation
         """
-        self.is_clicked_down = True
+        if button < 1 or button > 5 : return False
+        self.is_clicked_down[button-1] = True
         return self.do_on_click_down(button)
 
     def on_click_up(self, button: int) -> bool:
         """
-        return True to stop event progpagation
+        return True to stop event propagation
         """
-        self.is_clicked_down = False
+        if button < 1 or button > 5 : return False
+        self.is_clicked_down[button-1] = False
         return self.do_on_click_up(button)
 
-    def do_on_click_down(self, button: int) -> bool:
-        """
-        return True to stop event progpagation
-        """
-        return False
+    def do_on_click_down(self, button: int) -> None:
+        return 
 
-    def do_on_click_up(self, button: int) -> bool:
-        """
-        return True to stop event progpagation
-        """
-        return False
+    def do_on_click_up(self, button: int) -> None:
+        return 
 
     def on_enter(self) -> None:
         self.is_hovered = True
@@ -197,7 +193,7 @@ class InteractiveWidget(Widget):
 
     def on_exit(self) -> None:
         self.is_hovered = False
-        self.is_clicked_down = False
+        self.is_clicked_down = [False]*5
         self.do_on_exit()
 
     def do_on_enter(self) -> None:
@@ -226,12 +222,18 @@ class InteractiveWidget(Widget):
         # Shrink for inner pulsing border
         inner = screen_rect.inflate(-delta, -delta)
         inner.topleft = 0,0
-        surface = pygame.Surface(inner.size)
+        inner.w = round(inner.w)
+        inner.h = round(inner.h)
+
+        surface = InteractiveWidget.__focus_effect_cache.get(inner.size)
+        if surface is None:
+            surface = pygame.Surface(inner.size)
+            InteractiveWidget.__focus_effect_cache[inner.size] = surface
+
         surface.set_colorkey((0,0,0))
         pygame.draw.rect(surface, "white", inner, 2, *self.border_radius)
-        pygame.draw.rect(surface, "black", inner.inflate(-16,0), 2)
-        pygame.draw.rect(surface, "black", inner.inflate(0,-16), 2)
+        pygame.draw.rect(surface, "black", inner.inflate(-1 * min(16,inner.w*0.75),0), 2)
+        pygame.draw.rect(surface, "black", inner.inflate(0,-1 * min(16,inner.h*0.75)), 2)
         inner.center = screen_rect.center
         camera.surface.blit(surface,inner)
 
-        # pygame.draw.rect(camera.surface, "white", inner, 2, *self.border_radius)

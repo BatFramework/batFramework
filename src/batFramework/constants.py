@@ -49,4 +49,3 @@ class Constants:
     @staticmethod
     def set_fps_limit(value: int):
         Constants.FPS = value
-        print("FPS limit to : ", value)

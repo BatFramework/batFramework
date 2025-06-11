@@ -109,13 +109,11 @@ class Root(InteractiveWidget):
         return self
 
     def process_event(self,event):
-        if event.consumed : return
-        self.do_handle_event_early(event)
-        if event.consumed : return
-        super().process_event(event)
+        if not event.consumed : self.do_handle_event_early(event)
+        if not event.consumed : super().process_event(event)
         
     def do_handle_event_early(self, event):
-        if event.type == pygame.VIDEORESIZE:
+        if event.type == pygame.VIDEORESIZE and not pygame.SCALED & bf.const.FLAGS:
             self.set_size((event.w,event.h),force=True)
         if self.focused:
             if event.type == pygame.KEYDOWN:
@@ -126,6 +124,7 @@ class Root(InteractiveWidget):
                 event.consumed = self.focused.on_key_up(event.key)
 
         if not self.hovered or (not isinstance(self.hovered, InteractiveWidget)):
+            event.consumed = True
             return
 
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -200,6 +199,7 @@ class Root(InteractiveWidget):
         # print("START updating tree")
         self.apply_updates("pre")
         self.apply_updates("post")
+
         self.apply_updates("pre")
         self.apply_updates("post")
 

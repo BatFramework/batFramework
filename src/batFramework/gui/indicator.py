@@ -68,61 +68,44 @@ class ArrowIndicator(Indicator):
         self.direction : bf.direction = direction
         self.arrow_color = bf.color.WHITE
         self.line_width : int = 1
-        self.angle : float  = 45
-        self.spread : float = None 
-        self.draw_stem : bool = True
-        
-    def set_draw_stem(self,value:bool)->Self:
-        self.draw_stem = value
-        self.dirty_surface = False
-        return self
 
-    def set_spread(self,value:float)->Self:
-        self.spread = value
-        self.dirty_surface = True
-        return self
-
-    def set_angle(self,value:float)->Self:
-        self.angle = value
-        self.dirty_surface = True
-        return self
-        
     def set_arrow_color(self,color)-> Self:
         self.arrow_color = color
         self.dirty_surface = True
         return self
 
-    def set_direction(self,direction:bf.direction)->Self:
+    def set_arrow_direction(self,direction:bf.direction)->Self:
         self.direction = direction
         self.dirty_surface = True
         return self
 
-    def set_line_width(self,value:int)->Self:
+    def set_arrow_line_width(self,value:int)->Self:
         self.line_width = value
         self.dirty_surface = True
         return self
         
     def paint(self):
         super().paint()
-        r = self.get_local_padded_rect()
+        r = self.get_local_inner_rect()
         size = min(r.width, r.height)
         if size %2 == 0:
             size -= 1
         r.width = size
         r.height = size
+
+        #pixel alignment
         if (self.padding[1]+self.padding[3] )%2 ==0:
             r.height-=1
         if (self.padding[0]+self.padding[2] )%2 ==0:
             r.width-=1
-        r.center = self.get_local_padded_rect().center
-        # r.inflate_ip(3,3)
-        # r.normalize()
-        # r.move_ip(-self.rect.left,-self.rect.right)
+        r.center = self.get_local_inner_rect().center
+
         bf.utils.draw_triangle(
             surface = self.surface,
             color = self.arrow_color,
             rect =r,
             direction = self.direction,
+            width = self.line_width
 
         )
         

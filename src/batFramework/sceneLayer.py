@@ -47,7 +47,7 @@ class SceneLayer:
                 self.entities_to_remove.add(e)
 
     def process_event(self,event:pygame.Event):
-        if event.type == pygame.VIDEORESIZE:
+        if event.type == pygame.VIDEORESIZE and not pygame.SCALED & bf.const.FLAGS:
             self.camera.set_size(bf.const.RESOLUTION)
 
         for e in self.entities.values():

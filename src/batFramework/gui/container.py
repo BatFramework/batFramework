@@ -41,25 +41,19 @@ class Container(Shape, InteractiveWidget):
     def scrollX_by(self, x: float | int) -> Self:
         if x == 0:
             return self
-        self.scroll.x += x
-        self.clamp_scroll()
-        self.dirty_layout = True
+        self.set_scroll((self.scroll.x + x, self.scroll.y))
         return self
 
     def scrollY_by(self, y: float | int) -> Self:
         if y == 0:
             return self
-        self.scroll.y += y
-        self.clamp_scroll()
-        self.dirty_layout = True
+        self.set_scroll((self.scroll.x, self.scroll.y + y))
         return self
 
     def scroll_by(self, value: tuple[float | int, float | int]) -> Self:
         if value[0] == 0 and value[1] == 0:
             return self
-        self.scroll += value
-        self.clamp_scroll()
-        self.dirty_layout = True
+        self.set_scroll((self.scroll.x + value[0], self.scroll.y + value[1]))
         return self
 
     def clamp_scroll(self) -> Self:
@@ -77,9 +71,7 @@ class Container(Shape, InteractiveWidget):
         new_x = min(max(self.scroll.x, 0), max_scroll_x)
         new_y = min(max(self.scroll.y, 0), max_scroll_y)
 
-        if self.scroll.x != new_x or self.scroll.y != new_y:
-            self.scroll.x = new_x
-            self.scroll.y = new_y
+        self.set_scroll((new_x, new_y))
         return self
 
     def set_layout(self, layout: Layout) -> Self:
@@ -93,7 +85,10 @@ class Container(Shape, InteractiveWidget):
         return self
 
     def get_interactive_children(self) -> list[InteractiveWidget]:
-        return [child for child in self.children if isinstance(child, InteractiveWidget) and not isinstance(child,Container) and child.allow_focus_to_self()]
+        return [child for child in self.get_layout_children() if isinstance(child, InteractiveWidget) and not isinstance(child,Container) and child.allow_focus_to_self()]
+
+    def get_layout_children(self)->list[Widget]:
+        return self.children
 
     def clear_children(self) -> None:
         self.children.clear()
@@ -202,5 +197,5 @@ class Container(Shape, InteractiveWidget):
         if self.dirty_surface and not skip_draw:
             self.paint()
             self.dirty_surface = False
-  
+
 

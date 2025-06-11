@@ -11,16 +11,18 @@ class ClickableWidget(Shape, InteractiveWidget):
     def __init__(self, callback: Callable[[],Any] = None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.callback = callback
-        self.is_pressed: bool = False
-        self.enabled: bool = True
+        self.is_pressed: bool = False # the state where the button is being held down (releasing will trigger callback)
+        self.is_enabled: bool = True # 
         self.hover_cursor = bf.const.DEFAULT_HOVER_CURSOR
         self.click_cursor = bf.const.DEFAULT_CLICK_CURSOR
+
         self.click_down_sound = None
         self.click_up_sound = None
         self.get_focus_sound = None
         self.lose_focus_sound = None
-        self.pressed_relief: int = 1
-        self.unpressed_relief: int = 2
+
+        self.pressed_relief: int = 1    # Depth effect height when pressed
+        self.unpressed_relief: int = 2  # Depth effect height when released (default)
         self.silent_focus: bool = False
         self.set_debug_color("cyan")
         self.set_relief(self.unpressed_relief)
@@ -98,17 +100,14 @@ class ClickableWidget(Shape, InteractiveWidget):
         return True
 
     def enable(self) -> Self:
-        self.enabled = True
+        self.is_enabled = True
         self.dirty_surface = True
         return self
 
     def disable(self) -> Self:
-        self.enabled = False
+        self.is_enabled = False
         self.dirty_surface = True
         return self
-
-    def is_enabled(self) -> bool:
-        return self.enabled
 
     def set_callback(self, callback: Callable[[],Any]) -> Self:
         self.callback = callback
@@ -134,7 +133,7 @@ class ClickableWidget(Shape, InteractiveWidget):
         return f"ClickableWidget"
 
     def click(self, force=False) -> None:
-        if not self.enabled and not force:
+        if not self.is_enabled and not force:
             return False
         if self.callback is not None:
             self.callback()
@@ -154,33 +153,36 @@ class ClickableWidget(Shape, InteractiveWidget):
         return self.do_on_key_down(key)
         
 
-    def on_click_down(self, button) -> None:
-        if super().on_click_down(button):
-            return True
-        if self.enabled and button == 1:
-            if not self.get_focus():
-                return False
-            self.is_pressed = True
-            if self.click_down_sound:
-                bf.AudioManager().play_sound(self.click_down_sound)
-            pygame.mouse.set_cursor(self.click_cursor)
-            self.set_relief(self.pressed_relief)
+    def on_click_down(self, button) -> bool:
+        if button < 1 or button > 5 : return False
+        self.is_clicked_down[button-1] = True
+        if self.is_enabled and button == 1:
+            if self.get_focus():
+                self.is_pressed = True
+                if self.click_down_sound:
+                    bf.AudioManager().play_sound(self.click_down_sound)
+                pygame.mouse.set_cursor(self.click_cursor)
+                self.set_relief(self.pressed_relief)
+                self.do_on_click_down(button)
             return True
         return False
 
-    def on_click_up(self, button) -> None:
-        if super().on_click_up(button):
-            return True
-        if self.enabled and button == 1 and self.is_pressed:
+    def on_click_up(self, button):
+        if button < 1 or button > 5 : return False
+        self.is_clicked_down[button-1] = False
+        if self.is_enabled and button == 1 and self.is_pressed:
             self.is_pressed = False
             if self.click_up_sound:
                 bf.AudioManager().play_sound(self.click_up_sound)
             self.set_relief(self.unpressed_relief)
-            return self.click()
+            self.click()
+            self.do_on_click_up(button)
+            return True
         return False
-    
+
+
     def on_enter(self) -> None:
-        if not self.enabled:
+        if not self.is_enabled:
             return
         super().on_enter()
         self.dirty_surface = True
@@ -192,7 +194,6 @@ class ClickableWidget(Shape, InteractiveWidget):
             self.set_relief(self.unpressed_relief)
         self.is_pressed = False
         self.dirty_surface = True
-
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
 
     def on_lose_focus(self):
@@ -218,7 +219,7 @@ class ClickableWidget(Shape, InteractiveWidget):
             self.rect.h - self.unpressed_relief - self.padding[1] - self.padding[3],
         )
 
-    def get_local_padded_rect(self) -> pygame.FRect:
+    def get_local_inner_rect(self) -> pygame.FRect:
         return pygame.FRect(
             self.padding[0],
             self.padding[1] + (self.unpressed_relief - self.pressed_relief if self.is_pressed else 0),
@@ -237,7 +238,7 @@ class ClickableWidget(Shape, InteractiveWidget):
 
     def paint(self) -> None:
         super().paint()
-        if not self.enabled:
+        if not self.is_enabled:
             self._paint_disabled()
         elif self.is_hovered:
             self._paint_hovered()

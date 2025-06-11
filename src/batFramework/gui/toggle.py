@@ -63,8 +63,9 @@ class Toggle(Button):
 
         return self.expand_rect_with_padding((0, 0, total_width, total_height)).size
 
-
     def _build_composed_layout(self,other:Shape):
+        size_changed = False
+        self.text_rect.size = self._get_text_rect_required_size()
 
         gap = self.gap if self.text else 0
         full_rect = self.text_rect.copy()
@@ -81,13 +82,14 @@ class Toggle(Button):
         target_size = self.resolve_size(inflated)
         if self.rect.size != target_size:
             self.set_size(target_size)
+            size_changed = True
 
         self._align_composed(other)
-        
+        return size_changed
 
     def _align_composed(self,other:Shape):
         
-        full_rect = self.get_local_padded_rect()
+        full_rect = self.get_local_inner_rect()
         left_rect = self.text_rect
         right_rect = other.rect
         gap = {
@@ -119,10 +121,8 @@ class Toggle(Button):
 
         right_rect.move_ip(*self.rect.topleft)
 
-
-
     def _build_layout(self) -> None:
-        self.text_rect.size = self._get_text_rect_required_size()
-        self._build_composed_layout(self.indicator)
+        return self._build_composed_layout(self.indicator)
+
 
 

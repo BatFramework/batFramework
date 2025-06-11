@@ -21,7 +21,6 @@ class Selector(Button):
         self.on_modify_callback : Callable[[str,int],Any] = None
         self.options = options if options else []
         self.gap : int = 2
-        self.indicator_height = 0
         text_value = ""
 
         
@@ -32,13 +31,11 @@ class Selector(Button):
         self.current_index = self.options.index(default_value)
 
         self.left_indicator : MyArrow = (MyArrow(bf.direction.LEFT)
-            .set_draw_stem(False)
             .set_color((0,0,0,0)).set_arrow_color(self.text_color)
             .set_callback(lambda : self.set_by_index(self.get_current_index()-1))
         )
 
         self.right_indicator:MyArrow =(MyArrow(bf.direction.RIGHT)
-            .set_draw_stem(False)
             .set_color((0,0,0,0)).set_arrow_color(self.text_color)
             .set_callback(lambda : self.set_by_index(self.get_current_index()+1))
         )
@@ -54,7 +51,12 @@ class Selector(Button):
         self.gap = value
         self.dirty_shape = True
         return self
-        
+    
+    def set_arrow_color(self,color)->Self:
+        self.left_indicator.set_arrow_color(color)
+        self.right_indicator.set_arrow_color(color)
+        return self
+
     def disable(self):
         super().disable()
         self.left_indicator.disable()
@@ -99,14 +101,13 @@ class Selector(Button):
         self.text = old_text
 
         # Ensure total_height is always an odd integer
-        total_height = max(8, max_text_size[1] * 1.5)
+        total_height = max(self.font_object.get_height()+1, max_text_size[1] * 1.5)
         total_height += self.unpressed_relief
         total_height += max(self.right_indicator.outline_width,self.left_indicator.outline_width)
-        self.indicator_height = total_height
 
         # Calculate total width and height
         total_width = (
-            self.indicator_height*2+
+            total_height*2+
             max_text_size[0] +  # Text width
             self.gap * 2      # Gaps between text and indicators
         )
@@ -114,8 +115,6 @@ class Selector(Button):
         final_size = self.expand_rect_with_padding((0, 0, total_width, total_height)).size
 
         return final_size
-
-
 
     def _align_content(self):
         """
@@ -130,7 +129,7 @@ class Selector(Button):
         # left_size = self.left_indicator.rect.size
         right_size = self.right_indicator.rect.size
 
-        indicator_height = self.indicator_height
+        indicator_height = padded.h
 
         self.left_indicator.set_size((indicator_height,indicator_height))
         self.right_indicator.set_size((indicator_height,indicator_height))
@@ -143,11 +142,8 @@ class Selector(Button):
         self.right_indicator.set_position(padded.right - right_size[0], None)
         self.right_indicator.set_center(None, padded.centery)
 
-
-
-    def build(self):
-        
-        super().build()
+    def apply_post_updates(self, skip_draw = False):
+        super().apply_post_updates(skip_draw)
         self._align_content()
 
     def get_current_index(self)->int:
@@ -172,8 +168,6 @@ class Selector(Button):
         self.on_modify_callback = function
         return self
 
-    
-
     def set_by_index(self,index:int)->Self:
         if self.allow_cycle:
             index = index%len(self.options)
@@ -182,7 +176,6 @@ class Selector(Button):
     
         if index == self.current_index:
             return self
-
 
         self.current_index = index
         self.set_text(self.options[self.current_index])
@@ -209,14 +202,14 @@ class Selector(Button):
             self.right_indicator.hide()
             
     def set_by_value(self,value:str)->Self:
-        if not self.enabled : return
+        if not self.is_enabled : return
         if value not in self.options : return self
         index = self.options.index(value)
         self.set_by_index(index)
         return self
 
     def on_key_down(self, key: int) -> bool:
-        if not self.enabled:
+        if not self.is_enabled:
             return False
 
         key_actions = {
@@ -226,14 +219,14 @@ class Selector(Button):
         }
 
         indicator = key_actions.get(key)
-        if indicator and indicator.visible and indicator.enabled:
+        if indicator and indicator.visible and indicator.is_enabled:
             indicator.on_click_down(1)
             return True
 
         return False
 
     def on_key_up(self, key: int) -> bool:
-        if not self.enabled:
+        if not self.is_enabled:
             return False
 
         key_actions = {
@@ -243,14 +236,14 @@ class Selector(Button):
         }
 
         indicator = key_actions.get(key)
-        if indicator and indicator.visible and indicator.enabled:
+        if indicator and indicator.visible and indicator.is_enabled:
             indicator.on_click_up(1)
             return True
 
         return False
     
     def do_on_click_down(self, button) -> None:
-        if self.enabled and button == 1:
+        if self.is_enabled and button == 1:
             if not self.get_focus():
                 return True
         return False

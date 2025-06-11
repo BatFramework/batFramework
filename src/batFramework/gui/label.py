@@ -273,7 +273,7 @@ class Label(Shape):
             # return True
 
         self.text_rect.size = self._get_text_rect_required_size()
-        padded = self.get_local_padded_rect()
+        padded = self.get_local_inner_rect()
         self.align_text(self.text_rect, padded, self.alignment)
         return ret
 
@@ -312,7 +312,7 @@ class Label(Shape):
         # clip surface
         
         old = self.surface.get_clip()
-        self.surface.set_clip(self.get_local_padded_rect())
+        self.surface.set_clip(self.get_local_inner_rect())
         self.surface.fblits(l)
         self.surface.set_clip(old)
         
@@ -338,7 +338,6 @@ class Label(Shape):
         return size_changed
         
         
-
     def paint(self) -> None:
         super().paint()
         if self.font_object:

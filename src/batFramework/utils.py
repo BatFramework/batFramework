@@ -151,69 +151,6 @@ class Utils:
         else:
             pygame.draw.circle(dest_surf, inside_color, center, radius)
 
-    @staticmethod
-    def animate_move(entity:"Entity", start_pos : tuple[float,float], end_pos:tuple[float,float])->Callable[[float],None]:
-        """
-        Creates a function to animate the movement of an entity from start_pos to end_pos.
-
-        Args:
-            entity (Entity): The entity to move.
-            start_pos (tuple[float, float]): The starting position of the entity.
-            end_pos (tuple[float, float]): The ending position of the entity.
-
-        Returns:
-            Callable[[float], None]: A function that updates the entity's position based on a progression value (0 to 1).
-        """
-        def func(x):
-            entity.set_center(start_pos[0]+(end_pos[0]-start_pos[0])*x,start_pos[1]+(end_pos[1]-start_pos[1])*x)
-        return func
-    
-    def animate_move_to(entity: "Entity", end_pos: tuple[float, float]) -> Callable[[float], None]:
-        """
-        Creates a function to animate the movement of an entity to a specified end position, capturing the start position at the start of the animation.
-
-        Args:
-            entity (Entity): The entity to move.
-            end_pos (tuple[float, float]): The target position of the entity.
-
-        Returns:
-            Callable[[float], None]: A function that updates the entity's position based on a progression value (0 to 1).
-        """
-
-        # Start position will be captured once when the animation starts
-        start_pos = [None]
-
-        def update_position(progression: float):
-            if start_pos[0] is None:
-                start_pos[0] = entity.rect.center  # Capture the start position at the start of the animation
-
-            # Calculate new position based on progression
-            new_x = start_pos[0][0] + (end_pos[0] - start_pos[0][0]) * progression
-            new_y = start_pos[0][1] + (end_pos[1] - start_pos[0][1]) * progression
-
-            # Set the entity's new position
-            entity.set_center(new_x, new_y)
-
-        return update_position
-
-    @staticmethod
-    def animate_alpha(entity:"Drawable", start : int, end:int)->Callable[[float],None]:
-        """
-        Creates a function to animate the alpha (transparency) of a drawable entity between a start and end value.
-
-        Args:
-            entity (Drawable): The entity to animate.
-            start (int): The starting alpha value (0 to 255).
-            end (int): The ending alpha value (0 to 255).
-
-        Returns:
-            Callable[[float], None]: A function that updates the entity's alpha based on a progression value (0 to 1).
-        """
-        def func(x):
-            entity.set_alpha(int(pygame.math.clamp(start+(end-start)*x,0,255)))
-        return func
-    
-
 
     @staticmethod
     def random_color(min_value: int = 0, max_value: int = 255) -> tuple[int, int, int]:
@@ -306,7 +243,7 @@ class Utils:
         # Draw the filled triangle
         pygame.draw.polygon(surface, color, points,width=width)
 
-    def draw_arc_by_points(surface, color, start_pos, end_pos, tightness=0.5, width=1, resolution=0.5):
+    def draw_arc_by_points(surface, color, start_pos, end_pos, tightness=0.5, width=1, resolution=0.5,antialias:bool=False):
         """
         Draw a smooth circular arc connecting start_pos and end_pos.
         `tightness` controls curvature: 0 is straight line, 1 is semicircle, higher = more bulge.
@@ -327,6 +264,8 @@ class Utils:
         p1 = pygame.Vector2(end_pos)
         chord = p1 - p0
         if chord.length_squared() == 0:
+            if antialias:
+                return pygame.draw.aacircle(surface, color, p0, width // 2)
             return pygame.draw.circle(surface, color, p0, width // 2)
 
         # Midpoint and perpendicular
@@ -361,5 +300,7 @@ class Utils:
                 center.x + math.cos(a) * r,
                 center.y + math.sin(a) * r
             ))
-
+        if antialias:
+            return pygame.draw.aalines(surface, color, False, points)
+    
         return pygame.draw.lines(surface, color, False, points, width)

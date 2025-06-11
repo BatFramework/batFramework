@@ -27,7 +27,7 @@ class Shape(Widget):
     def get_inner_top(self) -> float:
         return self.rect.y + self.padding[1]
 
-    def get_local_padded_rect(self)->pygame.FRect:
+    def get_local_inner_rect(self)->pygame.FRect:
         return pygame.FRect(
             self.padding[0],
             self.padding[1],

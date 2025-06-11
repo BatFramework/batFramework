@@ -7,7 +7,7 @@ from .draggableWidget import DraggableWidget
 from .clickableWidget import ClickableWidget
 from .root import Root
 from .shape import Shape
-from .meter import Meter
+from .meter import BarMeter
 from .label import Label
 from .tooltip import ToolTip
 from .animatedLabel import AnimatedLabel
@@ -18,7 +18,8 @@ from .layout import *
 from .container import Container
 from .indicator import *
 from .toggle import Toggle
-from .radioButton import RadioButton, RadioVariable
+from .syncedVar import SyncedVar
+from .radioButton import RadioButton
 from .slider import Slider
 from .selector import Selector
 import batFramework.gui.constraints as constraints

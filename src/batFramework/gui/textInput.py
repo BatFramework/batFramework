@@ -72,7 +72,7 @@ class TextInput(Label, InteractiveWidget):
         return self
 
     def __str__(self) -> str:
-        return f"TextInput({repr(self.text)})"
+        return f"TextInput"
 
     def _cursor_toggle(self, value: bool | None = None):
         if value is None:

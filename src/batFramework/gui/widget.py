@@ -203,20 +203,21 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             yield from child.get_debug_outlines()
 
     def add_constraints(self, *constraints: "Constraint") -> Self:
-        self.constraints.extend(constraints)
-        seen = set()
-        result = []
-        for c in self.constraints:
-            if not any(c == o for o in seen):
-                result.append(c)
-                seen.add(c.name)
-        self.constraints = result
+        # Add constraints without duplicates
+        existing_names = {c.name for c in self.constraints}
+        new_constraints = [c for c in constraints if c.name not in existing_names]
+        self.constraints.extend(new_constraints)
+
+        # Sort constraints by priority
         self.constraints.sort(key=lambda c: c.priority)
-        size_c = any(c.affects_size for c in constraints)
-        position_c = any(c.affects_position for c in constraints)
-        if position_c : self.dirty_position_constraints = True
-        if size_c : self.dirty_size_constraints = True
-        
+
+        # Update dirty flags based on the new constraints
+        if any(c.affects_size for c in new_constraints):
+            self.dirty_size_constraints = True
+        if any(c.affects_position for c in new_constraints):
+            self.dirty_position_constraints = True
+
+        # Clear ignored constraints
         self._constraints_to_ignore = []
 
         return self
@@ -226,8 +227,11 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         for c in self.constraints:
             if c.name in names:
                 c.on_removal(self)
-        self.constraints = [c for c in self.constraints if c.name not in names]
+        self.constraints = [c for c in self.constraints if c.name not in names]        
         self._constraints_to_ignore = []
+        self.dirty_size_constraints = True
+        self.dirty_position_constraints= True
+
         return self
 
 
@@ -319,6 +323,12 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             return self.parent.get_root()
         return None
 
+    def get_by_tags(self,*tags: str)->list["Widget"]:
+        #use self.has_tags(*tags) for check
+        result = []
+        self.visit(lambda w: result.append(w) if w.has_tags(*tags) else None)
+        return result
+    
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         if self.children:
             for child in reversed(self.children):
@@ -484,7 +494,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                         self.parent.dirty_shape = True
             self.dirty_shape = False
             self.dirty_surface = True
-
 
         if self.dirty_position_constraints:
             self.resolve_constraints(position_only=True)
