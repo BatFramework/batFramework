@@ -398,7 +398,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return True if size changed
         """
         new_size = tuple(map(int, self.rect.size))
-        if self.surface.size == new_size:
+        if self.surface.get_size() == new_size:
             return False
         
         old_alpha = self.surface.get_alpha()
