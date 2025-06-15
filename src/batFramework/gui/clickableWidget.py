@@ -165,7 +165,7 @@ class ClickableWidget(Shape, InteractiveWidget):
                 self.set_relief(self.pressed_relief)
                 self.do_on_click_down(button)
             return True
-        return False
+        return True
 
     def on_click_up(self, button):
         if button < 1 or button > 5 : return False
@@ -178,7 +178,7 @@ class ClickableWidget(Shape, InteractiveWidget):
             self.click()
             self.do_on_click_up(button)
             return True
-        return False
+        return True
 
 
     def on_enter(self) -> None:
@@ -199,7 +199,6 @@ class ClickableWidget(Shape, InteractiveWidget):
     def on_lose_focus(self):
         super().on_lose_focus()
         self.on_exit()
-
 
     def _paint_disabled(self) -> None:
         self.surface.blit(

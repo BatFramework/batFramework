@@ -88,6 +88,9 @@ class Layout(ABC):
         container = self.parent
 
         while container and not container.is_root:
+            if not hasattr(container,"scroll"):
+                container = container.parent
+                continue
             target_rect = target.rect  # global
             padded_rect = container.get_inner_rect()  # global
 

@@ -1,3 +1,4 @@
+import pygame
 import batFramework as bf
 from .widget import Widget
 from .shape import Shape
@@ -128,8 +129,12 @@ class Container(Shape, InteractiveWidget):
         return any(child.is_focused for child in self.get_interactive_children())
 
     def do_handle_event(self, event) -> None:
-        if event.consumed:
-            return
+        super().do_handle_event(event)
+        if event.type == pygame.MOUSEWHEEL:
+            # Adjust scroll based on the mouse wheel movement
+            scroll_speed = 20  # Adjust this value to control the scroll speed
+            self.scroll_by((0, -event.y * scroll_speed))  # Scroll vertically
+            event.consumed = True  # Mark the event as consumed
         self.layout.handle_event(event)
 
     def set_focused_child(self, child: InteractiveWidget) -> bool:

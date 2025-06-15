@@ -56,7 +56,7 @@ class SceneManager:
         print("\n" + "=" * 50)
         print(" DEBUGGING STATUS".center(50))
         print("=" * 50)
-        print(f"[Debugging Mode] = {bf.ResourceManager().get_sharedVar("debug_mode")}")
+        print(f"[Debugging Mode] = {bf.ResourceManager().get_sharedVar('debug_mode')}")
 
         # Print shared variables
         print("\n" + "=" * 50)
