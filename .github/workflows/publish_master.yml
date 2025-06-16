@@ -58,3 +58,9 @@ jobs:
       - name: Confirm version update
         run: |
           echo "Master release version set to ${{ inputs.version }}."
+          
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ inputs.version }}" --title "v${{ inputs.version }}" --notes "Release version ${{ inputs.version }}" --target dev

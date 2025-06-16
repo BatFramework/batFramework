@@ -57,3 +57,9 @@ jobs:
       - name: Confirm version update
         run: |
           echo "Dev pre-release version set to ${{ inputs.version }}."
+
+      - name: Create GitHub pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ inputs.version }}" --title "v${{ inputs.version }}" --notes "Dev pre-release version ${{ inputs.version }}" --prerelease --target dev
