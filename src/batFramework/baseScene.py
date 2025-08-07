@@ -44,11 +44,18 @@ class BaseScene:
     def remove_layer(self,index=0):
         self.scene_layers.pop(index)
 
-    def set_layer(self,layername,layer):
+    def set_layer(self,layername,layer:SceneLayer):
         for i,l in enumerate(self.scene_layers[::]):
             if l.name == layername:
                 self.scene_layers[i] = layer
                 layer.set_scene(self)
+
+    def set_layer_index(self,layername:str,index:int=-1):
+        index = min(index,len(self.scene_layers)-1)
+        layer = self.get_layer(layername)
+        if layer is None : return
+        self.scene_layers.remove(layer)
+        self.scene_layers.insert(index,layer)
 
     def get_layer(self,name:str)->bf.SceneLayer:
         for s in self.scene_layers:
@@ -140,7 +147,7 @@ class BaseScene:
         In order : do_early_handle_event
         -> scene early_actions
         -> propagate to all layers
-        -> do_handle_event
+        -> handle_event
         -> scene actions.
         at each step, if the event is consumed the propagation stops
         """
@@ -156,7 +163,7 @@ class BaseScene:
             l.process_event(event)
             if event.consumed : return
             
-        self.do_handle_event(event)
+        self.handle_event(event)
 
         if event.consumed:return
         self.actions.process_event(event)
@@ -166,7 +173,7 @@ class BaseScene:
         """Called early in event propagation"""
         pass
 
-    def do_handle_event(self, event: pygame.Event):
+    def handle_event(self, event: pygame.Event):
         """called inside process_event but before resetting the scene's action container and propagating event to scene layers"""
         pass
 
@@ -189,7 +196,6 @@ class BaseScene:
     def draw(self, surface: pygame.Surface):
         if self.clear_color is not None:
             surface.fill(self.clear_color)
-
         self.do_early_draw(surface)
 
         # Draw all layers back to front

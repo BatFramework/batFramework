@@ -1,6 +1,8 @@
 import batFramework as bf
+from batFramework import const
 import pygame
 import asyncio
+
 
 class Manager(bf.SceneManager):
     def __init__(self, *initial_scenes) -> None:
@@ -34,15 +36,12 @@ class Manager(bf.SceneManager):
         """
         # Call the parent class's print_status method to include its information
         super().print_status()
-        
         # Add the timers information in a cohesive manner
         print("\n" + "=" * 50)
         print(" TIMERS".center(50))
         print("=" * 50)
-        
         # Print the timers information
         print(self.timeManager)
-        
         # End with a visual separator
         print("=" * 50 + "\n")
 
@@ -112,13 +111,11 @@ class Manager(bf.SceneManager):
             await asyncio.sleep(0)
         pygame.quit()
 
-
     def run(self) -> None:
         if len(self.scenes) == 0:
             raise Exception("Manager can't start without scenes")
         if self.running:
             raise Exception("Error : Already running")
-            return
         self.running = True
         dt: float = 0
         while self.running:
@@ -130,5 +127,5 @@ class Manager(bf.SceneManager):
             self.draw(self.screen)
             pygame.display.flip()
             dt = self.clock.tick(bf.const.FPS) / 1000
-            dt = min(dt, 0.02) # dirty fix for dt being too high when window not focused for a long time
+            dt = min(dt, 0.02) # fix for dt being too high when window not focused for a long time
         pygame.quit()

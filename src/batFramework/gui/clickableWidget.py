@@ -27,7 +27,6 @@ class ClickableWidget(Shape, InteractiveWidget):
         self.set_debug_color("cyan")
         self.set_relief(self.unpressed_relief)
 
-
     def get_min_required_size(self) -> tuple[float, float]:
         res = super().get_min_required_size()
         res = res[0],res[1]+self.unpressed_relief
@@ -139,23 +138,22 @@ class ClickableWidget(Shape, InteractiveWidget):
             self.callback()
             return True
         return False
-
+ 
     def on_key_down(self, key):
         if key == pygame.K_SPACE:
             self.on_click_down(1)
-            return True
-        return self.do_on_key_down(key)
+        self.do_on_key_down(key)
     
     def on_key_up(self, key):
         if key == pygame.K_SPACE:
             self.on_click_up(1)
-            return True
-        return self.do_on_key_down(key)
-        
+        self.do_on_key_down(key)
 
-    def on_click_down(self, button) -> bool:
-        if button < 1 or button > 5 : return False
+    def on_click_down(self, button) -> None :
+        if button < 1 or button > 5 :
+            return
         self.is_clicked_down[button-1] = True
+
         if self.is_enabled and button == 1:
             if self.get_focus():
                 self.is_pressed = True
@@ -164,11 +162,10 @@ class ClickableWidget(Shape, InteractiveWidget):
                 pygame.mouse.set_cursor(self.click_cursor)
                 self.set_relief(self.pressed_relief)
                 self.do_on_click_down(button)
-            return True
-        return True
 
     def on_click_up(self, button):
-        if button < 1 or button > 5 : return False
+        if button < 1 or button > 5 :
+            return
         self.is_clicked_down[button-1] = False
         if self.is_enabled and button == 1 and self.is_pressed:
             self.is_pressed = False
@@ -177,9 +174,6 @@ class ClickableWidget(Shape, InteractiveWidget):
             self.set_relief(self.unpressed_relief)
             self.click()
             self.do_on_click_up(button)
-            return True
-        return True
-
 
     def on_enter(self) -> None:
         if not self.is_enabled:

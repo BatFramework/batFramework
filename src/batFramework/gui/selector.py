@@ -15,13 +15,13 @@ class MyArrow(ArrowIndicator,ClickableWidget):
 
 class Selector(Button):
     def __init__(self,options:list[str]=None,default_value:str=None,allow_cycle:bool=False):
-        super().__init__('')
         self.allow_cycle = allow_cycle
         self.current_index = 0
         self.on_modify_callback : Callable[[str,int],Any] = None
         self.options = options if options else []
         self.gap : int = 2
         text_value = ""
+        super().__init__('')
 
         
         if not (default_value is not None and default_value in self.options): 

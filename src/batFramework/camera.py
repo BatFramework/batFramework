@@ -7,30 +7,25 @@ import math
 
 class Camera:
     def __init__(
-        self, flags=0, size: tuple[int, int] | None = None, convert_alpha: bool = False
+        self, flags=0, size: tuple[int, int] | None = None, convert_alpha: bool = False,fullscreen:bool=True
     ) -> None:
-        """
-        Initialize the Camera object.
-
-        Args:
-            flags (int): Flags for camera initialization.
-            size (tuple): Optional size for camera (defaults to window size)
-            convert_alpha (bool): Convert surface to support alpha values
-        """
         self.cached_surfaces: dict[tuple[int, int], pygame.Surface] = {}
-
-        self.target_size = size if size else bf.const.RESOLUTION
-        self.should_convert_alpha: bool = convert_alpha
-        self.rect = pygame.FRect(0, 0, *self.target_size)
-        self.vector_center = Vector2(0, 0)
-
-        self.surface: pygame.Surface = pygame.Surface((0, 0))  # tmp dummy
+        self.fullscreen : bool = fullscreen # auto fill the screen (i.e react to VIDEORESIZE event)
         self.flags: int = flags | (pygame.SRCALPHA if convert_alpha else 0)
         self.blit_special_flags: int = pygame.BLEND_ALPHA_SDL2
 
-        self._clear_color: pygame.Color = pygame.Color(0, 0, 0, 0)
-        if not convert_alpha:
-            self._clear_color = pygame.Color(0, 0, 0)
+        size = size if size else bf.const.RESOLUTION
+        self.rect = pygame.FRect(0, 0, *size)
+        self.transform_target_surface : pygame.Surface = pygame.Surface(self.rect.size,self.flags)
+        self.should_convert_alpha: bool = convert_alpha
+        self.world_rect = pygame.FRect(0, 0, *self.rect.size)
+
+        self.vector_center = Vector2(0, 0)
+        self.rotation = 0.0  # Rotation in degrees
+
+        self.surface: pygame.Surface = pygame.Surface((0, 0))  # dynamic : create new at each new zoom value
+
+        self._clear_color: pygame.Color = pygame.Color(0, 0, 0, 0) if convert_alpha else pygame.Color(0, 0, 0)
 
         self.follow_point_func = None
         self.damping = float("inf")
@@ -39,116 +34,61 @@ class Camera:
         self.zoom_factor = 1
         self.max_zoom = 2
         self.min_zoom = 0.1
-        self.zoom(1)
+        self.zoom(1,force=True)
 
-    def get_mouse_pos(self)->tuple[float,float]:
+    def get_mouse_pos(self) -> tuple[float, float]:
         return self.screen_to_world(pygame.mouse.get_pos())
 
     def set_clear_color(self, color: pygame.Color | tuple | str) -> Self:
-        """
-        Set the clear color for the camera surface.
-
-        Args:
-            color (pygame.Color | tuple): Color to set as the clear color.
-
-        Returns:
-            Camera: Returns the Camera object.
-        """
         self._clear_color = color
         return self
 
     def set_max_zoom(self, value: float) -> Self:
-        """
-        Set the maximum zoom value for the camera.
-
-        Args:
-            value (float): Maximum zoom value.
-
-        Returns:
-            Camera: Returns the Camera object.
-        """
         self.max_zoom = value
         return self
 
     def set_min_zoom(self, value: float) -> Self:
-        """
-        Set the minimum zoom value for the camera.
-
-        Args:
-            value (float): Minimum zoom value.
-
-        Returns:
-            Camera: Returns the Camera object.
-        """
         self.min_zoom = value
         return self
 
+    def set_rotation(self, angle: float) -> Self:
+        """
+        Set the camera rotation in degrees.
+        """
+        self.rotation = angle % 360
+        return self
+    
+    def rotate_by(self,angle:float)->Self:
+        """
+        Increment rotation by given angle in degrees.
+        """
+        self.rotation+=angle
+        self.rotation%=360
+        return self
+
     def clear(self) -> None:
-        """
-        Clear the camera surface with the set clear color.
-        """
-        if not self._clear_color: return
+        if self._clear_color is None:
+            return
         self.surface.fill(self._clear_color)
 
     def get_center(self) -> tuple[float, float]:
-        """
-        Get the center of the camera's view.
-
-        Returns:
-            tuple[float,float]: Returns the center coordinates.
-        """
-        return self.rect.center
+        return self.world_rect.center
 
     def get_position(self) -> tuple[float, float]:
-        """
-        Get the center of the camera's view.
-
-        Returns:
-            tuple[float,float]: Returns the center coordinates.
-        """
-        return self.rect.topleft
+        return self.world_rect.topleft
 
     def move_by(self, x: float | int, y: float | int) -> Self:
-        """
-        Moves the camera rect by the given coordinates.
-
-        Args:
-            x: X-coordinate to move.
-            y: Y-coordinate to move.
-
-        Returns:
-            Camera: Returns the Camera object.
-        """
-        self.rect.move_ip(x, y)
+        # self.world_rect.move_ip(x, y)
+        self.world_rect.x += x
+        self.world_rect.y += y
         return self
 
     def set_position(self, x, y) -> Self:
-        """
-        Set the camera rect top-left position.
-
-        Args:
-            x: X-coordinate to set.
-            y: Y-coordinate to set.
-
-        Returns:
-            Camera: Returns the Camera object.
-        """
-        self.rect.topleft = (x, y)
-
+        self.world_rect.topleft = (x, y)
         return self
 
     def set_center(self, x, y) -> Self:
-        """
-        Set the camera rect center position.
-
-        Args:
-            x: X-coordinate for the center.
-            y: Y-coordinate for the center.
-
-        Returns:
-            Camera: Returns the Camera object.
-        """
-        self.rect.center = (x, y)
+        self.world_rect.center = (x, y)
         return self
 
     def set_follow_point_func(self, func) -> Self:
@@ -168,150 +108,133 @@ class Camera:
         return self
 
     def zoom_by(self, amount: float) -> Self:
-        """
-        Zooms the camera by the given amount.
+        return self.zoom(self.zoom_factor + amount)
 
-        Args:
-            amount (float): Amount to zoom.
-
-        Returns:
-            Camera: Returns the Camera object.
-        """
-        self.zoom(max(self.min_zoom, min(self.max_zoom, self.zoom_factor + amount)))
-        return self
-
-    def zoom(self, factor: float) -> Self:
-        """
-        Zooms the camera to the given factor.
-
-        Args:
-            factor: Factor to set for zooming.
-
-        Returns:
-            Camera: Returns the Camera object.
-        """
-        if factor < self.min_zoom or factor > self.max_zoom:
-            print(
-                f"Zoom value {factor} is outside the zoom range : [{self.min_zoom},{self.max_zoom}]"
-            )
+    def zoom(self, factor: float,force:bool=False) -> Self:
+        clamped = max(self.min_zoom, min(self.max_zoom, round(factor, 2)))
+        if clamped == self.zoom_factor and not force:
             return self
 
-        factor = round(factor, 2)
-        self.zoom_factor = factor
-        new_res = tuple(round((i / factor) / 2) * 2 for i in self.target_size)
-        self.surface = self._get_cached_surface(new_res)
-        self.rect = self.surface.get_frect(center=self.rect.center)
+        self.zoom_factor = clamped
+        new_res = tuple(round((i / clamped) / 2) * 2 for i in self.rect.size)
+
+        if self.surface.get_size() != new_res:
+            self.surface = self._get_cached_surface(new_res)
+
+        self.world_rect = self.surface.get_frect(center=self.world_rect.center)
         self.clear()
         return self
 
     def _free_cache(self):
-        self.cached_surfaces = {}
+        self.cached_surfaces.clear()
 
     def _get_cached_surface(self, new_size: tuple[int, int]):
-        surface = self.cached_surfaces.get(new_size, None)
+        surface = self.cached_surfaces.get(new_size)
         if surface is None:
             surface = pygame.Surface(new_size, flags=self.flags)
-            if self.flags & pygame.SRCALPHA:
-                surface = surface.convert_alpha()
+            # if self.flags & pygame.SRCALPHA:
+            #     surface = surface.convert_alpha()
             self.cached_surfaces[new_size] = surface
-
         return surface
 
     def set_size(self, size: tuple[int, int] | None = None) -> Self:
         if size is None:
             size = bf.const.RESOLUTION
-        self.target_size = size
-        self.rect.center = (size[0] / 2, size[1] / 2)
+        center = self.rect.center
+        self.rect.size = size
+        self.rect.center = center
+        self.transform_target_surface = pygame.Surface(self.rect.size,self.flags)
+        self.world_rect.center = (size[0] / 2, size[1] / 2)
         self.zoom(self.zoom_factor)
-
         return self
 
     def intersects(self, rect: pygame.Rect | pygame.FRect) -> bool:
-        """
-        Check if the camera view intersects with the given rectangle.
+        return self.world_rect.colliderect(rect)
 
-        Args:
-            rect (pygame.Rect | pygame.FRect): Rectangle to check intersection with.
-
-        Returns:
-            bool: True if intersection occurs, False otherwise.
-        """
-        return self.rect.colliderect(rect)
-
-    def world_to_screen(
-        self, rect: pygame.Rect | pygame.FRect
-    ) -> pygame.Rect | pygame.FRect:
-        """
-        world_to_screen the given rectangle coordinates relative to the camera.
-
-        Args:
-            rect (pygame.Rect | pygame.FRect): Rectangle to world_to_screen.
-
-        Returns:
-            pygame.FRect: Transposed rectangle.
-        """
+    def world_to_screen(self, rect: pygame.Rect | pygame.FRect) -> pygame.FRect:
         return pygame.FRect(
-            rect[0] - self.rect.left, rect[1] - self.rect.top, rect[2], rect[3]
+            (rect[0] - self.world_rect.left), (rect[1] - self.world_rect.top), rect[2], rect[3]
+        )
+        # Convert the center of the rect
+        cx, cy = rect.centerx, rect.centery
+        sx, sy = self.world_to_screen_point((cx, cy))
+        # Return a new rect centered at the rotated screen position
+        return pygame.FRect(
+            sx - rect.width / 2,
+            sy - rect.height / 2,
+            rect.width,
+            rect.height
         )
 
-    def world_to_screen_point(
-        self, point: tuple[float, float] | tuple[int, int]
-    ) -> tuple[float, float]:
-        """
-        world_to_screen the given 2D point coordinates relative to the camera.
-
-        Args:
-            point (tuple[float,float] | tuple[int,int]): Point to world_to_screen.
-
-        Returns:
-            tuple[float,float] : Transposed point.
-        """
-        return point[0] - self.rect.x, point[1] - self.rect.y
-
-    def screen_to_world(
-        self, point: tuple[float, float] | tuple[int, int]
-    ) -> tuple[float, float]:
-        """
-        Convert screen coordinates to world coordinates based on camera settings.
-
-        Args:
-            point (tuple[float,float] | tuple[int,int]): Point to screen_to_world.
-        Returns:
-            tuple: Converted world coordinates.
-        """
+    def world_to_screen_point(self, point: tuple[float, float] | tuple[int, int]) -> tuple[float, float]:
         return (
-            point[0] / self.zoom_factor + self.rect.x,
-            point[1] / self.zoom_factor + self.rect.y,
+            (point[0] - self.world_rect.x) * self.zoom_factor,
+            (point[1] - self.world_rect.y) * self.zoom_factor,
         )
 
-    def update(self, dt):
+
+    def screen_to_world(self, point: tuple[float, float] | tuple[int, int]) -> tuple[float, float]:
+        """
+        roates, scales and translates point to world coordinates
+
+        """
+        # Center of the screen (zoomed+rotated surface)
+        cx, cy = self.rect.w / 2, self.rect.h / 2
+
+        # Offset from center
+        dx, dy = point[0] - cx, point[1] - cy
+
+        # rotate that offset
+        if self.rotation != 0:
+            angle_rad = math.radians(self.rotation)
+            cos_a = math.cos(angle_rad)
+            sin_a = math.sin(angle_rad)
+            dx, dy = cos_a * dx - sin_a * dy, sin_a * dx + cos_a * dy
+
+        # Un-zoom and add camera position
+        wx = (dx + cx) / self.zoom_factor + self.world_rect.x
+        wy = (dy + cy) / self.zoom_factor + self.world_rect.y
+        return wx, wy
+
+
+    def update(self, dt: float):
         if not self.follow_point_func or not (math.isfinite(dt) and dt > 0):
             return
 
         target = Vector2(self.follow_point_func())
-        self.vector_center.update(self.rect.center)
+        self.vector_center.xy = self.world_rect.center
 
         if self.damping == float("inf"):
-            self.vector_center = target
+            self.vector_center.xy = target.xy
         elif math.isfinite(self.damping) and self.damping > 0:
             damping_factor = 1 - math.exp(-self.damping * dt)
             if not math.isnan(damping_factor):
-                self.vector_center += (target - self.vector_center) * damping_factor
+                diff = target - self.vector_center
+                self.vector_center += diff * damping_factor
 
-        self.rect.center = self.vector_center
+        self.world_rect.center = self.vector_center
+
 
     def draw(self, surface: pygame.Surface):
         """
-        Draw the camera view onto the provided surface with proper scaling.
+        Draw the camera view onto the provided surface with proper scaling and rotation.
 
         Args:
             surface (pygame.Surface): Surface to draw the camera view onto.
         """
-        if self.zoom_factor == 1:
+        # Scale the camera surface to the target size
+        if self.zoom_factor == 1 and self.rotation == 0:
             surface.blit(self.surface, (0, 0), special_flags=self.blit_special_flags)
-            # surface.blit(self.surface, (0, 0))
             return
 
-        # Scale the surface to match the resolution
-        scaled_surface = pygame.transform.scale(self.surface, self.target_size)
-        surface.blit(scaled_surface, (0, 0), special_flags=self.blit_special_flags)
+        pygame.transform.scale(self.surface, self.rect.size, self.transform_target_surface)
+
+        result_surface = self.transform_target_surface
+
+        if self.rotation != 0:
+            # Rotate around the center of the target surface
+            rotated_surface = pygame.transform.rotate(result_surface, self.rotation)
+            rect = rotated_surface.get_rect(center=(self.rect.w // 2, self.rect.h // 2))
+            surface.blit(rotated_surface, rect.topleft, special_flags=self.blit_special_flags)
+        else:
+            surface.blit(result_surface, (0, 0), special_flags=self.blit_special_flags)

@@ -16,8 +16,6 @@ class Label(Shape):
         # Scroll variable
         self.scroll :pygame.Vector2 = pygame.Vector2(0,0)
 
-        self.resized_flag: bool = False
-
         # Enable/Disable antialiasing
         self.antialias: bool = bf.FontManager().DEFAULT_ANTIALIAS
 
@@ -239,7 +237,7 @@ class Label(Shape):
         return  mask_size[0]//2,mask_size[1]//2
     
     def _get_text_rect_required_size(self):
-        font_height = self.font_object.get_ascent() - self.font_object.get_descent()
+        font_height = self.font_object.get_height()
         if not self.text:
             size = (0,font_height)
         else:

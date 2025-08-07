@@ -24,6 +24,9 @@ class Action:
         self._gamepad_axis_control: set = set()
         self._holding = set()
 
+    def __bool__(self) -> bool :
+        return self.active
+
     def set_consume_event(self, val: bool) -> Self:
         """
         Set whether this action is unique (exclusive).
@@ -170,12 +173,10 @@ class Action:
         return self._type == actionType.HOLDING
 
     def process_update(self, event: pygame.Event) -> None:
-        if (
-            event.type == pygame.MOUSEMOTION
-            and self._type == actionType.HOLDING
-            and pygame.MOUSEMOTION in self._mouse_control
-        ) or self._event_control:
+        if event.type in self._event_control:
             self.data = event.dict
+            self.data.update({"type":event.type})
+
 
     def process_activate(self, event: pygame.event.Event):
         """
@@ -190,20 +191,19 @@ class Action:
 
         if event.type == pygame.KEYDOWN and event.key in self._key_control:
             self._activate_action(event.key)
-
         elif (
             event.type == pygame.MOUSEBUTTONDOWN and event.button in self._mouse_control
         ):
             self._activate_action(event.button)
 
-        elif event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
-            self._activate_action(event.type)
-
         elif event.type in self._event_control:
             self._activate_action(event.type)
-            self.data = event.dict
         else:
             return
+        
+        self.data = event.dict
+        self.data.update({"type":event.type})
+
         if self.consume_event:
             event.consumed = True
 
@@ -228,12 +228,12 @@ class Action:
                 and event.button in self._mouse_control
             ):
                 self._deactivate_action(event.button)
-            elif event.type == pygame.MOUSEMOTION and event.type in self._mouse_control:
-                self._deactivate_action(event.type)
             elif event.type in self._event_control:
                 self._deactivate_action(event.type)
+
             else:
                 event.consumed = False
+                return
 
         if self.consume_event:
             event.consumed = True
@@ -277,3 +277,4 @@ class Action:
         """
         self.active = False
         self._holding = set()
+        self.data = {}

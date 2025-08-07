@@ -11,6 +11,23 @@ class ActionContainer:
     def __iter__(self):
         return iter(self._actions.values())
 
+    def __getitem__(self, key):
+        return self._actions[key]
+
+    def __setitem__(self, key, value):
+        self._actions[key] = value
+
+    def __delitem__(self, key):
+        del self._actions[key]
+
+    def __contains__(self, key):
+        return key in self._actions
+
+    def __repr__(self):
+        return repr(self._actions)
+
+
+
     def clear(self):
         self._actions = {}
 
@@ -29,6 +46,12 @@ class ActionContainer:
 
     def is_active(self, *names: str) -> bool:
         return all(
+            self._actions.get(name).active if name in self._actions else False
+            for name in names
+        )
+
+    def is_any_active(self,*names:str) -> bool:
+        return any(
             self._actions.get(name).active if name in self._actions else False
             for name in names
         )

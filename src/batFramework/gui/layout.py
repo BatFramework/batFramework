@@ -152,7 +152,6 @@ class SingleAxisLayout(Layout):
         focused = l[self.parent.focused_index]
         focused.get_focus()
 
-
 class DoubleAxisLayout(Layout):
     """Abstract layout class for layouts that arrange widgets in two dimensions."""
 
@@ -160,7 +159,6 @@ class DoubleAxisLayout(Layout):
     def focus_down_child(self) -> None:...
     def focus_right_child(self) -> None:...
     def focus_left_child(self) -> None:...
-
 
 class Column(SingleAxisLayout):
     def __init__(self, gap: int = 0):
@@ -230,8 +228,6 @@ class Row(SingleAxisLayout):
             child.set_position(x,self.children_rect.y)
             x += child.rect.width + self.gap
 
-
-
 class RowFill(Row):
 
     def update_children_rect(self):
@@ -266,7 +262,6 @@ class RowFill(Row):
             child.set_position(x, self.children_rect.y)  # Position child
             x += child_width + self.gap
 
-
 class ColumnFill(Column):
 
     def update_children_rect(self):
@@ -298,7 +293,6 @@ class ColumnFill(Column):
             child.set_size((None, child_height))  # Resize child to fill width
             child.set_position(self.children_rect.x, y)  # Position child
             y += child_height + self.gap
-
 
 class Grid(DoubleAxisLayout):
     def __init__(self, rows: int, cols: int, gap: int = 0):
@@ -400,7 +394,6 @@ class Grid(DoubleAxisLayout):
             y = self.children_rect.y + row * (cell_height + self.gap)
             child.set_size((cell_width, cell_height))
             child.set_position(x, y)
-
 
 class GridFill(Grid):
     def update_children_rect(self):

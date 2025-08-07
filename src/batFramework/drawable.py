@@ -64,11 +64,41 @@ class Drawable(Entity):
         self.visible = value
         return self
 
+    def get_mask(self)->pygame.Mask:
+        return pygame.mask.from_surface(self.surface)
+
+    def mask_collide_point(self,point)->bool:
+        if not self.rect.collidepoint(point):
+            return False
+        mask = pygame.mask.from_surface(self.surface)
+        x = point[0]-  self.rect.x
+        y = point[1] - self.rect.y
+        return mask.get_at((x,y))==1
+
+
+
+
+    def set_size(self, size: tuple[float, float]) -> Self:
+        """
+            Will erase surface data and create new empty surface
+        """
+        if size == self.rect.size:
+            return self
+        self.rect.size = size
+        self.surface = pygame.Surface(
+            (int(self.rect.w), int(self.rect.h)), self.surface_flags
+        )
+        if self.convert_alpha:
+            self.surface = self.surface.convert_alpha()
+        self.surface.fill((0, 0, 0, 0 if self.convert_alpha else 255))
+
+        return self
+
     def draw(self, camera: bf.Camera) -> None:
         """
         Draw the entity onto the camera surface
         """
-        if not self.visible or self.drawn_by_group or not camera.rect.colliderect(self.rect) or self.surface.get_alpha() == 0:
+        if not self.visible or self.drawn_by_group or not camera.world_rect.colliderect(self.rect) or self.surface.get_alpha() == 0:
             return
         camera.surface.blit(
             self.surface,

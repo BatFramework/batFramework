@@ -106,6 +106,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         dx, dy = x - self.rect.x, y - self.rect.y
         self.rect.topleft = x, y
         _ = [c.set_position(c.rect.x + dx, c.rect.y + dy) for c in self.children]
+        self.dirty_position_constraints: bool = True
         return self
 
     def set_center(self, x, y) -> Self:
@@ -119,13 +120,15 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.rect.center = x, y
         _ = [
             c.set_center(c.rect.centerx + dx, c.rect.centery + dy)
-            for c in self.children
+            for c in self.children            
         ]
+        self.dirty_position_constraints: bool = True
+
         return self
 
     def set_parent_scene(self, parent_scene: bf.Scene | None) -> Self:
         super().set_parent_scene(parent_scene)
-        if parent_scene is None:
+        if parent_scene is None and self.parent_scene != None:
             bf.gui.StyleManager().remove_widget(self)
 
         for c in self.children:
@@ -336,6 +339,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                     r = child.top_at(x, y)
                     if r is not None:
                         return r
+                    
         return self if self.visible and self.rect.collidepoint(x, y) else None
 
     def add(self, *children: "Widget") -> Self:
@@ -411,7 +415,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
     def paint(self) -> None:
         self.surface.fill((0, 0, 0, 0))
-        return self
 
     def visit(self, func: Callable[["Widget"],Any], top_down: bool = True, *args, **kwargs) -> None:
         if top_down:
@@ -514,7 +517,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             camera.surface.set_clip(new_clip)
 
         # Draw each child widget, sorted by render order
-        for child in sorted(self.children, key=lambda c: c.render_order):
+        for child in self.children:
             if (not self.clip_children) or (child.rect.colliderect(self.rect) or not child.rect):
                 child.draw(camera)
         if self.clip_children:

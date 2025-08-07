@@ -1,5 +1,8 @@
 import batFramework as bf
 import pygame
+from .stateMachine import *
+
+
 
 class PlatformController(bf.DynamicEntity):
     def __init__(self,*args,**kwargs):
@@ -9,13 +12,14 @@ class PlatformController(bf.DynamicEntity):
         self.acceleration = 100
         self.jump_force = -500
         self.gravity = 1200
+        self.terminal_velocity = 1000
         self.on_ground = False
         self.friction = 0.7
         
-    def do_reset_actions(self):
+    def reset_actions(self):
         self.control.reset()
 
-    def do_process_actions(self, event):
+    def process_actions(self, event):
         self.control.process_event(event)
 
     def check_collision_y(self):
@@ -26,11 +30,14 @@ class PlatformController(bf.DynamicEntity):
 
     def update(self, dt):
         super().update(dt)
-        self.velocity.x *= self.friction
+        if (not self.control.is_active("right")) and (not self.control.is_active("left")):
+            self.velocity.x *= self.friction
         if abs(self.velocity.x) <= 0.01:
             self.velocity.x = 0
         if not self.on_ground:
             self.velocity.y += self.gravity * dt
+            if self.velocity.y > self.terminal_velocity:
+                self.velocity.y = self.terminal_velocity
         if self.control.is_active("left"):
             self.velocity.x -= self.acceleration
         if self.control.is_active("right"):
@@ -40,10 +47,10 @@ class PlatformController(bf.DynamicEntity):
             self.on_ground = False
         
         self.velocity.x = pygame.math.clamp(self.velocity.x,-self.speed,self.speed)
-        self.rect.x += self.velocity.x * dt
-        self.check_collision_x()
         self.rect.y += self.velocity.y * dt
         self.check_collision_y()
+        self.rect.x += self.velocity.x * dt
+        self.check_collision_x()
 
 
 
@@ -56,10 +63,10 @@ class TopDownController(bf.DynamicEntity):
         self.acceleration = 100
         self.friction = 0
         
-    def do_reset_actions(self):
+    def reset_actions(self):
         self.control.reset()
 
-    def do_process_actions(self, event):
+    def process_actions(self, event):
         self.control.process_event(event)
 
     def check_collision_y(self):
@@ -95,3 +102,55 @@ class TopDownController(bf.DynamicEntity):
         self.check_collision_x()
         self.rect.y += self.velocity.y * dt
         self.check_collision_y()
+
+
+
+
+class CameraController(bf.Entity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.origin = None  # Previous frame's world mouse pos
+        self.mouse_actions = bf.ActionContainer(
+            bf.Action("control").add_key_control(pygame.K_LCTRL).set_holding(),
+            bf.Action("drag").add_mouse_control(1).set_holding(),
+            bf.Action("zoom_in").add_mouse_control(4),
+            bf.Action("zoom_out").add_mouse_control(5),
+        )
+
+    def reset_actions(self):
+        self.mouse_actions.reset()
+
+    def process_actions(self, event):
+        self.mouse_actions.process_event(event)
+
+    def do_update(self, dt):
+        cam = self.parent_layer.camera
+        if self.mouse_actions["zoom_in"]:
+            if self.mouse_actions["control"]:
+                cam.rotate_by(10)
+            else:
+                cam.zoom(cam.zoom_factor * 1.1)
+
+        elif self.mouse_actions["zoom_out"]:
+            if self.mouse_actions["control"]:
+                cam.rotate_by(-10)
+            else:
+                cam.zoom(cam.zoom_factor / 1.1)
+
+        if self.mouse_actions["drag"]:
+            mouse_world = cam.get_mouse_pos()
+            cam_pos = cam.world_rect.topleft
+
+            if self.origin is None:
+                self.origin = (mouse_world[0] - cam_pos[0], mouse_world[1] - cam_pos[1])
+            else:
+                offset = (mouse_world[0] - cam_pos[0], mouse_world[1] - cam_pos[1])
+                dx = offset[0] - self.origin[0]
+                dy = offset[1] - self.origin[1]
+
+                cam.move_by(-dx, -dy)
+                self.origin = (mouse_world[0] - cam_pos[0], mouse_world[1] - cam_pos[1])
+
+
+        else:
+            self.origin = None

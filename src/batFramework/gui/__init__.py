@@ -22,4 +22,5 @@ from .syncedVar import SyncedVar
 from .radioButton import RadioButton
 from .slider import Slider
 from .selector import Selector
+from .scrollingContainer import ScrollingContainer
 import batFramework.gui.constraints as constraints

@@ -1,13 +1,10 @@
 import batFramework as bf
 
 
-class StateMachine: ...
-
-
 class State:
     def __init__(self, name: str) -> None:
         self.name = name
-        self.parent: bf.Entity | bf.AnimatedSprite = None
+        self.parent: bf.Entity = None
         self.state_machine: StateMachine = None
 
     def set_parent(self, parent: bf.Entity | bf.AnimatedSprite):
@@ -32,10 +29,11 @@ class StateMachine:
         self.parent = parent
         self.current_state = None
 
-    def add_state(self, state: State):
-        self.states[state.name] = state
-        state.set_parent(self.parent)
-        state.set_stateMachine(self)
+    def add_state(self, *states: State):
+        for state in states :
+            self.states[state.name] = state
+            state.set_parent(self.parent)
+            state.set_stateMachine(self)
 
     def remove_state(self,state_name: str):
         self.states.pop(state_name,default=None)
@@ -46,9 +44,6 @@ class StateMachine:
                 self.current_state.on_exit()
             self.current_state = self.states[state_name]
             self.current_state.on_enter()
-
-    def get_current_state(self) -> State:
-        return self.current_state
 
     def update(self, dt):
         self.current_state.update(dt)

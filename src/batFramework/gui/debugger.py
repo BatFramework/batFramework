@@ -12,13 +12,18 @@ def convert_to_int(*args):
 class Debugger(Label):
     def __init__(self) -> None:
         super().__init__("")
+        self.root_link = None
         self.static_data: dict[str,Any] = {}
         self.dynamic_data: dict[str,Callable[[],str]] = {}
         self.refresh_rate = 10
         self.refresh_counter: float = 0
         self.add_tags("debugger")
         self.set_visible(False)
-
+        
+    def set_parent(self, parent):
+        super().set_parent(parent)
+        self.root_link = self.get_root()
+        
     def set_refresh_rate(self, value: int) -> Self:
         self.refresh_rate = value
         return self
@@ -106,6 +111,7 @@ class FPSDebugger(Debugger):
 
 
 class BasicDebugger(FPSDebugger):
+
     def do_when_added(self):
         if not self.parent_scene or not self.parent_scene.manager:
             print("Debugger could not link to the manager")
@@ -116,15 +122,14 @@ class BasicDebugger(FPSDebugger):
         super().do_when_added()
         self.add_dynamic("Mouse", pygame.mouse.get_pos)
 
-        if not hasattr(self.parent_scene,"root"):
-            print("Debugger couldn't find 'root' widget in parent scene")
+        if self.root_link is None:
             return
         
-        parent_scene = self.parent_scene
 
         self.add_dynamic(
             "Hover",
             lambda: (
-                str(parent_scene.root.hovered) if parent_scene.root.hovered else None
+                str(self.root_link.hovered) if self.root_link.hovered else None
             ),
         )
+

@@ -27,7 +27,7 @@ class Container(Shape, InteractiveWidget):
     def reset_scroll(self) -> Self:
         if self.scroll == (0,0):
             return self
-        self.scroll.update(0, 0)
+        self.set_scroll((0, 0))
         self.dirty_layout = True
         return self
 
@@ -35,7 +35,6 @@ class Container(Shape, InteractiveWidget):
         if (self.scroll.x,self.scroll.y) == value:
             return self
         self.scroll.update(value)
-        self.clamp_scroll()
         self.dirty_layout = True
         return self
 
@@ -56,23 +55,24 @@ class Container(Shape, InteractiveWidget):
             return self
         self.set_scroll((self.scroll.x + value[0], self.scroll.y + value[1]))
         return self
-
+    
     def clamp_scroll(self) -> Self:
         if not self.children:
             return self
         r = self.get_inner_rect()
-        # Compute the bounding rect of all children in one go
-        children_rect = self.children[0].rect.copy()
-        for child in self.children[1:]:
-            children_rect.union_ip(child.rect)
+        children_rect = self.children[0].rect.unionall(
+            [c.rect for c in self.children[1:]]
+        ) if len(self.children) > 1 else self.children[0].rect
+
         max_scroll_x = max(0, children_rect.width - r.width)
         max_scroll_y = max(0, children_rect.height - r.height)
 
-        # Clamp scroll values only if needed
-        new_x = min(max(self.scroll.x, 0), max_scroll_x)
-        new_y = min(max(self.scroll.y, 0), max_scroll_y)
-
-        self.set_scroll((new_x, new_y))
+        # Clamp scroll values directly, avoid recursion
+        sx = min(max(self.scroll.x, 0), max_scroll_x)
+        sy = min(max(self.scroll.y, 0), max_scroll_y)
+        
+        self.set_scroll((sx,sy))
+        
         return self
 
     def set_layout(self, layout: Layout) -> Self:
@@ -128,13 +128,8 @@ class Container(Shape, InteractiveWidget):
     def children_has_focus(self)->bool:
         return any(child.is_focused for child in self.get_interactive_children())
 
-    def do_handle_event(self, event) -> None:
-        super().do_handle_event(event)
-        if event.type == pygame.MOUSEWHEEL:
-            # Adjust scroll based on the mouse wheel movement
-            scroll_speed = 20  # Adjust this value to control the scroll speed
-            self.scroll_by((0, -event.y * scroll_speed))  # Scroll vertically
-            event.consumed = True  # Mark the event as consumed
+    def handle_event(self, event) -> None:
+        super().handle_event(event) 
         self.layout.handle_event(event)
 
     def set_focused_child(self, child: InteractiveWidget) -> bool:
@@ -168,6 +163,7 @@ class Container(Shape, InteractiveWidget):
         if self.dirty_layout:
             self.layout.update_child_constraints()
             self.layout.arrange()
+            self.clamp_scroll()
             self.dirty_layout = False
 
     def apply_post_updates(self,skip_draw:bool=False):
@@ -175,24 +171,21 @@ class Container(Shape, InteractiveWidget):
         BOTTOM TO TOP
         for cases when widget attributes depend on children attributes
         """
+        # self.clamp_scroll() 
         if self.dirty_shape:
             self.layout.update_child_constraints()
             self.build()
-            self.dirty_shape = False
-            self.dirty_surface = True
-            self.dirty_layout =  True
             self.dirty_size_constraints = True
             self.dirty_position_constraints = True
+                # self.clamp_scroll()
+
+            self.dirty_layout =  True
             from .container import Container
             if self.parent and isinstance(self.parent, Container):
                 self.parent.dirty_layout = True
                 self.parent.dirty_shape = True
-
-            # trigger layout or constraint updates in parent
-            
-
-            # force recheck of constraints
-
+            self.dirty_shape = False
+            self.dirty_surface = True
 
         if self.dirty_position_constraints:
             self.resolve_constraints(position_only=True)

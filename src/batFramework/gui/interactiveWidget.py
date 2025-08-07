@@ -27,6 +27,28 @@ class InteractiveWidget(Widget):
         self.focusable = True
         super().__init__(*args, **kwargs)
 
+
+    def handle_event(self, event):
+            
+        if self.is_hovered:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.is_clicked_down[event.button-1] = True
+                self.on_click_down(event.button)
+                event.consumed = True
+            elif event.type == pygame.MOUSEBUTTONUP:
+                self.is_clicked_down[event.button-1] = False
+                self.on_click_up(event.button)
+                event.consumed = True
+        if self.is_focused:
+            if event.type == pygame.KEYDOWN:
+                if self.on_key_down(event.key):
+                    event.consumed = True
+            elif event.type == pygame.KEYUP:
+                if self.on_key_up(event.key):
+                    event.consumed = True
+                
+        super().handle_event(event)
+
     def set_focusable(self, value: bool) -> Self:
         self.focusable = value
         return self
@@ -54,18 +76,6 @@ class InteractiveWidget(Widget):
             # pass focus on
 
         return super().set_parent(parent)
-
-    def on_get_focus(self) -> None:
-        self.is_focused = True
-        if isinstance(self.parent,bf.gui.Container):
-            self.parent.layout.scroll_to_widget(self) 
-        self.do_on_get_focus()
-
-    def on_lose_focus(self) -> None:
-        self.is_focused = False
-        self.do_on_lose_focus()
-
-        
 
     def get_interactive_widgets(self):
         """Retrieve all interactive widgets in the tree, in depth-first order."""
@@ -136,16 +146,26 @@ class InteractiveWidget(Widget):
 
     
     def on_key_down(self, key) -> bool:
-        """
-        return True to stop event propagation
-        """
-        return self.do_on_key_down(key)
+        self.do_on_key_down(key)
 
     def on_key_up(self, key) -> bool:
-        """
-        return True to stop event propagation
-        """
-        return self.do_on_key_up(key)
+        self.do_on_key_up(key)
+
+    def on_click_down(self, button: int) -> None:
+        self.do_on_click_down(button)
+
+    def on_click_up(self, button: int) -> None:
+        self.do_on_click_up(button)
+
+    def on_get_focus(self) -> None:
+        self.is_focused = True
+        if isinstance(self.parent,bf.gui.Container):
+            self.parent.layout.scroll_to_widget(self) 
+        self.do_on_get_focus()
+
+    def on_lose_focus(self) -> None:
+        self.is_focused = False
+        self.do_on_lose_focus()
 
     def do_on_get_focus(self) -> None:
         pass
@@ -153,33 +173,11 @@ class InteractiveWidget(Widget):
     def do_on_lose_focus(self) -> None:
         pass
 
-    def do_on_key_down(self, key) -> bool:
-        """
-        return True to stop event propagation
-        """
-        return False
+    def do_on_key_down(self, key) -> None:
+        return
 
-    def do_on_key_up(self, key) -> bool:
-        """
-        return True to stop event propagation
-        """
-        return False
-
-    def on_click_down(self, button: int) -> bool:
-        """
-        return True to stop event propagation
-        """
-        if button < 1 or button > 5 : return False
-        self.is_clicked_down[button-1] = True
-        return self.do_on_click_down(button)
-
-    def on_click_up(self, button: int) -> bool:
-        """
-        return True to stop event propagation
-        """
-        if button < 1 or button > 5 : return False
-        self.is_clicked_down[button-1] = False
-        return self.do_on_click_up(button)
+    def do_on_key_up(self, key) -> None:
+        return
 
     def do_on_click_down(self, button: int) -> None:
         return 
@@ -212,28 +210,29 @@ class InteractiveWidget(Widget):
         pass
 
     def draw_focused(self, camera: bf.Camera) -> None:
-        prop = 16
-        pulse = int(prop * 0.75 - (prop * cos(pygame.time.get_ticks() / 100) / 4))
-        delta = (pulse // 2) * 2  # ensure even
+        if isinstance(self,bf.gui.Shape):
+            prop = 16
+            pulse = int(prop * 0.75 - (prop * cos(pygame.time.get_ticks() / 100) / 4))
+            delta = (pulse // 2) * 2  # ensure even
 
-        # Get rect in screen space, inflated for visual effect
-        screen_rect = camera.world_to_screen(self.rect.inflate(prop, prop))
+            # Get rect in screen space, inflated for visual effect
+            screen_rect = camera.world_to_screen(self.rect.inflate(prop+self.outline_width, prop+self.outline_width))
 
-        # Shrink for inner pulsing border
-        inner = screen_rect.inflate(-delta, -delta)
-        inner.topleft = 0,0
-        inner.w = round(inner.w)
-        inner.h = round(inner.h)
+            # Shrink for inner pulsing border
+            inner = screen_rect.inflate(-delta, -delta)
+            inner.topleft = 0,0
+            inner.w = round(inner.w)
+            inner.h = round(inner.h)
 
-        surface = InteractiveWidget.__focus_effect_cache.get(inner.size)
-        if surface is None:
-            surface = pygame.Surface(inner.size)
-            InteractiveWidget.__focus_effect_cache[inner.size] = surface
+            surface = InteractiveWidget.__focus_effect_cache.get(inner.size)
+            if surface is None:
+                surface = pygame.Surface(inner.size)
+                InteractiveWidget.__focus_effect_cache[inner.size] = surface
 
-        surface.set_colorkey((0,0,0))
-        pygame.draw.rect(surface, "white", inner, 2, *self.border_radius)
-        pygame.draw.rect(surface, "black", inner.inflate(-1 * min(16,inner.w*0.75),0), 2)
-        pygame.draw.rect(surface, "black", inner.inflate(0,-1 * min(16,inner.h*0.75)), 2)
-        inner.center = screen_rect.center
-        camera.surface.blit(surface,inner)
+            surface.set_colorkey((0,0,0))
+            pygame.draw.rect(surface, "white", inner, 2, *self.border_radius)
+            pygame.draw.rect(surface, "black", inner.inflate(-1 * min(16,inner.w*0.75),0), 2)
+            pygame.draw.rect(surface, "black", inner.inflate(0,-1 * min(16,inner.h*0.75)), 2)
+            inner.center = screen_rect.center
+            camera.surface.blit(surface,inner)
 

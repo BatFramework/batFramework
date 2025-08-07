@@ -1,6 +1,6 @@
 import pygame
 import batFramework as bf
-from typing import List, Dict, Tuple, Union, Optional, Self
+from typing import List, Dict, Tuple, Union, Optional, Self, Iterable
 
 
 def search_index(target: int, lst: List[int]) -> int:
@@ -29,7 +29,7 @@ class Animation:
         self.frames: list[pygame.Surface] = []
         self.frames_flipX : list[pygame.Surface] = []
         self.duration_list = []
-        self.duration_list_length = 0 # prevents calling len() each frame
+        self.duration_list_length = 0
         self.numFrames : int = 0
 
     def from_surface(self,surface:pygame.Surface,frame_size : Tuple[int,int])->Self:
@@ -53,6 +53,20 @@ class Animation:
             self.duration_list = [1]*self.duration_list_length
         return self
 
+    def from_path(
+        self,
+        path: str,
+        frame_size: Tuple[int, int],
+        convert_alpha: bool = True
+    ) -> Self:
+        """
+        Loads frames from a spritesheet at the given path.
+        Uses ResourceManager to load the image.
+        """
+        surface = bf.ResourceManager().get_image(path, convert_alpha)
+        return self.from_surface(surface, frame_size)
+
+
     def __repr__(self):
         return f"Animation({self.name})"
 
@@ -68,7 +82,7 @@ class Animation:
         return self.frames_flipX[i] if flip else self.frames[i]
 
     def set_duration_list(self, duration_list: Union[List[int], int]) -> Self:
-        if isinstance(duration_list, int):
+        if not isinstance(duration_list, Iterable):
             duration_list = [duration_list] * len(self.frames)
         if len(duration_list) != self.numFrames:
             raise ValueError("duration_list should have values for all frames")

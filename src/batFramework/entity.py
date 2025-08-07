@@ -17,8 +17,8 @@ class Entity:
         else:
             self.uid = Entity._count
             Entity._count += 1
-
-        self.rect = pygame.FRect(0, 0, 10, 10)
+        size = kwargs.get("size",(10,10))
+        self.rect = pygame.FRect(0, 0, *size)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
         self.parent_layer: bf.SceneLayer | None = None
@@ -98,20 +98,20 @@ class Entity:
     def process_event(self, event: pygame.Event) -> None:
         if event.consumed:
             return
-        self.do_process_actions(event)
-        self.do_handle_event(event)
+        self.process_actions(event)
+        self.handle_event(event)
 
-    def do_process_actions(self, event: pygame.Event) -> None:
+    def process_actions(self, event: pygame.Event) -> None:
         """
         Process entity actions you may have set
         """
 
-    def do_reset_actions(self) -> None:
+    def reset_actions(self) -> None:
         """
         Reset entity actions you may have set
         """
 
-    def do_handle_event(self, event: pygame.Event):
+    def handle_event(self, event: pygame.Event):
         """
         Handle specific events with no action support
         """
@@ -119,10 +119,10 @@ class Entity:
 
     def update(self, dt: float) -> None:
         """
-        Update method to be overriden by subclasses of Entity (must call do_update and do_reset_actions)
+        Update method to be overriden by subclasses of Entity (must call do_update and reset_actions)
         """
         self.do_update(dt)
-        self.do_reset_actions()
+        self.reset_actions()
 
     def do_update(self, dt: float) -> None:
         """

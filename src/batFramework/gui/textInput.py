@@ -63,8 +63,8 @@ class TextInput(Label, InteractiveWidget):
         self.show_cursor = False
         self.on_modify: Callable[[str], str] = None
         self.set_focusable(True)
-        self.set_outline_color("black")
         super().__init__("")
+        self.set_outline_color("black")
         self.alignment = bf.alignment.TOPLEFT
 
     def set_modify_callback(self, callback: Callable[[str], str]) -> Self:
@@ -80,11 +80,10 @@ class TextInput(Label, InteractiveWidget):
         self.show_cursor = value
         self.dirty_surface = True
 
-    def do_on_click_down(self, button):
-        if button != 1:
-            return False
-        self.get_focus()
-        return True
+    def on_click_down(self, button):
+        if button == 1: 
+            self.get_focus()
+        super().on_click_down(button)
 
     def do_on_enter(self):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_IBEAM)
@@ -155,8 +154,8 @@ class TextInput(Label, InteractiveWidget):
         cursor_x = self.text_rect.x
         cursor_x += self.font_object.size(lines[line_y][:line_x])[0] if line_x > 0 else 0
         cursor_rect = pygame.Rect(cursor_x, cursor_y, 1, height-1)
-        offset = self._get_outline_offset()
-        cursor_rect.move_ip(offset[0] if self.cursor_position[0] >0 else 0,offset[1] if self.cursor_position[1] > 0 else 0)
+        # offset = self._get_outline_offset()
+        # cursor_rect.move_ip(offset[0] if self.cursor_position[0] >0 else 0,offset[1] if self.cursor_position[1] > 0 else 0)
         return cursor_rect
 
     def cursor_to_absolute(self, position: tuple[int, int]) -> int:
@@ -181,7 +180,17 @@ class TextInput(Label, InteractiveWidget):
 
         return (len(lines[-1]), len(lines) - 1)
 
-    def do_handle_event(self, event):
+    def handle_event(self, event):
+        if self.is_hovered:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                self.is_clicked_down[event.button-1] = True
+                self.on_click_down(event.button)
+                event.consumed = True
+            
+            elif event.type == pygame.MOUSEBUTTONUP:
+                self.is_clicked_down[event.button-1] = False
+                self.on_click_up(event.button)
+                event.consumed = True
         if not self.is_focused or event.type not in [pygame.TEXTINPUT, pygame.KEYDOWN]:
             return
 
@@ -293,11 +302,12 @@ class TextInput(Label, InteractiveWidget):
         text_rect.__setattr__(alignment.value, pos)
 
         
-        # if cursor_rect.right > area.right+self.scroll.x:
-        #     self.scroll.x=cursor_rect.right - area.right
-        # elif cursor_rect.x < self.scroll.x+area.left:
-        #     self.scroll.x= cursor_rect.left - area.left
-        # self.scroll.x = max(self.scroll.x,0)
+        if cursor_rect.right > area.right+self.scroll.x:
+            self.scroll.x=cursor_rect.right - area.right
+        elif cursor_rect.x < self.scroll.x+area.left:
+            self.scroll.x= cursor_rect.left - area.left
+        # self.scroll.x = 0
+        self.scroll.x = max(self.scroll.x,0)
 
         if cursor_rect.bottom > self.scroll.y + area.bottom:
             self.scroll.y = cursor_rect.bottom - area.bottom

@@ -48,12 +48,12 @@ class color:
     LIGHTER_GB = pygame.Color(154, 158, 63)
 
     @staticmethod
-    def mult(color: pygame.Color, factor: float):
+    def mult(color: pygame.Color | tuple[int,int,int,int], factor: float):
         return pygame.Color(
-            min(max(0, int(color.r * factor)), 255),
-            min(max(0, int(color.g * factor)), 255),
-            min(max(0, int(color.b * factor)), 255),
-            color.a
+            min(max(0, int(color[0] * factor)), 255),
+            min(max(0, int(color[1] * factor)), 255),
+            min(max(0, int(color[2] * factor)), 255),
+            color[3] if len(color)== 4 else 255
         )
 
 class easing(Enum):

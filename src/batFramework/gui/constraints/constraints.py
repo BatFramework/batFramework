@@ -203,6 +203,9 @@ class PercentageWidth(Constraint):
         self.percentage: float = percentage
         self.affects_size = True
 
+    def on_removal(self, child_widget):
+        child_widget.set_autoresize_w(True)
+
     def __str__(self) -> str:
         return f"{super().__str__()}.[{self.percentage*100}%]"
 
@@ -232,6 +235,9 @@ class PercentageHeight(Constraint):
         super().__init__()
         self.percentage: float = percentage
         self.affects_size = True
+
+    def on_removal(self, child_widget):
+        child_widget.set_autoresize_h(True)
 
 
     def evaluate(self, parent_widget, child_widget):
@@ -281,6 +287,9 @@ class PercentageRectHeight(Constraint):
         super().__init__()
         self.percentage: float = percentage
         self.affects_size = True
+
+    def on_removal(self, child_widget):
+        child_widget.set_autoresize_h(True)
 
     def evaluate(self, parent_widget, child_widget):
         return child_widget.rect.height == round(
@@ -370,6 +379,8 @@ class AspectRatio(Constraint):
         else:
             raise TypeError(f"Ratio must be float or FRect")
 
+    def on_removal(self, child_widget):
+        child_widget.set_autoresize(True)
 
 
     def evaluate(self, parent_widget, child_widget):
@@ -505,6 +516,57 @@ class AnchorLeft(Constraint):
         child_widget.set_position(
             parent_widget.get_inner_left(), None
         )
+
+
+class Margin(Constraint):
+    def __init__(self, margin_top: float = None, margin_right: float = None, margin_bottom: float = None, margin_left: float = None):
+        """
+        Applies margins in the order: top, right, bottom, left.
+        Only non-None values are applied.
+        """
+        super().__init__()
+        self.margins = (margin_top, margin_right, margin_bottom, margin_left)
+        self.affects_position = True
+
+    def evaluate(self, parent_widget, child_widget):
+        # Check each margin if set, and compare the corresponding edge
+        mt, mr, mb, ml = self.margins
+        ok = True
+        inner = parent_widget.get_inner_rect()
+        if mt is not None:
+            ok = ok and (child_widget.rect.top == inner.top + mt)
+        if mr is not None:
+            ok = ok and (child_widget.rect.right == inner.right - mr)
+        if mb is not None:
+            ok = ok and (child_widget.rect.bottom == inner.bottom - mb)
+        if ml is not None:
+            ok = ok and (child_widget.rect.left == inner.left + ml)
+        return ok
+
+    def apply_constraint(self, parent_widget, child_widget):
+        # Get current position
+        x, y = child_widget.rect.x, child_widget.rect.y
+        w, h = child_widget.rect.w, child_widget.rect.h
+        mt, mr, mb, ml = self.margins
+        inner = parent_widget.get_inner_rect()
+        # Calculate new x
+        if ml is not None:
+            x = inner.left + ml
+        elif mr is not None:
+            x = inner.right - w - mr
+
+        # Calculate new y
+        if mt is not None:
+            y = inner.top + mt
+        elif mb is not None:
+            y = inner.bottom - h - mb
+
+        child_widget.set_position(x, y)
+
+    def __eq__(self, other: "Constraint") -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+        return other.margins == self.margins
 
 
 class MarginBottom(Constraint):

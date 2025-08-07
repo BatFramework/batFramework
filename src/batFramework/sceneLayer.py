@@ -12,15 +12,17 @@ class SceneLayer:
     """
     A scene layer is a 'dimension' bound to a scene
     Each layer contains its own entities and camera
+    Allows sorting out  different types of content in a single scene 
     One common use would be to separate GUI and game into two separate layers
+    Entities are drawn only if they inherit the Drawable class and are not in a RenderGroup
     """
     def __init__(self,name:str,convert_alpha:bool = False):
         self.scene = None
         self.name = name
-        self.entities : dict[int,Entity] = {}
-        self.entities_to_add : set[Entity]= set()
-        self.entities_to_remove : set[Entity]= set()
-        self.draw_order : list[int] = []
+        self.entities : dict[int,Entity] = {} # contains all scene entities : key is uid
+        self.entities_to_add : set[Entity]= set() # entities to add to the scene, (1 frame delay after calling add)
+        self.entities_to_remove : set[Entity]= set() # entities to remove from the scene 
+        self.draw_order : list[int] = [] # stores the uid of entities to draw (in draw order)
         self.camera = bf.Camera(convert_alpha=convert_alpha)
 
     def set_clear_color(self,color):
@@ -47,7 +49,7 @@ class SceneLayer:
                 self.entities_to_remove.add(e)
 
     def process_event(self,event:pygame.Event):
-        if event.type == pygame.VIDEORESIZE and not pygame.SCALED & bf.const.FLAGS:
+        if self.camera.fullscreen and event.type == pygame.VIDEORESIZE and not pygame.SCALED & bf.const.FLAGS:
             self.camera.set_size(bf.const.RESOLUTION)
 
         for e in self.entities.values():
@@ -69,8 +71,6 @@ class SceneLayer:
         Synchronizes entity changes by removing entities marked for removal,
         adding new entities, and updating the draw order if necessary.
         """
-
-
         # Remove entities marked for removal
         for e in self.entities_to_remove:
             if e.uid in self.entities.keys():
@@ -92,11 +92,6 @@ class SceneLayer:
         if reorder:
             self.update_draw_order()
 
-    def clear(self):
-        """
-        Clear the camera surface
-        """
-        self.camera.clear()
 
     def draw(self, surface: pygame.Surface):
         self.camera.clear()
@@ -110,8 +105,7 @@ class SceneLayer:
         if debugMode == bf.debugMode.OUTLINES:
             [self.debug_entity(uid) for uid in self.draw_order if uid in self.entities]
 
-        # Blit the camera surface onto the provided surface
-        # surface.blit(self.camera.surface, (0, 0))
+        # surface.fill("white")
         self.camera.draw(surface)
 
     def update_draw_order(self):

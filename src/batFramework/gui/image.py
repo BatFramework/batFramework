@@ -43,8 +43,9 @@ class Image(Shape):
         if tmp is None:
             return self
         self.original_surface = tmp
-        size = self.original_surface.get_size()
-        self.set_size(size)
+        # size = self.original_surface.get_size()
+        # self.set_size(size)
+        self.dirty_shape = True
         self.dirty_surface = True
         return self
 
@@ -52,7 +53,9 @@ class Image(Shape):
         if surface is None:
             return self
         self.original_surface = surface
-        size = self.original_surface.get_size()
-        self.set_size(size)
+        # size = self.original_surface.get_size()
+        # self.set_size(size)
+        self.dirty_shape = True
+
         self.dirty_surface = True
         return self

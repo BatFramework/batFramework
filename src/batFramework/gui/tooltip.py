@@ -8,6 +8,7 @@ class ToolTip(Label):
         self.fade_in_duration : float = 0.1
         self.fade_out_duration : float = 0.1
         self.set_render_order(sys.maxsize)
+        self.set_padding(2)
     
     def __str__(self):
         return f"ToolTip('{self.text}')"

@@ -230,10 +230,13 @@ class Shape(Widget):
     def _paint_shape(self) -> None:
         self.surface.fill((0, 0, 0, 0))
         if self.relief!=0:
-            self.surface.fill(self.shadow_color, self._get_base_rect())
-            self.surface.fill(self.color, self._get_elevated_rect())
-        else:
-            self.surface.fill(self.color, self._get_elevated_rect())
+            if self.shadow_color is not None:
+                self.surface.fill(self.shadow_color, self._get_base_rect())
+            if self.color is not None:
+                self.surface.fill(self.color, self._get_elevated_rect())
+        
+        elif self.color is not None:
+                self.surface.fill(self.color, self._get_elevated_rect())
 
     def _paint_rounded_shape(self) -> None:
         self.surface.fill((0, 0, 0, 0))
@@ -241,12 +244,16 @@ class Shape(Widget):
         if self.relief != 0:
             b = e.copy()
             b.bottom = self.rect.h
-            pygame.draw.rect(self.surface, self.shadow_color, b, 0, *self.border_radius)
-            pygame.draw.rect(self.surface, self.color, e, 0, *self.border_radius)
-        else:
-            pygame.draw.rect(self.surface, self.color, e, 0, *self.border_radius)
+            if self.shadow_color is not None:
+                pygame.draw.rect(self.surface, self.shadow_color, b, 0, *self.border_radius)
+            if self.color is not None:
+                pygame.draw.rect(self.surface, self.color, e, 0, *self.border_radius)
+        elif self.color is not None:
+                pygame.draw.rect(self.surface, self.color, e, 0, *self.border_radius)
 
     def _paint_outline(self) -> None:
+        if self.outline_color is None:
+            return
         pygame.draw.rect(
             self.surface,
             self.outline_color,
@@ -255,6 +262,8 @@ class Shape(Widget):
         )
 
     def _paint_rounded_outline(self) -> None:
+        if self.outline_color is None:
+            return
         e = self._get_elevated_rect()
         b = e.copy()
         b.h += e.bottom - b.bottom

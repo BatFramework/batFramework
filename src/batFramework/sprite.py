@@ -19,15 +19,10 @@ class Sprite(bf.Drawable):
             self.set_size(self.original_surface.get_size())
 
     def set_size(self, size: tuple[float, float]) -> Self:
-        if size == self.rect.size:
+        tmp = self.rect.size
+        super().set_size(size)
+        if self.rect.size == tmp:
             return self
-        self.rect.size = size
-        self.surface = pygame.Surface(
-            (int(self.rect.w), int(self.rect.h)), self.surface_flags
-        )
-        if self.convert_alpha:
-            self.surface = self.surface.convert_alpha()
-        self.surface.fill((0, 0, 0, 0 if self.convert_alpha else 255))
         self.surface.blit(
             pygame.transform.scale(self.original_surface, self.rect.size), (0, 0)
         )
