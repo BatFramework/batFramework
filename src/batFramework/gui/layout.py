@@ -187,7 +187,6 @@ class Column(SingleAxisLayout):
             if event.key in (pygame.K_DOWN, pygame.K_UP):
                 self.focus_next_child() if event.key == pygame.K_DOWN else self.focus_prev_child()
                 event.consumed = True
-                event.consumed = True
 
 
     def arrange(self) -> None:

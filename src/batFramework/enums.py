@@ -47,6 +47,19 @@ class color:
     LIGHT_GB = pygame.Color(73, 107, 34)
     LIGHTER_GB = pygame.Color(154, 158, 63)
 
+    @classmethod
+    def __iter__(cls):
+        for name, value in vars(cls).items():
+            if not name.startswith("__") and isinstance(value, pygame.Color):
+                yield value
+
+    @classmethod
+    def items(cls):
+        """Iterate over (name, color) pairs."""
+        for name, value in vars(cls).items():
+            if not name.startswith("__") and isinstance(value, pygame.Color):
+                yield name, value
+
     @staticmethod
     def mult(color: pygame.Color | tuple[int,int,int,int], factor: float):
         return pygame.Color(
@@ -55,6 +68,28 @@ class color:
             min(max(0, int(color[2] * factor)), 255),
             color[3] if len(color)== 4 else 255
         )
+
+    @staticmethod
+    def lerp(color1: pygame.Color | tuple[int, int, int, int], color2: pygame.Color | tuple[int, int, int, int], t: float) -> pygame.Color:
+        """Linearly interpolate between two colors."""
+        t = max(0.0, min(1.0, t))
+        c1 = color1 if isinstance(color1, (tuple, list)) else (color1.r, color1.g, color1.b, color1.a)
+        c2 = color2 if isinstance(color2, (tuple, list)) else (color2.r, color2.g, color2.b, color2.a)
+        return pygame.Color(
+            int(c1[0] + (c2[0] - c1[0]) * t),
+            int(c1[1] + (c2[1] - c1[1]) * t),
+            int(c1[2] + (c2[2] - c1[2]) * t),
+            int((c1[3] if len(c1) > 3 else 255) + ((c2[3] if len(c2) > 3 else 255) - (c1[3] if len(c1) > 3 else 255)) * t)
+        )
+
+    @staticmethod
+    def get_name(color_value:pygame.Color):
+        for name, val in color.__dict__.items():
+            # Only consider attributes that are pygame.Color instances
+            if isinstance(val, pygame.Color) and val == color_value:
+                return name
+        return str(color_value)
+    
 
 class easing(Enum):
     LINEAR = (0, 0, 1, 1)

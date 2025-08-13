@@ -15,17 +15,22 @@ class Debugger(Label):
         self.root_link = None
         self.static_data: dict[str,Any] = {}
         self.dynamic_data: dict[str,Callable[[],str]] = {}
-        self.refresh_rate = 10
+        self.refresh_interval :float = .01
         self.refresh_counter: float = 0
         self.add_tags("debugger")
         self.set_visible(False)
-        
+    
+
     def set_parent(self, parent):
         super().set_parent(parent)
         self.root_link = self.get_root()
         
-    def set_refresh_rate(self, value: int) -> Self:
-        self.refresh_rate = value
+    def set_refresh_rate(self, value: float) -> Self:
+        """
+        seet refresh interval, time in seconds between each refresh of the debugger
+        """
+        self.refresh_interval = value
+        self.refresh_counter = 0
         return self
 
     def add_static(self, key: str, data):
@@ -84,9 +89,9 @@ class Debugger(Label):
             return
         
         self.set_visible(True)
-        self.refresh_counter = self.refresh_counter + (dt * 60)
+        self.refresh_counter = self.refresh_counter + dt
         
-        if self.refresh_counter > self.refresh_rate:
+        if self.refresh_counter > self.refresh_interval:
             self.refresh_counter = 0
             self.update_text()
 

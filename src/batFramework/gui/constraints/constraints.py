@@ -267,7 +267,6 @@ class FillX(PercentageWidth):
     def __init__(self):
         super().__init__(1)
         self.name = "FillX"
-        self.affects_size = True
 
     def __eq__(self, other: Constraint) -> bool:
         return Constraint.__eq__(self,other)
@@ -276,7 +275,6 @@ class FillY(PercentageHeight):
     def __init__(self):
         super().__init__(1)
         self.name = "FillY"
-        self.affects_size = True
 
     def __eq__(self, other: Constraint) -> bool:
         return Constraint.__eq__(self,other)

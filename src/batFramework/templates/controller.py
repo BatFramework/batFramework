@@ -112,9 +112,9 @@ class CameraController(bf.Entity):
         self.origin = None  # Previous frame's world mouse pos
         self.mouse_actions = bf.ActionContainer(
             bf.Action("control").add_key_control(pygame.K_LCTRL).set_holding(),
-            bf.Action("drag").add_mouse_control(1).set_holding(),
-            bf.Action("zoom_in").add_mouse_control(4),
-            bf.Action("zoom_out").add_mouse_control(5),
+            bf.Action("drag").add_mouse_control(1).set_holding().set_consume_event(True),
+            bf.Action("zoom_in").add_mouse_control(4).set_consume_event(True),
+            bf.Action("zoom_out").add_mouse_control(5).set_consume_event(True),
         )
 
     def reset_actions(self):
@@ -122,6 +122,8 @@ class CameraController(bf.Entity):
 
     def process_actions(self, event):
         self.mouse_actions.process_event(event)
+        if self.mouse_actions["drag"] and event.type == pygame.MOUSEMOTION:
+            event.consumed = True
 
     def do_update(self, dt):
         cam = self.parent_layer.camera

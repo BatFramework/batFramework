@@ -1,12 +1,9 @@
 from .widget import Widget
 from typing import Self
-from typing import TYPE_CHECKING
 import pygame
-from math import cos,floor,ceil
-
-if TYPE_CHECKING:
-    from .container import Container
+from math import cos
 import batFramework as bf
+
 
 def children_has_focus(widget)->bool:
     if isinstance(widget,InteractiveWidget) and widget.is_focused:
@@ -25,6 +22,7 @@ class InteractiveWidget(Widget):
         self.is_clicked_down: list[bool] = [False]*5
         self.focused_index = 0
         self.focusable = True
+        self.click_pass_through : bool = False
         super().__init__(*args, **kwargs)
 
 
@@ -33,21 +31,24 @@ class InteractiveWidget(Widget):
         if self.is_hovered:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.is_clicked_down[event.button-1] = True
-                self.on_click_down(event.button)
-                event.consumed = True
+                self.on_click_down(event.button,event)
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.is_clicked_down[event.button-1] = False
-                self.on_click_up(event.button)
-                event.consumed = True
+                self.on_click_up(event.button,event)
         if self.is_focused:
             if event.type == pygame.KEYDOWN:
-                if self.on_key_down(event.key):
-                    event.consumed = True
+                self.on_key_down(event.key,event)
             elif event.type == pygame.KEYUP:
-                if self.on_key_up(event.key):
-                    event.consumed = True
+                self.on_key_up(event.key,event)
                 
         super().handle_event(event)
+
+    def set_click_pass_through(self,pass_through:bool)->Self:
+        """
+        # Allows mouse click events to pass through this widget to underlying widgets if True.
+        """
+        self.click_pass_through = pass_through
+        return self
 
     def set_focusable(self, value: bool) -> Self:
         self.focusable = value
@@ -145,17 +146,21 @@ class InteractiveWidget(Widget):
 
 
     
-    def on_key_down(self, key) -> bool:
-        self.do_on_key_down(key)
+    def on_key_down(self, key,event) -> None:
+        self.do_on_key_down(key,event)
 
-    def on_key_up(self, key) -> bool:
-        self.do_on_key_up(key)
+    def on_key_up(self, key,event) -> None:
+        self.do_on_key_up(key,event)
 
-    def on_click_down(self, button: int) -> None:
-        self.do_on_click_down(button)
+    def on_click_down(self, button: int,event=None) -> None:
+        if not self.click_pass_through:
+            event.consumed = True
+        self.do_on_click_down(button,event)
 
-    def on_click_up(self, button: int) -> None:
-        self.do_on_click_up(button)
+    def on_click_up(self, button: int,event=None) -> None:
+        if not self.click_pass_through:
+            event.consumed = True
+        self.do_on_click_up(button,event)
 
     def on_get_focus(self) -> None:
         self.is_focused = True
@@ -173,16 +178,16 @@ class InteractiveWidget(Widget):
     def do_on_lose_focus(self) -> None:
         pass
 
-    def do_on_key_down(self, key) -> None:
+    def do_on_key_down(self, key,event) -> None:
         return
 
-    def do_on_key_up(self, key) -> None:
+    def do_on_key_up(self, key,event) -> None:
         return
 
-    def do_on_click_down(self, button: int) -> None:
+    def do_on_click_down(self, button: int,event=None) -> None:
         return 
 
-    def do_on_click_up(self, button: int) -> None:
+    def do_on_click_up(self, button: int,event=None) -> None:
         return 
 
     def on_enter(self) -> None:

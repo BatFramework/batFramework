@@ -18,11 +18,16 @@ class Meter(Shape):
         self.synced_var = synced_var or SyncedVar(min_value)
         if self.max_value is None:
             self.max_value = self.synced_var.value
-        self.synced_var.bind_widget(self, self._update_value)
+        self.synced_var.bind_widget(self, self._on_synced_var_update)
         self.set_debug_color("pink")
 
     def __str__(self) -> str:
         return "Meter"
+
+    def set_snap(self,snap:bool)->Self:
+        self.snap = snap
+        self.set_value(self.get_value())
+        return self
 
     def set_step(self, step: float) -> Self:
         self.step = step
@@ -61,7 +66,7 @@ class Meter(Shape):
             return 0
         return (self.get_value() - self.min_value) / (self.max_value - self.min_value)
 
-    def _update_value(self, synced_value: float) -> None:
+    def _on_synced_var_update(self, value: float) -> None:
         """
         Updates the meter's internal state when the synced variable changes.
         """
@@ -74,7 +79,7 @@ class Meter(Shape):
         if self.synced_var:
             self.synced_var.unbind_widget(self)
         self.synced_var = synced_var
-        self.synced_var.bind_widget(self, self._update_value)
+        self.synced_var.bind_widget(self, self._on_synced_var_update)
         return self
 
 class BarMeter(Meter):
@@ -82,7 +87,6 @@ class BarMeter(Meter):
         super().__init__(min_value, max_value, step, synced_var)
         self.axis: bf.axis = bf.axis.HORIZONTAL
         self.direction = bf.direction.RIGHT  # Direction determines which side is the max range
-
         self.content = Shape((4, 4)).set_color(bf.color.BLUE)
         self.content.set_debug_color("cyan")
         self.content.top_at = lambda x, y: custom_top_at(self.content, x, y)
@@ -117,7 +121,7 @@ class BarMeter(Meter):
 
         self.dirty_shape = True
         return self
-    
+
     def _build_content(self) -> None:
         padded = self.get_inner_rect()
         ratio = self.get_ratio()

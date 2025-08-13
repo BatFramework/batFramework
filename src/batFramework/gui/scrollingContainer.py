@@ -18,7 +18,7 @@ class ScrollBar(Slider):
         self.set_pressed_relief(0).set_unpressed_relief(0)
         self.meter.content.set_color(None)
 
-    def _update_value(self,value):
+    def _on_synced_var_update(self,value):
         self.dirty_shape = True
         if self.modify_callback : 
             self.modify_callback(value)
@@ -35,8 +35,8 @@ class ScrollingContainer(Container):
     """
     def __init__(self, layout = None, *children):
         super().__init__(layout, *children)
-        self.sync_scroll_x = SyncedVar(0)
-        self.sync_scroll_y = SyncedVar(0)
+        self.sync_scroll_x = SyncedVar(0.0)
+        self.sync_scroll_y = SyncedVar(0.0)
         self.scrollbar_size = 8
         self.overflow = [False,False]
 
@@ -47,7 +47,7 @@ class ScrollingContainer(Container):
             .set_direction(bf.direction.DOWN)
             .set_step(0.01)
         )
-        self.v_scrollbar.handle.set_autoresize_h(False)
+        self.v_scrollbar.meter.handle.set_autoresize_h(False)
 
 
         self.h_scrollbar = (
@@ -56,7 +56,7 @@ class ScrollingContainer(Container):
             .set_padding(0)
             .set_step(0.01)
         )
-        self.h_scrollbar.handle.set_autoresize_w(False)
+        self.h_scrollbar.meter.handle.set_autoresize_w(False)
         self.add(self.v_scrollbar)
         self.add(self.h_scrollbar)
         self.sync_scroll_x.bind_widget(self,self._update_scroll_x)
@@ -96,14 +96,18 @@ class ScrollingContainer(Container):
     def handle_event(self, event):
         super().handle_event(event)
         if event.consumed:return
-        if event.type == pygame.MOUSEWHEEL and event.y != 0:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-                self.sync_scroll_x.value += self.h_scrollbar.meter.step * (-1 if event.y > 0 else 1)
-                self.clamp_scroll()
-            else:    
-                self.sync_scroll_y.value += self.h_scrollbar.meter.step * (-1 if event.y > 0 else 1)
-                self.clamp_scroll()
+
+        if self.rect.collidepoint(*self.parent_layer.camera.get_mouse_pos()):
+            if event.type in [pygame.MOUSEBUTTONUP,pygame.MOUSEBUTTONDOWN] and event.button in [4,5]:
+                event.consumed = True
+            if event.type == pygame.MOUSEWHEEL and event.y != 0:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+                    self.sync_scroll_x.value += self.h_scrollbar.meter.step * (-1 if event.y > 0 else 1)
+                    # self.clamp_scroll()
+                else:    
+                    self.sync_scroll_y.value += self.h_scrollbar.meter.step * (-1 if event.y > 0 else 1)
+                    # self.clamp_scroll()
 
     def set_scroll(self, value):
         super().set_scroll(value)
@@ -167,12 +171,16 @@ class ScrollingContainer(Container):
         v_handle_size= max(v_handle_size,8)
 
 
-        self.h_scrollbar.handle.set_size((h_handle_size, None))
-        self.v_scrollbar.handle.set_size((None, v_handle_size))
+
+        self.h_scrollbar.meter.handle.set_size((h_handle_size, None))
+        self.v_scrollbar.meter.handle.set_size((None, v_handle_size))
+
+        self.h_scrollbar.meter.set_step(max(20, self.get_inner_width() // 10))
+        self.v_scrollbar.meter.set_step(max(20, self.get_inner_height() // 10))
 
 
-        self.h_scrollbar._align_composed()
-        self.v_scrollbar._align_composed()
+        # self.h_scrollbar._align_composed()
+        # self.v_scrollbar._align_composed()
 
     def apply_pre_updates(self):
         if self.dirty_size_constraints or self.dirty_shape:

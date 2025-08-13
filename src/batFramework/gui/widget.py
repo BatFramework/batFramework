@@ -96,7 +96,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             rect[3] + self.padding[1] + self.padding[3],
         )
 
-    def set_position(self, x, y) -> Self:
+    def set_position(self, x=None, y=None) -> Self:
         if x is None:
             x = self.rect.x
         if y is None:
@@ -109,7 +109,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.dirty_position_constraints: bool = True
         return self
 
-    def set_center(self, x, y) -> Self:
+    def set_center(self, x=None, y=None) -> Self:
         if x is None:
             x = self.rect.centerx
         if y is None:
@@ -169,8 +169,15 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         r = self.rect.inflate(
             -self.padding[0] - self.padding[2], -self.padding[1] - self.padding[3]
         )
-        # r.normalize()
         return r
+
+    def get_local_inner_rect(self)->pygame.FRect:
+        return pygame.FRect(
+            self.padding[0],
+            self.padding[1],
+            self.rect.w - self.padding[2] - self.padding[0],
+            self.rect.h - self.padding[1] - self.padding[3],
+        )
 
     def get_min_required_size(self) -> tuple[float, float]:
         return self.rect.size
@@ -396,10 +403,10 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         _ = [c.update(dt) for c in self.children]
         super().update(dt)
 
-    def build(self) -> bool:
+
+    def _resize_surface(self)->bool:
         """
-        Updates the size of the widget.
-        return True if size changed
+        returns True if size changed
         """
         new_size = tuple(map(int, self.rect.size))
         if self.surface.get_size() == new_size:
@@ -413,7 +420,16 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.surface.set_alpha(old_alpha)
         return True
 
+
+    def build(self) -> bool:
+        """
+        Updates the size of the widget.
+        return True if size changed
+        """
+        return False
+
     def paint(self) -> None:
+        self._resize_surface()
         self.surface.fill((0, 0, 0, 0))
 
     def visit(self, func: Callable[["Widget"],Any], top_down: bool = True, *args, **kwargs) -> None:

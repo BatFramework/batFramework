@@ -8,6 +8,7 @@ from .clickableWidget import ClickableWidget
 from .root import Root
 from .shape import Shape
 from .meter import BarMeter
+from .textWidget import TextWidget
 from .label import Label
 from .tooltip import ToolTip
 from .animatedLabel import AnimatedLabel

@@ -19,14 +19,32 @@ class DraggableWidget(InteractiveWidget):
     def do_on_drag(
         self, drag_start_pos: tuple[float, float], drag_end_pos: tuple[float, float]
     ) -> None:
+        
         new_pos = drag_end_pos[0] - self.offset[0], drag_end_pos[1] - self.offset[1]
         if self.rect.topleft != new_pos:
+
             self.set_position(*new_pos)
+
+    def on_click_down(self, button, event=None):
+        if button < 1 or button > 5 :
+            return
+        self.is_clicked_down[button-1] = True
+        self.is_dragged = any(i==j and i== True for i,j in zip(self.is_clicked_down,self.click_mask))
+        if self.is_dragged:
+            event.consumed = True
+        self.do_on_click_down(button,event)
+
+    def on_click_up(self, button, event=None):
+        if button < 1 or button > 5 :
+            return
+        self.is_clicked_down[button-1] = False
+        self.is_dragged = any(i==j and i== True for i,j in zip(self.is_clicked_down,self.click_mask))
+        self.do_on_click_up(button,event)
 
     def update(self, dt: float):
         super().update(dt)
         self.is_dragged_outside = any(i==j and i== True for i,j in zip(pygame.mouse.get_pressed(5),self.click_mask))
-        self.is_dragged = any(i==j and i== True for i,j in zip(self.is_clicked_down,self.click_mask))
+
 
         if self.is_dragged and self.is_dragged_outside:
             x, y = self.parent_layer.camera.get_mouse_pos()
@@ -40,3 +58,6 @@ class DraggableWidget(InteractiveWidget):
             self.drag_start = None
             self.offset = None
             self.is_clicked_down = [False]*5
+        
+        if not self.is_dragged_outside:
+            self.is_dragged = False

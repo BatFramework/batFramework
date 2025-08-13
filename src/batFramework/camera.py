@@ -155,18 +155,23 @@ class Camera:
         return pygame.FRect(
             (rect[0] - self.world_rect.left), (rect[1] - self.world_rect.top), rect[2], rect[3]
         )
-        # Convert the center of the rect
-        cx, cy = rect.centerx, rect.centery
-        sx, sy = self.world_to_screen_point((cx, cy))
-        # Return a new rect centered at the rotated screen position
+
+    def world_to_screen_scaled(self, rect: pygame.Rect | pygame.FRect) -> pygame.FRect:
+        screen_rect = self.world_to_screen(rect)
         return pygame.FRect(
-            sx - rect.width / 2,
-            sy - rect.height / 2,
-            rect.width,
-            rect.height
+            screen_rect.x * self.zoom_factor,
+            screen_rect.y * self.zoom_factor,
+            screen_rect.w * self.zoom_factor,
+            screen_rect.h * self.zoom_factor,
         )
 
     def world_to_screen_point(self, point: tuple[float, float] | tuple[int, int]) -> tuple[float, float]:
+        return (
+            (point[0] - self.world_rect.x),
+            (point[1] - self.world_rect.y),
+        )
+
+    def world_to_screen_point_scaled(self, point: tuple[float, float] | tuple[int, int]) -> tuple[float, float]:
         return (
             (point[0] - self.world_rect.x) * self.zoom_factor,
             (point[1] - self.world_rect.y) * self.zoom_factor,

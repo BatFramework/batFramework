@@ -26,6 +26,7 @@ class ClickableWidget(Shape, InteractiveWidget):
         self.silent_focus: bool = False
         self.set_debug_color("cyan")
         self.set_relief(self.unpressed_relief)
+        self.set_click_pass_through(False)
 
     def get_min_required_size(self) -> tuple[float, float]:
         res = super().get_min_required_size()
@@ -139,41 +140,43 @@ class ClickableWidget(Shape, InteractiveWidget):
             return True
         return False
  
-    def on_key_down(self, key):
+    def on_key_down(self, key,event):
         if key == pygame.K_SPACE:
-            self.on_click_down(1)
-        self.do_on_key_down(key)
+            self.on_click_down(1,event)
+        self.do_on_key_down(key,event)
     
-    def on_key_up(self, key):
+    def on_key_up(self, key,event):
         if key == pygame.K_SPACE:
-            self.on_click_up(1)
-        self.do_on_key_down(key)
+            self.on_click_up(1,event)
+        self.do_on_key_down(key,event)
 
-    def on_click_down(self, button) -> None :
+    def on_click_down(self, button,event) -> None :
         if button < 1 or button > 5 :
             return
         self.is_clicked_down[button-1] = True
 
         if self.is_enabled and button == 1:
             if self.get_focus():
+                event.consumed = self.click_pass_through
                 self.is_pressed = True
                 if self.click_down_sound:
                     bf.AudioManager().play_sound(self.click_down_sound)
                 pygame.mouse.set_cursor(self.click_cursor)
                 self.set_relief(self.pressed_relief)
-                self.do_on_click_down(button)
+                self.do_on_click_down(button,event)
 
-    def on_click_up(self, button):
+    def on_click_up(self, button,event):
         if button < 1 or button > 5 :
             return
         self.is_clicked_down[button-1] = False
         if self.is_enabled and button == 1 and self.is_pressed:
+            event.consumed = self.click_pass_through
             self.is_pressed = False
             if self.click_up_sound:
                 bf.AudioManager().play_sound(self.click_up_sound)
             self.set_relief(self.unpressed_relief)
             self.click()
-            self.do_on_click_up(button)
+            self.do_on_click_up(button,event)
 
     def on_enter(self) -> None:
         if not self.is_enabled:

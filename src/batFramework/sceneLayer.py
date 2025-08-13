@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 import batFramework as bf
 import pygame
 from .entity import Entity
@@ -126,7 +127,8 @@ class SceneLayer:
                 rect = data[0]
                 color = data[1]
             if self.camera.intersects(rect):
-                pygame.draw.rect(self.camera.surface, color, self.camera.world_to_screen(rect), 1)
+                line_width = 1 if self.camera.zoom_factor >= 1 else int(-math.log2(self.camera.zoom_factor)) + 2
+                pygame.draw.rect(self.camera.surface, color, self.camera.world_to_screen(rect), line_width )
 
         for data in entity.get_debug_outlines():
             draw_rect(data)

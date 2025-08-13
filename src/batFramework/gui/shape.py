@@ -107,6 +107,7 @@ class Shape(Widget):
         return self
 
     def paint(self) -> None:
+        self._resize_surface()
         if self.draw_mode == bf.drawMode.TEXTURED:
             self._paint_textured()
             return

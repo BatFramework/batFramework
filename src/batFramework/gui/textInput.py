@@ -61,6 +61,7 @@ class TextInput(Label, InteractiveWidget):
         self.cursor_timer = bf.Timer(0.2, self._cursor_toggle, loop=-1).start()
         self.cursor_timer.pause()
         self.show_cursor = False
+        self._cursor_blink_show : bool = True 
         self.on_modify: Callable[[str], str] = None
         self.set_focusable(True)
         super().__init__("")
@@ -76,13 +77,14 @@ class TextInput(Label, InteractiveWidget):
 
     def _cursor_toggle(self, value: bool | None = None):
         if value is None:
-            value = not self.show_cursor
-        self.show_cursor = value
+            value = not self._cursor_blink_show
+        self._cursor_blink_show = value
         self.dirty_surface = True
 
-    def on_click_down(self, button):
+    def on_click_down(self, button,event):
         if button == 1: 
             self.get_focus()
+            event.consumed = True
         super().on_click_down(button)
 
     def do_on_enter(self):
@@ -93,19 +95,20 @@ class TextInput(Label, InteractiveWidget):
 
     def do_on_get_focus(self):
         self.cursor_timer.resume()
-        self._cursor_toggle(True)
+        # self._cursor_toggle(True)
+        self.show_cursor = True
         self.old_key_repeat = pygame.key.get_repeat()
         pygame.key.set_repeat(200, 50)
 
     def do_on_lose_focus(self):
         self.cursor_timer.pause()
-        self._cursor_toggle(False)
+        self.show_cursor = False
         pygame.key.set_repeat(*self.old_key_repeat)
 
     def get_line(self, line: int) -> str | None:
         if line < 0:
             return None
-        lines = self.text.split('\n')
+        lines = self.text_widget.text.split('\n')
         if line >= len(lines):
             return None
         return lines[line]
@@ -114,12 +117,12 @@ class TextInput(Label, InteractiveWidget):
         yield from super().get_debug_outlines()
         if self.visible:
             # offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-            # yield (self.text_rect.move(self.rect.x - offset[0] - self.scroll.x,self.rect.y - offset[1] - self.scroll.y), "purple")
-            yield (self.get_cursor_rect().move(-self.scroll+self.rect.topleft),"green")
+            # yield (self.text_widget.rect.move(self.rect.x - offset[0] - self.scroll.x,self.rect.y - offset[1] - self.scroll.y), "purple")
+            yield (self.get_cursor_rect().move(*self.text_widget.rect.topleft),"green")
 
 
     def get_min_required_size(self) -> tuple[float, float]:
-        size = self._get_text_rect_required_size()
+        size = self.text_widget.get_min_required_size()
         return self.expand_rect_with_padding(
             (0, 0,size[0]+self.get_cursor_rect().w,size[1])
         ).size
@@ -128,48 +131,55 @@ class TextInput(Label, InteractiveWidget):
     def set_cursor_position(self, position: tuple[int, int]) -> Self:
         x, y = position
 
-        lines = self.text.split('\n')
+        lines = self.text_widget.text.split('\n')
         y = max(0, min(y, len(lines) - 1))
         line_length = len(lines[y])
         x = max(0, min(x, line_length))
-        self.show_cursor = True
         self.cursor_position = (x,y)
-        self.apply_post_updates(skip_draw=True)
-        offset = self._get_outline_offset() if self.show_text_outline else (0,0)
-        padded = self.get_inner_rect().move(-self.rect.x + offset[0], -self.rect.y + offset[1])
-        self.align_text(self.text_rect,padded,self.alignment)
         return self
 
-    def get_cursor_rect(self)->pygame.FRect:
-        if not self.font_object:
-            return pygame.FRect(0,0,0,0)
+    def get_cursor_rect(self) -> pygame.FRect:
+        if not self.text_widget.font_object:
+            return pygame.FRect(0, 0, 0, 0)
+        font = self.text_widget.font_object
 
-        lines = self.text.split('\n')
+        lines = self.text_widget.text.split('\n')
         line_x, line_y = self.cursor_position
+        line = lines[line_y]
 
-        height = self.font_object.get_linesize()
+        # # Clamp line_y and line_x to valid ranges
+        # line_y = max(0, min(line_y, len(lines) - 1))
+        # line_x = max(0, min(line_x, len(line)))
 
-        cursor_y = self.get_inner_rect().__getattribute__(self.alignment.value)[1] - self.rect.top
-        cursor_y += line_y * height
-        cursor_x = self.text_rect.x
-        cursor_x += self.font_object.size(lines[line_y][:line_x])[0] if line_x > 0 else 0
-        cursor_rect = pygame.Rect(cursor_x, cursor_y, 1, height-1)
-        # offset = self._get_outline_offset()
-        # cursor_rect.move_ip(offset[0] if self.cursor_position[0] >0 else 0,offset[1] if self.cursor_position[1] > 0 else 0)
-        return cursor_rect
+        line_height = font.get_linesize()
+
+        # Calculate the pixel x position of the cursor in the current line
+        x = font.size(line[:line_x])[0]
+        y = line_height * line_y
+
+        if self.text_widget.show_text_outline:
+            offset = self.text_widget._get_outline_offset()
+            x+=offset[0]
+            y+=offset[1]
+        
+        res = pygame.FRect(x,y,1,line_height)
+        return  res
+
+    def ensure_cursor_visible(self):
+        pass
 
     def cursor_to_absolute(self, position: tuple[int, int]) -> int:
         x, y = position
 
-        y = max(0, min(y, len(self.text.split('\n')) - 1))
-        lines = self.text.split('\n')
+        y = max(0, min(y, len(self.text_widget.text.split('\n')) - 1))
+        lines = self.text_widget.text.split('\n')
         x = max(0, min(x, len(lines[y])))
 
         absolute_position = sum(len(line) + 1 for line in lines[:y]) + x
         return absolute_position
 
     def absolute_to_cursor(self, absolute: int) -> tuple[int, int]:
-        text = self.text
+        text = self.text_widget.text
         lines = text.split('\n')
         current_pos = 0
 
@@ -181,17 +191,8 @@ class TextInput(Label, InteractiveWidget):
         return (len(lines[-1]), len(lines) - 1)
 
     def handle_event(self, event):
-        if self.is_hovered:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                self.is_clicked_down[event.button-1] = True
-                self.on_click_down(event.button)
-                event.consumed = True
-            
-            elif event.type == pygame.MOUSEBUTTONUP:
-                self.is_clicked_down[event.button-1] = False
-                self.on_click_up(event.button)
-                event.consumed = True
-        if not self.is_focused or event.type not in [pygame.TEXTINPUT, pygame.KEYDOWN]:
+        super().handle_event(event)
+        if event.consumed or(not self.is_focused or event.type not in [pygame.TEXTINPUT, pygame.KEYDOWN]):
             return
 
         text = self.get_text()
@@ -211,7 +212,7 @@ class TextInput(Label, InteractiveWidget):
                     # Remove the character before the cursor
                     delta = current_pos-1
                     if pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]:
-                        delta = find_prev_word(self.text,current_pos-1)
+                        delta = find_prev_word(self.text_widget.text,current_pos-1)
                         if delta <0: delta = 0
                         
                     self.set_text(f"{text[:delta]}{text[current_pos:]}")
@@ -258,13 +259,13 @@ class TextInput(Label, InteractiveWidget):
     def handle_cursor_movement(self, pressed, current_pos, direction):
         if direction == "right":
             if pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]:
-                next_word_pos = find_next_word(self.text, current_pos)
+                next_word_pos = find_next_word(self.text_widget.text, current_pos)
                 self.set_cursor_position(self.absolute_to_cursor(next_word_pos if next_word_pos != -1 else current_pos + 1))
             else:
                 self.set_cursor_position(self.absolute_to_cursor(current_pos + 1))
         elif direction == "left":
             if pressed[pygame.K_LCTRL] or pressed[pygame.K_RCTRL]:
-                prev_word_pos = find_prev_word(self.text, current_pos - 1)
+                prev_word_pos = find_prev_word(self.text_widget.text, current_pos - 1)
                 self.set_cursor_position(self.absolute_to_cursor(prev_word_pos if prev_word_pos != -1 else current_pos - 1))
             else:
                 self.set_cursor_position(self.absolute_to_cursor(current_pos - 1))
@@ -275,19 +276,20 @@ class TextInput(Label, InteractiveWidget):
             text = self.on_modify(text)
         return super().set_text(text)
 
-    def _paint_cursor(self) -> None:
-        if not self.font_object or not self.show_cursor:
+    def _draw_cursor(self,camera:bf.Camera) -> None:
+        if not self.show_cursor or not self._cursor_blink_show:
             return
-        cursor_rect = self.get_cursor_rect()
-        cursor_rect.move_ip(-self.scroll)
         
-        if self.show_text_outline:
-            pygame.draw.rect(self.surface, self.text_outline_color, cursor_rect.inflate(2,2))
-        pygame.draw.rect(self.surface, self.text_color, cursor_rect)
+        cursor_rect = self.get_cursor_rect()
+        cursor_rect.move_ip(*self.text_widget.rect.topleft)
+        cursor_rect = camera.world_to_screen(cursor_rect)
+        if self.text_widget.show_text_outline:
+            pygame.draw.rect(camera.surface, self.text_widget.text_outline_color, cursor_rect.inflate(2,2))
+        pygame.draw.rect(camera.surface, self.text_widget.text_color, cursor_rect)
 
-    def paint(self) -> None:
-        super().paint()
-        self._paint_cursor()
+    def draw(self,camera:bf.Camera) -> None:
+        super().draw(camera)
+        self._draw_cursor(camera)
 
     def align_text(
         self, text_rect: pygame.FRect, area: pygame.FRect, alignment: bf.alignment
@@ -300,17 +302,17 @@ class TextInput(Label, InteractiveWidget):
             alignment = bf.alignment.MIDRIGHT
         pos = area.__getattribute__(alignment.value)
         text_rect.__setattr__(alignment.value, pos)
-
+        scroll = self.text_widget.scroll
         
-        if cursor_rect.right > area.right+self.scroll.x:
-            self.scroll.x=cursor_rect.right - area.right
-        elif cursor_rect.x < self.scroll.x+area.left:
-            self.scroll.x= cursor_rect.left - area.left
+        if cursor_rect.right > area.right+scroll.x:
+            scroll.x=cursor_rect.right - area.right
+        elif cursor_rect.x < scroll.x+area.left:
+            scroll.x= cursor_rect.left - area.left
         # self.scroll.x = 0
-        self.scroll.x = max(self.scroll.x,0)
+        scroll.x = max(scroll.x,0)
 
-        if cursor_rect.bottom > self.scroll.y + area.bottom:
-            self.scroll.y = cursor_rect.bottom - area.bottom
-        elif cursor_rect.y < self.scroll.y + area.top:
-            self.scroll.y = cursor_rect.top - area.top
-        self.scroll.y = max(self.scroll.y, 0)
+        if cursor_rect.bottom > scroll.y + area.bottom:
+            scroll.y = cursor_rect.bottom - area.bottom
+        elif cursor_rect.y < scroll.y + area.top:
+            scroll.y = cursor_rect.top - area.top
+        scroll.y = max(scroll.y, 0)

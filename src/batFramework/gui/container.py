@@ -17,7 +17,9 @@ class Container(Shape, InteractiveWidget):
         self.layout.set_parent(self)
         self.scroll = Vector2(0, 0)
         self.add(*children)
+        self.set_click_pass_through(False)
 
+        
     def __str__(self) -> str:
         return f"Container({self.uid},{len(self.children)})"
 
@@ -153,6 +155,7 @@ class Container(Shape, InteractiveWidget):
             size = self.layout.get_auto_size()
             self.set_size(self.resolve_size(size))
         super().build()
+
 
     def apply_pre_updates(self):
         if self.dirty_size_constraints or self.dirty_shape:

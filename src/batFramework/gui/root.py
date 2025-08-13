@@ -21,8 +21,9 @@ class Root(InteractiveWidget):
         self.show_tooltip : bool = True
         self.tooltip = bf.gui.ToolTip("").set_visible(False)
         self.add(self.tooltip)
+        self.set_click_pass_through(True)
 
-    def toggle_tooltip(self,value:bool)->Self:
+    def set_show_tooltip(self,value:bool)->Self:
         self.show_tooltip = value
         return self
     
@@ -30,8 +31,8 @@ class Root(InteractiveWidget):
         return "Root"
     
     def to_ascii_tree(self) -> str:
-        def f(w, depth):
-            prefix = " " * (depth * 4) + ("└── " if depth > 0 else "")
+        def f(w:Widget, depth):
+            prefix = " " * (depth * 4) + ("L__ " if depth > 0 else "")
             children = "\n".join(f(c, depth + 1) for c in w.children) if w.children else ""
             return f"{prefix}{str(w)}\n{children}"
         return f(self, 0)
@@ -115,48 +116,29 @@ class Root(InteractiveWidget):
     def handle_event_early(self, event):
         if event.type == pygame.VIDEORESIZE and not pygame.SCALED & bf.const.FLAGS:
             self.set_size((event.w,event.h),force=True)
-
         return
-        if self.focused:
-            if event.type == pygame.KEYDOWN:
-                if not event.consumed : 
-                    self.focused.on_key_down(event.key,event)
-                if not event.consumed : 
-                    self._handle_alt_tab(event.key,event)
-            elif event.type == pygame.KEYUP:
-                self.focused.on_key_up(event.key, event)
-
-        if not self.hovered or (not isinstance(self.hovered, InteractiveWidget)):
-            event.consumed = True
-            return
-
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            self.hovered.on_click_down(event.button,event)
-
-        elif event.type == pygame.MOUSEBUTTONUP:
-            self.hovered.on_click_up(event.button,event)
-
+    
     def handle_event(self, event):
-            
-        if self.is_hovered:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                self.is_clicked_down[event.button-1] = True
-                self.on_click_down(event.button)
-            elif event.type == pygame.MOUSEBUTTONUP:
-                self.is_clicked_down[event.button-1] = False
-                self.on_click_up(event.button)
+        super().handle_event(event)
+        if not event.consumed :
+            if event.type == pygame.KEYDOWN and event.key==pygame.K_TAB:
+                self.tab_focus(event)
 
-        if self.is_focused:
-            if event.type == pygame.KEYDOWN:
-                self.on_key_down(event.key)
-            elif event.type == pygame.KEYUP:
-                self.on_key_up(event.key)
+    def tab_focus(self,event=None):
+        if self.focused is None:
+            return
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+            self.focused.focus_prev_tab(self.focused)
+        else:
+            self.focused.focus_next_tab(self.focused)
+        event.consumed = True
 
 
-    def on_click_down(self, button: int) -> None:
+    def on_click_down(self, button: int,event) -> None:
         if button == 1:
             self.clear_focused()
-        super().on_click_down(button)
+        super().on_click_down(button,event)
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         if self.children:
@@ -205,17 +187,7 @@ class Root(InteractiveWidget):
             self.hovered.on_enter()
 
 
-    def _handle_alt_tab(self,key,event):
-        if self.focused is None:
-            return
-        if key != pygame.K_TAB:
-            return
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-            self.focused.focus_prev_tab(self.focused)
-        else:
-            self.focused.focus_next_tab(self.focused)
-        event.consumed = True
+
 
     def update_tree(self):
         # print("START updating tree")

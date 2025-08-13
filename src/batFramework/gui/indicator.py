@@ -43,6 +43,9 @@ class ToggleIndicator(Indicator):
         # TODO aspect ratio would be good right about here
         self.add_constraints(bf.gui.AspectRatio(1,reference_axis=bf.axis.VERTICAL))
 
+    def __str__(self):
+        return "ToggleIndicator"
+
     def set_callback(self, callback : Callable[[bool],Any]) -> Self:
         self.callback = callback
         return self

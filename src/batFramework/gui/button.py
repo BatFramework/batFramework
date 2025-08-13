@@ -10,7 +10,7 @@ class Button(Label, ClickableWidget):
         self.set_callback(callback)
 
     def __str__(self) -> str:
-        return f"Button('{self.text}')"
+        return f"Button('{self.text_widget.text}')"
 
     def get_min_required_size(self):
         res = super().get_min_required_size()

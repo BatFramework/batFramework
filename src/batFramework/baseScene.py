@@ -37,6 +37,9 @@ class BaseScene:
         """
         self.clear_color = color
 
+    def get_clear_color(self)->pygame.typing.ColorLike:
+        return self.clear_color
+
     def add_layer(self,layer:SceneLayer,index:int=0):
         layer.set_scene(self)
         self.scene_layers.insert(index,layer)
