@@ -26,8 +26,11 @@ class ScrollBar(Slider):
     def on_get_focus(self) -> None:
         self.is_focused = True
         self.do_on_get_focus()
+
     def draw_focused(self, camera):
         return
+    
+
 
 class ScrollingContainer(Container):
     """
@@ -49,7 +52,6 @@ class ScrollingContainer(Container):
         )
         self.v_scrollbar.meter.handle.set_autoresize_h(False)
 
-
         self.h_scrollbar = (
             ScrollBar("",0,synced_var=self.sync_scroll_x)
             .set_autoresize(False)
@@ -57,10 +59,12 @@ class ScrollingContainer(Container):
             .set_step(0.01)
         )
         self.h_scrollbar.meter.handle.set_autoresize_w(False)
-        self.add(self.v_scrollbar)
-        self.add(self.h_scrollbar)
+
         self.sync_scroll_x.bind_widget(self,self._update_scroll_x)
         self.sync_scroll_y.bind_widget(self,self._update_scroll_y)
+        
+        self.add(self.v_scrollbar)
+        self.add(self.h_scrollbar)
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":      
 
@@ -156,8 +160,17 @@ class ScrollingContainer(Container):
         v_ratio = min(v_ratio, 1)
 
         self.overflow = [h_ratio>=1,v_ratio>=1]
-        self.h_scrollbar.set_visible(h_ratio<1)
-        self.v_scrollbar.set_visible(v_ratio<1)
+
+        if h_ratio>=1:
+            self.h_scrollbar.hide()
+        else:
+            self.h_scrollbar.show()
+        if v_ratio>=1:
+            self.v_scrollbar.hide()
+        else:
+            self.v_scrollbar.show()
+
+            
 
         self.v_scrollbar.set_size((size,self.rect.h))
         self.h_scrollbar.set_size((self.rect.width-self.v_scrollbar.rect.w ,size))
@@ -172,8 +185,8 @@ class ScrollingContainer(Container):
 
 
 
-        self.h_scrollbar.meter.handle.set_size((h_handle_size, None))
-        self.v_scrollbar.meter.handle.set_size((None, v_handle_size))
+        # self.h_scrollbar.meter.handle.set_size((h_handle_size, None))
+        # self.v_scrollbar.meter.handle.set_size((None, v_handle_size))
 
         self.h_scrollbar.meter.set_step(max(20, self.get_inner_width() // 10))
         self.v_scrollbar.meter.set_step(max(20, self.get_inner_height() // 10))

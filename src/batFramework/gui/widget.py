@@ -340,12 +340,11 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return result
     
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
-        if self.children:
-            for child in reversed(self.children):
-                if child.visible:
-                    r = child.top_at(x, y)
-                    if r is not None:
-                        return r
+        for child in reversed(self.children):
+            if child.visible:
+                r = child.top_at(x, y)
+                if r is not None:
+                    return r
                     
         return self if self.visible and self.rect.collidepoint(x, y) else None
 

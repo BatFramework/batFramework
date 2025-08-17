@@ -11,7 +11,11 @@ from typing import Callable, Any, Self
 
 def round_to_step_precision(value, step):
     decimals = -Decimal(str(step)).as_tuple().exponent
-    return round(value, decimals)
+    rounded = round(value, decimals)
+    # Preserve int type if step is an int
+    if isinstance(step, int) or (isinstance(step, float) and step.is_integer()):
+        return int(rounded)
+    return rounded
 
 
 class SliderHandle(Indicator, DraggableWidget):
@@ -28,6 +32,11 @@ class SliderHandle(Indicator, DraggableWidget):
     def top_at(self, x, y):
         return Shape.top_at(self,x,y)
 
+    def on_click_down(self, button, event=None):
+        if button == 1:
+            self.parent.get_focus()
+            event.consumed = True
+        super().on_click_down(button, event)
 
     def do_on_drag(self, drag_start, drag_end):
         if not self.parent:
@@ -65,8 +74,11 @@ class SliderMeter(BarMeter, InteractiveWidget):
         self.set_padding(0)
         self.set_debug_color(bf.color.RED)
 
-
-
+    def get_focus(self) -> bool:
+        res = super().get_focus()
+        if res:
+            return self.parent.get_focus()
+        return False
     def __str__(self) -> str:
         return "SliderMeter"
 

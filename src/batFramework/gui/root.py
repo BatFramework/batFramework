@@ -132,7 +132,7 @@ class Root(InteractiveWidget):
             self.focused.focus_prev_tab(self.focused)
         else:
             self.focused.focus_next_tab(self.focused)
-        event.consumed = True
+        if event :event.consumed = True
 
 
     def on_click_down(self, button: int,event) -> None:
@@ -141,11 +141,10 @@ class Root(InteractiveWidget):
         super().on_click_down(button,event)
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
-        if self.children:
-            for child in reversed(self.children):
-                r = child.top_at(x, y)
-                if r is not None:
-                    return r
+        for child in reversed(self.children):
+            r = child.top_at(x, y)
+            if r is not None:
+                return r
         return self if self.rect.collidepoint(x, y) else None
 
     def update(self, dt: float) -> None:
@@ -154,7 +153,7 @@ class Root(InteractiveWidget):
 
         mouse_world = self.drawing_camera.get_mouse_pos()
         prev_hovered = self.hovered
-        self.hovered = self.top_at(*mouse_world) or None
+        self.hovered = self.top_at(*mouse_world)
 
         # Tooltip logic
         if self.hovered and self.hovered.tooltip_text and self.show_tooltip:
@@ -190,14 +189,13 @@ class Root(InteractiveWidget):
 
 
     def update_tree(self):
-        # print("START updating tree")
+        # 1st pass
+        self.apply_updates("pre")
+        self.apply_updates("post")
+        # 2nd pass
         self.apply_updates("pre")
         self.apply_updates("post")
 
-        self.apply_updates("pre")
-        self.apply_updates("post")
-
-        # print("END updating tree")
 
     def apply_pre_updates(self):
         return 

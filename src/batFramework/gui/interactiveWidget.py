@@ -27,7 +27,6 @@ class InteractiveWidget(Widget):
 
 
     def handle_event(self, event):
-            
         if self.is_hovered:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.is_clicked_down[event.button-1] = True
@@ -35,13 +34,12 @@ class InteractiveWidget(Widget):
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.is_clicked_down[event.button-1] = False
                 self.on_click_up(event.button,event)
+
         if self.is_focused:
             if event.type == pygame.KEYDOWN:
                 self.on_key_down(event.key,event)
             elif event.type == pygame.KEYUP:
                 self.on_key_up(event.key,event)
-                
-        super().handle_event(event)
 
     def set_click_pass_through(self,pass_through:bool)->Self:
         """

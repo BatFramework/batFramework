@@ -64,6 +64,7 @@ class TextInput(Label, InteractiveWidget):
         self._cursor_blink_show : bool = True 
         self.on_modify: Callable[[str], str] = None
         self.set_focusable(True)
+        self.set_click_pass_through(False)
         super().__init__("")
         self.set_outline_color("black")
         self.alignment = bf.alignment.TOPLEFT
@@ -82,10 +83,10 @@ class TextInput(Label, InteractiveWidget):
         self.dirty_surface = True
 
     def on_click_down(self, button,event):
-        if button == 1: 
+        if button == 1:
             self.get_focus()
             event.consumed = True
-        super().on_click_down(button)
+        super().on_click_down(button,event)
 
     def do_on_enter(self):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_IBEAM)
@@ -191,6 +192,7 @@ class TextInput(Label, InteractiveWidget):
         return (len(lines[-1]), len(lines) - 1)
 
     def handle_event(self, event):
+        # TODO fix tab_focus not working when textInput in focus
         super().handle_event(event)
         if event.consumed or(not self.is_focused or event.type not in [pygame.TEXTINPUT, pygame.KEYDOWN]):
             return
@@ -254,7 +256,7 @@ class TextInput(Label, InteractiveWidget):
                         event.consumed = True
                     return
 
-        event.consumed = True
+            event.consumed = True
 
     def handle_cursor_movement(self, pressed, current_pos, direction):
         if direction == "right":

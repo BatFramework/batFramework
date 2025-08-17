@@ -48,7 +48,7 @@ class TextWidget(Widget):
         self.is_underlined: bool = False
 
         super().__init__()
-        self.set_debug_color("blue")
+        self.set_debug_color("purple")
         self.set_autoresize(True)
         self.set_font(force=True)
         self.set_convert_alpha(True)
@@ -166,7 +166,7 @@ class TextWidget(Widget):
 
     def get_debug_outlines(self):
         if self.visible:
-            yield self.rect, "purple"
+            yield from super().get_debug_outlines()
 
     def set_font(self, font_name: str = None, force: bool = False) -> Self:
         if font_name == self.font_name and not force:

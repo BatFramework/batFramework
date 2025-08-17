@@ -12,12 +12,11 @@ class Container(Shape, InteractiveWidget):
     def __init__(self, layout: Layout = None, *children: Widget) -> None:
         super().__init__()
         self.dirty_layout: bool = False
-        self.set_debug_color("green")
         self.layout = layout if layout else Column()
         self.layout.set_parent(self)
         self.scroll = Vector2(0, 0)
+        self.set_debug_color("green")
         self.add(*children)
-        self.set_click_pass_through(False)
 
         
     def __str__(self) -> str:

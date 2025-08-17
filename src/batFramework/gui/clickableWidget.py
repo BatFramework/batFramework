@@ -154,23 +154,25 @@ class ClickableWidget(Shape, InteractiveWidget):
         if button < 1 or button > 5 :
             return
         self.is_clicked_down[button-1] = True
-
-        if self.is_enabled and button == 1:
-            if self.get_focus():
-                event.consumed = self.click_pass_through
-                self.is_pressed = True
-                if self.click_down_sound:
-                    bf.AudioManager().play_sound(self.click_down_sound)
-                pygame.mouse.set_cursor(self.click_cursor)
-                self.set_relief(self.pressed_relief)
-                self.do_on_click_down(button,event)
+        if button != 1:
+            return        
+        event.consumed = not self.click_pass_through
+        if self.is_enabled and self.get_focus():
+            self.is_pressed = True
+            if self.click_down_sound:
+                bf.AudioManager().play_sound(self.click_down_sound)
+            pygame.mouse.set_cursor(self.click_cursor)
+            self.set_relief(self.pressed_relief)
+            self.do_on_click_down(button,event)
 
     def on_click_up(self, button,event):
         if button < 1 or button > 5 :
             return
         self.is_clicked_down[button-1] = False
-        if self.is_enabled and button == 1 and self.is_pressed:
-            event.consumed = self.click_pass_through
+        if button != 1 :
+            return
+        event.consumed = not self.click_pass_through
+        if self.is_enabled and self.is_pressed:
             self.is_pressed = False
             if self.click_up_sound:
                 bf.AudioManager().play_sound(self.click_up_sound)
@@ -179,6 +181,7 @@ class ClickableWidget(Shape, InteractiveWidget):
             self.do_on_click_up(button,event)
 
     def on_enter(self) -> None:
+        self.is_hovered = True
         if not self.is_enabled:
             return
         super().on_enter()
