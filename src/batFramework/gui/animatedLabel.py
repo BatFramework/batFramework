@@ -36,11 +36,12 @@ class AnimatedLabel(Label):
 
     def cut_text_to_width(self, text: str) -> list[str]:
         w = self.get_inner_width()
-        if text == "" or not self.font_object or w < self.font_object.point_size:
+        if text == "" or not self.text_widget.font_object or w < self.text_widget.font_object.point_size:
             return [text]
         left = 0
+        font_object = self.text_widget.font_object
         for index in range(len(text)):
-            width = self.font_object.size(text[left:index])[0]
+            width = font_object.size(text[left:index])[0]
 
             if width > w:
                 cut_point_start = index - 1

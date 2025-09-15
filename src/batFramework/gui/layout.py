@@ -81,54 +81,30 @@ class Layout(ABC):
 
     def scroll_to_widget(self, widget: "Widget"):
         """
-        Scrolls parent containers so that the widget becomes visible.
-        Handles deeply nested widgets and large widgets gracefully.
+        Scrolls parent container so that the widget becomes visible.
         """
-        target = widget
-        container = self.parent
+        inner = self.parent.get_inner_rect()
 
-        while container and not container.is_root:
-            if not hasattr(container,"scroll"):
-                container = container.parent
-                continue
-            target_rect = target.rect  # global
-            padded_rect = container.get_inner_rect()  # global
+        if self.parent.clip_children and not inner.contains(widget.rect):
+            scroll = pygame.Vector2(0, 0)
+            if widget.rect.left < inner.left:
+                scroll.x = inner.left - widget.rect.left
+            elif widget.rect.right > inner.right:
+                scroll.x = inner.right - widget.rect.right
+            if widget.rect.top < inner.top:
+                scroll.y = inner.top - widget.rect.top
+            elif widget.rect.bottom > inner.bottom:
+                scroll.y = inner.bottom - widget.rect.bottom
 
-            dx = dy = 0
+            self.parent.scroll_by(-scroll)
 
-            # --- Horizontal ---
-            if target_rect.width <= padded_rect.width:
-                if target_rect.left < padded_rect.left:
-                    dx = target_rect.left - padded_rect.left
-                elif target_rect.right > padded_rect.right:
-                    dx = target_rect.right - padded_rect.right
-            else:
-                # Widget is wider than viewport: align left side
-                if target_rect.left < padded_rect.left:
-                    dx = target_rect.left - padded_rect.left
-                elif target_rect.right > padded_rect.right:
-                    dx = target_rect.right - padded_rect.right
+        # stop at root
+        if self.parent.is_root:
+            return
 
-            # --- Vertical ---
-            if target_rect.height <= padded_rect.height:
-                if target_rect.top < padded_rect.top:
-                    dy = target_rect.top - padded_rect.top
-                elif target_rect.bottom > padded_rect.bottom:
-                    dy = target_rect.bottom - padded_rect.bottom
-            else:
-                # Widget is taller than viewport: align top side
-                if target_rect.top < padded_rect.top:
-                    dy = target_rect.top - padded_rect.top
-                elif target_rect.bottom > padded_rect.bottom:
-                    dy = target_rect.bottom - padded_rect.bottom
-
-            # Convert global delta into local scroll delta for container
-            container.scroll_by((dx, dy))
-
-            # Now the target for the next iteration is the container itself
-            target = container
-            container = container.parent
-
+        # recurse upwards if parent has a layout
+        if hasattr(self.parent.parent, "layout"):
+            self.parent.parent.layout.scroll_to_widget(widget)
 
     def handle_event(self, event):
         pass

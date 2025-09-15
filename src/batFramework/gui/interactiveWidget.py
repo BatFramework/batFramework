@@ -58,8 +58,6 @@ class InteractiveWidget(Widget):
     def get_focus(self) -> bool:
         if self.focusable and ((r := self.get_root()) is not None):
             r.focus_on(self)
-            if self.parent and isinstance(self.parent, InteractiveWidget):
-                self.parent.set_focused_child(self)
             return True
         return False
 
@@ -162,8 +160,8 @@ class InteractiveWidget(Widget):
 
     def on_get_focus(self) -> None:
         self.is_focused = True
-        if isinstance(self.parent,bf.gui.Container):
-            self.parent.layout.scroll_to_widget(self) 
+        if isinstance(self.parent,bf.gui.InteractiveWidget):
+            self.parent.set_focused_child(self)
         self.do_on_get_focus()
 
     def on_lose_focus(self) -> None:

@@ -18,6 +18,12 @@ class Constants:
     BF_INITIALIZED: bool = False
     ALLOW_DEBUG : bool = True
 
+    WIDGET_KEY_REPEAT_DELAY = 200
+    WIDGET_KEY_REPEAT_INTERVAL = 50
+    GLOBAL_KEY_REPEAT_DELAY = 200
+    GLOBAL_KEY_REPEAT_INTERVAL = 50
+
+
     @staticmethod
     def set_allow_debug(allow_debug:bool):
         Constants.ALLOW_DEBUG = allow_debug

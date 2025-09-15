@@ -68,8 +68,8 @@ class Label(Shape):
         self.text_widget.set_text_bg_color(color)
         return self
 
-    def set_show_text_outline(self) -> Self:
-        self.text_widget.set_show_text_outline()
+    def set_show_text_outline(self,value:bool) -> Self:
+        self.text_widget.set_show_text_outline(value)
         return self
 
     def set_alignment(self, alignment: bf.alignment) -> Self:

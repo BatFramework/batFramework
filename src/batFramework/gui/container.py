@@ -32,28 +32,26 @@ class Container(Shape, InteractiveWidget):
         self.dirty_layout = True
         return self
 
-    def set_scroll(self, value: tuple) -> Self:
+    def set_scroll(self, value: tuple[float]) -> Self:
         if (self.scroll.x,self.scroll.y) == value:
             return self
         self.scroll.update(value)
         self.dirty_layout = True
         return self
 
-    def scrollX_by(self, x: float | int) -> Self:
+    def scrollX_by(self, x: float) -> Self:
         if x == 0:
             return self
         self.set_scroll((self.scroll.x + x, self.scroll.y))
         return self
 
-    def scrollY_by(self, y: float | int) -> Self:
+    def scrollY_by(self, y: float) -> Self:
         if y == 0:
             return self
         self.set_scroll((self.scroll.x, self.scroll.y + y))
         return self
 
-    def scroll_by(self, value: tuple[float | int, float | int]) -> Self:
-        if value[0] == 0 and value[1] == 0:
-            return self
+    def scroll_by(self, value: tuple[float]) -> Self:
         self.set_scroll((self.scroll.x + value[0], self.scroll.y + value[1]))
         return self
     
@@ -68,7 +66,6 @@ class Container(Shape, InteractiveWidget):
         max_scroll_x = max(0, children_rect.width - r.width)
         max_scroll_y = max(0, children_rect.height - r.height)
 
-        # Clamp scroll values directly, avoid recursion
         sx = min(max(self.scroll.x, 0), max_scroll_x)
         sy = min(max(self.scroll.y, 0), max_scroll_y)
         
@@ -87,12 +84,18 @@ class Container(Shape, InteractiveWidget):
         return self
 
     def get_interactive_children(self) -> list[InteractiveWidget]:
-        return [child for child in self.get_layout_children() if isinstance(child, InteractiveWidget) and not isinstance(child,Container) and child.allow_focus_to_self()]
+        """Return all children that can be cycled through with focus"""
+        return [child for child in self.get_layout_children() \
+                if isinstance(child, InteractiveWidget) and not\
+                isinstance(child,Container) and child.allow_focus_to_self()]
 
     def get_layout_children(self)->list[Widget]:
+        """Returns all children affected by layout"""
         return self.children
 
     def clear_children(self) -> None:
+        for child in self.children:
+            child.set_parent(None)
         self.children.clear()
         self.dirty_layout = True
 
@@ -127,6 +130,7 @@ class Container(Shape, InteractiveWidget):
         return interactive_children[self.focused_index].get_focus()
 
     def children_has_focus(self)->bool:
+        """Return true if any direct children is focused"""
         return any(child.is_focused for child in self.get_interactive_children())
 
     def handle_event(self, event) -> None:
@@ -145,12 +149,11 @@ class Container(Shape, InteractiveWidget):
             return False
 
     def allow_focus_to_self(self) -> bool:
+        """Return whether the container can get focused"""
         return bool(self.get_interactive_children()) and self.visible
     
     def build(self) -> None:
         if self.layout is not None:
-            # print("I'm building !",self)
-            # size = self.expand_rect_with_padding((0,0,*self.layout.get_auto_size())).size
             size = self.layout.get_auto_size()
             self.set_size(self.resolve_size(size))
         super().build()
@@ -169,18 +172,11 @@ class Container(Shape, InteractiveWidget):
             self.dirty_layout = False
 
     def apply_post_updates(self,skip_draw:bool=False):
-        """
-        BOTTOM TO TOP
-        for cases when widget attributes depend on children attributes
-        """
-        # self.clamp_scroll() 
         if self.dirty_shape:
             self.layout.update_child_constraints()
             self.build()
             self.dirty_size_constraints = True
             self.dirty_position_constraints = True
-                # self.clamp_scroll()
-
             self.dirty_layout =  True
             from .container import Container
             if self.parent and isinstance(self.parent, Container):

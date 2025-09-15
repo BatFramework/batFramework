@@ -21,11 +21,15 @@ class Cutscene:
     def update(self,dt):
         pass
 
+    def __str__(self)->str:
+        return self.__class__.__name__
 
     def end(self):
         """
         Mark self as over
         """
+        print("Start ",self)
+
         self.is_over = True
 
 class Sequence(Cutscene):
@@ -127,6 +131,9 @@ class GlideWorldCameraFromTo(Cutscene):
 
 
     def internal(self,progression:float):
+        if not self.scene: 
+            self.end()
+            return
         self.scene.camera.set_center(
             self.start_pos[0]+progression*(self.stop_pos[0]-self.start_pos[0]),
             self.start_pos[1]+progression*(self.stop_pos[1]-self.start_pos[1])
@@ -155,14 +162,17 @@ class Function(Cutscene):
 class GlideCamera(Cutscene):
     def __init__(
         self,
-        start: tuple[float, float] | None = None,
-        stop: tuple[float, float] | None = None,
-        delta: tuple[float, float] | None = None,
+        start: tuple[float, float] | None,
+        stop: tuple[float, float] | None,
         duration: float = 1,
         easing: bf.easing = bf.easing.EASE_IN_OUT,
         scene_name: str | None = None,
         layer_name: str = "world",
     ):
+        """
+        If start is None, it will be defaulted to the current camera center position.
+        Stop must be provided
+        """
         super().__init__()
         self.scene = None
         self.layer = None
@@ -170,7 +180,6 @@ class GlideCamera(Cutscene):
         self.layer_name = layer_name
         self.start_pos = start
         self.stop_pos = stop
-        self.delta = delta
         self.controller = bf.EasingController(
             duration, easing, update_callback=self.internal, end_callback=self.end
         )
@@ -191,16 +200,6 @@ class GlideCamera(Cutscene):
         if self.start_pos is None:
             self.start_pos = self.layer.camera.get_center()
 
-        # Compute stop_pos if not set
-        if self.stop_pos is None:
-            if self.delta is not None:
-                self.stop_pos = (
-                    self.start_pos[0] + self.delta[0],
-                    self.start_pos[1] + self.delta[1],
-                )
-            else:
-                raise ValueError("Must specify either stop or delta position")
-
         self.controller.start()
 
     def internal(self, progression: float):
@@ -214,24 +213,7 @@ class GlideCamera(Cutscene):
             self.layer.camera.set_center(*self.stop_pos)
         super().end()
 
-class GlideCameraTo(GlideCamera):
-    def __init__(
-        self,
-        stop: tuple[float, float],
-        duration: float = 1,
-        easing: bf.easing = bf.easing.EASE_IN_OUT,
-        scene_name: str | None = None,
-        layer_name: str = "world",
-    ):
-        super().__init__(
-            start=None,
-            stop=stop,
-            delta=None,
-            duration=duration,
-            easing=easing,
-            scene_name=scene_name,
-            layer_name=layer_name,
-        )
+
         
 class GlideCameraBy(GlideCamera):
     def __init__(
@@ -242,6 +224,10 @@ class GlideCameraBy(GlideCamera):
         scene_name: str | None = None,
         layer_name: str = "world",
     ):
+        stop_pos = (
+            start_pos[0] + self.delta[0],
+            start_pos[1] + self.delta[1],
+        )
         super().__init__(
             start=None,
             stop=None,

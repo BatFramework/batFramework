@@ -164,7 +164,8 @@ class Root(InteractiveWidget):
             screen_w, screen_h = bf.const.RESOLUTION
 
             tooltip_x, tooltip_y = mouse_world
-
+            tooltip_x+=4
+            tooltip_y+=4
             tooltip_x = min(tooltip_x, screen_w - tooltip_size[0])
             tooltip_y = min(tooltip_y, screen_h - tooltip_size[1])
             tooltip_x = max(0, tooltip_x)
