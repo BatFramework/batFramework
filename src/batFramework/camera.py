@@ -25,7 +25,7 @@ class Camera:
 
         self.surface: pygame.Surface = pygame.Surface((0, 0))  # dynamic : create new at each new zoom value
 
-        self._clear_color: pygame.Color = pygame.Color(0, 0, 0, 0) if convert_alpha else pygame.Color(0, 0, 0)
+        self._clear_color: pygame.typing.ColorLike = pygame.Color(0, 0, 0, 0) if convert_alpha else pygame.Color(0, 0, 0)
 
         self.follow_point_func = None
         self.damping = float("inf")
@@ -116,10 +116,10 @@ class Camera:
             return self
 
         self.zoom_factor = clamped
-        new_res = tuple(round((i / clamped) / 2) * 2 for i in self.rect.size)
+        new_res = tuple([round((i / clamped) / 2) * 2 for i in self.rect.size])
 
         if self.surface.get_size() != new_res:
-            self.surface = self._get_cached_surface(new_res)
+            self.surface = self._get_cached_surface((new_res[0],new_res[1]))
 
         self.world_rect = self.surface.get_frect(center=self.world_rect.center)
         self.clear()
@@ -207,7 +207,7 @@ class Camera:
             return
 
         target = Vector2(self.follow_point_func())
-        self.vector_center.xy = self.world_rect.center
+        self.vector_center.xy.update(self.world_rect.center)
 
         if self.damping == float("inf"):
             self.vector_center.xy = target.xy

@@ -1,14 +1,7 @@
 from ..utils import Singleton
 from .widget import Widget
-
-
-class Style:
-    def __init__(self):
-        pass
-
-    def apply(self, widget: Widget):
-        pass
-
+from .style import Style
+import batFramework as bf
 
 class StyleManager(metaclass=Singleton):
     def __init__(self):

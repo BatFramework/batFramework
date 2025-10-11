@@ -57,7 +57,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def kill(self):
         if self.parent:
             self.parent.remove(self)
-        if self.parent_scene:
+        if self.parent_scene and self.parent_layer is not None:
             self.parent_scene.remove(self.parent_layer.name,self)
             
         return super().kill()
@@ -92,7 +92,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return self
 
     def expand_rect_with_padding(
-        self, rect: pygame.Rect | pygame.FRect
+        self, rect: pygame.typing.RectLike
     ) -> pygame.Rect | pygame.FRect:
         return pygame.FRect(
             rect[0] - self.padding[0],

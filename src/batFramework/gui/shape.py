@@ -6,16 +6,16 @@ from math import ceil
 
 
 class Shape(Widget):
-    def __init__(self, size: tuple[float, float] = None, *args, **kwargs):
+    def __init__(self, size: tuple[float, float]|None = None, *args, **kwargs):
         super().__init__(size=size, convert_alpha=True)
         self.color = (0, 0, 0, 0)
         self.border_radius: list[int] = [0]
         self.outline_width: int = 0
-        self.outline_color: tuple[int, int, int] | str = (0, 0, 0, 255)
+        self.outline_color: pygame.typing.ColorLike = (0, 0, 0, 255)
         self.texture_surface = None
         self.texture_subsize = (0, 0)
         self.relief = 0
-        self.shadow_color: tuple[int, int, int] | str = (0, 0, 0, 255)
+        self.shadow_color: pygame.typing.ColorLike = (0, 0, 0, 255)
         self.draw_mode = bf.drawMode.SOLID
 
     def get_inner_bottom(self) -> float:
@@ -43,7 +43,7 @@ class Shape(Widget):
             self.rect.h - self.padding[1] - self.padding[3] - self.relief,
         )
 
-    def set_shadow_color(self, color: tuple[int, int, int] | str) -> Self:
+    def set_shadow_color(self, color: pygame.typing.ColorLike) -> Self:
         self.shadow_color = color
         self.dirty_surface = True
         return self
@@ -83,12 +83,12 @@ class Shape(Widget):
     def __str__(self) -> str:
         return "Shape"
 
-    def set_color(self, color: tuple[int, int, int] | str) -> Self:
+    def set_color(self, color: pygame.typing.ColorLike) -> Self:
         self.color = color
         self.dirty_surface = True
         return self
 
-    def set_outline_color(self, color: tuple[int, int, int] | str) -> Self:
+    def set_outline_color(self, color: pygame.typing.ColorLike) -> Self:
         self.outline_color = color
         self.dirty_surface = True
         return self

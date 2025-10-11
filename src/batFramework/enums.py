@@ -61,7 +61,8 @@ class color:
                 yield name, value
 
     @staticmethod
-    def mult(color: pygame.Color | tuple[int,int,int,int], factor: float):
+    def mult(color: pygame.typing.ColorLike , factor: float):
+        color = pygame.Color(color)
         return pygame.Color(
             min(max(0, int(color[0] * factor)), 255),
             min(max(0, int(color[1] * factor)), 255),

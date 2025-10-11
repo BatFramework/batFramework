@@ -58,15 +58,22 @@ class TextInput(Label, InteractiveWidget):
     def __init__(self) -> None:
         self.cursor_position = (0, 0)
         self.old_key_repeat = (0, 0)
+        self.placeholder_text = ""
         self.cursor_timer = bf.Timer(0.2, self._cursor_toggle, loop=-1).start()
         self.cursor_timer.pause()
         self.show_cursor = False
         self._cursor_blink_show : bool = True 
-        self.on_modify: Callable[[str], str] = None
+        self.on_modify: Callable[[str], str]| None = None
         self.set_click_pass_through(False)
         super().__init__("")
         self.set_outline_color("black")
         self.alignment = bf.alignment.TOPLEFT
+
+    def set_placeholder_text(self, text: str) -> Self:
+        self.placeholder_text = text
+        self.dirty_surface = True
+        return self
+
 
     def set_modify_callback(self, callback: Callable[[str], str]) -> Self:
         self.on_modify = callback
@@ -275,8 +282,13 @@ class TextInput(Label, InteractiveWidget):
     def set_text(self, text: str) -> Self:
         if self.on_modify:
             text = self.on_modify(text)
-        return super().set_text(text)
+        if text == "" and self.placeholder_text:
+            text = self.placeholder_text
+        if text != "" and text == self.placeholder_text:
+            self.text_widget.set_text("")
+        self.text_widget.set_text(text)
 
+        return self
     def _draw_cursor(self,camera:bf.Camera) -> None:
         if not self.show_cursor or not self._cursor_blink_show:
             return
