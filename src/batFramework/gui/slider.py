@@ -24,7 +24,7 @@ class SliderHandle(Indicator, DraggableWidget):
         self.set_color(bf.color.CLOUD_SHADE)
         self.set_click_mask(1)
         self.synced_var = synced_var
-        synced_var.bind_widget(self,self._on_synced_var_update)
+        synced_var.bind(self,self._on_synced_var_update)
 
     def __str__(self) -> str:
         return "SliderHandle"
@@ -188,10 +188,9 @@ class Slider(Button):
         self.modify_callback: Callable[[float], Any] = None
         self.meter: SliderMeter = SliderMeter(synced_var=self.synced_var)
         self.add(self.meter)
-        self.synced_var.bind_widget(self, self._on_synced_var_update)
+        self.synced_var.bind(self, self._on_synced_var_update)
         self.set_range(0, self.synced_var.value)
-        # self.set_value(default_value)
-        self.synced_var.update_widgets()
+        self.synced_var.update_bound_entities()
 
     def set_snap(self,snap:bool)->Self:
         self.meter.set_snap(snap)
@@ -250,7 +249,7 @@ class Slider(Button):
 
     def set_range(self, range_min: float, range_max: float) -> Self:
         self.meter.set_range(range_min, range_max)
-        self.meter.set_value(self.synced_var.value)
+        # self.meter.set_value(self.synced_var.value)
         self.dirty_shape = True
         return self
 
@@ -341,8 +340,13 @@ class Slider(Button):
     def build(self) -> None:
         res = super().build()
         gap = self.gap if self.spacing == bf.spacing.MANUAL else 0
-        meter_width = self.get_inner_width() - self.text_widget.rect.w - gap
-        meter_height = min(self.meter.get_min_required_size()[1], self.text_widget.rect.h)
+        if self.meter.axis==bf.axis.HORIZONTAL:
+            meter_width = self.get_inner_width() - self.text_widget.rect.w - gap
+            meter_height = min(self.meter.get_min_required_size()[1], self.text_widget.rect.h)
+        else:
+            meter_height = self.get_inner_height()
+            meter_width = min(self.text_widget.rect.h,max(self.meter.get_min_required_size()[0],self.get_inner_width() - self.text_widget.rect.w - gap))
+
         meter_size = self.meter.resolve_size((meter_width, meter_height))
         self.meter.set_size(meter_size)
         self._align_composed(self.text_widget, self.meter)

@@ -24,4 +24,5 @@ from .radioButton import RadioButton
 from .slider import Slider
 from .selector import Selector
 from .scrollingContainer import ScrollingContainer
+from .collapseContainer import CollapseContainer
 import batFramework.gui.constraints as constraints

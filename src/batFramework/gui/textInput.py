@@ -63,7 +63,6 @@ class TextInput(Label, InteractiveWidget):
         self.show_cursor = False
         self._cursor_blink_show : bool = True 
         self.on_modify: Callable[[str], str] = None
-        self.set_focusable(True)
         self.set_click_pass_through(False)
         super().__init__("")
         self.set_outline_color("black")

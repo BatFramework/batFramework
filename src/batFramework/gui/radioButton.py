@@ -4,18 +4,14 @@ from .toggle import Toggle
 from .syncedVar import SyncedVar
 
 
+# TODO : RadioButton with no synced var ? click crashes
+
 class RadioButton(Toggle):
-    def __init__(self, text: str = "", radio_value: Any = None, synced_var: SyncedVar = None) -> None:
+    def __init__(self, text: str, synced_var: SyncedVar, radio_value: Any = None) -> None:
         super().__init__(text, None, False)
         self.radio_value: Any = radio_value if radio_value is not None else text if text else None
-        self.synced_var : SyncedVar = None
-        if synced_var:
-            self.link(synced_var)
-
-    def link(self,synced_var:SyncedVar)->Self:
-        self.synced_var = synced_var
-        synced_var.bind_widget(self,self._update_state)
-        return self
+        self.synced_var : SyncedVar = synced_var
+        self.synced_var.bind(self,self._update_state)
 
     def __str__(self) -> str:
         return f"RadioButton({self.radio_value}|{'Active' if self.value else 'Inactive'})"
@@ -25,8 +21,20 @@ class RadioButton(Toggle):
         return self
 
     def set_value(self, value : bool, do_callback=False):
-        super().set_value(value, do_callback)
-        if value : self.synced_var.value = self.radio_value
+        if self.value == value:
+            return self  # No change
+        self.value = value
+        self.indicator.set_value(value)
+        self.dirty_surface = True
+
+        # Update SyncedVar only if different (avoid recursion)
+        if value and self.synced_var.value != self.radio_value:
+            self.synced_var.value = self.radio_value
+
+        if do_callback and self.callback:
+            self.callback(self.value)
+        return self
+        # if value : self.synced_var.value = self.radio_value
 
     def _update_state(self, synced_value: Any) -> None:
         """

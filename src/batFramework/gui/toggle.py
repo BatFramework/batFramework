@@ -32,13 +32,19 @@ class Toggle(Button):
         self.set_clip_children(False)
 
         # Bind this toggle’s _on_synced_var_update to synced_var updates
-        self.synced_var.bind_widget(self, self._on_synced_var_update)
+        self.synced_var.bind(self, self._on_synced_var_update)
 
     def _on_synced_var_update(self, new_value: bool) -> None:
         # Called when SyncedVar changes externally
         if self.value != new_value:
             self.set_value(new_value, do_callback=False)
 
+
+    def set_indicator(self,indicator:Indicator):
+        self.remove(self.indicator)
+        self.synced_var.unbind(self.indicator)
+        self.indicator = indicator
+        self.add(self.indicator)
     def set_visible(self, value: bool) -> Self:
         self.indicator.set_visible(value)
         return super().set_visible(value)

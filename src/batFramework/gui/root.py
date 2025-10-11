@@ -155,9 +155,14 @@ class Root(InteractiveWidget):
         prev_hovered = self.hovered
         self.hovered = self.top_at(*mouse_world)
 
-        # Tooltip logic
-        if self.hovered and self.hovered.tooltip_text and self.show_tooltip:
+        if (self.hovered and self.hovered.tooltip_text and self.show_tooltip):
             self.tooltip.set_text(self.hovered.tooltip_text)
+            self.tooltip.fade_in()
+        else:
+            self.tooltip.fade_out()
+
+        # Tooltip logic
+        if self.tooltip.visible: 
 
             tooltip_size = self.tooltip.get_min_required_size()
             # screen_w, screen_h = self.drawing_camera.rect.size
@@ -172,9 +177,6 @@ class Root(InteractiveWidget):
             tooltip_y = max(0, tooltip_y)
 
             self.tooltip.set_position(tooltip_x, tooltip_y)
-            self.tooltip.fade_in()
-        else:
-            self.tooltip.fade_out()
 
         if self.hovered == prev_hovered:
             if isinstance(self.hovered, InteractiveWidget):
@@ -194,8 +196,8 @@ class Root(InteractiveWidget):
         self.apply_updates("pre")
         self.apply_updates("post")
         # 2nd pass
-        self.apply_updates("pre")
-        self.apply_updates("post")
+        # self.apply_updates("pre")
+        # self.apply_updates("post")
 
 
     def apply_pre_updates(self):
@@ -217,6 +219,10 @@ class Root(InteractiveWidget):
         if self.clip_children:
             camera.surface.set_clip(old_clip)
         
-        if self.focused not in [self,None] :
+        if self.focused != self and (not self.focused is None)  :
+            old_clip = camera.surface.get_clip()
+            camera.surface.set_clip(self.focused.parent.get_inner_rect())
             self.focused.draw_focused(camera)   
+            camera.surface.set_clip(old_clip)
+
         self.tooltip.draw(camera)

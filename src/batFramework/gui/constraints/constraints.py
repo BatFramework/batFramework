@@ -285,18 +285,19 @@ class Fill(Constraint):
             self.affects_size = True
 
         def on_removal(self, child_widget):
-            child_widget.set_autoresize_w(True)
+            child_widget.set_autoresize(True)
 
         def __str__(self) -> str:
             return f"{super().__str__()}"
 
         def evaluate(self, parent_widget, child_widget):
-            return child_widget.rect.width == round(parent_widget.get_inner_width())
-
+            return child_widget.rect.width == round(parent_widget.get_inner_width()) and \
+                child_widget.rect.height == round(parent_widget.get_inner_height())
+         
         def apply_constraint(self, parent_widget, child_widget):
             if child_widget.autoresize_w:
-                child_widget.set_autoresize_w(False)
-            child_widget.set_size(parent_widget.get_inner_width(), None)
+                child_widget.set_autoresize(False)
+            child_widget.set_size(parent_widget.get_inner_rect().size)
 
         def __eq__(self,other:"Constraint")->bool:
             if not isinstance(other,self.__class__):

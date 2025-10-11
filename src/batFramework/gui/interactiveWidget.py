@@ -4,7 +4,6 @@ import pygame
 from math import cos
 import batFramework as bf
 
-
 def children_has_focus(widget)->bool:
     if isinstance(widget,InteractiveWidget) and widget.is_focused:
         return True
@@ -21,7 +20,6 @@ class InteractiveWidget(Widget):
         self.is_hovered: bool = False
         self.is_clicked_down: list[bool] = [False]*5
         self.focused_index = 0
-        self.focusable = True
         self.click_pass_through : bool = False
         super().__init__(*args, **kwargs)
 
@@ -48,15 +46,12 @@ class InteractiveWidget(Widget):
         self.click_pass_through = pass_through
         return self
 
-    def set_focusable(self, value: bool) -> Self:
-        self.focusable = value
-        return self
 
     def allow_focus_to_self(self) -> bool:
         return self.visible
 
     def get_focus(self) -> bool:
-        if self.focusable and ((r := self.get_root()) is not None):
+        if self.allow_focus_to_self() and ((r := self.get_root()) is not None):
             r.focus_on(self)
             return True
         return False
@@ -90,13 +85,19 @@ class InteractiveWidget(Widget):
         if current.is_root:
             return None  # Root has no parent
 
-        siblings = current.parent.children
+        if hasattr(current.parent, "layout"):
+            siblings =  current.parent.get_interactive_children()
+        else:
+            siblings = current.parent.children 
+
         start_index = siblings.index(current)
         good_index = -1
         for i in range(start_index + 1, len(siblings)):
-            if isinstance(siblings[i], InteractiveWidget) and siblings[i].allow_focus_to_self():
-                good_index = i
-                break
+            sibling = siblings[i]
+            if isinstance(sibling,InteractiveWidget) and  not(sibling is current) :
+                if sibling.allow_focus_to_self():
+                    good_index = i
+                    break
         if good_index >= 0:
             # Not the last child, return the next sibling
             return siblings[good_index]
@@ -110,12 +111,15 @@ class InteractiveWidget(Widget):
             return None  # Root has no parent
 
         # siblings = [c for c in current.parent.children if isinstance(c,InteractiveWidget) and c.allow_focus_to_self()]
-        siblings = current.parent.children
+        if hasattr(current.parent, "layout"):
+            siblings =  current.parent.get_interactive_children()
+        else:
+            siblings = current.parent.children 
         start_index = siblings.index(current)
         good_index = -1
         for i in range(start_index-1,-1,-1):
             sibling = siblings[i]
-            if isinstance(sibling,InteractiveWidget):
+            if isinstance(sibling,InteractiveWidget) and  not(sibling is current) :
                 if sibling.allow_focus_to_self():
                     good_index = i
                     break
@@ -212,7 +216,7 @@ class InteractiveWidget(Widget):
 
     def draw_focused(self, camera: bf.Camera) -> None:
         if isinstance(self,bf.gui.Shape):
-            prop = 16
+            prop = 8
             pulse = int(prop * 0.75 - (prop * cos(pygame.time.get_ticks() / 100) / 4))
             delta = (pulse // 2) * 2  # ensure even
 

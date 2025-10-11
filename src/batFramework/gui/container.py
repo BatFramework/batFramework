@@ -15,6 +15,7 @@ class Container(Shape, InteractiveWidget):
         self.layout = layout if layout else Column()
         self.layout.set_parent(self)
         self.scroll = Vector2(0, 0)
+        self.dirty_scroll = False
         self.set_debug_color("green")
         self.add(*children)
 
@@ -29,14 +30,19 @@ class Container(Shape, InteractiveWidget):
         if self.scroll == (0,0):
             return self
         self.set_scroll((0, 0))
-        self.dirty_layout = True
         return self
 
     def set_scroll(self, value: tuple[float]) -> Self:
+        # print("Trying to set scroll to ",value)
+        # print("Current scroll is : ",self.scroll)
+
         if (self.scroll.x,self.scroll.y) == value:
             return self
         self.scroll.update(value)
-        self.dirty_layout = True
+        # print("Scroll updated to", value)
+        self.clamp_scroll()
+        self.dirty_scroll = True
+        # self.dirty_layout = True
         return self
 
     def scrollX_by(self, x: float) -> Self:
@@ -59,15 +65,27 @@ class Container(Shape, InteractiveWidget):
         if not self.children:
             return self
         r = self.get_inner_rect()
-        children_rect = self.children[0].rect.unionall(
-            [c.rect for c in self.children[1:]]
-        ) if len(self.children) > 1 else self.children[0].rect
+
+        if self.layout:
+            # self.layout.update_children_rect()
+            children_rect = self.layout.children_rect 
+        else:
+            l = self.get_layout_children()
+            if l:
+                children_rect = l[0].rect.unionall(
+                    [c.rect for c in l[1:]]
+                ) if len(l) > 1 else l
+            else:
+                children_rect = pygame.Rect(0,0,0,0)
 
         max_scroll_x = max(0, children_rect.width - r.width)
         max_scroll_y = max(0, children_rect.height - r.height)
 
         sx = min(max(self.scroll.x, 0), max_scroll_x)
         sy = min(max(self.scroll.y, 0), max_scroll_y)
+        # print("_"*20)
+        # print("Clamping scroll, children rect is :",children_rect)
+        # print("scroll to,",(sx,sy), "while current scroll is",self.scroll)
         
         self.set_scroll((sx,sy))
         
@@ -165,11 +183,16 @@ class Container(Shape, InteractiveWidget):
             self.dirty_size_constraints = False
             self.dirty_position_constraints = True
 
+
+
         if self.dirty_layout:
             self.layout.update_child_constraints()
             self.layout.arrange()
-            self.clamp_scroll()
             self.dirty_layout = False
+
+        if self.dirty_scroll:
+            self.layout.scroll_children()
+            self.dirty_scroll = False
 
     def apply_post_updates(self,skip_draw:bool=False):
         if self.dirty_shape:

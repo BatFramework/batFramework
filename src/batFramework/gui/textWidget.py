@@ -292,7 +292,6 @@ class TextWidget(Widget):
 
         bg_fill_color = (0, 0, 0, 0) if self.text_bg_color is None else  self.text_bg_color 
         self.surface.fill(bg_fill_color)
-        # self.surface.fill("red")
 
         text_surf = self._render_font(params)
 

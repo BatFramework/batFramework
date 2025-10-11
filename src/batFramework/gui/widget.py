@@ -49,6 +49,11 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.visit(lambda w: w.set_visible(False))
         return self
 
+    def set_visible(self, value):
+        if self.visible != value and value==True:
+            self.dirty_surface = True
+        return super().set_visible(value)
+
     def kill(self):
         if self.parent:
             self.parent.remove(self)
@@ -481,7 +486,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         elif pass_type == "post":
             for child in self.children:
                 child.apply_updates("post")
-            self.apply_post_updates()
+            self.apply_post_updates(skip_draw=not self.visible)
 
     def apply_pre_updates(self):
         """
@@ -507,7 +512,9 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                 if self.parent :
                 # trigger layout or constraint updates in parent
                     from .container import Container
-                    if self.parent and isinstance(self.parent, Container):
+                    from .scrollingContainer import ScrollingContainer
+                    if self.parent and (isinstance(self.parent, Container) and (self.parent.autoresize_h or self.parent.autoresize_w) \
+                        or isinstance(self.parent,ScrollingContainer)):
                         self.parent.dirty_layout = True
                         self.parent.dirty_shape = True
             self.dirty_shape = False

@@ -18,7 +18,7 @@ class Meter(Shape):
         self.synced_var = synced_var or SyncedVar(min_value)
         if self.max_value is None:
             self.max_value = self.synced_var.value
-        self.synced_var.bind_widget(self, self._on_synced_var_update)
+        self.synced_var.bind(self, self._on_synced_var_update)
         self.set_debug_color("pink")
 
     def __str__(self) -> str:
@@ -77,9 +77,9 @@ class Meter(Shape):
         Rebinds the meter to a new SyncedVar.
         """
         if self.synced_var:
-            self.synced_var.unbind_widget(self)
+            self.synced_var.unbind(self)
         self.synced_var = synced_var
-        self.synced_var.bind_widget(self, self._on_synced_var_update)
+        self.synced_var.bind(self, self._on_synced_var_update)
         return self
 
 class BarMeter(Meter):
