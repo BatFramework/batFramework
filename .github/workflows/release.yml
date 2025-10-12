@@ -43,7 +43,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: python -m twine upload --repository testpypi dist/*
 
-      - name: Publish pre-release to PyPI (on push)
+      - name: Publish release to PyPI (on push)
         if: ${{ github.event_name == 'push' }}
         env:
           TWINE_USERNAME: __token__
