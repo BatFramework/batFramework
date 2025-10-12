@@ -1,4 +1,26 @@
 
+## 1.0.9a12 (2025-10-12)
+
+### Fix
+
+- update yml workflow file
+
+## 1.0.9a11 (2025-10-12)
+
+### Feat
+
+- Add key repeat settings and improve scrolling container functionality
+- Implement scrolling container with vertical and horizontal scrollbars
+
+### Fix
+
+- remove user input in release.yml
+- missing section in toml
+
+### Refactor
+
+- Improve event handling and widget interactions in GUI components
+
 ## 1.0.10 (2025-10-12)
 
 ### Fix
