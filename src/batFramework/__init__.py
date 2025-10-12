@@ -1,5 +1,4 @@
 __version__="1.0.9a11"
-
 import os
 import pygame
 import json
