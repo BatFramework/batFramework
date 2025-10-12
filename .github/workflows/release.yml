@@ -6,6 +6,26 @@ on:
       - master
       - dev
   workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Type of release"
+        required: false
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - stable
+          - prerelease
+      bump_type:
+        description: "Type of bump"
+        required: false
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
 
 jobs:
   release:
@@ -43,20 +63,36 @@ jobs:
       - name: Determine release type
         id: version_type
         run: |
-          if [[ "$BRANCH_NAME" == "master" ]]; then
-            echo "type=stable" >> $GITHUB_OUTPUT
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.release_type }}" && "${{ github.event.inputs.release_type }}" != "auto" ]]; then
+            TYPE="${{ github.event.inputs.release_type }}"
+          elif [[ "${{ github.ref_name }}" == "master" ]]; then
+            TYPE="stable"
           else
-            echo "type=prerelease" >> $GITHUB_OUTPUT
+            TYPE="prerelease"
           fi
-          echo "Release type: $(cat $GITHUB_OUTPUT)"
+
+          echo "type=$TYPE" >> $GITHUB_OUTPUT
+          echo "Release type: $TYPE"
+
+      - name: Determine bump type
+        id: bump_type
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.bump_type }}" ]]; then
+            BUMP="${{ github.event.inputs.bump_type }}"
+          else
+            BUMP="patch"
+          fi
+
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+          echo "Bump type: $BUMP"
 
       - name: Bump version with Commitizen
         id: bump
         run: |
           if [[ "${{ steps.version_type.outputs.type }}" == "stable" ]]; then
-            cz bump --yes
+            cz bump --yes --increment ${{ steps.bump_type.outputs.bump }}
           else
-            cz bump --yes --prerelease alpha
+            cz bump --yes --prerelease alpha --increment ${{ steps.bump_type.outputs.bump }}
           fi
           echo "version=$(cz version --project)" >> $GITHUB_OUTPUT
 
