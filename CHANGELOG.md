@@ -1,3 +1,12 @@
+## 1.0.9a12 (2025-10-12)
+
+### Fix
+
+- sigh
+- fixed typo
+- modified version string format
+- update yml workflow file
+
 ## 1.0.9a11 (2025-10-12)
 
 ### Feat
