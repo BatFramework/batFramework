@@ -53,17 +53,7 @@ def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
 
 
 def print_version():
-    # Dynamically construct the path to version.json
-    version_file = os.path.join(os.path.dirname(__file__), "version.json")
-    try:
-        with open(version_file, "r") as f:
-            version_data = json.load(f)
-            version = version_data.get("version", "unknown")
-            print(f"BatFramework version: {version}")
-    except FileNotFoundError:
-        print(f"Version file not found: {version_file}")
-    except json.JSONDecodeError:
-        print(f"Error decoding version file: {version_file}")
+    print(f"BatFramework version: {__version__}")
 
 def init(
     resolution: tuple[int, int],
