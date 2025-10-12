@@ -1,8 +1,10 @@
+__version__ = "1.0.9"
+initialized = False
+
 import pygame
 from .constants import Constants as const
 import os
 import json
-initialized = False
 
 def init(
     resolution:tuple[int,int],
@@ -58,7 +60,6 @@ from .dynamicEntity import DynamicEntity
 from .animatedSprite import AnimatedSprite, AnimState
 from .stateMachine import State, StateMachine
 from .particles import Particle, ParticleManager
-# from .debugger import Debugger
 from .scene import Scene
 from .gui import * 
 from .sceneManager import SceneManager

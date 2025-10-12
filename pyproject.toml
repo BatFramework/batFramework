@@ -31,5 +31,5 @@ update_changelog_on_bump = true
 changelog_file = "CHANGELOG.md"
 version_files = [
   "pyproject.toml:version",
-  "src/batFramework/version.json:version"
+  "src/batFramework/__init__.py:__version__"
 ]
