@@ -3,7 +3,7 @@ name: Release Dev
 on:
   push:
     branches:
-      - release-dev
+      - prerelease
 
 jobs:
   build-and-publish-dev:

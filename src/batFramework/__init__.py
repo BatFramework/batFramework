@@ -1,4 +1,7 @@
-__version__="1.0.9a12"
+import pathlib
+import tomllib
+from importlib.metadata import version, PackageNotFoundError
+
 import os
 import pygame
 import json
@@ -38,6 +41,20 @@ from .sceneManager import SceneManager
 from .manager import Manager
 from .templates import *
 
+
+
+def get_version() -> str:
+    try:
+        return version("batframework")
+    except PackageNotFoundError:
+        pyproject = pathlib.Path(__file__).resolve().parent.parent / "pyproject.toml"
+        if pyproject.exists():
+            with open(pyproject, "rb") as f:
+                data = tomllib.load(f)
+            return data["project"]["version"]
+        return "0.0.0"
+
+__version__ = get_version()
 
 def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
     const.set_resolution(resolution)
