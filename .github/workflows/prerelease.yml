@@ -1,0 +1,45 @@
+*name: Release Dev
+
+on:
+  push:
+    branches:
+      - prerelease
+
+jobs:
+  build-and-publish-dev:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine setuptools wheel
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish pre-release to PyPI
+        run: |
+          python -m twine upload --repository pypi dist/* --skip-existing
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Create GitHub prerelease
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Pre-release ${{ github.ref_name }}"
+          body: "Pre-release ${{ github.ref_name }}"
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
