@@ -20,6 +20,6 @@ requires-python = ">=3.11"
 dependencies=[
     "pygame-ce"
 ]
-
 [project.urls]
-"Homepage" = "https://github.com/TuranBaturay/batFramework"
+Homepage = "https://github.com/TuranBaturay/batFramework"
+
