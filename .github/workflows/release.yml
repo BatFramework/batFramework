@@ -110,8 +110,8 @@ jobs:
       - name: Extract latest changelog entry
         id: changelog
         run: |
-          START_LINE=$(grep -n "## v${{ steps.bump.outputs.version }}" CHANGELOG.md | cut -d: -f1)
-          END_LINE=$(tail -n +$((START_LINE+1)) CHANGELOG.md | grep -n "## v" | head -n1 | cut -d: -f1)
+          START_LINE=$(grep -n "## ${{ steps.bump.outputs.version }}" CHANGELOG.md | cut -d: -f1)
+          END_LINE=$(tail -n +$((START_LINE+1)) CHANGELOG.md | grep -n "## " | head -n1 | cut -d: -f1)
           if [ -z "$START_LINE" ]; then
             echo "No changelog section found for version."
             echo "notes=No changelog found." >> $GITHUB_OUTPUT
