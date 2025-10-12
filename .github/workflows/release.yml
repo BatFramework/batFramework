@@ -125,7 +125,8 @@ jobs:
             echo "notes<<EOF" >> $GITHUB_OUTPUT
             cat tmp_notes.txt >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
-
+          fi
+        
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
