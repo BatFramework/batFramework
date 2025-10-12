@@ -1,6 +1,6 @@
 # batFramework
 
-batFramework is a Python game framework built using Pygame, designed to simplify game development by providing entities, scenes, a scene manager, and various utilities.
+batFramework is a Python game framework built using Pygame, designed to simplify game development.
 
 ## Purpose and Overview
 The primary objective of batFramework is to streamline game development. It is mainly designed to program small 2D games
@@ -32,5 +32,3 @@ For more detailed information, please refer to the [documentation](https://batfr
 
 # License
  MIT License
-
-

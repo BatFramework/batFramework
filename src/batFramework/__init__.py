@@ -1,67 +1,99 @@
-__version__ = "1.0.10"
-initialized = False
+import pathlib
+import tomllib
+from importlib.metadata import version, PackageNotFoundError
 
-import pygame
-from .constants import Constants as const
+def get_version() -> str:
+    try:
+        return version("batframework")
+    except PackageNotFoundError:
+        pyproject = pathlib.Path(__file__).resolve().parent.parent / "pyproject.toml"
+        if pyproject.exists():
+            with open(pyproject, "rb") as f:
+                data = tomllib.load(f)
+            return data["project"]["version"]
+        return "0.0.0"
+
+__version__ = get_version()
+
 import os
+import pygame
 import json
-
-def init(
-    resolution:tuple[int,int],
-    flags:int=0,
-    vsync:int = 0,
-    default_text_size=None,
-    default_font=None,
-    resource_path:str|None=None,
-    window_title:str="BatFramework Project",
-    fps_limit : int = 0
-    ):
-    global initialized
-    if not initialized:
-        pygame.init()
-        pygame.display.set_caption(window_title)
-
-        # Initialize display
-        const.init_screen(resolution,flags,vsync)
-        const.set_fps_limit(fps_limit)
-
-        # Initialize default text size
-        if default_text_size: const.set_default_text_size(default_text_size)
-        # Initialize resource path for game data
-        if resource_path: const.set_resource_path(resource_path)
-
-        # Initialize default font cache
-        from .utils import Utils
-        if default_font is None or isinstance(default_font,str):
-            Utils.init_font(default_font)
-        else:
-            raise ValueError(f"default_font '{default_font}' can be either string or None")
-        
-        f = list(Utils.FONTS[None].values())[0]
-        print(f"Set default font to : {f.name} {'' if default_font is not None else '(default value)'}")
-        initialized = True
-
-from .constants import Colors as color
-from .constants import Axis as axis
+import batFramework as bf
+from .constants import Constants as const
 from .utils import Singleton
+from .enums import *
+from .resourceManager import ResourceManager
+from .fontManager import FontManager
 from .utils import Utils as utils
-from .time import Time, Timer
-from .cutscene import Cutscene,CutsceneManager
-from .cutsceneBlocks import *
-from .easing import Easing, EasingAnimation
+from .tileset import Tileset
+from .timeManager import TimeManager,Timer,SceneTimer
+from .easingController import EasingController
+from .propertyEaser import PropertyEaser
+from .cutsceneManager import CutsceneManager
+import batFramework.cutscene as cutscene
 from .audioManager import AudioManager
-from .utils import Layout, Alignment, Direction
-from .transition import *
+import batFramework.transition as transition
 from .action import Action
-from .actionContainer import ActionContainer
+from .actionContainer import *
 from .camera import Camera
 from .entity import Entity
+from .drawable import Drawable
+from .renderGroup import RenderGroup
 from .dynamicEntity import DynamicEntity
-from .animatedSprite import AnimatedSprite, AnimState
+from .sprite import Sprite
+from .scrollingSprite import ScrollingSprite
+from .particle import *
+from .animation import Animation
+from .animatedSprite import AnimatedSprite
 from .stateMachine import State, StateMachine
-from .particles import Particle, ParticleManager
+from .sceneLayer import SceneLayer
 from .scene import Scene
-from .gui import * 
+from .baseScene import BaseScene
+import batFramework.gui as gui
 from .sceneManager import SceneManager
 from .manager import Manager
+from .templates import *
 
+
+
+
+def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
+    const.set_resolution(resolution)
+    const.FLAGS = flags
+    const.VSYNC = vsync
+    const.SCREEN = pygame.display.set_mode(
+        const.RESOLUTION, const.FLAGS, vsync=const.VSYNC
+    )
+    print(
+        f"Window : {resolution[0]}x{resolution[1]}"
+    )
+
+
+def print_version():
+    print(f"BatFramework version: {__version__}")
+
+def init(
+    resolution: tuple[int, int],
+    flags: int = 0,
+    window_caption: str = "BatFramework Project",
+    resource_path: str | None = None,
+    default_font_size=None,
+    default_font=None,
+    fps_limit: int = 0,
+    vsync: int = 0,
+):
+    print_version()
+    pygame.display.set_caption(window_caption)
+    init_screen(resolution, flags, vsync)
+    pygame.mixer.init()
+    
+    ResourceManager().set_resource_path(
+        resource_path if resource_path is not None else "."
+    )
+    if resource_path is not None:
+        ResourceManager().load_resources(ResourceManager().RESOURCE_PATH)
+    if default_font_size is not None:
+        FontManager().set_default_text_size(default_font_size)
+    FontManager().init_font(default_font)
+    const.BF_INITIALIZED = True
+    const.set_fps_limit(fps_limit)

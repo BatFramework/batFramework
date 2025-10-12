@@ -1,23 +1,61 @@
 import batFramework as bf
 from .widget import Widget
+from .shape import Shape
 import pygame
-class Image(Widget):
-	def __init__(self,data:pygame.Surface|str,size:None|tuple[int,int]=None,convert_alpha=True):
-		super().__init__(False)
-		self.surface = None
-		if isinstance(data,str):
-			path = bf.utils.get_path(data)
-			self.original_surface=pygame.image.load(path)
-		elif isinstance(data,pygame.Surface):
-			self.original_surface = data
-			
-		if convert_alpha:	self.original_surface = self.original_surface.convert_alpha()
-		if not size : size = self.original_surface.get_size()
-		self.set_size(*size)
+from typing import Self
 
 
-	def build(self)->None:
-		if not self.surface or self.surface.get_size() != self.get_size_int():
-			self.surface = pygame.transform.scale(self.original_surface,self.get_size_int())
-			
-            
+class Image(Shape):
+    def __init__(
+        self,
+        path: str = None,
+        convert_alpha=True,
+    ):
+        self.original_surface = None
+        super().__init__(convert_alpha=convert_alpha)
+        if path is not None:
+            self.from_path(path)
+
+    def __str__(self) -> str:
+        return "Image"
+
+    def paint(self) -> None:
+        super().paint()
+        if self.original_surface is None:
+            return
+        padded = self.get_inner_rect().move(-self.rect.x,-self.rect.y)
+        target_size = padded.size
+        if self.original_surface.get_size() != target_size:
+            self.surface.blit(pygame.transform.scale(self.original_surface, target_size), padded.topleft)
+        else:
+            self.surface.blit(self.original_surface, padded.topleft)
+
+    def build(self) -> None:
+        if self.original_surface is not None:
+            self.set_size(
+                self.expand_rect_with_padding((0,0,*self.original_surface.get_size())).size
+            )
+        super().build()
+
+
+    def from_path(self, path: str) -> Self:
+        tmp = bf.ResourceManager().get_image(path, self.convert_alpha)
+        if tmp is None:
+            return self
+        self.original_surface = tmp
+        # size = self.original_surface.get_size()
+        # self.set_size(size)
+        self.dirty_shape = True
+        self.dirty_surface = True
+        return self
+
+    def from_surface(self, surface: pygame.Surface) -> Self:
+        if surface is None:
+            return self
+        self.original_surface = surface
+        # size = self.original_surface.get_size()
+        # self.set_size(size)
+        self.dirty_shape = True
+
+        self.dirty_surface = True
+        return self

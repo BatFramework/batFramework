@@ -9,11 +9,14 @@ dist/
 build/
 project/
 test/
-HalloweenGamejam/
 src/batframework.egg-info
 new/
-.venv
-.vscode
-testing
-HalloweenGamejam
-game
+build_version.sh
+notes.txt
+gamejam/
+/game
+/testing
+/HalloweenGamejam
+test_gamejam_extract/
+.vscode/
+>>>>>>> dev

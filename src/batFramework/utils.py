@@ -1,11 +1,16 @@
 import pygame
-from enum import Enum
-import os
 import batFramework as bf
-import json
+import math
+import random
+from .enums import *
+import re
+from typing import Callable, TYPE_CHECKING
+from functools import cache
+if TYPE_CHECKING:
+    from .drawable import Drawable
+    from .entity import Entity
+from pygame.math import Vector2
 
-MAX_FONT_SIZE = 100
-MIN_FONT_SIZE = 8
 
 class Singleton(type):
     _instances = {}
@@ -16,169 +21,286 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class Direction(Enum):
-    HORIZONTAL = "horizontal"
-    VERTICAL = "vertical"
-
-
-class Alignment(Enum):
-    LEFT = "left"
-    RIGHT = "right"
-    CENTER = "center"
-    TOP = "top"
-    BOTTOM = "bottom"
-
-
-class Layout(Enum):
-    FILL = "fill"
-    FIT = "fit"
-
-
 class Utils:
-    pygame.font.init()
-    FONTS = {}
-    tilesets = {}
 
     @staticmethod
-    def get_path(path: str):
-        return os.path.join(bf.const.RESOURCE_PATH, path)
+    def split_surface(
+        surface: pygame.Surface, split_size: tuple[int, int], func=None
+    ) -> dict[tuple[int, int], pygame.Surface]:
+        """
+        Splits a surface into subsurfaces based on a given size and returns a dictionary of them with their coordinates as keys.
 
-    @staticmethod
-    def load_json_from_file(path: str) -> dict:
-        try:
-            with open(Utils.get_path(path), "r") as file:
-                data = json.load(file)
-            return data
-        except FileNotFoundError:
-            print(f"File '{path}' not found")
-            return None
+        Args:
+            surface (pygame.Surface): The surface to be split.
+            split_size (tuple[int, int]): The size of each subsurface (width, height).
+            func (callable, optional): A function to apply to each subsurface. Defaults to None.
 
-    @staticmethod
-    def save_json_to_file(path: str, data) -> bool:
-        try:
-            with open(Utils.get_path(path), "w") as file:
-                json.dump(data, file, indent=2)
-            return True
-        except FileNotFoundError:
-            return False
-            
-    @staticmethod
-    def init_font(raw_path:str):
-            try :
-                if raw_path is not None:
-                    Utils.load_font(raw_path if raw_path else None,None)
-                Utils.load_font(raw_path)
-            except FileNotFoundError:
-                Utils.load_sysfont(raw_path)
-                Utils.load_sysfont(raw_path,None)
+        Returns:
+            dict[tuple[int, int], pygame.Surface]: A dictionary with (x, y) coordinates as keys and the corresponding subsurfaces as values.
+        """
+        width, height = surface.get_size()
+        res = {}
+        for iy, y in enumerate(range(0, height, split_size[1])):
+            for ix, x in enumerate(range(0, width, split_size[0])):
+                sub = surface.subsurface((x, y, split_size[0], split_size[1]))
 
+                if func is not None:
+                    sub = func(sub)
 
-    @staticmethod
-    def load_font(path:str,name:str=''):
-        if path is not None: path = Utils.get_path(path) # convert path if given
-        filename = os.path.basename(path).split('.')[0] if path is not None else None # get filename if path is given, else None
-        if name != '' : filename = name # if name is not given, name is the filename
-        Utils.FONTS[filename] = {}
-        # fill the dict 
-        for size in range(MIN_FONT_SIZE, MAX_FONT_SIZE, 2):
-            Utils.FONTS[filename][size] = pygame.font.Font(path,size=size)
+                res[(ix, iy)] = sub
 
-    def load_sysfont(font_name:str,key:str=''):
-        if key == '' : key = font_name
-        if pygame.font.match_font(font_name) is None: 
-            raise FileNotFoundError(f"Requested font '{font_namey}' was not found")
-        Utils.FONTS[font_name] = {}
-
-        for size in range(MIN_FONT_SIZE, MAX_FONT_SIZE, 2):
-            Utils.FONTS[key][size] = pygame.font.SysFont(font_name,size=size)  
-              
-
-    @staticmethod
-    def get_font(name:str|None=None,text_size:int=12) -> pygame.Font:
-        if not name in Utils.FONTS: return None
-        if not text_size in Utils.FONTS[name]: return None
-        return Utils.FONTS[name][text_size]
-
-    class Tileset:
-        _flip_cache = {}  # {"tileset":tileset,"index","flipX","flipY"}
-
-        def __init__(self, surface: pygame.Surface, tilesize) -> None:
-            self.tile_dict = {}
-            self.surface = surface
-            self.tile_size = tilesize
-            self.split_surface(surface)
-
-        def split_surface(self, surface: pygame.Surface):
-            width, height = surface.get_size()
-            num_tiles_x = width // self.tile_size
-            num_tiles_y = height // self.tile_size
-            # Iterate over the tiles vertically and horizontally
-            for y in range(num_tiles_y):
-                for x in range(num_tiles_x):
-                    # Calculate the coordinates of the current tile in the tileset
-                    tile_x = x * self.tile_size
-                    tile_y = y * self.tile_size
-                    # Create a subsurface for the current tile
-                    tile_surface = surface.subsurface(
-                        pygame.Rect(tile_x, tile_y, self.tile_size, self.tile_size)
-                    )
-                    # Calculate the unique key for the tile (e.g., based on its coordinates)
-                    tile_key = (x, y)
-                    # Store the subsurface in the dictionary with the corresponding key
-                    self.tile_dict[tile_key] = tile_surface
-            # print(self.tile_dict)
-
-        def get_tile(self, x, y, flipX=False, flipY=False) -> pygame.Surface | None:
-            if (x, y) not in self.tile_dict:
-                return None
-            if flipX or flipY:
-                key = f"{x}{y}:{flipX}{flipY}"
-                if not key in self._flip_cache:
-                    self._flip_cache[key] = pygame.transform.flip(
-                        self.tile_dict[(x, y)], flipX, flipY
-                    )
-                return self._flip_cache[key]
-            return self.tile_dict[(x, y)]
-
-    @staticmethod
-    def img_slice(file, cell_width, cell_height, flipX=False) -> list[pygame.Surface]:
-        src = pygame.image.load(
-            os.path.join(bf.const.RESOURCE_PATH, file)
-        ).convert_alpha()
-        width, height = src.get_size()
-        res = []
-        for y in range(0, height, cell_height):
-            for x in range(0, width, cell_width):
-                sub = src.subsurface((x, y, cell_width, cell_height))
-                if flipX:
-                    sub = pygame.transform.flip(sub, True, False)
-
-                res.append(sub)
         return res
 
-    def load_tileset(path: str, name: str, tilesize):
-        if name in Utils.tilesets:
-            return Utils.tilesets[name]
+    @staticmethod
+    def filter_text(text_mode: textMode):
+        """
+        Filters a string based on the specified text mode.
+
+        Args:
+            text_mode (textMode): Mode specifying the type of filtering (ALPHABETICAL, NUMERICAL, ALPHANUMERICAL).
+
+        Returns:
+            callable: A function that takes a string and removes all characters not allowed by the text mode.
+
+        Raises:
+            ValueError: If an unsupported text mode is provided.
+        """
+
+        if text_mode == textMode.ALPHABETICAL:
+            pattern = re.compile(r"[^a-zA-Z]")
+        elif text_mode == textMode.NUMERICAL:
+            pattern = re.compile(r"[^0-9]")
+        elif text_mode == textMode.ALPHANUMERICAL:
+            pattern = re.compile(r"[^a-zA-Z0-9]")
         else:
-            img = pygame.image.load(
-                os.path.join(bf.const.RESOURCE_PATH, path)
-            ).convert_alpha()
-            tileset = Utils.Tileset(img, tilesize)
-            Utils.tilesets[name] = tileset
-            return tileset
+            raise ValueError("Unsupported text mode")
+
+        def filter_function(s: str) -> str:
+            return pattern.sub("", s)
+
+        return filter_function
+
 
     @staticmethod
-    def get_tileset(name: str) -> Tileset:
-        if name not in Utils.tilesets:
-            return None
-        return Utils.tilesets[name]
+    def create_spotlight(inside_color, outside_color, radius, radius_stop=None, dest_surf=None,size=None):
+        """
+        Creates a spotlight effect on a surface with a gradient from inside_color to outside_color.
+
+        Args:
+            inside_color (tuple[int, int, int]): RGB color at the center of the spotlight.
+            outside_color (tuple[int, int, int]): RGB color at the outer edge of the spotlight.
+            radius (int): Radius of the inner circle.
+            radius_stop (int, optional): Radius where the spotlight ends. Defaults to the value of radius.
+            dest_surf (pygame.Surface, optional): Surface to draw the spotlight on. Defaults to None.
+            size (tuple[int, int], optional): Size of the surface if dest_surf is None. Defaults to a square based on radius_stop.
+
+        Returns:
+            pygame.Surface: The surface with the spotlight effect drawn on it.
+        """
+
+        if radius_stop is None:
+            radius_stop = radius
+        diameter = radius_stop * 2
+
+        if dest_surf is None:
+            if size is None:
+                size = (diameter,diameter)
+            dest_surf = pygame.Surface(size, pygame.SRCALPHA)
+        
+        dest_surf.fill((0,0,0,0))
 
 
+        center = dest_surf.get_rect().center
+
+        if radius_stop != radius:
+            for r in range(radius_stop, radius - 1, -1):
+                color = [
+                    inside_color[i] + (outside_color[i] - inside_color[i]) * (r - radius) / (radius_stop - radius)
+                    for i in range(3)
+                ] + [255]  # Preserve the alpha channel as fully opaque
+                pygame.draw.circle(dest_surf, color, center, r)
+        else:
+            pygame.draw.circle(dest_surf, inside_color, center, radius)
+
+        return dest_surf
+
+    @staticmethod
+    def draw_spotlight(dest_surf:pygame.Surface,inside_color,outside_color,radius,radius_stop=None,center=None):
+        """
+        Draws a spotlight effect directly onto an existing surface.
+
+        Args:
+            dest_surf (pygame.Surface): The surface to draw the spotlight on.
+            inside_color (tuple[int, int, int]): RGB color at the center of the spotlight.
+            outside_color (tuple[int, int, int]): RGB color at the outer edge of the spotlight.
+            radius (int): Radius of the inner circle.
+            radius_stop (int, optional): Radius where the spotlight ends. Defaults to the value of radius.
+            center (tuple[int, int], optional): Center point of the spotlight. Defaults to the center of dest_surf.
+        """
+
+        if radius_stop is None:
+            radius_stop = radius
+        center = dest_surf.get_rect().center if center is None else center
+        if radius_stop != radius:
+            for r in range(radius_stop, radius - 1, -1):
+                color = [
+                    inside_color[i] + (outside_color[i] - inside_color[i]) * (r - radius) / (radius_stop - radius)
+                    for i in range(3)
+                ] + [255]
+                pygame.draw.circle(dest_surf, color, center, r)
+        else:
+            pygame.draw.circle(dest_surf, inside_color, center, radius)
+
+
+    @staticmethod
+    def random_color(min_value: int = 0, max_value: int = 255) -> tuple[int, int, int]:
+        """
+        Generates a random color as an RGB tuple.
+
+        Args:
+            min_value (int): Minimum value for each RGB component (inclusive). Defaults to 0.
+            max_value (int): Maximum value for each RGB component (inclusive). Defaults to 255.
+
+        Returns:
+            tuple[int, int, int]: A tuple representing a random color in RGB format, with each component 
+            between min_value and max_value.
+        """
+        return random.randint(min_value, max_value), random.randint(min_value, max_value), random.randint(min_value, max_value)
+
+    @staticmethod
+    def random_point_on_screen(margin: int = 0) -> tuple[int, int]:
+        """
+        Generates a random point on the screen, considering a margin from the edges.
+
+        Args:
+            margin (int): Margin from the screen edges, where the point won't be generated. 
+                        If margin is less than 0 or greater than half the screen resolution, returns (0, 0).
+
+        Returns:
+            tuple[int, int]: A tuple representing a random point (x, y) on the screen within the screen 
+            resolution minus the margin.
+        """
+        if margin < 0 or margin > bf.const.RESOLUTION[0]//2 or margin > bf.const.RESOLUTION[1]//2:
+            return 0, 0
+        return random.randint(margin, bf.const.RESOLUTION[0] - margin), random.randint(margin, bf.const.RESOLUTION[1] - margin)
+
+    @staticmethod
+    def distance_point(a:tuple[float,float],b:tuple[float,float]):
+        return math.sqrt((a[0]-b[0]) ** 2 + (a[1]-b[1])**2)
+
+    @staticmethod
+    def rotate_point(point: Vector2, angle: float, center: Vector2) -> Vector2:
+        """Rotate a point around a center by angle (in degrees)."""
+        rad = math.radians(angle)
+        translated = point - center
+        rotated = Vector2(
+            translated.x * math.cos(rad) - translated.y * math.sin(rad),
+            translated.x * math.sin(rad) + translated.y * math.cos(rad)
+        )
+        return rotated + center
+
+ 
+    def draw_triangle(surface:pygame.Surface, color, rect:pygame.FRect|pygame.Rect, direction:bf.enums.direction=bf.enums.direction.RIGHT,width:int=0):
+        """
+        Draw a filled triangle inside a rectangle on a Pygame surface, pointing in the specified direction.
+        
+        Args:
+            surface: The Pygame surface to draw on.
+            color: The color of the triangle (e.g., (255, 0, 0) for red).
+            rect: A pygame.Rect object defining the rectangle's position and size.
+            direction: A string ('up', 'down', 'left', 'right') indicating the triangle's orientation.
+        """
+        # Define the three vertices of the triangle based on direction
+        rect = rect.copy()
+        rect.inflate_ip(-1,-1)
+        if direction == direction.UP:
+            points = [
+                (rect.left, rect.bottom),      # Bottom-left corner
+                (rect.right, rect.bottom),     # Bottom-right corner
+                (rect.centerx, rect.top)       # Top center (apex)
+            ]
+        elif direction == direction.DOWN:
+            points = [
+                (rect.left, rect.top),         # Top-left corner
+                (rect.right, rect.top),        # Top-right corner
+                (rect.centerx, rect.bottom)    # Bottom center (apex)
+            ]
+        elif direction == direction.LEFT:
+            points = [
+                (rect.right, rect.top),        # Top-right corner
+                (rect.right, rect.bottom),     # Bottom-right corner
+                (rect.left, rect.centery)      # Left center (apex)
+            ]
+        elif direction == direction.RIGHT:
+            points = [
+                (rect.left, rect.top),         # Top-left corner
+                (rect.left, rect.bottom),      # Bottom-left corner
+                (rect.right, rect.centery)     # Right center (apex)
+            ]
+        else:
+            raise ValueError("Invalid direction")
+
+        # Draw the filled triangle
+        pygame.draw.polygon(surface, color, points,width=width)
+
+    def draw_arc_by_points(surface, color, start_pos, end_pos, tightness=0.5, width=1, resolution=0.5,antialias:bool=False):
+        """
+        Draw a smooth circular arc connecting start_pos and end_pos.
+        `tightness` controls curvature: 0 is straight line, 1 is semicircle, higher = more bulge.
+        Negative tightness flips the bulge direction.
+
+        Args:
+            surface     - pygame Surface
+            color       - RGB or RGBA
+            start_pos   - (x, y)
+            end_pos     - (x, y)
+            tightness   - curvature control, 0 = straight, 1 = half circle
+            width       - line width
+            resolution  - approx pixels per segment
+        Returns:
+            pygame.Rect bounding the drawn arc
+        """
+        p0 = pygame.Vector2(start_pos)
+        p1 = pygame.Vector2(end_pos)
+        chord = p1 - p0
+        if chord.length_squared() == 0:
+            if antialias:
+                return pygame.draw.aacircle(surface, color, p0, width // 2)
+            return pygame.draw.circle(surface, color, p0, width // 2)
+
+        # Midpoint and perpendicular
+        mid = (p0 + p1) * 0.5
+        perp = pygame.Vector2(-chord.y, chord.x).normalize()
+
+        # Distance of center from midpoint, based on tightness
+        h = chord.length() * tightness
+        center = mid + perp * h
+
+        # Radius and angles
+        r = (p0 - center).length()
+        ang0 = math.atan2(p0.y - center.y, p0.x - center.x)
+        ang1 = math.atan2(p1.y - center.y, p1.x - center.x)
+
+        # Normalize sweep direction based on sign of tightness
+        sweep = ang1 - ang0
+        if tightness > 0 and sweep < 0:
+            sweep += 2 * math.pi
+        elif tightness < 0 and sweep > 0:
+            sweep -= 2 * math.pi
+
+        # Number of points
+        arc_len = abs(sweep * r)
+        segs = max(2, int(arc_len / max(resolution, 1)))
+
+        points = []
+        for i in range(segs + 1):
+            t = i / segs
+            a = ang0 + sweep * t
+            points.append((
+                center.x + math.cos(a) * r,
+                center.y + math.sin(a) * r
+            ))
+        if antialias:
+            return pygame.draw.aalines(surface, color, False, points)
     
-
-
-def move_points(delta, *points):
-    res = []
-    for point in points:
-        res.append((point[0] + delta[0], point[1] + delta[1]))
-    return res
+        return pygame.draw.lines(surface, color, False, points, width)
