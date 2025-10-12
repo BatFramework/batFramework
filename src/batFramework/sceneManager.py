@@ -1,165 +1,200 @@
 import batFramework as bf
 import pygame
+from typing import Self
 
+def swap(lst, index1, index2):
+    lst[index1], lst[index2] = lst[index2], lst[index1]
 
 
 class SceneManager:
-    def __init__(self, *initial_scenes: bf.Scene) -> None:
-        self._debugging = 0
-        self.sharedVarDict = {}
+    def __init__(self) -> None:
+        self.scenes: list[bf.BaseScene] = []
+        self.shared_events = {pygame.WINDOWRESIZED}
+        self.current_transition : tuple[str,bf.transition.Transition,int] | None= None
 
-        self.transitions: list[bf.BaseTransition] = []
-        self.set_sharedVar("is_debugging_func", lambda: self._debugging)
-        self.set_sharedVar("in_transition", False)
-        self.set_sharedVar("in_cutscene", False)
-
-        self._scenes: list[bf.Scene] = list(initial_scenes)
-        for index,s in enumerate(self._scenes):
-            s.set_manager(self)
+    def init_scenes(self, *initial_scenes:bf.Scene):
+        for index, s in enumerate(initial_scenes):
             s.set_scene_index(index)
-            s.do_when_added()
-        self.set_scene(self._scenes[0]._name)
+        for s in reversed(initial_scenes):
+            self.add_scene(s)
+        self.set_scene(initial_scenes[0].get_name())
         self.update_scene_states()
 
+    def set_shared_event(self, event: pygame.Event) -> None:
+        """
+        Add an event that will be propagated to all active scenes, not just the one on top.
+        """
+        self.shared_events.add(event)
+
     def print_status(self):
-        print("-" * 40)
-        print([(s._name, s._active, s._visible,s.scene_index) for s in self._scenes])
-        print(f"[Debugging] = {self._debugging}")
-        print("---SHARED VARIABLES---")
-        _ = [
-            print(f"[{str(name)} = {str(value)}]")
-            for name, value in self.sharedVarDict.items()
-        ]
-        print("-" * 40)
+        """
+        Print detailed information about the current state of the scenes and shared variables.
+        """
 
-    def set_sharedVar(self, name, value) -> bool:
-        self.sharedVarDict[name] = value
-        return True
+        def format_scene_info(scene:bf.Scene):
+            status = 'Active' if scene.active else 'Inactive'
+            visibility = 'Visible' if scene.visible else 'Invisible'
+            return f"{scene.name:<30} | {status:<8} | {visibility:<10} | Index={scene.scene_index}"
 
-    def get_sharedVar(self, name):
-        if name not in self.sharedVarDict:
-            return None
-        return self.sharedVarDict[name]
-    
-    def get_current_scene_name(self)-> str:
-        return self._scenes[0].name
-    
-    def get_current_scene(self)->bf.Scene:
-        return self._scenes[0]
+        def format_shared_variable(name, value):
+            return f"[{name}] = {value}"
+
+        print("\n" + "=" * 50)
+        print(" SCENE STATUS".center(50))
+        print("=" * 50)
+
+        # Print scene information
+        if self.scenes:
+            header = f"{'Scene Name':<30} | {'Status':<8} | {'Visibility':<10} | {'Index':<7}"
+            print(header)
+            print("-" * 50)
+            print("\n".join(format_scene_info(s) for s in self.scenes))
+        else:
+            print("No scenes available.")
+
+        # Print debugging mode status
+        print("\n" + "=" * 50)
+        print(" DEBUGGING STATUS".center(50))
+        print("=" * 50)
+        print(f"[Debugging Mode] = {bf.ResourceManager().get_sharedVar('debug_mode')}")
+
+        # Print shared variables
+        print("\n" + "=" * 50)
+        print(" SHARED VARIABLES".center(50))
+        print("=" * 50)
+
+        if bf.ResourceManager().shared_variables:
+            for name, value in bf.ResourceManager().shared_variables.items():
+                print(format_shared_variable(name, value))
+        else:
+            print("No shared variables available.")
+
+        print("=" * 50 + "\n")
+
+    def get_current_scene_name(self) -> str:
+        """get the name of the current scene"""
+        return self.scenes[0].get_name()
+
+    def get_current_scene(self) -> bf.Scene:
+        return self.scenes[0]
 
     def update_scene_states(self):
-        self.active_scenes = [s for s in reversed(self._scenes) if s._active]
-        self.visible_scenes = [s for s in reversed(self._scenes) if s._visible]
+        self.active_scenes = [s for s in reversed(self.scenes) if s.active]
+        self.visible_scenes = [s for s in reversed(self.scenes) if s.visible]
 
     def add_scene(self, scene: bf.Scene):
-        if scene in self._scenes and not self.has_scene(scene._name):
+        if scene in self.scenes and not self.has_scene(scene.name):
             return
         scene.set_manager(self)
-        scene.do_when_added()
-        self._scenes.insert(0, scene)
+        scene.when_added()
+        self.scenes.insert(0, scene)
 
     def remove_scene(self, name: str):
-        self._scenes = [s for s in self._scenes if s._name != name]
+        self.scenes = [s for s in self.scenes if s.name != name]
 
-    def has_scene(self, name):
-        return any(name == scene._name for scene in self._scenes)
+    def has_scene(self, name:str):
+        return any(name == scene.name for scene in self.scenes)
 
-    def get_scene(self, name):
+    def get_scene(self, name:str):
         if not self.has_scene(name):
             return None
-        for scene in self._scenes:
-            if scene._name == name:
+        for scene in self.scenes:
+            if scene.name == name:
                 return scene
 
-    def transition_to_scene(self, dest_scene_name, transition, **kwargs):
-        if not self.has_scene(dest_scene_name):
-            return False
-        source_surf = pygame.Surface(bf.const.RESOLUTION,pygame.SRCALPHA).convert_alpha()
-        dest_surf = pygame.Surface(bf.const.RESOLUTION,pygame.SRCALPHA).convert_alpha()
+    def get_scene_at(self, index: int) -> bf.Scene | None:
+        if index < 0 or index >= len(self.scenes):
+            return None
+        return self.scenes[index]
 
-        index = kwargs.pop("index",0)
-        #draw the surfaces
-        source_scenes = [s for s in self.visible_scenes if s.scene_index >= index and s._visible]
-        # source_scenes = self.visible_scenes
-        _ = [s.draw(source_surf) for s in source_scenes] 
-        # self._scenes[index].draw(source_surf)
+    def transition_to_scene(
+        self,
+        scene_name: str,
+        transition: bf.transition.Transition = None,
+        index: int = 0,
+    ):
+        if transition is None:
+            transition = bf.transition.Fade(0.1)
+        if not (target_scene := self.get_scene(scene_name)):
+            print(f"Scene '{scene_name}' does not exist")
+            return
+        if not (source_scene := self.get_scene_at(index)):
+            print(f"No scene exists at index {index}.")
+            return       
+        
+        source_surface = bf.const.SCREEN.copy()
+        dest_surface = bf.const.SCREEN.copy()
 
-        # pygame.image.save_extended:(source_surf,"source_surface.png")
-        self.get_scene(dest_scene_name).draw(dest_surf)
-        # pygame.image.save_extended(dest_surf,"dest_surface.png")
+        target_scene.draw(dest_surface) # draw at least once to ensure smooth transition
+        target_scene.set_active(True)
+        target_scene.set_visible(True)
 
-        # print(f"start transition from {self._scenes[index]._name} to {dest_scene_name}")
+        target_scene.do_on_enter_early() 
+        source_scene.do_on_exit_early()
 
-        instance: bf.BaseTransition = transition(
-            source_surf, dest_surf, **kwargs
-        )
-        instance.set_scene_index(index)
-        instance.set_source_name(self._scenes[index]._name)
-        instance.set_dest_name(dest_scene_name)
-        self.transitions.append(instance)
-        self.set_sharedVar("in_transition", True)
+        self.current_transition :tuple[str,bf.transition.Transition]=(scene_name,transition,index)
+        transition.set_source(source_surface)
+        transition.set_dest(dest_surface)
+        transition.start()
 
-    def set_scene(self, name,index=0):
-        if len(self._scenes)==0 or not self.has_scene(name) or index>=len(self._scenes):return
 
-        target_scene = self.get_scene(name)
-        old_scene = self._scenes[index]
 
-        # print(f"switch from {old_scene._name} to  {target_scene._name} in index {index}")
+    def set_scene(self, scene_name, index=0, ignore_early: bool = False):
+        target_scene = self.get_scene(scene_name)
+        if not target_scene:
+            print(f"'{scene_name}' does not exist")
+            return
+        if len(self.scenes) == 0 or index >= len(self.scenes) or index < 0:
+            return
 
-        #switch
-        old_scene.on_exit()
-        self.remove_scene(name)
-        self._scenes.insert(index,target_scene)
-        _ = [s.set_scene_index(i) for i,s in enumerate(self._scenes)]
+        # switch
+        if not ignore_early:
+            self.scenes[index].do_on_exit_early()
+        self.scenes[index].on_exit()
+        # re-insert scene at index 0
+        self.scenes.remove(target_scene)
+        self.scenes.insert(index, target_scene)
+        _ = [s.set_scene_index(i) for i, s in enumerate(self.scenes)]
+        if not ignore_early:
+            self.scenes[index].do_on_enter_early()
         target_scene.on_enter()
 
 
+
+    def cycle_debug_mode(self):
+        current_index = bf.ResourceManager().get_sharedVar("debug_mode").value
+        next_index = (current_index + 1) % len(bf.debugMode)
+        bf.ResourceManager().set_sharedVar("debug_mode", bf.debugMode(next_index))
+        return bf.debugMode(next_index)
+    
+    def set_debug_mode(self,debugMode : bf.debugMode):
+        bf.ResourceManager().set_sharedVar("debug_mode", debugMode)
+
     def process_event(self, event: pygame.Event):
-        if self.transitions:
-            return
-        keys = pygame.key.get_pressed()
-        if (
-            keys[pygame.K_LCTRL]
-            and event.type == pygame.KEYDOWN
-            and event.key == pygame.K_d
-        ):
-            self._debugging = (self._debugging + 1) % 3
-            return
-        elif (
-            keys[pygame.K_LCTRL]
-            and event.type == pygame.KEYDOWN
-            and event.key == pygame.K_p
-        ):
-            self.print_status()
-        self._scenes[0].process_event(event)
+
+        if event.type in self.shared_events:
+            [s.process_event(event) for s in self.scenes]
+        else:
+            self.scenes[0].process_event(event)
 
     def update(self, dt: float) -> None:
-        if self.transitions:
-            transition = self.transitions[0]
-            transition.update(dt)
-            if transition.has_ended():
-                self.set_sharedVar("in_transition", False)
-                self.set_scene(transition.dest_scene_name,transition.index)
-
-                self.transitions.pop(0)
-            return
         for scene in self.active_scenes:
             scene.update(dt)
+        if self.current_transition and self.current_transition[1].is_over:
+            self.set_scene(self.current_transition[0],self.current_transition[2],True)
+            self.current_transition = None
         self.do_update(dt)
 
     def do_update(self, dt: float):
-        return
+        pass
 
-    def draw(self, surface) -> None:
-        transition_scene_index = -1
-        visible_scenes = self.visible_scenes.copy()
-        if self.transitions:
-            transition_scene_index = self.transitions[0].index
-            
-        if transition_scene_index >=0:
-            self.transitions[0].draw(surface)
-            visible_scenes = [s  for s in visible_scenes if s.scene_index < transition_scene_index]
-
-        for scene in visible_scenes:
+    def draw(self, surface:pygame.Surface) -> None:
+        for scene in self.visible_scenes:
             scene.draw(surface)
+        if self.current_transition is not None:
+            self.current_transition[1].set_source(surface)
+            tmp = surface.copy()
+            self.get_scene(self.current_transition[0]).draw(tmp)
+            self.current_transition[1].set_dest(tmp)
+            self.current_transition[1].draw(surface)
+

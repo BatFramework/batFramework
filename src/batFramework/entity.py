@@ -1,51 +1,68 @@
+from typing import Any, Self
 import pygame
 import batFramework as bf
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .camera import Camera
+
 
 class Entity:
-    instance_num = 0
-    def __init__(
-        self,
-        size : None|tuple[int,int]=None,
-        no_surface : bool   =False,
-        surface_flags : int =0,
-        convert_alpha : bool=False
-    ) -> None:
-        self.convert_alpha = convert_alpha
-        if size is None:
-            size= (100,100)
-            
-        if no_surface:
-            self.surface = None
+    _count: int = 0
+    _available_uids: set[int] = set()
+
+    def __init__(self,*args,**kwargs) -> None:
+        if Entity._available_uids:
+            self.uid = Entity._available_uids.pop()
         else:
-            self.surface = (pygame.Surface(size, surface_flags))
-
-        if convert_alpha and self.surface is not None:
-            self.surface = self.surface.convert_alpha()
-            self.surface.fill((0,0,0,0))
-
-        self.uid: Any = Entity.instance_num
+            self.uid = Entity._count
+            Entity._count += 1
+        size = kwargs.get("size",(10,10))
+        self.rect = pygame.FRect(0, 0, *size)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
-        self.rect = pygame.FRect(0, 0, *size)
-        
-        self.visible = True
-        self._debug_color : tuple = bf.color.DARK_RED
-        self.render_order = 0
-        self.z_depth = 1
-        Entity.instance_num += 1
+        self.parent_layer: bf.SceneLayer | None = None
+        self.debug_color: tuple | str = "red"
 
-    def get_bounding_box(self):
-        yield (self.rect,self._debug_color)
+    def __del__(self):
+        try:
+            Entity._available_uids.add(self.uid)
+        except AttributeError:
+            pass
+    def set_position(self, x, y) -> Self:
+        self.rect.topleft = x, y
+        return self
 
-    def set_debug_color(self, color):
-        self._debug_color = color
+    def set_center(self, x, y) -> Self:
+        self.rect.center = x, y
+        return self
 
-    def set_visible(self, value: bool):
-        self.visible = value
+    def get_debug_outlines(self):
+        yield (self.rect, self.debug_color)
 
-    def set_parent_scene(self, scene):
+    def set_debug_color(self, color) -> Self:
+        self.debug_color = color
+        return self
+
+    def kill(self):
+        """
+        Removes the entity from a scene layer
+        """
+        if self.parent_layer:
+            self.parent_layer.remove(self)
+
+    def set_parent_layer(self, layer):
+        self.parent_layer = layer
+
+    def set_parent_scene(self, scene) -> Self:
+        if scene == self.parent_scene:
+            return self
+        if self.parent_scene is not None:
+            self.do_when_removed()
         self.parent_scene = scene
+        if scene is not None:
+            self.do_when_added()
+        return self
 
     def do_when_added(self):
         pass
@@ -53,71 +70,61 @@ class Entity:
     def do_when_removed(self):
         pass
 
-    def set_position(self, x, y):
-        self.rect.topleft = (x, y)
-        return self
-
-    def set_x(self,x):
-        self.rect.x = x
-        return self
-
-    def set_y(self,y):
-        self.rect.y = y
-        return self
-
-    def set_center(self, x, y):
-        self.rect.center = (x, y)
-        return self
-
-    def set_uid(self, uid):
-        self.uid = uid
-        return self
-
-    def add_tag(self, *tags):
+    def add_tags(self, *tags) -> Self:
         for tag in tags:
             if tag not in self.tags:
                 self.tags.append(tag)
         self.tags.sort()
         return self
 
-    def remove_tag(self, *tags):
+    def remove_tags(self, *tags):
         self.tags = [tag for tag in self.tags if tag not in tags]
-        self.tags.sort()
 
-    def has_tag(self, tag) -> bool:
-        return tag in self.tags
-
-    def process_event(self, event: pygame.Event)->bool:
+    def has_tags(self, *tags) -> bool:
         """
-        Returns bool : True if the method is blocking (no propagation to next children of the scene)
+        return True if entity contains all given tags
         """
-        self.do_process_actions(event)
-        res = self.do_handle_event(event)
-        self.do_reset_actions()
-        return res
+        return all(tag in self.tags for tag in tags)
 
-    def do_process_actions(self,event : pygame.Event)->None:
-        pass
+    def has_any_tags(self, *tags) -> bool:
+        """
+        return True if entity contains any of given tags
+        """
+        return any(tag in self.tags for tag in tags)
 
-    def do_reset_actions(self)->None:
-        pass
-    
-    def do_handle_event(self, event: pygame.Event) -> bool:
+    def get_tags(self) -> list[str]:
+        return self.tags
+
+    def process_event(self, event: pygame.Event) -> None:
+        if event.consumed:
+            return
+        self.process_actions(event)
+        self.handle_event(event)
+
+    def process_actions(self, event: pygame.Event) -> None:
+        """
+        Process entity actions you may have set
+        """
+
+    def reset_actions(self) -> None:
+        """
+        Reset entity actions you may have set
+        """
+
+    def handle_event(self, event: pygame.Event):
+        """
+        Handle specific events with no action support
+        """
         return False
 
-    def update(self, dt: float):
+    def update(self, dt: float) -> None:
+        """
+        Update method to be overriden by subclasses of Entity (must call do_update and reset_actions)
+        """
         self.do_update(dt)
+        self.reset_actions()
 
-    def do_update(self,dt:float):
-        pass
-
-    def draw(self, camera: bf.Camera) -> int:
-        if not self.visible:
-            return False
-        if not self.surface or not camera.intersects(self.rect):
-            return False
-        camera.surface.blit(
-            self.surface,
-            tuple(round(i * self.z_depth) for i in camera.transpose(self.rect).topleft),
-        )
-        return True
+    def do_update(self, dt: float) -> None:
+        """
+        Update method to be overriden for specific behavior by the end user
+        """

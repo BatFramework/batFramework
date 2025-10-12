@@ -1,157 +1,162 @@
-import pygame
 import batFramework as bf
+from typing import Self,Callable,Any
+import pygame
+
+"""
+Both surfaces to transition need to be the same size
+
+"""
 
 
-class BaseTransition:
+class Transition:
     def __init__(
-        self,
-        source_surf: pygame.Surface,
-        dest_surf: pygame.Surface,
-        duration=100,
-        **kwargs,
+        self, duration: float=1, easing: bf.easing = bf.easing.LINEAR
     ) -> None:
-        self.source = source_surf
-        self.dest = dest_surf
-        self.ended = False
-        self.source_scene_name = ""
-        self.dest_scene_name = ""
-        self.duration = duration
-        self.index = 0
+        """
+        duration : time in seconds
+        easing function : controls the progression rate
+        """
+        self.duration: float = duration
+        self.controller = bf.EasingController( # main controller for the transition progression
+            duration,easing,
+            update_callback=self.update,end_callback=self.end,
+        )
+        self.source: pygame.Surface = None
+        self.dest: pygame.Surface = None
+        self.is_over : bool = False # this flag tells the manager the transition is over 
 
-    def set_scene_index(self,index):
-        self.index = index
+    def __repr__(self) -> str:
+        return f"Transition ({self.__class__},{self.duration})"
 
-    def set_source_name(self, name):
-        self.source_scene_name = name
+    def set_source(self, surface: pygame.Surface) -> None:
+        self.source = surface
 
-    def set_dest_name(self, name):
-        self.dest_scene_name = name
+    def set_dest(self, surface: pygame.Surface) -> None:
+        self.dest = surface
 
-    def update(self, dt):
+    def start(self):
+        if self.controller.has_started(): # can't start again while it's in progress 
+            return
+        if self.duration: # start the transition
+            self.controller.start()
+            return
+
+        # if no duration the transition is instantaneous
+        self.controller.start()
+        self.controller.end()
+        self.update(1)# to prevent weird behaviour, update once with progression at max value
+        self.end()
+
+    def update(self, progression: float) -> None:
         pass
 
-    def draw(self, surface):
+    def end(self):
+        self.controller.stop()
+        self.is_over = True
+
+    def draw(self, surface: pygame.Surface) -> None:
         pass
 
-    def has_ended(self):
-        return False
-
-    def set_ended(self, val):
-        self.ended = val
+    def skip(self):
+        self.end()
 
 
-class FadeColorTransition(BaseTransition):
-    def __init__(
-        self,
-        source_surf,
-        dest_surf,
-        duration=600,
-        color_duration=200,
-        color=bf.color.CLOUD_WHITE,
-        **kwargs,
-    ) -> None:
-        super().__init__(source_surf, dest_surf, duration)
-        self.target_time = duration * 2 + color_duration
-        self.color_surf = pygame.Surface((source_surf.get_rect().size)).convert_alpha()
-        self.color_surf.fill(color)
-        self.ease_out = bf.EasingAnimation(
-            easing_function=bf.Easing.EASE_IN,
-            duration=(duration-color_duration)//2,
-            update_callback = lambda x: self.color_surf.set_alpha(int(255 - (255 * x))),
-            end_callback=lambda: self.set_ended(True))
 
-        self.color_timer = bf.Timer(
-            duration=color_duration,
-            end_callback=lambda: self.set_state("out"))
-        self.ease_in = bf.EasingAnimation(
-            easing_function=bf.Easing.EASE_IN,
-            duration=(duration-color_duration)//2,
-            update_callback=lambda x: self.color_surf.set_alpha(int(255 * x)),
-            # update_callback=lambda x: print(x),
-            end_callback=lambda: self.set_state("color"))
-        self.state = None
+class FadeColor(Transition):
+    def __init__(self,duration:float,color=(0,0,0),color_start:float=0.3,color_end:float=0.7, easing = bf.easing.LINEAR):
+        super().__init__(duration, easing)
+        self.color = color
+        self.color_start = color_start
+        self.color_end = color_end
 
-        self.state = "in"
-        self.ease_in.start()
-
-    def set_state(self, state: str):
-        self.state = state
-        if state == "in":
-            self.ease_in.start()
-        elif state == "color":
-            self.color_timer.start()
-        elif state == "out":
-            self.ease_out.start()
-
-    def has_ended(self):
-        return self.ended
-
-    def set_ended(self, val):
-        super().set_ended(val)
+    def start(self):
+        super().start()
+        self.color_surf = pygame.Surface(self.source.get_size())
+        self.color_surf.fill(self.color)
 
     def draw(self, surface):
-        if self.state != "color":
-            surface.blit(self.source if self.state == "in" else self.dest, (0, 0))
-        surface.blit(self.color_surf, (0, 0))
+        v = self.controller.get_value()
+        if v < self.color_start:
+            v = v/(self.color_start)
+            self.color_surf.set_alpha(255*v)
+            surface.blit(self.source)
+            surface.blit(self.color_surf)
 
+        elif v < self.color_end:
+            self.color_surf.set_alpha(255)
+            surface.blit(self.color_surf)
 
-class FadeTransition(BaseTransition):
-    def __init__(self, source_surf, dest_surf, duration=500) -> None:
-        super().__init__(source_surf, dest_surf)
-        self.anim = bf.EasingAnimation(None,bf.Easing.EASE_IN_OUT,duration,self.update_surface,lambda : self.set_ended(True))
-        self.anim.start()
+        else:
+            v = (v-self.color_end)/(1-self.color_end)
+            surface.blit(self.color_surf)
+            self.dest.set_alpha(255*v)
+            surface.blit(self.dest)
 
-    def update_surface(self,progress):
-        self.source.set_alpha(int(255 - (255 * progress)))
-        self.dest.set_alpha(int(255 * progress))
+class Fade(Transition):
+    def end(self):
+        self.dest.set_alpha(255)
+        return super().end()
 
-    def has_ended(self):
-        return self.ended
+    def start(self):
+        super().start()
 
     def draw(self, surface):
+        dest_alpha = 255 * self.controller.get_value()
+        self.dest.set_alpha(dest_alpha)
         surface.blit(self.source, (0, 0))
         surface.blit(self.dest, (0, 0))
 
+class GlideRight(Transition):
+    def draw(self, surface):
+        width = surface.get_width()
+        source_x = -self.controller.get_value() * width
+        surface.blit(self.source, (source_x, 0))
+        surface.blit(self.dest, (width + source_x, 0))
 
-class SlideTransition(BaseTransition):
-    def __init__(
-        self,
-        source_surf,
-        dest_surf,
-        duration=1000,
-        source_alignment: bf.Alignment = bf.Alignment.BOTTOM,
-        easing: bf.Easing = bf.Easing.EASE_IN_OUT,
-        **kwargs,
-    ) -> None:
-        super().__init__(source_surf, dest_surf, duration)
-        self.offset = pygame.Vector2(0, 0)
-        if source_alignment in [bf.Alignment.TOP, bf.Alignment.BOTTOM]:
-            self.offset.y = bf.const.RESOLUTION[1]
-            if source_alignment == bf.Alignment.TOP:
-                self.offset.y *= -1
-        elif source_alignment in [bf.Alignment.LEFT, bf.Alignment.RIGHT]:
-            self.offset.x = bf.const.RESOLUTION[0]
-            if source_alignment == bf.Alignment.LEFT:
-                self.offset.x *= -1
-        else:
-            self.offset.x = -bf.const.RESOLUTION[0]
-            print(
-                f"Unsupported Alignment : {source_alignment.value}, set to default : {bf.Alignment.LEFT.value} "
-            )
-        self.anim = bf.EasingAnimation(
-            easing_function=easing,
-            duration=duration,
-            update_callback =lambda x: self.update_offset(self.offset.lerp((0, 0), x)),
-            end_callback =lambda: self.set_ended(True),
-        )
-        self.anim.start()
 
-    def update_offset(self, vec):
-        self.offset.update(vec)
+class GlideLeft(Transition):
+    def draw(self, surface):
+        width = surface.get_width()
+        source_x = self.controller.get_value() * width
+        surface.blit(self.source, (source_x, 0))
+        surface.blit(self.dest, (source_x - width, 0))
 
-    def has_ended(self):
-        return self.ended
+
+class CircleOut(Transition):
+    def start(self):
+        super().start()
+        self.circle_surf = self.source.copy()
+        self.circle_surf.set_colorkey((0, 0, 0))
+        self.circle_surf.fill((0, 0, 0))
+        self.surface_width = self.circle_surf.get_width()
 
     def draw(self, surface):
-        surface.blit(self.source, (0, 0))
-        surface.blit(self.dest, self.offset)
+        v = self.controller.get_value()
+
+        radius = self.surface_width * v
+        pygame.draw.circle(
+            self.circle_surf, "white", self.circle_surf.get_rect().center, radius
+        )
+        mask = pygame.mask.from_surface(self.circle_surf)
+        mask.to_surface(surface=surface, setsurface=self.dest, unsetsurface=self.source)
+
+
+class CircleIn(Transition):
+    def start(self):
+        super().start()
+        self.circle_surf = self.source.copy()
+        self.circle_surf.set_colorkey((0, 0, 0))
+        self.circle_surf.fill((0, 0, 0))
+        self.surface_width = self.circle_surf.get_width()
+
+    def draw(self, surface):
+        v = self.controller.get_value()
+        radius = self.surface_width - (self.surface_width * v)
+        self.circle_surf.fill((0, 0, 0))
+        pygame.draw.circle(
+            self.circle_surf, "white", self.circle_surf.get_rect().center, radius
+        )
+        mask = pygame.mask.from_surface(self.circle_surf)
+        mask.to_surface(surface=surface, setsurface=self.source, unsetsurface=self.dest)
+
+
