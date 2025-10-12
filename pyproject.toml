@@ -26,11 +26,11 @@ dependencies=[
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "1.2.0a0"
-tag_format = "v$version"
+version_provider = "pep621"
+tag_format = "$version"
 update_changelog_on_bump = true
 changelog_file = "CHANGELOG.md"
 version_files = [
   "pyproject.toml:version",
-  "src/batFramework/version.json:version"
+  "src/batFramework/__init__.py:__version__"
 ]

@@ -1,20 +1,25 @@
-## v1.2.0a0 (2025-10-12)
 
-### Feat
-
-- Add key repeat settings and improve scrolling container functionality
-- Implement scrolling container with vertical and horizontal scrollbars
-- add package structure
-- add pip structure
+## 1.0.10 (2025-10-12)
 
 ### Fix
 
-- missing section in toml
+- THIS TIME
+- rewind version in init
+- last fix hopefully, cleared corrupted changlog.md
 
-### Refactor
+## 1.0.8 (2025-10-12)
 
-- Improve event handling and widget interactions in GUI components
+### Fix
 
-## v0.0.2-alpha (2023-02-14)
+- again for the toml
+- update release file
+- updated toml for version_provider
+- fix versioning
+- attempt to fix release
 
-## v0.0.1-alpha (2023-02-14)
+## 1.0.9a1 (2024-10-07)
+
+### Feat
+
+- add package structure
+- add pip structure
