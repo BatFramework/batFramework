@@ -3,135 +3,39 @@ name: Release
 on:
   push:
     branches:
-      - master
-      - dev
-  workflow_dispatch:
-    inputs:
-      release_type:
-        description: "Type of release"
-        required: false
-        default: "auto"
-        type: choice
-        options:
-          - auto
-          - stable
-          - prerelease
-      bump_type:
-        description: "Type of bump"
-        required: false
-        default: "patch"
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-
+      - release
 
 jobs:
-  release:
+  build-and-publish:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-      id-token: write  # for PyPI trusted publishing
-
-    environment: release-approval  # <- Manual approval required
-
-    env:
-      BRANCH_NAME: ${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: Install tools
+      - name: Install build tools
         run: |
-          pip install commitizen build twine
-
-      - name: Configure git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Determine release type
-        id: version_type
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.release_type }}" && "${{ github.event.inputs.release_type }}" != "auto" ]]; then
-            TYPE="${{ github.event.inputs.release_type }}"
-          elif [[ "${{ github.ref_name }}" == "master" ]]; then
-            TYPE="stable"
-          else
-            TYPE="prerelease"
-          fi
-
-          echo "type=$TYPE" >> $GITHUB_OUTPUT
-          echo "Release type: $TYPE"
-
-      - name: Determine bump type
-        id: bump_type
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.bump_type }}" ]]; then
-            BUMP="${{ github.event.inputs.bump_type }}"
-          else
-            BUMP="patch"
-          fi
-
-          echo "bump=$BUMP" >> $GITHUB_OUTPUT
-          echo "Bump type: $BUMP"
-
-      - name: Bump version with Commitizen
-        id: bump
-        run: |
-          if [[ "${{ steps.version_type.outputs.type }}" == "stable" ]]; then
-            cz bump --yes --increment ${{ steps.bump_type.outputs.bump }}
-          else
-            cz bump --yes --prerelease alpha --increment ${{ steps.bump_type.outputs.bump }}
-          fi
-          echo "version=$(cz version --project)" >> $GITHUB_OUTPUT
-
-      - name: Push version bump
-        run: |
-          git push
-          git push --tags
+          python -m pip install --upgrade pip
+          pip install build twine setuptools wheel
 
       - name: Build package
         run: python -m build
 
-      - name: Publish to PyPI (stable + prerelease)
-        uses: pypa/gh-action-pypi-publish@release/v1
-
-      - name: Extract latest changelog entry
-        id: changelog
-        run: |
-          START_LINE=$(grep -n "## v${{ steps.bump.outputs.version }}" CHANGELOG.md | cut -d: -f1)
-          END_LINE=$(tail -n +$((START_LINE+1)) CHANGELOG.md | grep -n "## v" | head -n1 | cut -d: -f1)
-          if [ -z "$START_LINE" ]; then
-            echo "No changelog section found for version."
-            echo "notes=No changelog found." >> $GITHUB_OUTPUT
-          else
-            if [ -z "$END_LINE" ]; then
-              END_LINE=$(wc -l < CHANGELOG.md)
-            else
-              END_LINE=$((START_LINE + END_LINE))
-            fi
-            sed -n "${START_LINE},${END_LINE}p" CHANGELOG.md | tail -n +2 > tmp_notes.txt
-            echo "notes<<EOF" >> $GITHUB_OUTPUT
-            cat tmp_notes.txt >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v2
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.bump.outputs.version }}
-          name: Release v${{ steps.bump.outputs.version }}
-          body: ${{ steps.changelog.outputs.notes }}
-          draft: false
-          prerelease: ${{ steps.version_type.outputs.type == 'prerelease' }}
-          files: dist/*
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: "Release ${{ github.ref_name }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
