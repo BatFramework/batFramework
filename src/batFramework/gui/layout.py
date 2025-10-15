@@ -169,7 +169,6 @@ class Column(SingleAxisLayout):
                 event.consumed = True
 
     def update_children_rect(self):
-        print("Update children rect")
         layout_children = self.parent.get_layout_children()
         if layout_children:
             width = max(child.get_min_required_size()[0] if child.autoresize_h else child.rect.w for child in layout_children )

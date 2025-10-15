@@ -90,7 +90,7 @@ class Manager(bf.SceneManager):
         super().update(dt)
 
 
-    async def run_async(self):
+    async def _run_async_internal(self):
         if len(self.scenes) == 0:
             raise Exception("Manager can't start without scenes")
         if self.running:
@@ -110,6 +110,9 @@ class Manager(bf.SceneManager):
             dt = min(dt, 0.02) # dirty fix for dt being too high when window not focused for a long time
             await asyncio.sleep(0)
         pygame.quit()
+
+    def run_async(self):
+        asyncio.run(self._run_async_internal())
 
     def run(self) -> None:
         if len(self.scenes) == 0:
