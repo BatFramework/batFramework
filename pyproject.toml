@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "batframework"
-version = "2.0.0a1"
+version = "2.0.0a2"
 license = { file = "LICENSE" }
 authors = [
     { name="Turan Baturay", email="baturayturan@gmail.com" }
