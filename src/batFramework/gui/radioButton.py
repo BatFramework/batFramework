@@ -12,6 +12,7 @@ class RadioButton(Toggle):
         self.radio_value: Any = radio_value if radio_value is not None else text if text else None
         self.synced_var : SyncedVar = synced_var
         self.synced_var.bind(self,self._update_state)
+        self.set_value(synced_var.value, False)
 
     def __str__(self) -> str:
         return f"RadioButton({self.radio_value}|{'Active' if self.value else 'Inactive'})"
@@ -19,6 +20,10 @@ class RadioButton(Toggle):
     def set_radio_value(self, value: Any) -> Self:
         self.radio_value = value
         return self
+
+    def click(self):
+        if self.value : return
+        self.set_value(True, True)
 
     def set_value(self, value : bool, do_callback=False):
         if self.value == value:

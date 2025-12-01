@@ -10,6 +10,7 @@ from .shape import Shape
 from .meter import BarMeter
 from .textWidget import TextWidget
 from .label import Label
+from .richLabel import RichLabel
 from .tooltip import ToolTip
 from .animatedLabel import AnimatedLabel
 from .textInput import TextInput

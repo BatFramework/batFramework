@@ -436,17 +436,37 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self._resize_surface()
         self.surface.fill((0, 0, 0, 0))
 
-    def visit(self, func: Callable[["Widget"],Any], *args, top_down: bool = True,**kwargs) -> None:
-        if top_down:
-            func(self, *args, **kwargs)
-        for child in self.children:
-            child.visit(func, top_down,*args,**kwargs)
-        if not top_down:
-            func(self, *args, **kwargs)
+    def visit(self, func: Callable[["Widget"], Any], *args, top_down: bool = True,include_self:bool=True, **kwargs) -> None:
+        def _call(f, w):
+            if args and kwargs:
+                return f(w, *args, **kwargs)
+            if args:
+                return f(w, *args)
+            if kwargs:
+                return f(w, **kwargs)
+            return f(w)
 
-    def visit_up(self, func, *args, **kwargs) -> None:
-        if func(self, *args, **kwargs):
-            return
+        if include_self and top_down:
+            _call(func, self)
+        for child in self.children:
+            # pass top_down as a keyword to avoid it being treated as a positional arg
+            child.visit(func, *args, top_down=top_down, **kwargs)
+        if include_self and not top_down:
+            _call(func, self)
+
+    def visit_up(self, func, *args, include_self:bool = True, **kwargs) -> None:
+        def _call(f, w):
+            if args and kwargs:
+                return f(w, *args, **kwargs)
+            if args:
+                return f(w, *args)
+            if kwargs:
+                return f(w, **kwargs)
+            return f(w)
+
+        if include_self:
+            if _call(func, self):
+                return
         if self.parent:
             self.parent.visit_up(func, *args, **kwargs)
 

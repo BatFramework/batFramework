@@ -29,15 +29,15 @@ class Label(Shape):
         self.text_widget.set_allow_scroll(value)
         return self
 
-    def set_text_color(self, color) -> Self:
-        self.text_widget.set_text_color(color)
-        return self
-
     def set_line_alignment(self, alignment: int) -> Self:
         """
         alignment: One of pygame.FONT_CENTER, pygame.FONT_LEFT, pygame.FONT_RIGHT
         """
         self.text_widget.set_line_alignment(alignment)
+        return self
+    
+    def set_text_color(self, color) -> Self:
+        self.text_widget.set_text_color(color)
         return self
 
     def set_italic(self, value: bool) -> Self:
