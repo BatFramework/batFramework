@@ -24,6 +24,9 @@ class Action:
         self._gamepad_axis_control: set = set()
         self._holding = set()
 
+    def __str__(self):
+        return f"{self.name} {self.active}"
+
     def __bool__(self) -> bool :
         return self.active
 
@@ -218,7 +221,6 @@ class Action:
 
         Args:
             event (pygame.event.Event): The pygame event to process.
-
         """
         if self._type == actionType.HOLDING:
             if event.type == pygame.KEYUP and event.key in self._key_control:
@@ -230,7 +232,6 @@ class Action:
                 self._deactivate_action(event.button)
             elif event.type in self._event_control:
                 self._deactivate_action(event.type)
-
             else:
                 event.consumed = False
                 return
@@ -241,7 +242,10 @@ class Action:
     def _deactivate_action(self, control) -> bool:
         if control in self._holding:
             self._holding.remove(control)
-        if not self._holding:
+        if (self._type == actionType.HOLDING):
+            if not self._holding : 
+                self.active = False
+        else:
             self.active = False
 
     def process_event(self, event: pygame.event.Event):

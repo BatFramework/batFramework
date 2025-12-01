@@ -436,7 +436,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self._resize_surface()
         self.surface.fill((0, 0, 0, 0))
 
-    def visit(self, func: Callable[["Widget"],Any], top_down: bool = True, *args, **kwargs) -> None:
+    def visit(self, func: Callable[["Widget"],Any], *args, top_down: bool = True,**kwargs) -> None:
         if top_down:
             func(self, *args, **kwargs)
         for child in self.children:

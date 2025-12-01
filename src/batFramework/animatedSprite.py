@@ -4,78 +4,97 @@ from typing import List, Dict, Tuple, Union, Optional, Self, Callable, Any
 from .animation import Animation
 
 class AnimatedSprite(bf.Drawable):
+
     def __init__(self,*args,**kwargs) -> None:
         super().__init__((0,0),*args,**kwargs)
-        self.animations : dict[str,Animation] = {}
-        self.counter = 0 # int counter
+        self._animations : dict[str,Animation] = {}
+        self._animation : Animation|None = None
+        
+        self._counter = 0 # int counter
         self._fcounter = 0.0 # counter
-        self.current_animation : str = None
-        self.end_callback : Callable[[],Any] = None
-        self._flipX : bool = False
-        self.animation_loop : int = -1
-        self.queued_animation : str = None
+
+        self._flip : tuple[bool,bool] = [False,False]
+        
+        self._queued_animation : str = None
+        self._frame_number : int = 0
+
+        
+    @property
+    def frame_number(self):
+        return self._animation.frame_number if self._animation else None
 
     @property
     def flipX(self)->bool:
-        return self._flipX
+        return self._flip[0]
     
     @flipX.setter
     def flipX(self,value:bool):
-        self._flipX = value
+        self._flip[0] = value
 
-    def set_animation_end_callback(self,callback : Callable[[],Any]):
-        self.end_callback = callback 
+    @property
+    def flipY(self)->bool:
+        return self._flip[1]
+    
+    @flipX.setter
+    def flipY(self,value:bool):
+        self._flip[1] = value
+
+    @property
+    def animation(self)->Animation | None:
+        return self._animation
 
     def add_animation(self,animation:Animation)->Self:
-        self.animations[animation.name] = animation
+        self._animations[animation.name] = animation
+        animation.set_end_callback(self._on_animation_end)
+        animation.set_frame_callback(self._on_animation_frame)
+        
         if self.rect.size == (0,0):
-            self.rect.size = animation.frames[0].get_size()
-            self.surface = animation.frames[0].copy()
+            first_frame = animation.get_frame(0)
+            self.rect.size = first_frame.get_size()
+            self.surface = first_frame.copy()
         return self
+
+    def get_animation(self,name:str)->Animation | None:
+        res = self._animations.get(name)
+        return res
+
     
     def set_animation(self,name:str,reset_counter:bool=True,loop:int=-1,queued_animation:str=None):
         """
         Sets the current animation,
         if animation with given name hasn't been added, nothing happens
+        queued animation plays after 'loop' number of animations (first one doesn't countz)
+        if loop is negative, animation loops indefinitely and queued_animation is ignored
+        
         """
-        if name not in self.animations :
+        
+        self._animation = self._animations.get(name)
+        if self._animation is None:
             return
-        self.current_animation = name
         if reset_counter:
-            self._fcounter = 0
-            self.counter = 0
-        self.animation_loop = loop
-        if loop != -1:
-            self.queued_animation = queued_animation
+            self._animation.reset_counter()
+        self._animation_loop = loop
+        if loop >= 0:
+            self._queued_animation = queued_animation
         else:
-            self.queued_animation = None
+            self._queued_animation = None
 
-    def get_current_frame(self)->int|None:
-        if not self.current_animation:
-            return None
-        return  self.animations[self.current_animation].counter_to_frame(self._fcounter)        
+    def _on_animation_end(self):
+        if self._queued_animation is not None:
+            self.set_animation(self._queued_animation,True)
 
+    def _on_animation_frame(self,frame:int):
+        pass
+        
     def update(self, dt):
         super().update(dt)        
-        if not self.current_animation:
+        if self._animation is None:
             return
-        self._fcounter += dt * 60 
-        self.counter = int(self._fcounter)
-        # self.counter = self.get_current_frame()
-        # print(f"{self.current_animation}:{self.counter}/{self.animations[self.current_animation].duration_list_length}")
-        if self.counter >= self.animations[self.current_animation].duration_list_length:
-            #one animation cycle ended
-            if self.animation_loop > 0:
-                self.animation_loop -= 1
-            elif self.queued_animation is not None:
-                # print("set to queued :",self.queued_animation)
-                self.set_animation(self.queued_animation,True)
-
-            if self.end_callback:
-                self.end_callback()            
- 
+        self._animation.update(dt)
+        
+    
     def draw(self, camera):
-        # print(self.current_animation, f"{self.counter}/{self.animations[self.current_animation].duration_list_length}")
-        self.surface = self.animations[self.current_animation].get_frame(self.counter,self.flipX)#,(0,0)
+        if not self.animation : return
+        self.surface = self._animation.get_frame(self._counter,*self._flip)
         super().draw(camera)
         

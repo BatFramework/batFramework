@@ -50,10 +50,11 @@ class BasicParticle(TimedParticle):
         super().__init__(duration)
         self.rect = pygame.FRect(0,0, *size)
         self.rect.center = start_pos
-        self.surface = pygame.Surface(size)
+        self.surface = pygame.Surface(size).convert_alpha()
         self.velocity = Vector2(start_vel)
-        if color:
-            self.surface.fill(color)
+        if not color:
+            color = (0,0,0)
+        self.surface.fill(color)
         self.start()
 
     def start(self):
@@ -102,6 +103,7 @@ class ParticleGenerator(bf.Drawable):
     def clear(self):
         self.particles = []
         self.count = 0
+
     def update(self, dt: float):
         particles_to_remove = []
         for particle in self.particles:

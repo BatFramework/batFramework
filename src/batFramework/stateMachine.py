@@ -27,7 +27,7 @@ class StateMachine:
     def __init__(self, parent) -> None:
         self.states: dict[str, State] = {}
         self.parent = parent
-        self.current_state = None
+        self.current_state : State = None
 
     def add_state(self, *states: State):
         for state in states :

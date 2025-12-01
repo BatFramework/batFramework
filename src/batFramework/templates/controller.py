@@ -8,13 +8,15 @@ class PlatformController(bf.DynamicEntity):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.control = bf.ActionContainer()
-        self.speed = 500
+        self.speed = 300
         self.acceleration = 100
-        self.jump_force = -500
-        self.gravity = 1200
+        self.jump_force = -400
+        self.gravity = 800
         self.terminal_velocity = 1000
         self.on_ground = False
         self.friction = 0.7
+        self.collision_rect = pygame.FRect(0,0,1,1)
+        self.max_slope = 0
         
     def reset_actions(self):
         self.control.reset()
@@ -47,10 +49,10 @@ class PlatformController(bf.DynamicEntity):
             self.on_ground = False
         
         self.velocity.x = pygame.math.clamp(self.velocity.x,-self.speed,self.speed)
-        self.rect.y += self.velocity.y * dt
-        self.check_collision_y()
-        self.rect.x += self.velocity.x * dt
+        self.collision_rect.x += self.velocity.x * dt
         self.check_collision_x()
+        self.collision_rect.y += self.velocity.y * dt
+        self.check_collision_y()
 
 
 
@@ -124,8 +126,9 @@ class CameraController(bf.Entity):
         self.mouse_actions.process_event(event)
         if self.mouse_actions["drag"] and event.type == pygame.MOUSEMOTION:
             event.consumed = True
+            pass
 
-    def do_update(self, dt):
+    def update(self, dt):
         cam = self.parent_layer.camera
         if self.mouse_actions["zoom_in"]:
             if self.mouse_actions["control"]:
@@ -153,6 +156,7 @@ class CameraController(bf.Entity):
                 cam.move_by(-dx, -dy)
                 self.origin = (mouse_world[0] - cam_pos[0], mouse_world[1] - cam_pos[1])
 
-
         else:
             self.origin = None
+        self.do_update(dt)
+        self.mouse_actions.reset()
