@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import TYPE_CHECKING, Self, Callable, Any
 from collections.abc import Iterable
 import batFramework as bf

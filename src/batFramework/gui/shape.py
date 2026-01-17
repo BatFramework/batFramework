@@ -1,3 +1,4 @@
+from __future__ import annotations
 import batFramework as bf
 from .widget import Widget
 import pygame

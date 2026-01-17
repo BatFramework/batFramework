@@ -1,3 +1,4 @@
+from __future__ import annotations
 from .shape import Shape
 from typing import Any, Self, Callable
 import pygame
