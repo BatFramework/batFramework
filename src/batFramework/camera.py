@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pygame
 from pygame.math import Vector2
 import batFramework as bf

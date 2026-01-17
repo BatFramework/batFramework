@@ -17,7 +17,6 @@ def round_to_step_precision(value, step):
         return int(rounded)
     return rounded
 
-
 class SliderHandle(Indicator, DraggableWidget):
     def __init__(self,synced_var:SyncedVar):
         super().__init__()

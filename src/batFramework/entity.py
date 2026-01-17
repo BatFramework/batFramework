@@ -128,3 +128,4 @@ class Entity:
         """
         Update method to be overriden for specific behavior by the end user
         """
+        pass

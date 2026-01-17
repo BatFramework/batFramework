@@ -26,6 +26,9 @@ class SceneLayer:
         self.draw_order : list[int] = [] # stores the uid of entities to draw (in draw order)
         self.camera = bf.Camera(convert_alpha=convert_alpha)
 
+    def get_mouse_pos(self)->tuple:
+        return self.camera.get_mouse_pos()
+
     def set_clear_color(self,color):
         self.camera.set_clear_color(color)
 

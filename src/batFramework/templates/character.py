@@ -5,11 +5,10 @@ import pygame
 
 
 
-class PlatformCharacter(bf.AnimatedSprite,PlatformController):
+class PlatformCharacter(PlatformController,bf.AnimatedSprite):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.animachine = AnimatedStateMachine(self)
+        self.state_machine = AnimatedStateMachine(self)
         
-
 
 
