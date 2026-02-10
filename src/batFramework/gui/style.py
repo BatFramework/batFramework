@@ -22,5 +22,5 @@ class DefaultStyle(Style):
             w.set_shadow_color(bf.color.CLOUD_SHADE)
             w.set_padding(4)
         if isinstance(w, Label):
-            w.set_text_bg_color(bf.color.WHITE)
+            w.set_text_bg_color(bf.color.TRANSPARENT)
             w.set_text_color(bf.color.CHARCOAL_SHADE)
