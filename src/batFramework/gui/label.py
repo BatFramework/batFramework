@@ -13,7 +13,6 @@ class Label(Shape):
         self.text_widget = TextWidget(text)
         self.set_padding((10, 4))
         self.set_debug_color("blue")
-        self.set_color("gray50")
         self.set_autoresize(True)
         self.set_font(force=True)
         self.add(self.text_widget)
