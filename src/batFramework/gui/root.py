@@ -196,8 +196,8 @@ class Root(InteractiveWidget):
         self.apply_updates("pre")
         self.apply_updates("post")
         # 2nd pass
-        # self.apply_updates("pre")
-        # self.apply_updates("post")
+        self.apply_updates("pre")
+        self.apply_updates("post")
 
 
     def apply_pre_updates(self):
