@@ -1,13 +1,14 @@
 import pygame
 import batFramework as bf
 from .widget import Widget
+from .shape import Shape    
 from .textWidget import TextWidget
 from .textBuffer import TextBuffer
 
 
 
 
-class TextInput(Widget):
+class TextInput(Shape):
     def __init__(self, text: str = ""):
         super().__init__()
         self.buffer = TextBuffer(text)

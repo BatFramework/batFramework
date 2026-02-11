@@ -29,11 +29,16 @@ class Entity:
             Entity._available_uids.add(self.uid)
         except AttributeError:
             pass
+
     def set_position(self, x, y) -> Self:
+        if x is None : x = self.rect.x
+        if y is None : y = self.rect.y
         self.rect.topleft = x, y
         return self
 
     def set_center(self, x, y) -> Self:
+        if x is None : x = self.rect.centerx
+        if y is None : y = self.rect.centery
         self.rect.center = x, y
         return self
 

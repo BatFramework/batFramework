@@ -109,12 +109,12 @@ class TopDownController(bf.DynamicEntity):
 
 
 class CameraController(bf.Entity):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, drag_mouse_button:int = 1, **kwargs):
         super().__init__(*args, **kwargs)
         self.origin = None  # Previous frame's world mouse pos
         self.mouse_actions = bf.ActionContainer(
             bf.Action("control").add_key_control(pygame.K_LCTRL).set_holding(),
-            bf.Action("drag").add_mouse_control(1).set_holding().set_consume_event(True),
+            bf.Action("drag").add_mouse_control(drag_mouse_button).set_holding().set_consume_event(True),
             bf.Action("zoom_in").add_mouse_control(4).set_consume_event(True),
             bf.Action("zoom_out").add_mouse_control(5).set_consume_event(True),
         )

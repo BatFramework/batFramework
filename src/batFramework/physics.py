@@ -7,6 +7,7 @@ import pygame
 from pygame.math import Vector2
 from typing import Callable, Self, Iterator, TYPE_CHECKING
 from dataclasses import dataclass
+from .entity import Entity
 
 if TYPE_CHECKING:
     import batFramework as bf
@@ -111,7 +112,7 @@ class SpatialHash:
             self.insert(e)
 
 
-class PhysicsWorld:
+class PhysicsWorld(Entity):
     """
     Manages physics simulation for a scene.
     
@@ -135,6 +136,7 @@ class PhysicsWorld:
     """
     
     def __init__(self, gravity: tuple[float, float] = (0, 980)):
+        super().__init__()
         """
         Initialize physics world.
         
@@ -151,6 +153,23 @@ class PhysicsWorld:
         self.spatial_hash: SpatialHash | None = None
         self._use_spatial_hash = False
     
+
+    def track_entity(self, entity: "bf.Entity"):
+        """
+        Track an entity so it automatically gets removed when the entity is removed from the scene.
+        """
+        original_do_removed = entity.do_when_removed
+
+        def new_do_removed():
+            # Call original hook
+            original_do_removed()
+            # Remove from physics world if present
+            self.remove(entity)
+
+
+        entity.do_when_removed = new_do_removed
+        return entity
+
     def enable_spatial_hash(self, cell_size: int = 64) -> Self:
         """
         Enable spatial hashing for better performance with many entities.
@@ -169,6 +188,9 @@ class PhysicsWorld:
                 self.spatial_hash.insert(entity)
         return self
     
+
+
+
     def disable_spatial_hash(self) -> Self:
         """Disable spatial hashing"""
         self._use_spatial_hash = False
@@ -255,6 +277,8 @@ class PhysicsWorld:
         if self._use_spatial_hash and self.spatial_hash:
             for entity in entities:
                 self.spatial_hash.insert(entity)
+        for entity in entities:
+            self.track_entity(entity)
         return self
     
     def add_dynamic(self, layer: str, *entities: "bf.DynamicEntity") -> Self:
@@ -268,6 +292,8 @@ class PhysicsWorld:
         if self._use_spatial_hash and self.spatial_hash:
             for entity in entities:
                 self.spatial_hash.insert(entity)
+        for entity in entities:
+            self.track_entity(entity)
         return self
     
     def remove(self, *entities: "bf.Entity") -> Self:
@@ -301,6 +327,36 @@ class PhysicsWorld:
                     self.spatial_hash.remove(entity)
             layer.clear()
         return self
+    
+    def __str__(self) -> str:
+        lines = [
+            "PhysicsWorld",
+            f"  gravity: {tuple(self.gravity)}",
+            f"  layers: {len(self.collision_layers)}",
+        ]
+
+        if self.collision_layers:
+            for name, layer in self.collision_layers.items():
+                lines.append(
+                    f"    {name}: static={len(layer.static)}, dynamic={len(layer.dynamic)}"
+                )
+
+        lines.append(f"  collision pairs: {len(self.layer_matrix)}")
+
+        if self.callbacks:
+            lines.append("  callbacks:")
+            for a, b in self.callbacks:
+                lines.append(f"    {a} <-> {b}")
+
+        lines.append(f"  spatial hash: {self._use_spatial_hash}")
+
+        if self.spatial_hash:
+            lines.append(f"    cell size: {self.spatial_hash.cell_size}")
+
+        return "\n".join(lines)
+    
+    def __repr__(self) -> str:
+        return self.__str__()
     
     @staticmethod
     def aabb_check(a: pygame.FRect, b: pygame.FRect) -> Collision | None:
@@ -347,6 +403,7 @@ class PhysicsWorld:
         Returns:
             Collision object if colliding, None otherwise.
         """
+        if entity_a is entity_b : return False
         result = self.aabb_check(entity_a.rect, entity_b.rect)
         if result:
             result.entity_a = entity_a
@@ -426,16 +483,18 @@ class PhysicsWorld:
             old_rect = entity.rect.copy() if self._use_spatial_hash else None
             
             # Move X axis
-            entity.rect.x += entity.velocity.x * dt
+            entity.set_position(entity.rect.x + entity.velocity.x * dt,None)
             self._resolve_axis(entity, entity_layer, 'x')
             
             # Move Y axis
-            entity.rect.y += entity.velocity.y * dt
+            entity.set_position(None,entity.rect.y + entity.velocity.y * dt)
             self._resolve_axis(entity, entity_layer, 'y')
             
             # Update spatial hash
             if self._use_spatial_hash and self.spatial_hash and old_rect:
                 self.spatial_hash.update(entity, old_rect)
+ 
+        super().update(dt)
     
     def _resolve_axis(
         self, 
@@ -456,29 +515,24 @@ class PhysicsWorld:
                 collision = self.check_collision(entity, other)
                 if not collision:
                     continue
-                
                 # Resolve based on axis
                 resolved = False
                 if axis == 'x' and collision.overlap.x > 0:
-                    entity.rect.x += collision.overlap.x * collision.normal.x
+                    entity.set_position(entity.rect.x + collision.overlap.x * collision.normal.x,None)
                     
                     # Call entity hook
                     if isinstance(entity, bf.DynamicEntity):
                         if not entity.on_collideX(other):
                             entity.velocity.x = 0
-                    else:
-                        entity.velocity.x = 0
                     resolved = True
                     
                 elif axis == 'y' and collision.overlap.y > 0:
-                    entity.rect.y += collision.overlap.y * collision.normal.y
+                    entity.set_position(None,entity.rect.y + collision.overlap.y * collision.normal.y)
                     
                     # Call entity hook
                     if isinstance(entity, bf.DynamicEntity):
                         if not entity.on_collideY(other):
                             entity.velocity.y = 0
-                    else:
-                        entity.velocity.y = 0
                     resolved = True
                 
                 # Trigger callback
