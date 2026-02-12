@@ -15,7 +15,6 @@ def get_version() -> str:
 
 __version__ = get_version()
 
-
 import os
 import pygame
 import json

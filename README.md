@@ -34,3 +34,4 @@ For more detailed information, please refer to the [documentation](https://batfr
  MIT License
 
 
+>>>>>>>>> Temporary merge branch 2

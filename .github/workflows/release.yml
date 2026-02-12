@@ -1,4 +1,4 @@
-name: Release Dev
+name: Release
 
 permissions:
   contents: write
@@ -6,11 +6,11 @@ permissions:
 on:
   push:
     branches:
-      - prerelease
+      - release
   workflow_dispatch:
 
 jobs:
-  build-and-publish-dev:
+  build-and-publish:
     runs-on: ubuntu-latest
 
     steps:
@@ -43,7 +43,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: python -m twine upload --repository testpypi dist/*
 
-      - name: Publish pre-release to PyPI (on push)
+      - name: Publish release to PyPI (on push)
         if: ${{ github.event_name == 'push' }}
         env:
           TWINE_USERNAME: __token__
@@ -57,6 +57,6 @@ jobs:
           tag_name: ${{ steps.get_version.outputs.version }}
           name: Release ${{ steps.get_version.outputs.version }}
           body: Release version ${{ steps.get_version.outputs.version }}
-          prerelease: true
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
