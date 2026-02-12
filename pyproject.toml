@@ -3,9 +3,22 @@ requires = ["setuptools==76.1.0 "]
 build-backend = "setuptools.build_meta"
 [project]
 name = "batframework"
+version = "2.0.0"
+license = { file = "LICENSE" }
+authors = [
+    { name="Turan Baturay", email="baturayturan@gmail.com" }
+]
 description = "Pygame framework for making games easier."
 readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 requires-python = ">=3.11"
-dependencies = ["pygame-ce"]
-version = "1.0.8"
-license = { file = "LICENSE" }
+dependencies=[
+    "pygame-ce>=2.5.2"
+]
+[project.urls]
+Homepage = "https://github.com/TuranBaturay/batFramework"
+

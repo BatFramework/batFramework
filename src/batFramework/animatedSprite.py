@@ -1,117 +1,111 @@
 import batFramework as bf
 import pygame
+from typing import List, Dict, Tuple, Union, Optional, Self, Callable, Any
+from .animation import Animation
 
+class AnimatedSprite(bf.Drawable):
 
-
-def search_index(target, lst):
-    cumulative_sum = 0
-    for index, value in enumerate(lst):
-        cumulative_sum += value
-        if cumulative_sum >= target:
-            return index
-    return -1
-
-
-class AnimState:
-    def __init__(self, file, width, height, frame_length_list:list|int) -> None:
-        self.frames: list[pygame.Surface] = bf.utils.img_slice(file, width, height)
-        self.frames_flipX: list[pygame.Surface] = bf.utils.img_slice(
-            file, width, height, True
-        )
-
-        self.frame_length_list = []
-        self.ffl_length = 0
-        self.set_frame_length_list(frame_length_list)
-
-    def get_frame_index(self, counter:float|int):
-        return search_index(int(counter % self.ffl_length), self.frame_length_list)
-
-    def get_frame(self, counter, flip):
-        i = self.get_frame_index(counter)
-        return self.frames_flipX[i] if flip else self.frames[i]
-
-    def set_frame_length_list(self,frame_length_list:list[int]|int):
-        if isinstance(frame_length_list,int):
-            frame_length_list = [frame_length_list] * len(self.frames)
-        if len(frame_length_list) != len(self.frames) : 
-            raise ValueError("frame_length_list should have values for all frames")
-        self.frame_length_list = frame_length_list
-        self.ffl_length = sum(self.frame_length_list)
+    def __init__(self,*args,sprite_rect_anchor : bf.enums.alignment=bf.enums.alignment.CENTER, sprite_rect_offset:tuple[float]=None,**kwargs) -> None:
+        super().__init__((0,0),*args,**kwargs)
+        self._animations : dict[str,Animation] = {}
+        self._animation : Animation|None = None
         
-
-class AnimatedSprite(bf.DynamicEntity):
-    def __init__(self, size=None) -> None:
-        super().__init__(size, no_surface=True)
-        self.float_counter = 0
-        self.animStates: dict[str, AnimState] = {}
-        self.current_animState :str = ""
-        self.flipX = False
-        self._locked = False
-
-    def set_counter(self,value:float):
-        self.float_counter = value
+        self._flip : tuple[bool,bool] = [False,False]
         
+        self._queued_animation : str = None
+        self._frame_number : int = 0
+        self.sprite_rect = self.rect.copy()
+        self.sprite_rect_anchor = sprite_rect_anchor
+        self.sprite_rect_offset = sprite_rect_offset if sprite_rect_offset else (0,0)
 
-    def lock_animState(self):
-        self._locked = True
+    def get_debug_outlines(self):
+        yield from super().get_debug_outlines()
+        yield (self.sprite_rect,"blue")
+        
+    @property
+    def frame_number(self):
+        return self._animation.frame_number if self._animation else None
 
-    def unlock_animState(self):
-        self._locked = False
+    @property
+    def flipX(self)->bool:
+        return self._flip[0]
+    
+    @flipX.setter
+    def flipX(self,value:bool):
+        self._flip[0] = value
 
-    def set_flipX(self, value):
-        self.flipX = value
+    @property
+    def flipY(self)->bool:
+        return self._flip[1]
+    
+    @flipY.setter
+    def flipY(self,value:bool):
+        self._flip[1] = value
 
-    def remove_animState(self, name:str):
-        if not name in self.animStates :return
-        self.animStates.pop(name) 
-        if self.current_animState == name : self.current_animState = list(self.animStates.keys())[0] if self.animStates else "" 
+    @property
+    def animation(self)->Animation | None:
+        return self._animation
 
-    def add_animState(
-        self, name: str, file: str, size: tuple[int, int], frame_length_list: list[int]
-    ):
-        if name in self.animStates:
+    def add_animation(self,animation:Animation)->Self:
+        self._animations[animation.name] = animation
+        animation.set_end_callback(self._on_animation_end)
+        animation.set_frame_callback(self._on_animation_frame)
+        
+        if self.sprite_rect.size == (0,0):
+            first_frame = animation.get_frame(0)
+            self.sprite_rect.size = first_frame.get_size()
+            self.surface = first_frame.copy()
+        return self
+
+    def get_animation(self,name:str)->Animation | None:
+        res = self._animations.get(name)
+        return res
+
+    
+    def set_animation(self,name:str,reset_counter:bool=True,loop:int=-1,queued_animation:str=None):
+        """
+        Sets the current animation,
+        if animation with given name hasn't been added, nothing happens
+        queued animation plays after 'loop' number of animations (first one doesn't countz)
+        if loop is negative, animation loops indefinitely and queued_animation is ignored
+        
+        """
+        
+        self._animation = self._animations.get(name)
+        if self._animation is None:
             return
-        self.animStates[name] = AnimState(file, *size, frame_length_list)
-        if len(self.animStates) == 1 : self.set_animState(name)
+        if reset_counter:
+            self._animation.reset_counter()
+        self._animation_loop = loop
+        if loop >= 0:
+            self._queued_animation = queued_animation
+        else:
+            self._queued_animation = None
 
-    def set_animState(self, state:str, reset_counter=True, lock=False):
-        if state not in self.animStates or self._locked:
-            return False
-        self.current_animState = state
-        self.rect = (
-            self.animStates[self.current_animState]
-            .frames[0]
-            .get_frect(center=self.rect.center)
-        )
-        if reset_counter or self.float_counter > sum(
-            self.get_state().frame_length_list
-        ):
-            self.float_counter = 0
-        if lock:
-            self.lock_animState()
-        return True
+    def _on_animation_end(self):
+        if self._queued_animation is not None:
+            self.set_animation(self._queued_animation,True)
 
-    def get_state(self):
-        return self.animStates.get(self.current_animState,None)
-
-    def get_frame_index(self):
-        return self.animStates[self.current_animState].get_frame_index(
-            self.float_counter
-        )
-
-    def update(self, dt: float):
-        if not self.animStates : return
-        self.float_counter += 60 * dt
-        if self.float_counter > self.get_state().ffl_length:
-            self.float_counter = 0
-        self.do_update(dt)
-
-    def draw(self, camera: bf.Camera) -> bool:
-        if not self.visible or not camera.intersects(self.rect) or not self.animStates:
-            return False
-        # pygame.draw.rect(camera.surface,"purple",camera.transpose(self.rect).move(2,2))
+    def _on_animation_frame(self,frame:int):
+        pass
+        
+    def update(self, dt):
+        super().update(dt)        
+        if self._animation is None:
+            return
+        self._animation.update(dt)
+        setattr(self.sprite_rect,self.sprite_rect_anchor.value,getattr(self.rect,self.sprite_rect_anchor.value))
+        self.sprite_rect.move_ip(*self.sprite_rect_offset)
+        
+    
+    def draw(self, camera):
+        if not self.animation : return
+        self.surface = self._animation.get_frame(self._animation.frame_number,*self._flip)
+        if not self.visible or self.drawn_by_group or not camera.world_rect.colliderect(self.sprite_rect) or self.surface.get_alpha() == 0:
+            return
         camera.surface.blit(
-            self.get_state().get_frame(self.float_counter, self.flipX),
-            camera.transpose(self.rect),
+            self.surface,
+            camera.world_to_screen(self.sprite_rect),
+            special_flags=self.blit_flags,
         )
-        return True
+        

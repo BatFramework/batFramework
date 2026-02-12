@@ -1,75 +1,57 @@
 import pygame
-from enum import Enum
 
 
 class Constants:
-    SCREEN = None
-    RESOLUTION: tuple[int, int] = (1280,720)
+    SCREEN: pygame.Surface = None
+    RESOLUTION: tuple[int, int] = (1280, 720)
+    WIDTH = 1280
+    HEIGHT = 720
     VSYNC = 0
     FLAGS: int = pygame.SCALED | pygame.RESIZABLE
     FPS: int = 60
-    RESOURCE_PATH = "."
-    
-    @staticmethod
-    def init_screen(resolution:tuple[int,int],flags:int= 0, vsync:int= 0):
-        Constants.RESOLUTION = resolution
-        Constants.FLAGS = flags
-        Constants.VSYNC = vsync
-        Constants.SCREEN = pygame.display.set_mode(Constants.RESOLUTION, Constants.FLAGS,vsync=Constants.VSYNC)
-        print(f"Window : {resolution[0]}x{resolution[1]}px | flags:{flags.bit_count()}, vsync:{pygame.display.is_vsync()}")
     MUSIC_END_EVENT = pygame.event.custom_type()
 
-    # ------------GUI SPECIFIC
-    DEFAULT_TEXT_SIZE: int = 8
+    DEFAULT_CURSOR = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
+    DEFAULT_HOVER_CURSOR = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
+    DEFAULT_CLICK_CURSOR = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
 
-    GUI_SCALE: int = 1
-    # ---------------------
+    BF_INITIALIZED: bool = False
+    ALLOW_DEBUG : bool = True
+
+    WIDGET_KEY_REPEAT_DELAY = 200
+    WIDGET_KEY_REPEAT_INTERVAL = 50
+    GLOBAL_KEY_REPEAT_DELAY = 200
+    GLOBAL_KEY_REPEAT_INTERVAL = 50
+
 
     @staticmethod
-    def set_resolution(resolution : tuple[int,int]):
+    def set_allow_debug(allow_debug:bool):
+        Constants.ALLOW_DEBUG = allow_debug
+
+    @staticmethod
+    def set_resolution(resolution: tuple[int, int]):
         Constants.RESOLUTION = resolution
+        Constants.WIDTH = resolution[0]
+        Constants.HEIGHT = resolution[1]
+        Constants.update_screen()
 
     @staticmethod
-    def set_resource_path(path: str):
-        print("set resource path :", path)
-        Constants.RESOURCE_PATH = path
+    def update_screen():
+        if Constants.BF_INITIALIZED:
+            Constants.SCREEN = pygame.display.set_mode(Constants.RESOLUTION,Constants.FLAGS,vsync=Constants.VSYNC)
+
+    @staticmethod
+    def set_default_cursor(cursor: pygame.Cursor):
+        Constants.DEFAULT_CURSOR = cursor
+
+    @staticmethod
+    def set_default_hover_cursor(cursor: pygame.Cursor):
+        Constants.DEFAULT_HOVER_CURSOR = cursor
+
+    @staticmethod
+    def set_default_click_cursor(cursor: pygame.Cursor):
+        Constants.DEFAULT_CLICK_CURSOR = cursor
 
     @staticmethod
     def set_fps_limit(value: int):
         Constants.FPS = value
-        print("FPS limit to : ", value)
-
-    @staticmethod
-    def set_gui_scale(value: int):
-        Constants.GUI_SCALE = value
-        print("GUI_SCALE to : ", value)
-
-    @staticmethod
-    def set_default_text_size(size:int):
-        Constants.DEFAULT_TEXT_SIZE = size
-
-class Colors:
-    LIGHT_CYAN = (179, 229, 252)
-    WASHED_BLUE = (52, 73, 94)
-    RIVER_BLUE = (52, 152, 219)
-    DARK_INDIGO = (40, 53, 147)
-    LIGHT_BLUE = (3, 169, 244)
-    DEEP_BLUE = (41, 121, 255)
-    DARK_BLUE = (44, 62, 80)
-    GREEN = (67, 160, 71)
-    DARK_GREEN = (39, 174, 96)
-    BROWN = (109, 76, 65)
-    DARK_RED = (192, 57, 43)
-    ORANGE = (251, 140, 0)
-    CLOUD_WHITE = (236, 240, 241)
-    SILVER = (189, 195, 199)
-    DARK_GRAY = (66, 66, 66)
-
-    DARK_GB = (27, 42, 9)
-    SHADE_GB = (14, 69, 11)
-    BASE_GB = (73, 107, 34)
-    LIGHT_GB = (154, 158, 63)
-
-class Axis(Enum):
-    HORIZONTAL  = 1
-    VERTICAL    = 2
