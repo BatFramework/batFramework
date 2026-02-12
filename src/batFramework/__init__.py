@@ -40,6 +40,7 @@ from .entity import Entity
 from .drawable import Drawable
 from .renderGroup import RenderGroup
 from .dynamicEntity import DynamicEntity
+from .physics import PhysicsWorld, Collision, CollisionLayer, SpatialHash, check_aabb, get_overlap, find_collisions
 from .sprite import Sprite
 from .scrollingSprite import ScrollingSprite
 from .particle import *

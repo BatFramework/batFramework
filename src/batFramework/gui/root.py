@@ -196,8 +196,8 @@ class Root(InteractiveWidget):
         self.apply_updates("pre")
         self.apply_updates("post")
         # 2nd pass
-        # self.apply_updates("pre")
-        # self.apply_updates("post")
+        self.apply_updates("pre")
+        self.apply_updates("post")
 
 
     def apply_pre_updates(self):
@@ -221,7 +221,8 @@ class Root(InteractiveWidget):
         
         if self.focused != self and (not self.focused is None)  :
             old_clip = camera.surface.get_clip()
-            camera.surface.set_clip(self.focused.parent.get_inner_rect())
+            # set clip to focused widget's parent
+            camera.surface.set_clip(self.focused.parent.rect)
             self.focused.draw_focused(camera)   
             camera.surface.set_clip(old_clip)
 

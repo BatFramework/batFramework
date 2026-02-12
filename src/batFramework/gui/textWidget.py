@@ -86,7 +86,7 @@ class TextWidget(Widget):
 
     def set_text_bg_color(self, color) -> Self:
         self.text_bg_color = color
-        self.set_convert_alpha(color is None)
+        self.set_convert_alpha(color in [None, bf.color.TRANSPARENT])
         self.dirty_surface = True
         return self
 
@@ -217,8 +217,8 @@ class TextWidget(Widget):
             "font_name": self.font_object.name,
             "text": tmp_text,
             "antialias": self.antialias,
-            "color": self.text_color,
-            "bgcolor": self.text_bg_color,
+            "color": "black",
+            "bgcolor": "white",
             "wraplength": int(self.get_inner_width()) if self.auto_wraplength and not self.autoresize_w else 0,
         }
 
@@ -283,17 +283,18 @@ class TextWidget(Widget):
             "text": self.text,
             "antialias": self.antialias,
             "color": self.text_color,
-            "bgcolor": self.text_bg_color if not self.show_text_outline else None,
+            "bgcolor": self.text_bg_color if self.text_bg_color != bf.color.TRANSPARENT else None,
             "wraplength": wrap,
         }
 
-        if self.text_bg_color is None : 
+        bg_fill_color = self.text_bg_color 
+        if self.text_bg_color in [None,bf.color.TRANSPARENT] : 
             self.surface = self.surface.convert_alpha()
-
-        bg_fill_color = (0, 0, 0, 0) if self.text_bg_color is None else  self.text_bg_color 
-        self.surface.fill(bg_fill_color)
+            bg_fill_color = (0, 0, 0, 0)
 
         text_surf = self._render_font(params)
+
+        self.surface.fill(bg_fill_color)
 
         if self.show_text_outline:
             mask = pygame.mask.from_surface(text_surf).convolve(self._text_outline_mask)

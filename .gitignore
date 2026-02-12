@@ -14,9 +14,13 @@ new/
 build_version.sh
 notes.txt
 gamejam/
-/game
-/testing
-/HalloweenGamejam
+
+
+
 test_gamejam_extract/
-.vscode/
->>>>>>> dev
+
+.venv
+.vscode
+testing
+HalloweenGamejam
+game

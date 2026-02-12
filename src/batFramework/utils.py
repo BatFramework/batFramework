@@ -82,7 +82,7 @@ class Utils:
 
 
     @staticmethod
-    def create_spotlight(inside_color, outside_color, radius, radius_stop=None, dest_surf=None,size=None):
+    def create_spotlight(inside_color, outside_color, radius, radius_stop=None, dest_surf=None,size=None,center:tuple|None=None,flags:int=pygame.SRCALPHA):
         """
         Creates a spotlight effect on a surface with a gradient from inside_color to outside_color.
 
@@ -93,6 +93,8 @@ class Utils:
             radius_stop (int, optional): Radius where the spotlight ends. Defaults to the value of radius.
             dest_surf (pygame.Surface, optional): Surface to draw the spotlight on. Defaults to None.
             size (tuple[int, int], optional): Size of the surface if dest_surf is None. Defaults to a square based on radius_stop.
+            center (tuple[int, int] | None, optional): Center coordinates of the spotlight. Defaults to the center of dest_surf.
+            flags (int, optional): Pygame surface flags for creation. Defaults to pygame.SRCALPHA.
 
         Returns:
             pygame.Surface: The surface with the spotlight effect drawn on it.
@@ -105,13 +107,13 @@ class Utils:
         if dest_surf is None:
             if size is None:
                 size = (diameter,diameter)
-            dest_surf = pygame.Surface(size, pygame.SRCALPHA)
+            dest_surf = pygame.Surface(size,flags)
         
         dest_surf.fill((0,0,0,0))
 
-
-        center = dest_surf.get_rect().center
-
+        if center is None:
+            center = dest_surf.get_rect().center 
+        
         if radius_stop != radius:
             for r in range(radius_stop, radius - 1, -1):
                 color = [
@@ -304,3 +306,19 @@ class Utils:
             return pygame.draw.aalines(surface, color, False, points)
     
         return pygame.draw.lines(surface, color, False, points, width)
+
+    @staticmethod
+    def random_direction_vector():
+        """
+        Generate a random direction vector with unit length.
+        Returns a normalized 2D vector pointing in a random direction. The vector
+        is created by rotating a unit vector along the x-axis by a random angle
+        between 0 and 360 degrees.
+        Returns:
+            pygame.Vector2: A normalized 2D vector with length 1.0 pointing in a random direction.
+        """
+
+        v = pygame.Vector2(1,0)
+        v.rotate_ip(random.randint(0,360))
+        v.normalize_ip()
+        return v

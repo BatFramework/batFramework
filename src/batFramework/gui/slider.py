@@ -17,7 +17,6 @@ def round_to_step_precision(value, step):
         return int(rounded)
     return rounded
 
-
 class SliderHandle(Indicator, DraggableWidget):
     def __init__(self,synced_var:SyncedVar):
         super().__init__()
@@ -216,8 +215,8 @@ class Slider(Button):
         return self
 
     def set_axis(self, axis: bf.axis) -> Self:
-        self.axis = axis
-        self.meter.axis = axis
+        self.meter.set_axis(axis)
+        self.axis = self.meter.axis
         self.dirty_shape = True
         return self
 

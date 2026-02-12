@@ -1,3 +1,4 @@
+from __future__ import annotations
 from .shape import Shape
 from typing import Any, Self, Callable
 import pygame
@@ -37,11 +38,20 @@ class ToggleIndicator(Indicator):
     def __init__(self, default_value: bool) -> None:
         super().__init__((20, 20))
         self.value: bool = default_value
-        self.callback = lambda val: self.set_color("green" if val else "red")
+        self.on_color = bf.color.GREEN
+        self.off_color= bf.color.RED
+        self.callback = lambda val: self.set_color(self.on_color if val else self.off_color)
         self.set_value(default_value)
         self.callback(default_value)
-        # TODO aspect ratio would be good right about here
         self.add_constraints(bf.gui.AspectRatio(1,reference_axis=bf.axis.VERTICAL))
+
+    def set_off_color(self, color:pygame.typing.ColorLike):
+        self.off_color = color
+        self.dirty_surface = True
+
+    def set_on_color(self, color:pygame.typing.ColorLike):
+        self.on_color = color
+        self.dirty_surface = True
 
     def __str__(self):
         return "ToggleIndicator"

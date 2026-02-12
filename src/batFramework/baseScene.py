@@ -37,6 +37,14 @@ class BaseScene:
         """
         self.clear_color = color
 
+    def get_mouse_pos(self,reference_layer:str|None=None)->tuple|None:
+        if reference_layer is None:
+            return pygame.mouse.get_pos()
+        layer = self.get_layer(reference_layer)
+        if not layer:
+            return None
+        return layer.get_mouse_pos()
+
     def get_clear_color(self)->pygame.typing.ColorLike:
         return self.clear_color
 

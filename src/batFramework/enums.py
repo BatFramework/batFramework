@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 import pygame
 
@@ -46,6 +47,8 @@ class color:
     DARK_GB = pygame.Color(14, 69, 11)
     LIGHT_GB = pygame.Color(73, 107, 34)
     LIGHTER_GB = pygame.Color(154, 158, 63)
+
+    TRANSPARENT = pygame.Color(0,0,0,0)
 
     @classmethod
     def __iter__(cls):

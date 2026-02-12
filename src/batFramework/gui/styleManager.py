@@ -1,6 +1,6 @@
 from ..utils import Singleton
 from .widget import Widget
-from .style import Style
+from .style import Style,DefaultStyle
 import batFramework as bf
 
 class StyleManager(metaclass=Singleton):
@@ -8,6 +8,7 @@ class StyleManager(metaclass=Singleton):
         self.styles: list[Style] = []
         self.widgets: set[Widget] = set()
         self.lookup: dict[Widget, bool] = {}
+        self.add(DefaultStyle())
 
     def register_widget(self, widget: Widget):
         if widget in self.widgets:
