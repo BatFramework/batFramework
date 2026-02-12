@@ -1,16 +1,21 @@
 """
-Physics module for batFramework
-Provides opt-in AABB collision detection and resolution with gravity support.
+Updated physics.py with collision_rect support.
+
+Changes:
+- Uses entity.collision_rect if available, else entity.rect
+- Works with all three collision rect approaches
+- Backward compatible (works without collision rects)
 """
 
 import pygame
 from pygame.math import Vector2
-from typing import Callable, Self, Iterator, TYPE_CHECKING
+from typing import Callable, Self, Iterator, TYPE_CHECKING,Optional
 from dataclasses import dataclass
 from .entity import Entity
 
 if TYPE_CHECKING:
     import batFramework as bf
+
 
 
 @dataclass(slots=True)
@@ -66,7 +71,8 @@ class SpatialHash:
                 yield (x, y)
     
     def insert(self, entity: "bf.Entity"):
-        """Add entity to spatial hash"""
+        """Add entity to spatial hash using collision rect"""
+        
         for cell in self._get_cells(entity.rect):
             if cell not in self.cells:
                 self.cells[cell] = set()
@@ -84,7 +90,7 @@ class SpatialHash:
         for cell in self._get_cells(old_rect):
             if cell in self.cells:
                 self.cells[cell].discard(entity)
-        # Add to new cells
+        # Add to new cells using current collision rect
         self.insert(entity)
     
     def query(self, rect: pygame.FRect) -> set["bf.Entity"]:
@@ -116,80 +122,48 @@ class PhysicsWorld(Entity):
     """
     Manages physics simulation for a scene.
     
+    Now supports separate collision rects via entity.collision_rect property.
+    Falls back to entity.rect if collision_rect not defined.
+    
     Features:
     - Gravity
     - AABB collision detection and resolution
     - Collision layers with configurable interactions
     - Collision callbacks
     - Optional spatial hashing for performance
-    
-    Usage:
-        physics = bf.PhysicsWorld(gravity=(0, 980))
-        physics.add_layer("player")
-        physics.add_layer("platforms")
-        physics.set_layers_collide("player", "platforms")
-        physics.add_dynamic("player", player_entity)
-        physics.add_static("platforms", *platform_entities)
-        
-        # In scene update:
-        physics.update(dt)
+    - Collision rect support (hitboxes separate from sprite position)
     """
     
     def __init__(self, gravity: tuple[float, float] = (0, 980)):
         super().__init__()
-        """
-        Initialize physics world.
-        
-        Args:
-            gravity: Gravity vector (x, y) in pixels/second². 
-                     Default (0, 980) is roughly Earth gravity at 100px = 1m scale.
-        """
         self.gravity = Vector2(gravity)
         self.collision_layers: dict[str, CollisionLayer] = {}
-        self.layer_matrix: set[tuple[str, str]] = set()  # Which layer pairs collide
+        self.layer_matrix: set[tuple[str, str]] = set()
         self.callbacks: dict[tuple[str, str], Callable[[Collision], None]] = {}
         
-        # Optional spatial partitioning
         self.spatial_hash: SpatialHash | None = None
         self._use_spatial_hash = False
     
-
     def track_entity(self, entity: "bf.Entity"):
-        """
-        Track an entity so it automatically gets removed when the entity is removed from the scene.
-        """
+        """Track an entity so it automatically gets removed when killed."""
         original_do_removed = entity.do_when_removed
 
         def new_do_removed():
-            # Call original hook
             original_do_removed()
-            # Remove from physics world if present
             self.remove(entity)
-
 
         entity.do_when_removed = new_do_removed
         return entity
 
     def enable_spatial_hash(self, cell_size: int = 64) -> Self:
-        """
-        Enable spatial hashing for better performance with many entities.
-        
-        Args:
-            cell_size: Size of grid cells in pixels. Should be slightly larger
-                      than your largest entity for best performance.
-        """
+        """Enable spatial hashing for better performance with many entities."""
         self.spatial_hash = SpatialHash(cell_size)
         self._use_spatial_hash = True
         # Rebuild hash with existing entities
         for layer in self.collision_layers.values():
-            for entity in layer.static:
-                self.spatial_hash.insert(entity)
-            for entity in layer.dynamic:
+            for entity in layer.static + layer.dynamic:
                 self.spatial_hash.insert(entity)
         return self
-    
-
-
 
     def disable_spatial_hash(self) -> Self:
         """Disable spatial hashing"""
@@ -210,11 +184,8 @@ class PhysicsWorld(Entity):
         if name in self.collision_layers:
             layer = self.collision_layers.pop(name)
             if self._use_spatial_hash and self.spatial_hash:
-                for entity in layer.static:
+                for entity in layer.static + layer.dynamic:
                     self.spatial_hash.remove(entity)
-                for entity in layer.dynamic:
-                    self.spatial_hash.remove(entity)
-            # Clean up layer matrix
             self.layer_matrix = {
                 pair for pair in self.layer_matrix 
                 if name not in pair
@@ -222,14 +193,7 @@ class PhysicsWorld(Entity):
         return self
     
     def set_layers_collide(self, layer_a: str, layer_b: str, collide: bool = True) -> Self:
-        """
-        Set whether two layers should check collisions between each other.
-        
-        Args:
-            layer_a: First layer name
-            layer_b: Second layer name  
-            collide: True to enable collisions, False to disable
-        """
+        """Set whether two layers should check collisions."""
         key = tuple(sorted([layer_a, layer_b]))
         if collide:
             self.layer_matrix.add(key)
@@ -248,14 +212,7 @@ class PhysicsWorld(Entity):
         layer_b: str, 
         callback: Callable[[Collision], None]
     ) -> Self:
-        """
-        Set callback when entities from these layers collide.
-        
-        Args:
-            layer_a: First layer name
-            layer_b: Second layer name
-            callback: Function called with Collision data when collision occurs
-        """
+        """Set callback when entities from these layers collide."""
         key = tuple(sorted([layer_a, layer_b]))
         self.callbacks[key] = callback
         return self
@@ -267,10 +224,7 @@ class PhysicsWorld(Entity):
         return self
     
     def add_static(self, layer: str, *entities: "bf.Entity") -> Self:
-        """
-        Add static (non-moving) entities to a layer.
-        Static entities don't have physics applied but can be collided with.
-        """
+        """Add static (non-moving) entities to a layer."""
         if layer not in self.collision_layers:
             self.add_layer(layer)
         self.collision_layers[layer].static.extend(entities)
@@ -282,10 +236,7 @@ class PhysicsWorld(Entity):
         return self
     
     def add_dynamic(self, layer: str, *entities: "bf.DynamicEntity") -> Self:
-        """
-        Add dynamic (moving) entities to a layer.
-        Dynamic entities have gravity and collision resolution applied.
-        """
+        """Add dynamic (moving) entities to a layer."""
         if layer not in self.collision_layers:
             self.add_layer(layer)
         self.collision_layers[layer].dynamic.extend(entities)
@@ -321,53 +272,14 @@ class PhysicsWorld(Entity):
         if layer_name in self.collision_layers:
             layer = self.collision_layers[layer_name]
             if self._use_spatial_hash and self.spatial_hash:
-                for entity in layer.static:
-                    self.spatial_hash.remove(entity)
-                for entity in layer.dynamic:
+                for entity in layer.static + layer.dynamic:
                     self.spatial_hash.remove(entity)
             layer.clear()
         return self
     
-    def __str__(self) -> str:
-        lines = [
-            "PhysicsWorld",
-            f"  gravity: {tuple(self.gravity)}",
-            f"  layers: {len(self.collision_layers)}",
-        ]
-
-        if self.collision_layers:
-            for name, layer in self.collision_layers.items():
-                lines.append(
-                    f"    {name}: static={len(layer.static)}, dynamic={len(layer.dynamic)}"
-                )
-
-        lines.append(f"  collision pairs: {len(self.layer_matrix)}")
-
-        if self.callbacks:
-            lines.append("  callbacks:")
-            for a, b in self.callbacks:
-                lines.append(f"    {a} <-> {b}")
-
-        lines.append(f"  spatial hash: {self._use_spatial_hash}")
-
-        if self.spatial_hash:
-            lines.append(f"    cell size: {self.spatial_hash.cell_size}")
-
-        return "\n".join(lines)
-    
-    def __repr__(self) -> str:
-        return self.__str__()
-    
     @staticmethod
     def aabb_check(a: pygame.FRect, b: pygame.FRect) -> Collision | None:
-        """
-        Check for AABB collision between two rects.
-        
-        Returns:
-            Collision object if colliding, None otherwise.
-            Note: entity_a and entity_b will be None (rect-only check)
-        """
-        # Calculate overlap on each axis
+        """Check for AABB collision between two rects."""
         dx = a.centerx - b.centerx
         dy = a.centery - b.centery
         
@@ -377,7 +289,6 @@ class PhysicsWorld(Entity):
         if overlap_x <= 0 or overlap_y <= 0:
             return None
         
-        # Determine collision normal (smallest penetration axis)
         if overlap_x < overlap_y:
             normal = Vector2(1 if dx > 0 else -1, 0)
             overlap = Vector2(overlap_x, 0)
@@ -399,12 +310,16 @@ class PhysicsWorld(Entity):
     ) -> Collision | None:
         """
         Check for collision between two entities.
-        
-        Returns:
-            Collision object if colliding, None otherwise.
+        Uses collision_rect if available, otherwise uses rect.
         """
-        if entity_a is entity_b : return False
-        result = self.aabb_check(entity_a.rect, entity_b.rect)
+        if entity_a is entity_b:
+            return None
+        
+        # Get collision rects (falls back to entity.rect if no collision_rect)
+        rect_a = entity_a.rect
+        rect_b = entity_b.rect
+        
+        result = self.aabb_check(rect_a, rect_b)
         if result:
             result.entity_a = entity_a
             result.entity_b = entity_b
@@ -454,11 +369,8 @@ class PhysicsWorld(Entity):
         Update physics simulation.
         
         1. Apply gravity to dynamic entities
-        2. Move entities by velocity
-        3. Detect and resolve collisions
-        
-        Args:
-            dt: Delta time in seconds
+        2. Move entities by velocity  
+        3. Detect and resolve collisions (uses collision_rect if available)
         """
         if dt <= 0:
             return
@@ -469,73 +381,175 @@ class PhysicsWorld(Entity):
             for entity in layer.dynamic:
                 dynamics.append((layer_name, entity))
         
-        # 1. Apply gravity to all dynamic entities
+        # 1. Apply gravity
         for _, entity in dynamics:
             if not getattr(entity, 'ignore_collisions', False):
                 entity.velocity += self.gravity * dt
         
-        # 2. Move and resolve collisions for each dynamic entity
+        # 2. Move and resolve collisions
+        # Tracks dynamic-dynamic pairs already resolved this frame, keyed by axis,
+        # to avoid double resolution while allowing the same pair to resolve on both axes.
+        resolved_pairs: set[tuple] = set()
+
         for entity_layer, entity in dynamics:
             if getattr(entity, 'ignore_collisions', False):
                 entity.move_by_velocity(dt)
                 continue
             
-            old_rect = entity.rect.copy() if self._use_spatial_hash else None
+            # Reset grounded each frame — will be set back to True by on_collideY
+            # if a ground collision is actually resolved this frame.
+            # This ensures walking off a ledge immediately clears the grounded state.
+            if hasattr(entity, 'grounded'):
+                entity._was_grounded = entity.grounded
+                entity.grounded = False
+
+            # Store old collision rect for spatial hash update
+            old_collision_rect = entity.rect.copy() if self._use_spatial_hash else None
             
             # Move X axis
-            entity.set_position(entity.rect.x + entity.velocity.x * dt,None)
-            self._resolve_axis(entity, entity_layer, 'x')
+            entity.set_position(entity.rect.x + entity.velocity.x * dt, None)
+            self._resolve_axis(entity, entity_layer, 'x', resolved_pairs)
             
-            # Move Y axis
-            entity.set_position(None,entity.rect.y + entity.velocity.y * dt)
-            self._resolve_axis(entity, entity_layer, 'y')
+            # Move Y axis  
+            entity.set_position(None, entity.rect.y + entity.velocity.y * dt)
+            self._resolve_axis(entity, entity_layer, 'y', resolved_pairs)
             
             # Update spatial hash
-            if self._use_spatial_hash and self.spatial_hash and old_rect:
-                self.spatial_hash.update(entity, old_rect)
+            if self._use_spatial_hash and self.spatial_hash and old_collision_rect:
+                self.spatial_hash.update(entity, old_collision_rect)
  
         super().update(dt)
     
     def _resolve_axis(
-        self, 
-        entity: "bf.DynamicEntity", 
-        entity_layer: str, 
-        axis: str
+        self,
+        entity: "bf.DynamicEntity",
+        entity_layer: str,
+        axis: str,
+        resolved_pairs: set[tuple]
     ):
-        """Resolve collisions for one axis"""
+        """Resolve collisions for one axis.
+
+        For dynamic-dynamic collisions:
+        - Position correction is split by mass ratio (heavier moves less)
+        - Velocity is exchanged using the 1D elastic collision formula, scaled
+          by the average restitution of the two entities (0 = sticky, 1 = elastic)
+        - On Y, if other is already grounded it is treated as immovable to
+          prevent it being pushed into the static geometry it rests on
+        - resolved_pairs is keyed by (frozenset(ids), axis) so X and Y are
+          tracked independently — a stacked pair still needs Y resolution even
+          if it was already seen during the X pass
+
+        Both mass and restitution are read via getattr so they are optional —
+        defaults are mass=1.0 and restitution=0.0 (perfectly inelastic).
+        """
         import batFramework as bf
-        
-        # Check against all layers this entity's layer collides with
+
         for other_layer_name, other_layer in self.collision_layers.items():
             if not self.layers_collide(entity_layer, other_layer_name):
                 continue
-            
-            # Check against all candidates in this layer
+
             for other in self._get_collision_candidates(entity, other_layer):
                 collision = self.check_collision(entity, other)
                 if not collision:
                     continue
-                # Resolve based on axis
+
+                other_is_dynamic = (
+                    isinstance(other, bf.DynamicEntity)
+                    and not getattr(other, 'ignore_collisions', False)
+                )
+
+                # Pair key includes axis so X and Y are deduplicated independently.
+                # Without this, a pair seen (but not resolved) on X would be skipped
+                # entirely on Y, causing stacked entities to phase through each other.
+                if other_is_dynamic:
+                    pair_key = (frozenset((id(entity), id(other))), axis)
+                    if pair_key in resolved_pairs:
+                        continue
+                    resolved_pairs.add(pair_key)
+
                 resolved = False
+
                 if axis == 'x' and collision.overlap.x > 0:
-                    entity.set_position(entity.rect.x + collision.overlap.x * collision.normal.x,None)
-                    
-                    # Call entity hook
-                    if isinstance(entity, bf.DynamicEntity):
+                    mtv_x = collision.overlap.x * collision.normal.x
+
+                    if other_is_dynamic:
+                        mass_a = getattr(entity, 'mass', 1.0)
+                        mass_b = getattr(other,  'mass', 1.0)
+                        total  = mass_a + mass_b
+
+                        # Split position correction by mass
+                        entity.set_position(entity.rect.x + mtv_x * (mass_b / total), None)
+                        other.set_position( other.rect.x  - mtv_x * (mass_a / total), None)
+
+                        # Elastic velocity exchange scaled by restitution
+                        restitution = (
+                            getattr(entity, 'restitution', 0.0)
+                            + getattr(other,  'restitution', 0.0)
+                        ) / 2.0
+                        va, vb = entity.velocity.x, other.velocity.x
+                        new_va = (va*(mass_a-mass_b) + 2*mass_b*vb) / total
+                        new_vb = (vb*(mass_b-mass_a) + 2*mass_a*va) / total
+                        entity.velocity.x = new_va * restitution
+                        other.velocity.x  = new_vb * restitution
+
                         if not entity.on_collideX(other):
                             entity.velocity.x = 0
+                        if not other.on_collideX(entity):
+                            other.velocity.x = 0
+                    else:
+                        entity.set_position(entity.rect.x + mtv_x, None)
+                        if not entity.on_collideX(other):
+                            entity.velocity.x = 0
+
                     resolved = True
-                    
+
                 elif axis == 'y' and collision.overlap.y > 0:
-                    entity.set_position(None,entity.rect.y + collision.overlap.y * collision.normal.y)
-                    
-                    # Call entity hook
-                    if isinstance(entity, bf.DynamicEntity):
+                    mtv_y = collision.overlap.y * collision.normal.y
+
+                    if other_is_dynamic:
+                        # If other is grounded it is braced against static geometry —
+                        # pushing it down would clip it into the floor it rests on.
+                        # Treat it as immovable on Y; entity takes the full correction.
+                        if getattr(other, 'grounded', False):
+                            entity.set_position(None, entity.rect.y + mtv_y)
+
+                            restitution = (
+                                getattr(entity, 'restitution', 0.0)
+                                + getattr(other,  'restitution', 0.0)
+                            ) / 2.0
+                            entity.velocity.y *= -restitution
+
+                            if not entity.on_collideY(other):
+                                entity.velocity.y = 0
+                        else:
+                            mass_a = getattr(entity, 'mass', 1.0)
+                            mass_b = getattr(other,  'mass', 1.0)
+                            total  = mass_a + mass_b
+
+                            entity.set_position(None, entity.rect.y + mtv_y * (mass_b / total))
+                            other.set_position( None, other.rect.y  - mtv_y * (mass_a / total))
+
+                            restitution = (
+                                getattr(entity, 'restitution', 0.0)
+                                + getattr(other,  'restitution', 0.0)
+                            ) / 2.0
+                            va, vb = entity.velocity.y, other.velocity.y
+                            new_va = (va*(mass_a-mass_b) + 2*mass_b*vb) / total
+                            new_vb = (vb*(mass_b-mass_a) + 2*mass_a*va) / total
+                            entity.velocity.y = new_va * restitution
+                            other.velocity.y  = new_vb * restitution
+
+                            if not entity.on_collideY(other):
+                                entity.velocity.y = 0
+                            if not other.on_collideY(entity):
+                                other.velocity.y = 0
+                    else:
+                        entity.set_position(None, entity.rect.y + mtv_y)
                         if not entity.on_collideY(other):
                             entity.velocity.y = 0
+
                     resolved = True
-                
-                # Trigger callback
+
                 if resolved:
                     self._trigger_callback(entity_layer, other_layer_name, collision)
     
@@ -544,19 +558,11 @@ class PhysicsWorld(Entity):
         origin: tuple[float, float], 
         direction: tuple[float, float], 
         max_distance: float = float('inf'),
-        layers: list[str] | None = None
+        caster : Optional["bf.Entity"] = None,
+        *layers:str 
     ) -> tuple["bf.Entity", float, Vector2] | None:
         """
         Cast a ray and find the first entity it hits.
-        
-        Args:
-            origin: Ray start point (x, y)
-            direction: Ray direction (will be normalized)
-            max_distance: Maximum ray length
-            layers: List of layer names to check (None = all layers)
-        
-        Returns:
-            Tuple of (entity, distance, hit_point) or None if no hit
         """
         origin = Vector2(origin)
         direction = Vector2(direction)
@@ -565,9 +571,11 @@ class PhysicsWorld(Entity):
         direction = direction.normalize()
         
         closest_hit = None
+        if max_distance is None:
+            max_distance = float('inf')
         closest_dist = max_distance
         
-        target_layers = layers if layers else list(self.collision_layers.keys())
+        target_layers = list(layers) if layers else list(self.collision_layers.keys())
         
         for layer_name in target_layers:
             if layer_name not in self.collision_layers:
@@ -575,6 +583,7 @@ class PhysicsWorld(Entity):
             layer = self.collision_layers[layer_name]
             
             for entity in layer.static + layer.dynamic:
+                if entity is caster : continue
                 result = self._ray_vs_aabb(origin, direction, entity.rect, closest_dist)
                 if result and result[0] < closest_dist:
                     closest_dist = result[0]
@@ -583,35 +592,42 @@ class PhysicsWorld(Entity):
         return closest_hit
     
     @staticmethod
-    def _ray_vs_aabb(
-        origin: Vector2, 
-        direction: Vector2, 
-        rect: pygame.FRect, 
-        max_dist: float
-    ) -> tuple[float, Vector2] | None:
-        """Ray vs AABB intersection test"""
-        # Avoid division by zero
-        dir_x = direction.x if direction.x != 0 else 1e-10
-        dir_y = direction.y if direction.y != 0 else 1e-10
-        
-        t1 = (rect.left - origin.x) / dir_x
-        t2 = (rect.right - origin.x) / dir_x
-        t3 = (rect.top - origin.y) / dir_y
-        t4 = (rect.bottom - origin.y) / dir_y
-        
-        tmin = max(min(t1, t2), min(t3, t4))
-        tmax = min(max(t1, t2), max(t3, t4))
-        
+    def _ray_vs_aabb(origin, direction, rect, max_dist):
+        tmin = -float('inf')
+        tmax = float('inf')
+
+        # X slab
+        if direction.x != 0:
+            tx1 = (rect.left - origin.x) / direction.x
+            tx2 = (rect.right - origin.x) / direction.x
+            tmin = max(tmin, min(tx1, tx2))
+            tmax = min(tmax, max(tx1, tx2))
+        else:
+            # Ray parallel to X axis — must be inside slab
+            if origin.x < rect.left or origin.x > rect.right:
+                return None
+
+        # Y slab
+        if direction.y != 0:
+            ty1 = (rect.top - origin.y) / direction.y
+            ty2 = (rect.bottom - origin.y) / direction.y
+            tmin = max(tmin, min(ty1, ty2))
+            tmax = min(tmax, max(ty1, ty2))
+        else:
+            # Ray parallel to Y axis — must be inside slab
+            if origin.y < rect.top or origin.y > rect.bottom:
+                return None
+
         if tmax < 0 or tmin > tmax or tmin > max_dist:
             return None
-        
+
         t = tmin if tmin >= 0 else tmax
-        if t > max_dist:
+        if t < 0 or t > max_dist:
             return None
-        
+
         hit_point = origin + direction * t
         return (t, hit_point)
-    
+
     def query_rect(
         self, 
         rect: pygame.FRect, 
@@ -619,13 +635,7 @@ class PhysicsWorld(Entity):
     ) -> list["bf.Entity"]:
         """
         Find all entities overlapping a rectangle.
-        
-        Args:
-            rect: Query rectangle
-            layers: List of layer names to check (None = all layers)
-        
-        Returns:
-            List of overlapping entities
+        Uses collision_rect for overlap testing.
         """
         results = []
         target_layers = layers if layers else list(self.collision_layers.keys())
@@ -655,13 +665,7 @@ class PhysicsWorld(Entity):
     ) -> list["bf.Entity"]:
         """
         Find all entities containing a point.
-        
-        Args:
-            point: Query point (x, y)
-            layers: List of layer names to check (None = all layers)
-        
-        Returns:
-            List of entities containing the point
+        Uses collision_rect for point testing.
         """
         results = []
         target_layers = layers if layers else list(self.collision_layers.keys())
@@ -678,20 +682,14 @@ class PhysicsWorld(Entity):
         return results
 
 
-# Convenience functions for simple collision checks without PhysicsWorld
-
+# Convenience functions
 def check_aabb(a: pygame.FRect, b: pygame.FRect) -> bool:
     """Simple AABB overlap check"""
     return a.colliderect(b)
 
 
 def get_overlap(a: pygame.FRect, b: pygame.FRect) -> tuple[float, float] | None:
-    """
-    Get overlap between two AABBs.
-    
-    Returns:
-        (overlap_x, overlap_y) or None if no collision
-    """
+    """Get overlap between two AABBs."""
     dx = abs(a.centerx - b.centerx)
     dy = abs(a.centery - b.centery)
     

@@ -13,6 +13,8 @@ class DynamicEntity(bf.Entity):
         self.ignore_collisions : bool = False
         self.grounded: bool = False  # Set by physics when standing on ground
         self._was_grounded: bool = False  # Previous frame grounded state
+        self.mass : float = 1.0
+        self.restitution : float = 0.5 # 1.0 is bouncy, 0.0 is not bouncy
 
     def on_collideX(self, collider: "bf.Entity") -> bool:
         """
@@ -37,9 +39,10 @@ class DynamicEntity(bf.Entity):
         Returns:
             True to keep velocity, False to zero velocity (default)
         """
-        # Track grounded state when landing (positive Y velocity = falling)
+        # PhysicsWorld resets grounded=False at the start of each frame before
+        # movement, so this runs only when a real ground collision is resolved.
+        # _was_grounded holds last frame's value and is also set by PhysicsWorld.
         if self.velocity.y > 0:
-            self._was_grounded = self.grounded
             self.grounded = True
             if not self._was_grounded:
                 self.on_land(collider)
