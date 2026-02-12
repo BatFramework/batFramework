@@ -7,18 +7,20 @@ from typing import List, Dict, Tuple, Union, Optional, Self, Iterable, Callable,
 
 
 class Animation:
-    def __init__(
-        self,
-        name: str
-    ) -> None:
-        """
-        Class to store 2D animation data.
-        All frames are expected to have the same size.
-        This class is not intended to be used on its own, but can be used to easily manage
-        multiple animations using a simple counter.
-        The duration list provides a entry point for tweaking the timings,
-        so image data can be saved (no need for contiguous duplicate frames)
-        """
+    """
+    Sprite animation with configurable frame durations.
+    
+    Frame timing is specified as a list of integers representing
+    the number of frames (at the base FPS) each sprite frame should display.
+    
+    Example:
+        duration_list = [10, 5, 10]  # First frame: 10 ticks, second: 5, third: 10
+        At 60 FPS: [0.167s, 0.083s, 0.167s]
+        
+    The animation counter advances by dt * fps each update, and frames
+    are selected based on which duration bucket the counter falls into.
+    """
+    def __init__(self,name: str) -> None:
         self.name = name
         self._frames: list[pygame.Surface] = []
         self._cached_flip : dict[tuple[bool,bool],pygame.Surface] = {}
@@ -122,12 +124,13 @@ class Animation:
         self._counter += dt * 60 
         self._frame_number = self.counter_to_frame(self._counter)
         if self._counter >= sum(self._duration_list):
-            #one animation cycle ended
             if self._loop > 0:
                 self._loop -= 1
-
+            if self._loop != 0:  # Continue looping
+                self._counter %= sum(self._duration_list)
             if self._end_callback:
                 self._end_callback()
+                        
                 
         if self._frame_number != self._previous_frame_number:
             self._previous_frame_number = self._frame_number

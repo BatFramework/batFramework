@@ -215,8 +215,8 @@ class Slider(Button):
         return self
 
     def set_axis(self, axis: bf.axis) -> Self:
-        self.axis = axis
-        self.meter.axis = axis
+        self.meter.set_axis(axis)
+        self.axis = self.meter.axis
         self.dirty_shape = True
         return self
 
