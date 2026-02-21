@@ -20,12 +20,10 @@ class ScrollingSprite(bf.Sprite):
         if self.original_surface:
             self.original_width, self.original_height = self.original_surface.get_size()
 
-
     def get_debug_outlines(self):
         yield from super().get_debug_outlines()
         for r in self._get_mosaic_rect_list():
             yield r.move(*self.rect.topleft)
-
 
     def set_autoscroll(self, x: float, y: float) -> Self:
         self.auto_scroll.update(x, y)
@@ -66,7 +64,7 @@ class ScrollingSprite(bf.Sprite):
         self.rect = self.surface.get_frect(topleft=self.rect.topleft)
         return self
 
-    def _get_mosaic_rect_list(self,camera:bf.Camera=None) -> Iterator[pygame.Rect]:
+    def _get_mosaic_rect_list(self, camera: bf.Camera = None) -> Iterator[pygame.Rect]:
         # Use integer values for the starting points, converted from floating point scroll values
         start_x = int(self.scroll_value.x % self.original_width)
         start_y = int(self.scroll_value.y % self.original_height)
@@ -91,8 +89,15 @@ class ScrollingSprite(bf.Sprite):
             y = y_position
             while y < end_y:
                 r = pygame.Rect(x, y, self.original_width, self.original_height)
-                
-                if camera and camera.rect.colliderect((x+camera.rect.x,y+camera.rect.y,self.original_width,self.original_height)):
+
+                if camera and camera.rect.colliderect(
+                    (
+                        x + camera.rect.x,
+                        y + camera.rect.y,
+                        self.original_width,
+                        self.original_height,
+                    )
+                ):
                     yield r
                 else:
                     yield r
@@ -109,7 +114,13 @@ class ScrollingSprite(bf.Sprite):
             return
         # self.surface.fill((0, 0, 0, 0))
         camera.surface.fblits(
-            [(self.original_surface, r.move(self.rect.x-camera.rect.x,self.rect.y-camera.rect.y)) for r in self._get_mosaic_rect_list(camera)]
+            [
+                (
+                    self.original_surface,
+                    r.move(self.rect.x - camera.rect.x, self.rect.y - camera.rect.y),
+                )
+                for r in self._get_mosaic_rect_list(camera)
+            ]
         )
         # camera.surface.blit(self.surface, camera.world_to_screen(self.rect))
         return

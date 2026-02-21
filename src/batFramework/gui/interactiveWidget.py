@@ -1,11 +1,12 @@
 from .widget import Widget
 from typing import Self
 import pygame
-from math import cos
+from math import cos,ceil
 import batFramework as bf
 
-def children_has_focus(widget)->bool:
-    if isinstance(widget,InteractiveWidget) and widget.is_focused:
+
+def children_has_focus(widget) -> bool:
+    if isinstance(widget, InteractiveWidget) and widget.is_focused:
         return True
     for child in widget.children:
         if children_has_focus(child):
@@ -15,44 +16,43 @@ def children_has_focus(widget)->bool:
 
 class InteractiveWidget(Widget):
     __focus_effect_cache = {}
+
     def __init__(self, *args, **kwargs) -> None:
         self.is_focused: bool = False
         self.is_hovered: bool = False
-        self.is_clicked_down: list[bool] = [False]*5
+        self.is_clicked_down: list[bool] = [False] * 5
         self.focused_index = 0
-        self.click_pass_through : bool = False
+        self.click_pass_through: bool = False
         super().__init__(*args, **kwargs)
-
 
     def handle_event(self, event):
         if self.is_hovered:
             if event.type == pygame.MOUSEBUTTONDOWN:
-                self.is_clicked_down[event.button-1] = True
-                self.on_click_down(event.button,event)
+                self.is_clicked_down[event.button - 1] = True
+                self.on_click_down(event.button, event)
             elif event.type == pygame.MOUSEBUTTONUP:
-                self.is_clicked_down[event.button-1] = False
-                self.on_click_up(event.button,event)
+                self.is_clicked_down[event.button - 1] = False
+                self.on_click_up(event.button, event)
 
         if self.is_focused:
             if event.type == pygame.KEYDOWN:
-                self.on_key_down(event.key,event)
+                self.on_key_down(event.key, event)
             elif event.type == pygame.KEYUP:
-                self.on_key_up(event.key,event)
+                self.on_key_up(event.key, event)
 
-    def set_click_pass_through(self,pass_through:bool)->Self:
+    def set_click_pass_through(self, pass_through: bool) -> Self:
         """
         # Allows mouse click events to pass through this widget to underlying widgets if True.
         """
         self.click_pass_through = pass_through
         return self
 
-
     def allow_focus_to_self(self) -> bool:
         return self.visible
 
-    def get_focus(self) -> bool:
+    def ask_focus(self,focus_area:pygame.Rect=None) -> bool:
         if self.allow_focus_to_self() and ((r := self.get_root()) is not None):
-            r.focus_on(self)
+            r.focus_on(self,focus_area)
             return True
         return False
 
@@ -77,7 +77,9 @@ class InteractiveWidget(Widget):
             widget = stack.pop()
             if isinstance(widget, InteractiveWidget) and widget.allow_focus_to_self():
                 widgets.append(widget)
-            stack.extend(reversed(widget.children))  # Add children in reverse for left-to-right traversal
+            stack.extend(
+                reversed(widget.children)
+            )  # Add children in reverse for left-to-right traversal
         return widgets
 
     def find_next_widget(self, current):
@@ -86,15 +88,17 @@ class InteractiveWidget(Widget):
             return None  # Root has no parent
 
         if hasattr(current.parent, "layout"):
-            siblings =  current.parent.get_interactive_children()
+            siblings = current.parent.get_interactive_children()
         else:
-            siblings = current.parent.children 
-
-        start_index = siblings.index(current)
+            siblings = current.parent.children
+        try:
+            start_index = siblings.index(current)
+        except ValueError :
+            start_index = 0
         good_index = -1
         for i in range(start_index + 1, len(siblings)):
             sibling = siblings[i]
-            if isinstance(sibling,InteractiveWidget) and  not(sibling is current) :
+            if isinstance(sibling, InteractiveWidget) and not (sibling is current):
                 if sibling.allow_focus_to_self():
                     good_index = i
                     break
@@ -105,21 +109,24 @@ class InteractiveWidget(Widget):
             # Current is the last child, move to parent's next sibling
             return self.find_next_widget(current.parent)
 
-    def find_prev_widget(self, current : "Widget"):
+    def find_prev_widget(self, current: "Widget"):
         """Find the previous interactive widget, considering parent and sibling relationships."""
         if current.is_root:
             return None  # Root has no parent
 
         # siblings = [c for c in current.parent.children if isinstance(c,InteractiveWidget) and c.allow_focus_to_self()]
         if hasattr(current.parent, "layout"):
-            siblings =  current.parent.get_interactive_children()
+            siblings = current.parent.get_interactive_children()
         else:
-            siblings = current.parent.children 
-        start_index = siblings.index(current)
+            siblings = current.parent.children
+        try:
+            start_index = siblings.index(current)
+        except ValueError :
+            start_index = 0
         good_index = -1
-        for i in range(start_index-1,-1,-1):
+        for i in range(start_index - 1, -1, -1):
             sibling = siblings[i]
-            if isinstance(sibling,InteractiveWidget) and  not(sibling is current) :
+            if isinstance(sibling, InteractiveWidget) and not (sibling is current):
                 if sibling.allow_focus_to_self():
                     good_index = i
                     break
@@ -135,37 +142,35 @@ class InteractiveWidget(Widget):
         if previous_widget:
             next_widget = self.find_next_widget(previous_widget)
             if next_widget:
-                next_widget.get_focus()
+                next_widget.ask_focus()
 
     def focus_prev_tab(self, previous_widget):
         """Focus the previous interactive widget."""
         if previous_widget:
             prev_widget = self.find_prev_widget(previous_widget)
             if prev_widget:
-                prev_widget.get_focus()
+                prev_widget.ask_focus()
 
+    def on_key_down(self, key, event) -> None:
+        self.do_on_key_down(key, event)
 
-    
-    def on_key_down(self, key,event) -> None:
-        self.do_on_key_down(key,event)
+    def on_key_up(self, key, event) -> None:
+        self.do_on_key_up(key, event)
 
-    def on_key_up(self, key,event) -> None:
-        self.do_on_key_up(key,event)
-
-    def on_click_down(self, button: int,event=None) -> None:
+    def on_click_down(self, button: int, event=None) -> None:
         if not self.click_pass_through:
             event.consumed = True
-        self.do_on_click_down(button,event)
+        self.do_on_click_down(button, event)
 
-    def on_click_up(self, button: int,event=None) -> None:
+    def on_click_up(self, button: int, event=None) -> None:
         if not self.click_pass_through:
             event.consumed = True
-        self.do_on_click_up(button,event)
+        self.do_on_click_up(button, event)
 
-    def on_get_focus(self) -> None:
+    def on_get_focus(self, focus_area : pygame.Rect=None) -> None:
         self.is_focused = True
-        if isinstance(self.parent,bf.gui.InteractiveWidget):
-            self.parent.set_focused_child(self)
+        if isinstance(self.parent, bf.gui.InteractiveWidget):
+            self.parent.set_focused_child(self,focus_area)
         self.do_on_get_focus()
 
     def on_lose_focus(self) -> None:
@@ -178,17 +183,17 @@ class InteractiveWidget(Widget):
     def do_on_lose_focus(self) -> None:
         pass
 
-    def do_on_key_down(self, key,event) -> None:
+    def do_on_key_down(self, key, event) -> None:
         return
 
-    def do_on_key_up(self, key,event) -> None:
+    def do_on_key_up(self, key, event) -> None:
         return
 
-    def do_on_click_down(self, button: int,event=None) -> None:
-        return 
+    def do_on_click_down(self, button: int, event=None) -> None:
+        return
 
-    def do_on_click_up(self, button: int,event=None) -> None:
-        return 
+    def do_on_click_up(self, button: int, event=None) -> None:
+        return
 
     def on_enter(self) -> None:
         self.is_hovered = True
@@ -196,7 +201,7 @@ class InteractiveWidget(Widget):
 
     def on_exit(self) -> None:
         self.is_hovered = False
-        self.is_clicked_down = [False]*5
+        self.is_clicked_down = [False] * 5
         self.do_on_exit()
 
     def do_on_enter(self) -> None:
@@ -211,33 +216,41 @@ class InteractiveWidget(Widget):
     def do_on_mouse_motion(self, x, y) -> None:
         pass
 
-    def set_focused_child(self, child: "InteractiveWidget"):
+    def set_focused_child(self, child: "InteractiveWidget", focus_area : pygame.Rect=None):
         pass
 
     def draw_focused(self, camera: bf.Camera) -> None:
-        if isinstance(self,bf.gui.Shape):
+        if isinstance(self, bf.gui.Shape):
             prop = 8
             pulse = int(prop * 0.75 - (prop * cos(pygame.time.get_ticks() / 100) / 4))
             delta = (pulse // 2) * 2  # ensure even
 
             # Get rect in screen space, inflated for visual effect
-            screen_rect = camera.world_to_screen(self.rect.inflate(prop+self.outline_width, prop+self.outline_width))
+            screen_rect = camera.world_to_screen(
+                self.rect.inflate(prop + self.outline_width, prop + self.outline_width)
+            )
 
             # Shrink for inner pulsing border
             inner = screen_rect.inflate(-delta, -delta)
-            inner.topleft = 0,0
-            inner.w = round(inner.w)
-            inner.h = round(inner.h)
+            inner.topleft = 0, 0
+            inner.w = ceil(inner.w)+1
+            inner.h = ceil(inner.h)+1
 
             surface = InteractiveWidget.__focus_effect_cache.get(inner.size)
             if surface is None:
                 surface = pygame.Surface(inner.size)
                 InteractiveWidget.__focus_effect_cache[inner.size] = surface
 
-            surface.set_colorkey((0,0,0))
+            surface.set_colorkey((255, 0, 255))
+            surface.fill((255,0,255))
             pygame.draw.rect(surface, "white", inner, 2, *self.border_radius)
-            pygame.draw.rect(surface, "black", inner.inflate(-1 * min(16,inner.w*0.75),0), 2)
-            pygame.draw.rect(surface, "black", inner.inflate(0,-1 * min(16,inner.h*0.75)), 2)
-            inner.center = screen_rect.center
-            camera.surface.blit(surface,inner)
+            #pygame.draw.rect(surface, "black", inner.inflate(-2,-2), 1, *self.border_radius)
 
+            pygame.draw.rect(
+                surface, (255,0,255), inner.inflate(-1 * (min(16, int(inner.w * 0.75)) & ~1), 0), 2
+            )
+            pygame.draw.rect(
+                surface, (255,0,255), inner.inflate(0, -1 * (min(16, int(inner.h * 0.75)) & ~1)), 2
+            )
+            inner.center = screen_rect.center
+            camera.surface.blit(surface, inner)

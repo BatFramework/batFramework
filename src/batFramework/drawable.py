@@ -11,7 +11,7 @@ class Drawable(Entity):
 
     def __init__(
         self,
-        size: None | tuple[int|float] = None,
+        size: None | tuple[int | float] = None,
         surface_flags: int = 0,
         convert_alpha: bool = False,
         *args,
@@ -25,7 +25,7 @@ class Drawable(Entity):
         self.convert_alpha: bool = convert_alpha
         self.surface_flags: int = surface_flags
         self.blit_flags: int = 0
-        self.drawn_by_group : bool = False # flag for render group  
+        self.drawn_by_group: bool = False  # flag for render group
         self.surface: pygame.Surface = pygame.Surface(self.rect.size, surface_flags)
         if convert_alpha:
             self.surface = self.surface.convert_alpha()
@@ -64,23 +64,20 @@ class Drawable(Entity):
         self.visible = value
         return self
 
-    def get_mask(self)->pygame.Mask:
+    def get_mask(self) -> pygame.Mask:
         return pygame.mask.from_surface(self.surface)
 
-    def mask_collide_point(self,point)->bool:
+    def mask_collide_point(self, point) -> bool:
         if not self.rect.collidepoint(point):
             return False
         mask = pygame.mask.from_surface(self.surface)
-        x = point[0]-  self.rect.x
+        x = point[0] - self.rect.x
         y = point[1] - self.rect.y
-        return mask.get_at((x,y))==1
-
-
-
+        return mask.get_at((x, y)) == 1
 
     def set_size(self, size: tuple[float, float]) -> Self:
         """
-            Will erase surface data and create new empty surface
+        Will erase surface data and create new empty surface
         """
         if size == self.rect.size:
             return self
@@ -98,7 +95,12 @@ class Drawable(Entity):
         """
         Draw the entity onto the camera surface
         """
-        if not self.visible or self.drawn_by_group or not camera.world_rect.colliderect(self.rect) or self.surface.get_alpha() == 0:
+        if (
+            not self.visible
+            or self.drawn_by_group
+            or not camera.world_rect.colliderect(self.rect)
+            or self.surface.get_alpha() == 0
+        ):
             return
         camera.surface.blit(
             self.surface,

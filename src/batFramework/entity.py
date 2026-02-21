@@ -11,13 +11,13 @@ class Entity:
     _count: int = 0
     _available_uids: set[int] = set()
 
-    def __init__(self,*args,**kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         if Entity._available_uids:
             self.uid = Entity._available_uids.pop()
         else:
             self.uid = Entity._count
             Entity._count += 1
-        size = kwargs.get("size",(10,10))
+        size = kwargs.get("size", (10, 10))
         self.rect = pygame.FRect(0, 0, *size)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
@@ -31,14 +31,18 @@ class Entity:
             pass
 
     def set_position(self, x, y) -> Self:
-        if x is None : x = self.rect.x
-        if y is None : y = self.rect.y
+        if x is None:
+            x = self.rect.x
+        if y is None:
+            y = self.rect.y
         self.rect.topleft = x, y
         return self
 
     def set_center(self, x, y) -> Self:
-        if x is None : x = self.rect.centerx
-        if y is None : y = self.rect.centery
+        if x is None:
+            x = self.rect.centerx
+        if y is None:
+            y = self.rect.centery
         self.rect.center = x, y
         return self
 

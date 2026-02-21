@@ -4,28 +4,34 @@ from .toggle import Toggle
 from .syncedVar import SyncedVar
 
 
-# TODO : RadioButton with no synced var ? click crashes
 
 class RadioButton(Toggle):
-    def __init__(self, text: str, synced_var: SyncedVar, radio_value: Any = None) -> None:
+    def __init__(
+        self, text: str, synced_var: SyncedVar, radio_value: Any = None
+    ) -> None:
         super().__init__(text, None, False)
-        self.radio_value: Any = radio_value if radio_value is not None else text if text else None
-        self.synced_var : SyncedVar = synced_var
-        self.synced_var.bind(self,self._update_state)
-        self.set_value(synced_var.value, False)
-
+        self.radio_value: Any = (
+            radio_value if radio_value is not None else text if text else None
+        )
+        self.synced_var: SyncedVar = synced_var
+        self.synced_var.bind(self, self._update_state)
+        self.set_value(synced_var.value == self.radio_value, False)
+        
     def __str__(self) -> str:
-        return f"RadioButton({self.radio_value}|{'Active' if self.value else 'Inactive'})"
+        return (
+            f"RadioButton({self.radio_value}|{'Active' if self.value else 'Inactive'})"
+        )
 
     def set_radio_value(self, value: Any) -> Self:
         self.radio_value = value
         return self
 
     def click(self):
-        if self.value : return
+        if self.value:
+            return
         self.set_value(True, True)
 
-    def set_value(self, value : bool, do_callback=False):
+    def set_value(self, value: bool, do_callback=False):
         if self.value == value:
             return self  # No change
         self.value = value

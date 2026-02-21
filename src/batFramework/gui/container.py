@@ -19,7 +19,6 @@ class Container(Shape, InteractiveWidget):
         self.set_debug_color("green")
         self.add(*children)
 
-        
     def __str__(self) -> str:
         return f"Container({self.uid},{len(self.children)})"
 
@@ -27,7 +26,7 @@ class Container(Shape, InteractiveWidget):
         return self.layout.get_auto_size() if self.layout else self.rect.size
 
     def reset_scroll(self) -> Self:
-        if self.scroll == (0,0):
+        if self.scroll == (0, 0):
             return self
         self.set_scroll((0, 0))
         return self
@@ -36,7 +35,7 @@ class Container(Shape, InteractiveWidget):
         # print("Trying to set scroll to ",value)
         # print("Current scroll is : ",self.scroll)
 
-        if (self.scroll.x,self.scroll.y) == value:
+        if (self.scroll.x, self.scroll.y) == value:
             return self
         self.scroll.update(value)
         # print("Scroll updated to", value)
@@ -64,32 +63,21 @@ class Container(Shape, InteractiveWidget):
     def clamp_scroll(self) -> Self:
         if not self.children:
             return self
+
         r = self.get_inner_rect()
+        self.layout.update_children_rect()  # ensure fresh content size
 
-        if self.layout:
-            # self.layout.update_children_rect()
-            children_rect = self.layout.children_rect 
-        else:
-            l = self.get_layout_children()
-            if l:
-                children_rect = l[0].rect.unionall(
-                    [c.rect for c in l[1:]]
-                ) if len(l) > 1 else l
-            else:
-                children_rect = pygame.Rect(0,0,0,0)
+        content_w = self.layout.children_rect.width
+        content_h = self.layout.children_rect.height
 
-        max_scroll_x = max(0, children_rect.width - r.width)
-        max_scroll_y = max(0, children_rect.height - r.height)
+        max_scroll_x = max(0, content_w - r.width)
+        max_scroll_y = max(0, content_h - r.height)
 
-        sx = min(max(self.scroll.x, 0), max_scroll_x)
-        sy = min(max(self.scroll.y, 0), max_scroll_y)
-        # print("_"*20)
-        # print("Clamping scroll, children rect is :",children_rect)
-        # print("scroll to,",(sx,sy), "while current scroll is",self.scroll)
-        
-        self.set_scroll((sx,sy))
-        
+        self.scroll.x = max(0, min(self.scroll.x, max_scroll_x))
+        self.scroll.y = max(0, min(self.scroll.y, max_scroll_y))
+
         return self
+
 
     def set_layout(self, layout: Layout) -> Self:
         tmp = self.layout
@@ -103,11 +91,15 @@ class Container(Shape, InteractiveWidget):
 
     def get_interactive_children(self) -> list[InteractiveWidget]:
         """Return all children that can be cycled through with focus"""
-        return [child for child in self.get_layout_children() \
-                if isinstance(child, InteractiveWidget) and not\
-                isinstance(child,Container) and child.allow_focus_to_self()]
+        return [
+            child
+            for child in self.get_layout_children()
+            if isinstance(child, InteractiveWidget)
+            and not isinstance(child, Container)
+            and child.allow_focus_to_self()
+        ]
 
-    def get_layout_children(self)->list[Widget]:
+    def get_layout_children(self) -> list[Widget]:
         """Returns all children affected by layout"""
         return self.children
 
@@ -130,38 +122,38 @@ class Container(Shape, InteractiveWidget):
         return self
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
-        if self.rect.collidepoint(x, y):
+        r = self.rect if not  self.clip_children else self.get_inner_rect()
+        if r.collidepoint(x, y):
             for child in reversed(self.children):
                 result = child.top_at(x, y)
                 if result is not None:
                     return result
-            return self
+            if self.rect.collidepoint(x,y) : return self
         return None
 
-    def get_focus(self) -> bool:
-        if not super().get_focus():
-            return False
+    def on_get_focus(self, focus_area : pygame.Rect=None):
         interactive_children = self.get_interactive_children()
         if not interactive_children:
             return True
         self.focused_index = min(self.focused_index, len(interactive_children) - 1)
-        return interactive_children[self.focused_index].get_focus()
+        return interactive_children[self.focused_index].ask_focus()
 
-    def children_has_focus(self)->bool:
+
+    def children_has_focus(self) -> bool:
         """Return true if any direct children is focused"""
         return any(child.is_focused for child in self.get_interactive_children())
 
     def handle_event(self, event) -> None:
-        super().handle_event(event) 
+        super().handle_event(event)
         self.layout.handle_event(event)
 
-    def set_focused_child(self, child: InteractiveWidget) -> bool:
+    def set_focused_child(self, child: InteractiveWidget, focus_area:pygame.Rect=None) -> bool:
         interactive_children = self.get_interactive_children()
         try:
             index = interactive_children.index(child)
             self.focused_index = index
-            if self.layout : 
-                self.layout.scroll_to_widget(child)
+            if self.layout:
+                self.layout.scroll_to_widget(child,focus_area)
             return True
         except ValueError:
             return False
@@ -169,7 +161,7 @@ class Container(Shape, InteractiveWidget):
     def allow_focus_to_self(self) -> bool:
         """Return whether the container can get focused"""
         return bool(self.get_interactive_children()) and self.visible
-    
+
     def build(self) -> None:
         if self.layout is not None:
             size = self.layout.get_auto_size()
@@ -177,44 +169,36 @@ class Container(Shape, InteractiveWidget):
         super().build()
 
 
-    def apply_pre_updates(self):
-        if self.dirty_size_constraints or self.dirty_shape:
-            self.resolve_constraints(size_only=True)
-            self.dirty_size_constraints = False
-            self.dirty_position_constraints = True
 
+    def apply_post_updates(self, skip_draw: bool = False):
+        # First let base Widget resolve build / constraints
+        super().apply_post_updates(skip_draw=True)
 
+        # Now shapes are stable. Safe to resolve layout.
+        layout_changed = False
 
         if self.dirty_layout:
             self.layout.update_child_constraints()
             self.layout.arrange()
             self.dirty_layout = False
+            layout_changed = True
+
+        # ALWAYS clamp after potential size changes
+        old_scroll = self.scroll.xy
+        self.clamp_scroll()
+
+        if layout_changed or self.scroll.xy != old_scroll:
+            self.layout.scroll_children()
+            self.dirty_surface = True
+
+
 
         if self.dirty_scroll:
             self.layout.scroll_children()
             self.dirty_scroll = False
-
-    def apply_post_updates(self,skip_draw:bool=False):
-        if self.dirty_shape:
-            self.layout.update_child_constraints()
-            self.build()
-            self.dirty_size_constraints = True
-            self.dirty_position_constraints = True
-            self.dirty_layout =  True
-            from .container import Container
-            if self.parent and isinstance(self.parent, Container):
-                self.parent.dirty_layout = True
-                self.parent.dirty_shape = True
-            self.dirty_shape = False
             self.dirty_surface = True
 
-        if self.dirty_position_constraints:
-            self.resolve_constraints(position_only=True)
-            self.dirty_position_constraints= False
-
-
+        # Finally paint
         if self.dirty_surface and not skip_draw:
             self.paint()
             self.dirty_surface = False
-
-

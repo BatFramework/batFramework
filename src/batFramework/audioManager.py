@@ -1,6 +1,7 @@
 import pygame
 import batFramework as bf
 
+
 class AudioManager(metaclass=bf.Singleton):
     def __init__(self) -> None:
         self._sounds: dict[str, dict] = {}
@@ -38,7 +39,9 @@ class AudioManager(metaclass=bf.Singleton):
         return self._channel_volumes.get(channel_name, 1.0)
 
     # --- Sound management ---
-    def load_sound(self, name: str, path: str, persistent: bool = False) -> pygame.mixer.Sound:
+    def load_sound(
+        self, name: str, path: str, persistent: bool = False
+    ) -> pygame.mixer.Sound:
         if name in self._sounds:
             return self._sounds[name]["sound"]
         path = bf.ResourceManager().get_path(path)
@@ -54,7 +57,9 @@ class AudioManager(metaclass=bf.Singleton):
         for name, path, persistent in sounds_data:
             self.load_sound(name, path, persistent)
 
-    def play_sound(self, name: str, volume: float = 1.0, channel_name: str | None = None) -> bool:
+    def play_sound(
+        self, name: str, volume: float = 1.0, channel_name: str | None = None
+    ) -> bool:
         sound_data = self._sounds.get(name)
         if not sound_data:
             print(f"[AudioManager] Sound '{name}' not loaded.")
@@ -65,7 +70,9 @@ class AudioManager(metaclass=bf.Singleton):
         if self._use_custom_channels and channel_name:
             channel = self._channels.get(channel_name)
             if not channel:
-                print(f"[AudioManager] Channel '{channel_name}' not found. Using default channel.")
+                print(
+                    f"[AudioManager] Channel '{channel_name}' not found. Using default channel."
+                )
                 sound.set_volume(volume)
                 sound.play()
                 return True

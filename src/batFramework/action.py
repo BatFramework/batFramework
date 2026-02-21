@@ -27,7 +27,7 @@ class Action:
     def __str__(self):
         return f"{self.name} {self.active}"
 
-    def __bool__(self) -> bool :
+    def __bool__(self) -> bool:
         return self.active
 
     def set_consume_event(self, val: bool) -> Self:
@@ -49,7 +49,6 @@ class Action:
             value (bool): True to activate the action, False to deactivate it.
         """
         self.active = value
-        
 
     def add_event_control(self, *events) -> Self:
         self._event_control.update(events)
@@ -178,8 +177,7 @@ class Action:
     def process_update(self, event: pygame.Event) -> None:
         if event.type in self._event_control:
             self.data = event.dict
-            self.data.update({"type":event.type})
-
+            self.data.update({"type": event.type})
 
     def process_activate(self, event: pygame.event.Event):
         """
@@ -203,9 +201,9 @@ class Action:
             self._activate_action(event.type)
         else:
             return
-        
+
         self.data = event.dict
-        self.data.update({"type":event.type})
+        self.data.update({"type": event.type})
 
         if self.consume_event:
             event.consumed = True
@@ -242,8 +240,8 @@ class Action:
     def _deactivate_action(self, control) -> bool:
         if control in self._holding:
             self._holding.remove(control)
-        if (self._type == actionType.HOLDING):
-            if not self._holding : 
+        if self._type == actionType.HOLDING:
+            if not self._holding:
                 self.active = False
         else:
             self.active = False

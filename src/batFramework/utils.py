@@ -6,6 +6,7 @@ from .enums import *
 import re
 from typing import Callable, TYPE_CHECKING
 from functools import cache
+
 if TYPE_CHECKING:
     from .drawable import Drawable
     from .entity import Entity
@@ -80,9 +81,17 @@ class Utils:
 
         return filter_function
 
-
     @staticmethod
-    def create_spotlight(inside_color, outside_color, radius, radius_stop=None, dest_surf=None,size=None,center:tuple|None=None,flags:int=pygame.SRCALPHA):
+    def create_spotlight(
+        inside_color,
+        outside_color,
+        radius,
+        radius_stop=None,
+        dest_surf=None,
+        size=None,
+        center: tuple | None = None,
+        flags: int = pygame.SRCALPHA,
+    ):
         """
         Creates a spotlight effect on a surface with a gradient from inside_color to outside_color.
 
@@ -106,20 +115,25 @@ class Utils:
 
         if dest_surf is None:
             if size is None:
-                size = (diameter,diameter)
-            dest_surf = pygame.Surface(size,flags)
-        
-        dest_surf.fill((0,0,0,0))
+                size = (diameter, diameter)
+            dest_surf = pygame.Surface(size, flags)
+
+        dest_surf.fill((0, 0, 0, 0))
 
         if center is None:
-            center = dest_surf.get_rect().center 
-        
+            center = dest_surf.get_rect().center
+
         if radius_stop != radius:
             for r in range(radius_stop, radius - 1, -1):
                 color = [
-                    inside_color[i] + (outside_color[i] - inside_color[i]) * (r - radius) / (radius_stop - radius)
+                    inside_color[i]
+                    + (outside_color[i] - inside_color[i])
+                    * (r - radius)
+                    / (radius_stop - radius)
                     for i in range(3)
-                ] + [255]  # Preserve the alpha channel as fully opaque
+                ] + [
+                    255
+                ]  # Preserve the alpha channel as fully opaque
                 pygame.draw.circle(dest_surf, color, center, r)
         else:
             pygame.draw.circle(dest_surf, inside_color, center, radius)
@@ -127,7 +141,14 @@ class Utils:
         return dest_surf
 
     @staticmethod
-    def draw_spotlight(dest_surf:pygame.Surface,inside_color,outside_color,radius,radius_stop=None,center=None):
+    def draw_spotlight(
+        dest_surf: pygame.Surface,
+        inside_color,
+        outside_color,
+        radius,
+        radius_stop=None,
+        center=None,
+    ):
         """
         Draws a spotlight effect directly onto an existing surface.
 
@@ -146,13 +167,15 @@ class Utils:
         if radius_stop != radius:
             for r in range(radius_stop, radius - 1, -1):
                 color = [
-                    inside_color[i] + (outside_color[i] - inside_color[i]) * (r - radius) / (radius_stop - radius)
+                    inside_color[i]
+                    + (outside_color[i] - inside_color[i])
+                    * (r - radius)
+                    / (radius_stop - radius)
                     for i in range(3)
                 ] + [255]
                 pygame.draw.circle(dest_surf, color, center, r)
         else:
             pygame.draw.circle(dest_surf, inside_color, center, radius)
-
 
     @staticmethod
     def random_color(min_value: int = 0, max_value: int = 255) -> tuple[int, int, int]:
@@ -164,10 +187,14 @@ class Utils:
             max_value (int): Maximum value for each RGB component (inclusive). Defaults to 255.
 
         Returns:
-            tuple[int, int, int]: A tuple representing a random color in RGB format, with each component 
+            tuple[int, int, int]: A tuple representing a random color in RGB format, with each component
             between min_value and max_value.
         """
-        return random.randint(min_value, max_value), random.randint(min_value, max_value), random.randint(min_value, max_value)
+        return (
+            random.randint(min_value, max_value),
+            random.randint(min_value, max_value),
+            random.randint(min_value, max_value),
+        )
 
     @staticmethod
     def random_point_on_screen(margin: int = 0) -> tuple[int, int]:
@@ -175,20 +202,26 @@ class Utils:
         Generates a random point on the screen, considering a margin from the edges.
 
         Args:
-            margin (int): Margin from the screen edges, where the point won't be generated. 
+            margin (int): Margin from the screen edges, where the point won't be generated.
                         If margin is less than 0 or greater than half the screen resolution, returns (0, 0).
 
         Returns:
-            tuple[int, int]: A tuple representing a random point (x, y) on the screen within the screen 
+            tuple[int, int]: A tuple representing a random point (x, y) on the screen within the screen
             resolution minus the margin.
         """
-        if margin < 0 or margin > bf.const.RESOLUTION[0]//2 or margin > bf.const.RESOLUTION[1]//2:
+        if (
+            margin < 0
+            or margin > bf.const.RESOLUTION[0] // 2
+            or margin > bf.const.RESOLUTION[1] // 2
+        ):
             return 0, 0
-        return random.randint(margin, bf.const.RESOLUTION[0] - margin), random.randint(margin, bf.const.RESOLUTION[1] - margin)
+        return random.randint(margin, bf.const.RESOLUTION[0] - margin), random.randint(
+            margin, bf.const.RESOLUTION[1] - margin
+        )
 
     @staticmethod
-    def distance_point(a:tuple[float,float],b:tuple[float,float]):
-        return math.sqrt((a[0]-b[0]) ** 2 + (a[1]-b[1])**2)
+    def distance_point(a: tuple[float, float], b: tuple[float, float]):
+        return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
 
     @staticmethod
     def rotate_point(point: Vector2, angle: float, center: Vector2) -> Vector2:
@@ -197,15 +230,20 @@ class Utils:
         translated = point - center
         rotated = Vector2(
             translated.x * math.cos(rad) - translated.y * math.sin(rad),
-            translated.x * math.sin(rad) + translated.y * math.cos(rad)
+            translated.x * math.sin(rad) + translated.y * math.cos(rad),
         )
         return rotated + center
 
- 
-    def draw_triangle(surface:pygame.Surface, color, rect:pygame.FRect|pygame.Rect, direction:bf.enums.direction=bf.enums.direction.RIGHT,width:int=0):
+    def draw_triangle(
+        surface: pygame.Surface,
+        color,
+        rect: pygame.FRect | pygame.Rect,
+        direction: bf.enums.direction = bf.enums.direction.RIGHT,
+        width: int = 0,
+    ):
         """
         Draw a filled triangle inside a rectangle on a Pygame surface, pointing in the specified direction.
-        
+
         Args:
             surface: The Pygame surface to draw on.
             color: The color of the triangle (e.g., (255, 0, 0) for red).
@@ -214,38 +252,47 @@ class Utils:
         """
         # Define the three vertices of the triangle based on direction
         rect = rect.copy()
-        rect.inflate_ip(-1,-1)
+        rect.inflate_ip(-1, -1)
         if direction == direction.UP:
             points = [
-                (rect.left, rect.bottom),      # Bottom-left corner
-                (rect.right, rect.bottom),     # Bottom-right corner
-                (rect.centerx, rect.top)       # Top center (apex)
+                (rect.left, rect.bottom),  # Bottom-left corner
+                (rect.right, rect.bottom),  # Bottom-right corner
+                (rect.centerx, rect.top),  # Top center (apex)
             ]
         elif direction == direction.DOWN:
             points = [
-                (rect.left, rect.top),         # Top-left corner
-                (rect.right, rect.top),        # Top-right corner
-                (rect.centerx, rect.bottom)    # Bottom center (apex)
+                (rect.left, rect.top),  # Top-left corner
+                (rect.right, rect.top),  # Top-right corner
+                (rect.centerx, rect.bottom),  # Bottom center (apex)
             ]
         elif direction == direction.LEFT:
             points = [
-                (rect.right, rect.top),        # Top-right corner
-                (rect.right, rect.bottom),     # Bottom-right corner
-                (rect.left, rect.centery)      # Left center (apex)
+                (rect.right, rect.top),  # Top-right corner
+                (rect.right, rect.bottom),  # Bottom-right corner
+                (rect.left, rect.centery),  # Left center (apex)
             ]
         elif direction == direction.RIGHT:
             points = [
-                (rect.left, rect.top),         # Top-left corner
-                (rect.left, rect.bottom),      # Bottom-left corner
-                (rect.right, rect.centery)     # Right center (apex)
+                (rect.left, rect.top),  # Top-left corner
+                (rect.left, rect.bottom),  # Bottom-left corner
+                (rect.right, rect.centery),  # Right center (apex)
             ]
         else:
             raise ValueError("Invalid direction")
 
         # Draw the filled triangle
-        pygame.draw.polygon(surface, color, points,width=width)
+        pygame.draw.polygon(surface, color, points, width=width)
 
-    def draw_arc_by_points(surface, color, start_pos, end_pos, tightness=0.5, width=1, resolution=0.5,antialias:bool=False):
+    def draw_arc_by_points(
+        surface,
+        color,
+        start_pos,
+        end_pos,
+        tightness=0.5,
+        width=1,
+        resolution=0.5,
+        antialias: bool = False,
+    ):
         """
         Draw a smooth circular arc connecting start_pos and end_pos.
         `tightness` controls curvature: 0 is straight line, 1 is semicircle, higher = more bulge.
@@ -298,13 +345,10 @@ class Utils:
         for i in range(segs + 1):
             t = i / segs
             a = ang0 + sweep * t
-            points.append((
-                center.x + math.cos(a) * r,
-                center.y + math.sin(a) * r
-            ))
+            points.append((center.x + math.cos(a) * r, center.y + math.sin(a) * r))
         if antialias:
             return pygame.draw.aalines(surface, color, False, points)
-    
+
         return pygame.draw.lines(surface, color, False, points, width)
 
     @staticmethod
@@ -318,7 +362,7 @@ class Utils:
             pygame.Vector2: A normalized 2D vector with length 1.0 pointing in a random direction.
         """
 
-        v = pygame.Vector2(1,0)
-        v.rotate_ip(random.randint(0,360))
+        v = pygame.Vector2(1, 0)
+        v.rotate_ip(random.randint(0, 360))
         v.normalize_ip()
         return v

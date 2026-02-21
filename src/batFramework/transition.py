@@ -1,5 +1,5 @@
 import batFramework as bf
-from typing import Self,Callable,Any
+from typing import Self, Callable, Any
 import pygame
 
 """
@@ -10,20 +10,24 @@ Both surfaces to transition need to be the same size
 
 class Transition:
     def __init__(
-        self, duration: float=1, easing: bf.easing = bf.easing.LINEAR
+        self, duration: float = 1, easing: bf.easing = bf.easing.LINEAR
     ) -> None:
         """
         duration : time in seconds
         easing function : controls the progression rate
         """
         self.duration: float = duration
-        self.controller = bf.EasingController( # main controller for the transition progression
-            duration,easing,
-            update_callback=self.update,end_callback=self.end,
+        self.controller = (
+            bf.EasingController(  # main controller for the transition progression
+                duration,
+                easing,
+                update_callback=self.update,
+                end_callback=self.end,
+            )
         )
         self.source: pygame.Surface = None
         self.dest: pygame.Surface = None
-        self.is_over : bool = False # this flag tells the manager the transition is over 
+        self.is_over: bool = False  # this flag tells the manager the transition is over
 
     def __repr__(self) -> str:
         return f"Transition ({self.__class__},{self.duration})"
@@ -35,16 +39,18 @@ class Transition:
         self.dest = surface
 
     def start(self):
-        if self.controller.has_started(): # can't start again while it's in progress 
+        if self.controller.has_started():  # can't start again while it's in progress
             return
-        if self.duration: # start the transition
+        if self.duration:  # start the transition
             self.controller.start()
             return
 
         # if no duration the transition is instantaneous
         self.controller.start()
         self.controller.end()
-        self.update(1)# to prevent weird behaviour, update once with progression at max value
+        self.update(
+            1
+        )  # to prevent weird behaviour, update once with progression at max value
         self.end()
 
     def update(self, progression: float) -> None:
@@ -61,9 +67,15 @@ class Transition:
         self.end()
 
 
-
 class FadeColor(Transition):
-    def __init__(self,duration:float,color=(0,0,0),color_start:float=0.3,color_end:float=0.7, easing = bf.easing.LINEAR):
+    def __init__(
+        self,
+        duration: float,
+        color=(0, 0, 0),
+        color_start: float = 0.3,
+        color_end: float = 0.7,
+        easing=bf.easing.LINEAR,
+    ):
         super().__init__(duration, easing)
         self.color = color
         self.color_start = color_start
@@ -77,8 +89,8 @@ class FadeColor(Transition):
     def draw(self, surface):
         v = self.controller.get_value()
         if v < self.color_start:
-            v = v/(self.color_start)
-            self.color_surf.set_alpha(255*v)
+            v = v / (self.color_start)
+            self.color_surf.set_alpha(255 * v)
             surface.blit(self.source)
             surface.blit(self.color_surf)
 
@@ -87,10 +99,11 @@ class FadeColor(Transition):
             surface.blit(self.color_surf)
 
         else:
-            v = (v-self.color_end)/(1-self.color_end)
+            v = (v - self.color_end) / (1 - self.color_end)
             surface.blit(self.color_surf)
-            self.dest.set_alpha(255*v)
+            self.dest.set_alpha(255 * v)
             surface.blit(self.dest)
+
 
 class Fade(Transition):
     def end(self):
@@ -105,6 +118,7 @@ class Fade(Transition):
         self.dest.set_alpha(dest_alpha)
         surface.blit(self.source, (0, 0))
         surface.blit(self.dest, (0, 0))
+
 
 class GlideRight(Transition):
     def draw(self, surface):
@@ -158,5 +172,3 @@ class CircleIn(Transition):
         )
         mask = pygame.mask.from_surface(self.circle_surf)
         mask.to_surface(surface=surface, setsurface=self.source, unsetsurface=self.dest)
-
-

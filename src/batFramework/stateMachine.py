@@ -27,16 +27,16 @@ class StateMachine:
     def __init__(self, parent) -> None:
         self.states: dict[str, State] = {}
         self.parent = parent
-        self.current_state : State = None
+        self.current_state: State = None
 
     def add_state(self, *states: State):
-        for state in states :
+        for state in states:
             self.states[state.name] = state
             state.set_parent(self.parent)
             state.set_stateMachine(self)
 
-    def remove_state(self,state_name: str):
-        self.states.pop(state_name,default=None)
+    def remove_state(self, state_name: str):
+        self.states.pop(state_name, default=None)
 
     def set_state(self, state_name: str):
         if state_name in self.states:

@@ -7,7 +7,7 @@ from math import ceil
 
 
 class Shape(Widget):
-    def __init__(self, size: tuple[float, float]|None = None, *args, **kwargs):
+    def __init__(self, size: tuple[float, float] | None = None, *args, **kwargs):
         super().__init__(size=size, convert_alpha=True)
         self.color = (0, 0, 0, 0)
         self.border_radius: list[int] = [0]
@@ -28,7 +28,7 @@ class Shape(Widget):
     def get_inner_top(self) -> float:
         return self.rect.y + self.padding[1]
 
-    def get_local_inner_rect(self)->pygame.FRect:
+    def get_local_inner_rect(self) -> pygame.FRect:
         return pygame.FRect(
             self.padding[0],
             self.padding[1],
@@ -56,10 +56,8 @@ class Shape(Widget):
         self.relief = relief
         return self
 
-
-
     def set_texture(
-        self, surface: pygame.SurfaceType, subsize: tuple[int, int] | None = None
+        self, surface: pygame.Surface, subsize: tuple[int, int] | None = None
     ) -> Self:
         self.texture_surface = surface
         if subsize is None:
@@ -231,14 +229,14 @@ class Shape(Widget):
 
     def _paint_shape(self) -> None:
         self.surface.fill((0, 0, 0, 0))
-        if self.relief!=0:
+        if self.relief != 0:
             if self.shadow_color is not None:
                 self.surface.fill(self.shadow_color, self._get_base_rect())
             if self.color is not None:
                 self.surface.fill(self.color, self._get_elevated_rect())
-        
+
         elif self.color is not None:
-                self.surface.fill(self.color, self._get_elevated_rect())
+            self.surface.fill(self.color, self._get_elevated_rect())
 
     def _paint_rounded_shape(self) -> None:
         self.surface.fill((0, 0, 0, 0))
@@ -247,11 +245,13 @@ class Shape(Widget):
             b = e.copy()
             b.bottom = self.rect.h
             if self.shadow_color is not None:
-                pygame.draw.rect(self.surface, self.shadow_color, b, 0, *self.border_radius)
+                pygame.draw.rect(
+                    self.surface, self.shadow_color, b, 0, *self.border_radius
+                )
             if self.color is not None:
                 pygame.draw.rect(self.surface, self.color, e, 0, *self.border_radius)
         elif self.color is not None:
-                pygame.draw.rect(self.surface, self.color, e, 0, *self.border_radius)
+            pygame.draw.rect(self.surface, self.color, e, 0, *self.border_radius)
 
     def _paint_outline(self) -> None:
         if self.outline_color is None:

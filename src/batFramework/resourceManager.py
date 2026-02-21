@@ -7,7 +7,6 @@ from typing import Any, Callable
 from .utils import Singleton
 import asyncio
 
-
 if getattr(sys, "frozen", False):
     # If the application is run as a bundle, the PyInstaller bootloader
     # extends the sys module by a flag frozen=True and sets the app
@@ -26,7 +25,9 @@ class ResourceManager(metaclass=Singleton):
         self.RESOURCE_PATH = "."
         self.loading_thread = None
 
-    def load_resources(self, path: str, progress_callback: Callable[[float], Any] = None):
+    def load_resources(
+        self, path: str, progress_callback: Callable[[float], Any] = None
+    ):
         """
         loads resources from a directory.
         Progress is reported through the callback.
@@ -35,7 +36,9 @@ class ResourceManager(metaclass=Singleton):
         self.progress_callback = progress_callback
 
         total_files = sum(
-            len(files) for _, _, files in os.walk(path) if not any(f.startswith(".") for f in files)
+            len(files)
+            for _, _, files in os.walk(path)
+            if not any(f.startswith(".") for f in files)
         )
 
         loaded_files = 0
@@ -59,10 +62,9 @@ class ResourceManager(metaclass=Singleton):
                 loaded_files += 1
                 # Report progress
                 # if self.progress_callback:
-                    # self.progress_callback(loaded_files / total_files)
+                # self.progress_callback(loaded_files / total_files)
 
         print(f"Loaded resources in directory: '{path}'")
-
 
     def set_resource_path(self, path: str):
         self.RESOURCE_PATH = os.path.join(application_path, path)
@@ -79,7 +81,6 @@ class ResourceManager(metaclass=Singleton):
             return
         self.convert_image_cache[key] = pygame.image.load(path).convert()
         self.convert_alpha_image_cache[key] = pygame.image.load(path).convert_alpha()
-
 
     def get_image(self, path, convert_alpha: bool = False) -> pygame.Surface | None:
         key = self.get_path(path)
@@ -105,7 +106,6 @@ class ResourceManager(metaclass=Singleton):
             return True
         except FileNotFoundError:
             return False
-
 
     def set_sharedVar(self, name, value) -> bool:
         """

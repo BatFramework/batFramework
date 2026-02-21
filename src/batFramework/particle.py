@@ -30,8 +30,10 @@ class TimedParticle(Particle):
     def do_when_added(self):
         if self.generator and self.generator.parent_scene:
             self.timer = bf.SceneTimer(
-                self.duration, end_callback=self.kill,
-                scene_name=self.generator.parent_scene.name).start()        
+                self.duration,
+                end_callback=self.kill,
+                scene_name=self.generator.parent_scene.name,
+            ).start()
         else:
             self.timer = bf.Timer(self.duration, end_callback=self.kill).start()
 
@@ -48,12 +50,12 @@ class BasicParticle(TimedParticle):
         **kwargs,
     ):
         super().__init__(duration)
-        self.rect = pygame.FRect(0,0, *size)
+        self.rect = pygame.FRect(0, 0, *size)
         self.rect.center = start_pos
         self.surface = pygame.Surface(size).convert_alpha()
         self.velocity = Vector2(start_vel)
         if not color:
-            color = (0,0,0)
+            color = (0, 0, 0)
         self.surface.fill(color)
         self.start()
 
@@ -94,7 +96,7 @@ class ParticleGenerator(bf.Drawable):
             )
         yield (self.rect, "cyan")
 
-    def add_particle(self, particle:Particle):
+    def add_particle(self, particle: Particle):
         particle.generator = self
         particle.do_when_added()
         self.particles.append(particle)

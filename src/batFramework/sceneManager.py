@@ -2,6 +2,7 @@ import batFramework as bf
 import pygame
 from typing import Self
 
+
 def swap(lst, index1, index2):
     lst[index1], lst[index2] = lst[index2], lst[index1]
 
@@ -10,9 +11,9 @@ class SceneManager:
     def __init__(self) -> None:
         self.scenes: list[bf.BaseScene] = []
         self.shared_events = {pygame.WINDOWRESIZED}
-        self.current_transition : tuple[str,bf.transition.Transition,int] | None= None
+        self.current_transition: tuple[str, bf.transition.Transition, int] | None = None
 
-    def init_scenes(self, *initial_scenes:bf.Scene):
+    def init_scenes(self, *initial_scenes: bf.Scene):
         for index, s in enumerate(initial_scenes):
             s.set_scene_index(index)
         for s in reversed(initial_scenes):
@@ -31,9 +32,9 @@ class SceneManager:
         Print detailed information about the current state of the scenes and shared variables.
         """
 
-        def format_scene_info(scene:bf.Scene):
-            status = 'Active' if scene.active else 'Inactive'
-            visibility = 'Visible' if scene.visible else 'Invisible'
+        def format_scene_info(scene: bf.Scene):
+            status = "Active" if scene.active else "Inactive"
+            visibility = "Visible" if scene.visible else "Invisible"
             return f"{scene.name:<30} | {status:<8} | {visibility:<10} | Index={scene.scene_index}"
 
         def format_shared_variable(name, value):
@@ -92,10 +93,10 @@ class SceneManager:
     def remove_scene(self, name: str):
         self.scenes = [s for s in self.scenes if s.name != name]
 
-    def has_scene(self, name:str):
+    def has_scene(self, name: str):
         return any(name == scene.name for scene in self.scenes)
 
-    def get_scene(self, name:str):
+    def get_scene(self, name: str):
         if not self.has_scene(name):
             return None
         for scene in self.scenes:
@@ -120,24 +121,28 @@ class SceneManager:
             return
         if not (source_scene := self.get_scene_at(index)):
             print(f"No scene exists at index {index}.")
-            return       
-        
+            return
+
         source_surface = bf.const.SCREEN.copy()
         dest_surface = bf.const.SCREEN.copy()
 
-        target_scene.draw(dest_surface) # draw at least once to ensure smooth transition
+        target_scene.draw(
+            dest_surface
+        )  # draw at least once to ensure smooth transition
         target_scene.set_active(True)
         target_scene.set_visible(True)
 
-        target_scene.do_on_enter_early() 
+        target_scene.do_on_enter_early()
         source_scene.do_on_exit_early()
 
-        self.current_transition :tuple[str,bf.transition.Transition]=(scene_name,transition,index)
+        self.current_transition: tuple[str, bf.transition.Transition] = (
+            scene_name,
+            transition,
+            index,
+        )
         transition.set_source(source_surface)
         transition.set_dest(dest_surface)
         transition.start()
-
-
 
     def set_scene(self, scene_name, index=0, ignore_early: bool = False):
         target_scene = self.get_scene(scene_name)
@@ -159,15 +164,13 @@ class SceneManager:
             self.scenes[index].do_on_enter_early()
         target_scene.on_enter()
 
-
-
     def cycle_debug_mode(self):
         current_index = bf.ResourceManager().get_sharedVar("debug_mode").value
         next_index = (current_index + 1) % len(bf.debugMode)
         bf.ResourceManager().set_sharedVar("debug_mode", bf.debugMode(next_index))
         return bf.debugMode(next_index)
-    
-    def set_debug_mode(self,debugMode : bf.debugMode):
+
+    def set_debug_mode(self, debugMode: bf.debugMode):
         bf.ResourceManager().set_sharedVar("debug_mode", debugMode)
 
     def process_event(self, event: pygame.Event):
@@ -181,14 +184,14 @@ class SceneManager:
         for scene in self.active_scenes:
             scene.update(dt)
         if self.current_transition and self.current_transition[1].is_over:
-            self.set_scene(self.current_transition[0],self.current_transition[2],True)
+            self.set_scene(self.current_transition[0], self.current_transition[2], True)
             self.current_transition = None
         self.do_update(dt)
 
     def do_update(self, dt: float):
         pass
 
-    def draw(self, surface:pygame.Surface) -> None:
+    def draw(self, surface: pygame.Surface) -> None:
         for scene in self.visible_scenes:
             scene.draw(surface)
         if self.current_transition is not None:
@@ -197,4 +200,3 @@ class SceneManager:
             self.get_scene(self.current_transition[0]).draw(tmp)
             self.current_transition[1].set_dest(tmp)
             self.current_transition[1].draw(surface)
-

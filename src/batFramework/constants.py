@@ -16,16 +16,15 @@ class Constants:
     DEFAULT_CLICK_CURSOR = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
 
     BF_INITIALIZED: bool = False
-    ALLOW_DEBUG : bool = True
+    ALLOW_DEBUG: bool = True
 
     WIDGET_KEY_REPEAT_DELAY = 200
     WIDGET_KEY_REPEAT_INTERVAL = 50
     GLOBAL_KEY_REPEAT_DELAY = 200
     GLOBAL_KEY_REPEAT_INTERVAL = 50
 
-
     @staticmethod
-    def set_allow_debug(allow_debug:bool):
+    def set_allow_debug(allow_debug: bool):
         Constants.ALLOW_DEBUG = allow_debug
 
     @staticmethod
@@ -38,7 +37,9 @@ class Constants:
     @staticmethod
     def update_screen():
         if Constants.BF_INITIALIZED:
-            Constants.SCREEN = pygame.display.set_mode(Constants.RESOLUTION,Constants.FLAGS,vsync=Constants.VSYNC)
+            Constants.SCREEN = pygame.display.set_mode(
+                Constants.RESOLUTION, Constants.FLAGS, vsync=Constants.VSYNC
+            )
 
     @staticmethod
     def set_default_cursor(cursor: pygame.Cursor):

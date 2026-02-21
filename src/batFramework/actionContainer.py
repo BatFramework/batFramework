@@ -26,8 +26,6 @@ class ActionContainer:
     def __repr__(self):
         return repr(self._actions)
 
-
-
     def clear(self):
         self._actions = {}
 
@@ -50,7 +48,7 @@ class ActionContainer:
             for name in names
         )
 
-    def is_any_active(self,*names:str) -> bool:
+    def is_any_active(self, *names: str) -> bool:
         return any(
             self._actions.get(name).active if name in self._actions else False
             for name in names

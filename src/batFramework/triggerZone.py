@@ -1,8 +1,11 @@
 import batFramework as bf
-from typing import Callable,Any
+from typing import Callable, Any
+
 
 class TriggerZone(bf.Entity):
-    def __init__(self, size, trigger, callback: Callable[[Any],Any], active=True) -> None:
+    def __init__(
+        self, size, trigger, callback: Callable[[Any], Any], active=True
+    ) -> None:
         super().__init__(size, True)
         self.set_debug_color(bf.color.RED)
         self.active = active
@@ -13,7 +16,7 @@ class TriggerZone(bf.Entity):
         self.trigger = trigger
         return self
 
-    def set_callback(self, callback: Callable[[Any],Any]):
+    def set_callback(self, callback: Callable[[Any], Any]):
         self.callback = callback
         return self
 

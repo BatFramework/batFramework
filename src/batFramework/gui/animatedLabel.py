@@ -1,90 +1,154 @@
 from .label import Label
+from .textRenderer import RichTextRenderer, TAG_PATTERN
 import batFramework as bf
-from typing import Self,Callable,Any
+from typing import Self, Callable, Any
 
 
 class AnimatedLabel(Label):
-    def __init__(self,text="") -> None:
+    def __init__(self, text: str = "") -> None:
         self.cursor_position: float = 0.0
-        self.text_speed: float = 20.0
-        self.is_over: bool = True
-        self.is_paused: bool = False
-        self.original_text = ""
-        self.end_callback : Callable[[],Any]= None
-        self.set_autoresize(False)
-        self.set_alignment(bf.alignment.LEFT)
+        self.timer = bf.Timer(10, self._animate_text, -1).start()
+        self.original_text: str = ""
+        self.end_callback: Callable[[], Any] | None = None
+        # Maps visible-char index → string index of that char's last byte.
+        # None when the renderer is not a RichTextRenderer.
+        self._char_map: list[int] | None = None
+
         super().__init__("")
+        self.set_alignment(bf.alignment.TOPLEFT)
         self.set_text(text)
 
     def __str__(self) -> str:
         return "AnimatedLabel"
 
-    def set_end_callback(self,callback:Callable[[],Any]):
+    # ------------------------------------------------------------
+    # Rich-text char map
+    # ------------------------------------------------------------
+
+    def _build_char_map(self, text: str) -> list[int] | None:
+        """
+        If the current renderer understands tags, return a list where
+        entry[i] is the string index (exclusive end) for the i-th visible
+        character.  Tag spans are skipped entirely so the cursor only counts
+        real glyphs.  Returns None for plain renderers.
+        """
+        if not isinstance(self.renderer, RichTextRenderer):
+            return None
+
+        # Build a fast lookup: start → end for every tag span.
+        tag_spans: dict[int, int] = {
+            m.start(): m.end() for m in TAG_PATTERN.finditer(text)
+        }
+
+        char_map: list[int] = []
+        i = 0
+        while i < len(text):
+            if i in tag_spans:
+                i = tag_spans[i]          # jump past the whole tag
+            else:
+                char_map.append(i + 1)    # exclusive end of this character
+                i += 1
+
+        return char_map
+
+    def _visible_char_count(self) -> int:
+        """Total number of animatable characters in the current text."""
+        if self._char_map is not None:
+            return len(self._char_map)
+        return len(self.original_text)
+
+    def _slice_text(self, n: int) -> str:
+        """Return original_text sliced to show the first `n` visible chars."""
+        if n <= 0:
+            return ""
+        if self._char_map is not None:
+            if n >= len(self._char_map):
+                return self.original_text
+            return self.original_text[: self._char_map[n - 1]]
+        return self.original_text[:n]
+
+    # ------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------
+
+    def set_end_callback(self, callback: Callable[[], Any]) -> Self:
         self.end_callback = callback
+        return self
 
     def pause(self) -> Self:
-        self.is_paused = True
+        self.timer.pause()
         return self
 
     def resume(self) -> Self:
-        self.is_paused = False
+        self.timer.resume()
         return self
 
+    @property
+    def text_speed(self):
+        return self.timer.duration
+
+    @text_speed.setter
+    def text_speed(self, speed):
+        self.timer.set_duration(speed)
+
     def set_text_speed(self, speed: float) -> Self:
+        """
+        Set the text animation speed for the label.
+        Args:
+            speed (float): The speed at which text is animated. If speed is negative or 0,
+                           the text is not animated and appears instantaneously.
+        Returns:
+            Self: Returns the instance itself for method chaining.
+        """
+
         self.text_speed = speed
         return self
 
-    def cut_text_to_width(self, text: str) -> list[str]:
-        w = self.get_inner_width()
-        if text == "" or not self.text_widget.font_object or w < self.text_widget.font_object.point_size:
-            return [text]
-        left = 0
-        font_object = self.text_widget.font_object
-        for index in range(len(text)):
-            width = font_object.size(text[left:index])[0]
-
-            if width > w:
-                cut_point_start = index - 1
-                cut_point_end = index - 1
-                last_space = text.rfind(" ", 0, cut_point_start)
-                last_nline = text.rfind("\n", 0, cut_point_start)
-
-                if last_space != -1 or last_nline != -1:  # space was found !:
-                    cut_point_start = max(last_space, last_nline)
-                    cut_point_end = cut_point_start + 1
-                res = [text[:cut_point_start].strip()]
-                res.extend(self.cut_text_to_width(text[cut_point_end:].strip()))
-                return res
-            elif text[index] == "\n":
-                left = index
-        return [text]
-
-
-    def _set_text_internal(self,text:str)->Self:
-        super().set_text(text)
+    def set_renderer(self, renderer) -> Self:
+        super().set_renderer(renderer)
+        # Rebuild char map if the renderer type changed.
+        self._char_map = self._build_char_map(self.original_text)
         return self
 
-    def set_text(self,text:str)->Self:
+    # ------------------------------------------------------------
+    # Text control
+    # ------------------------------------------------------------
+
+    def set_text(self, text: str) -> Self:
         self.original_text = text
-        self.is_over = False
-        self.cursor_position = 0
+        if self.text_speed > 0:
+            self.cursor_position = 0.0
+            self._char_map = self._build_char_map(text)
+            self.timer.start(force=True)
+            self._update_visible_text()
+        else:
+            self.timer.pause()
+            self._char_map = self._build_char_map(text)
 
-    def set_size(self, size):
-        super().set_size(size)
-        self._set_text_internal('\n'.join(self.cut_text_to_width(self.original_text[: int(self.cursor_position)])))
+            total = self._visible_char_count()
+            self.cursor_position = total
+            self._update_visible_text()
+        return self
 
-    def do_update(self, dt):
-        if self.is_over:
+    def _update_visible_text(self) -> None:
+        visible = self._slice_text(int(self.cursor_position))
+        super().set_text(visible)
+        self.dirty_shape = True
+
+    # ------------------------------------------------------------
+    # Update loop
+    # ------------------------------------------------------------
+
+    def _animate_text(self):
+        if self.timer.is_stopped or self.timer.is_paused:
             return
-        if not self.is_over and self.cursor_position == len(self.original_text):
-            if len(self.original_text) == 0:
-                self._set_text_internal("")
-            self.is_over = True
-            if self.end_callback is not None:
+
+        total = self._visible_char_count()
+        self.cursor_position = min(self.cursor_position + 1, total)
+
+        self._update_visible_text()
+
+        if self.cursor_position >= total:
+            self.timer.stop()
+            if self.end_callback:
                 self.end_callback()
-            return
-        self.cursor_position = min(
-            self.cursor_position + self.text_speed * dt, len(self.original_text)
-        )
-        # self.set_text(self.original_text[: int(self.cursor_position)])
-        self._set_text_internal('\n'.join(self.cut_text_to_width(self.original_text[: int(self.cursor_position)])))

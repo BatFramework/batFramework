@@ -2,7 +2,8 @@ from typing import TypeVar, Generic, Callable, Any, Self
 from .widget import Widget
 from ..entity import Entity
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class SyncedVar(Generic[T]):
     def __init__(self, value: T = None):
@@ -19,14 +20,16 @@ class SyncedVar(Generic[T]):
         return self
 
     def unbind(self, entity: Entity) -> "SyncedVar[T]":
-        self._bound_entities = {(e, cb) for e, cb in self._bound_entities if e != entity}
+        self._bound_entities = {
+            (e, cb) for e, cb in self._bound_entities if e != entity
+        }
         return self
 
     @property
     def value(self) -> T:
         return self._value
 
-    def set_value(self,value:T)->Self:
+    def set_value(self, value: T) -> Self:
         self.value = value
         return self
 

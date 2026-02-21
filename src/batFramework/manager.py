@@ -13,12 +13,12 @@ class Manager(bf.SceneManager):
         self.cutsceneManager = bf.CutsceneManager()
         self.cutsceneManager.set_manager(self)
         self.clock: pygame.Clock = pygame.Clock()
-        self.is_async_running : bool = False
+        self.is_async_running: bool = False
         self.running = False
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
         bf.ResourceManager().set_sharedVar("clock", self.clock)
         bf.ResourceManager().set_sharedVar("debug_mode", self.debug_mode)
-        
+
         self.do_pre_init()
         if initial_scenes:
             self.init_scenes(*initial_scenes)
@@ -45,7 +45,6 @@ class Manager(bf.SceneManager):
         # End with a visual separator
         print("=" * 50 + "\n")
 
-
     def get_fps(self) -> float:
         return self.clock.get_fps()
 
@@ -62,8 +61,8 @@ class Manager(bf.SceneManager):
         event.consumed = False
         keys = pygame.key.get_pressed()
         if (
-            bf.const.ALLOW_DEBUG and
-            keys[pygame.K_LCTRL]
+            bf.const.ALLOW_DEBUG
+            and keys[pygame.K_LCTRL]
             and keys[pygame.K_LSHIFT]
             and event.type == pygame.KEYDOWN
         ):
@@ -77,8 +76,9 @@ class Manager(bf.SceneManager):
         if event.type == pygame.VIDEORESIZE and not (bf.const.FLAGS & pygame.SCALED):
             bf.const.set_resolution((event.w, event.h))
 
-        if event.consumed: return
-        
+        if event.consumed:
+            return
+
         super().process_event(event)
         if not event.consumed:
             if event.type == pygame.QUIT:
@@ -88,7 +88,6 @@ class Manager(bf.SceneManager):
         self.timeManager.update(dt)
         self.cutsceneManager.update(dt)
         super().update(dt)
-
 
     async def _run_async_internal(self):
         if len(self.scenes) == 0:
@@ -107,7 +106,9 @@ class Manager(bf.SceneManager):
             self.draw(self.screen)
             pygame.display.flip()
             dt = self.clock.tick(bf.const.FPS) / 1000
-            dt = min(dt, 0.02) # dirty fix for dt being too high when window not focused for a long time
+            dt = min(
+                dt, 0.02
+            )  # dirty fix for dt being too high when window not focused for a long time
             await asyncio.sleep(0)
         pygame.quit()
 
@@ -130,5 +131,7 @@ class Manager(bf.SceneManager):
             self.draw(self.screen)
             pygame.display.flip()
             dt = self.clock.tick(bf.const.FPS) / 1000
-            dt = min(dt, 0.02) # fix for dt being too high when window not focused for a long time
+            dt = min(
+                dt, 0.02
+            )  # fix for dt being too high when window not focused for a long time
         pygame.quit()

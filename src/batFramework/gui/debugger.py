@@ -1,9 +1,9 @@
 from .label import Label
-from typing import Self,Callable,Any
+from typing import Self, Callable, Any
 import batFramework as bf
 import pygame
 import sys
-
+from .textRenderer import RichTextRenderer
 
 def convert_to_int(*args):
     return [int(arg) for arg in args]
@@ -13,18 +13,18 @@ class Debugger(Label):
     def __init__(self) -> None:
         super().__init__("")
         self.root_link = None
-        self.static_data: dict[str,Any] = {}
-        self.dynamic_data: dict[str,Callable[[],str]] = {}
-        self.refresh_interval :float = .01
+        self.static_data: dict[str, Any] = {}
+        self.dynamic_data: dict[str, Callable[[], str]] = {}
+        self.refresh_interval: float = 0.01
         self.refresh_counter: float = 0
         self.add_tags("debugger")
         self.set_visible(False)
-    
-
+        self.set_renderer(RichTextRenderer())
+        
     def set_parent(self, parent):
         super().set_parent(parent)
         self.root_link = self.get_root()
-        
+
     def set_refresh_rate(self, value: float) -> Self:
         """
         seet refresh interval, time in seconds between each refresh of the debugger
@@ -37,18 +37,18 @@ class Debugger(Label):
         self.static_data[key] = str(data)
         self.update_text()
 
-    def add_dynamic(self, key: str, func:Callable[[],str]) -> None:
+    def add_dynamic(self, key: str, func: Callable[[], str]) -> None:
         self.dynamic_data[key] = func
         self.update_text()
 
-    def remove_static(self, key:str) -> bool:
+    def remove_static(self, key: str) -> bool:
         try:
             self.static_data.pop(key)
             return True
         except KeyError:
             return False
 
-    def remove_dynamic(self, key:str) -> bool:
+    def remove_dynamic(self, key: str) -> bool:
         try:
             self.dynamic_data.pop(key)
             return True
@@ -57,7 +57,7 @@ class Debugger(Label):
 
     def set_parent_scene(self, scene) -> Self:
         super().set_parent_scene(scene)
-        self.set_render_order(sys.maxsize-100)
+        self.set_render_order(sys.maxsize - 100)
         self.update_text()
         return self
 
@@ -83,18 +83,17 @@ class Debugger(Label):
     def update(self, dt: float) -> None:
         if not self.parent_scene:
             return
-        
+
         if bf.ResourceManager().get_sharedVar("debug_mode") != bf.debugMode.DEBUGGER:
             self.set_visible(False)
             return
-        
+
         self.set_visible(True)
         self.refresh_counter = self.refresh_counter + dt
-        
+
         if self.refresh_counter > self.refresh_interval:
             self.refresh_counter = 0
             self.update_text()
-
 
     def __str__(self) -> str:
         return "Debugger"
@@ -129,12 +128,8 @@ class BasicDebugger(FPSDebugger):
 
         if self.root_link is None:
             return
-        
 
         self.add_dynamic(
             "Hover",
-            lambda: (
-                str(self.root_link.hovered) if self.root_link.hovered else None
-            ),
+            lambda: (str(self.root_link.hovered) if self.root_link.hovered else None),
         )
-

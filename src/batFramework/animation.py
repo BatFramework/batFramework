@@ -3,52 +3,48 @@ import batFramework as bf
 from typing import List, Dict, Tuple, Union, Optional, Self, Iterable, Callable, Any
 
 
-
-
-
 class Animation:
     """
     Sprite animation with configurable frame durations.
-    
+
     Frame timing is specified as a list of integers representing
     the number of frames (at the base FPS) each sprite frame should display.
-    
+
     Example:
         duration_list = [10, 5, 10]  # First frame: 10 ticks, second: 5, third: 10
         At 60 FPS: [0.167s, 0.083s, 0.167s]
-        
+
     The animation counter advances by dt * fps each update, and frames
     are selected based on which duration bucket the counter falls into.
     """
-    def __init__(self,name: str) -> None:
+
+    def __init__(self, name: str) -> None:
         self.name = name
         self._frames: list[pygame.Surface] = []
-        self._cached_flip : dict[tuple[bool,bool],pygame.Surface] = {}
+        self._cached_flip: dict[tuple[bool, bool], pygame.Surface] = {}
         self._duration_list = []
         self._duration_list_length = 0
 
-        
-        self._frame_callback :None|Callable[[int],Any] = None
-        self._end_callback : None|Callable[[Any],Any]  = None
+        self._frame_callback: None | Callable[[int], Any] = None
+        self._end_callback: None | Callable[[Any], Any] = None
 
-        self._counter : float = 0 # float counter for the animation
-        self._frame_number :int = 0 # current frame number
-        self._previous_frame_number : int = 0
-        self._loop : int = 0
+        self._counter: float = 0  # float counter for the animation
+        self._frame_number: int = 0  # current frame number
+        self._previous_frame_number: int = 0
+        self._loop: int = 0
 
     @property
-    def frame_number(self)->int|None:
+    def frame_number(self) -> int | None:
         return self._frame_number
-
 
     def __repr__(self):
         return f"Animation({self.name})"
-        
-    def set_frame_callback(self,callback :None| Callable[[int],Any])->Self:
+
+    def set_frame_callback(self, callback: None | Callable[[int], Any]) -> Self:
         self._frame_callback = callback
         return self
 
-    def set_end_callback(self, callback: None|Callable[[Any],Any] )->Self:
+    def set_end_callback(self, callback: None | Callable[[Any], Any]) -> Self:
         self._end_callback = callback
         return self
 
@@ -61,26 +57,25 @@ class Animation:
                 return index
         return -1
 
-    def from_surface(self,surface:pygame.Surface,frame_size : Tuple[int,int])->Self:
+    def from_surface(
+        self, surface: pygame.Surface, frame_size: Tuple[int, int]
+    ) -> Self:
         """
         Loads frames from a spritesheet containing all animation frames aligned horizontally, left to right
         Frames are cut and stored in 2 versions, original and flipped on the horizontal axis.
         Flipping sprites being pretty common, this serves as a builtin cache.
         """
-        self._frames : List[pygame.Surface] = list(
+        self._frames: List[pygame.Surface] = list(
             bf.utils.split_surface(surface, frame_size).values()
         )
         self._cached_flip = {}
         self._duration_list_length = len(self._frames)
         if not self._duration_list:
-            self._duration_list = [1]*self._duration_list_length
+            self._duration_list = [1] * self._duration_list_length
         return self
 
     def from_path(
-        self,
-        path: str,
-        frame_size: Tuple[int, int],
-        convert_alpha: bool = True
+        self, path: str, frame_size: Tuple[int, int], convert_alpha: bool = True
     ) -> Self:
         """
         Loads frames from a spritesheet at the given path.
@@ -90,21 +85,24 @@ class Animation:
         return self.from_surface(surface, frame_size)
 
     def counter_to_frame(self, counter: Union[float, int]) -> int:
-        if not self._frames : 
+        if not self._frames:
             raise ValueError("Animation has no frames")
         return self._search_index(
             int(counter % sum(self._duration_list)), self._duration_list
         )
- 
-    def get_frame(self, counter: Union[float, int], flipX: bool = False, flipY: bool = False) -> pygame.Surface|None:
-        if not self._frames : return None
+
+    def get_frame(
+        self, counter: Union[float, int], flipX: bool = False, flipY: bool = False
+    ) -> pygame.Surface | None:
+        if not self._frames:
+            return None
         original = self._frames[self._frame_number]
         if (not flipX) and (not flipY):
             return original
-        frame = self._cached_flip.get((self._frame_number,flipX,flipY))
+        frame = self._cached_flip.get((self._frame_number, flipX, flipY))
         if not frame:
-            frame = pygame.transform.flip(original, flipX,flipY)
-            self._cached_flip[(self._frame_number,flipX,flipY)] = frame
+            frame = pygame.transform.flip(original, flipX, flipY)
+            self._cached_flip[(self._frame_number, flipX, flipY)] = frame
         return frame
 
     def set_duration_list(self, duration_list: Union[List[int], int]) -> Self:
@@ -119,9 +117,9 @@ class Animation:
     def reset_counter(self):
         self._counter = 0
         self._frame_number = 0
-        
-    def update(self, dt:float)->None:
-        self._counter += dt * 60 
+
+    def update(self, dt: float) -> None:
+        self._counter += dt * 60
         self._frame_number = self.counter_to_frame(self._counter)
         if self._counter >= sum(self._duration_list):
             if self._loop > 0:
@@ -130,8 +128,7 @@ class Animation:
                 self._counter %= sum(self._duration_list)
             if self._end_callback:
                 self._end_callback()
-                        
-                
+
         if self._frame_number != self._previous_frame_number:
             self._previous_frame_number = self._frame_number
             if self._frame_callback:

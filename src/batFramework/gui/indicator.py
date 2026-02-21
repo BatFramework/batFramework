@@ -12,9 +12,9 @@ class Indicator(Shape):
     """
     Shape intended to be used as icons/indicators
     due to its nature, it overrides the top_at function (it can not be 'seen' by the mouse)
-    
+
     """
-    
+
     def __init__(self, size: tuple[int | float] = (10, 10)) -> None:
         super().__init__(size)
         self.debug_color = "magenta"
@@ -39,24 +39,29 @@ class ToggleIndicator(Indicator):
         super().__init__((20, 20))
         self.value: bool = default_value
         self.on_color = bf.color.GREEN
-        self.off_color= bf.color.RED
-        self.callback = lambda val: self.set_color(self.on_color if val else self.off_color)
-        self.set_value(default_value)
-        self.callback(default_value)
-        self.add_constraints(bf.gui.AspectRatio(1,reference_axis=bf.axis.VERTICAL))
+        self.off_color = bf.color.RED
+        self.callback = lambda val: self.set_color(
+            self.on_color if val else self.off_color
+        )
+        self.add_constraints(bf.gui.AspectRatio(1, reference_axis=bf.axis.VERTICAL))
 
-    def set_off_color(self, color:pygame.typing.ColorLike):
+    def do_when_added(self):
+        self.set_value(self.value)
+        return super().do_when_added()
+
+
+    def set_off_color(self, color: pygame.typing.ColorLike):
         self.off_color = color
         self.dirty_surface = True
 
-    def set_on_color(self, color:pygame.typing.ColorLike):
+    def set_on_color(self, color: pygame.typing.ColorLike):
         self.on_color = color
         self.dirty_surface = True
 
     def __str__(self):
         return "ToggleIndicator"
 
-    def set_callback(self, callback : Callable[[bool],Any]) -> Self:
+    def set_callback(self, callback: Callable[[bool], Any]) -> Self:
         self.callback = callback
         return self
 
@@ -75,52 +80,49 @@ class ToggleIndicator(Indicator):
             return None
         return r
 
-class ArrowIndicator(Indicator):
-    def __init__(self,direction:bf.direction):
-        super().__init__()
-        self.direction : bf.direction = direction
-        self.arrow_color = bf.color.WHITE
-        self.line_width : int = 1
 
-    def set_arrow_color(self,color)-> Self:
+class ArrowIndicator(Indicator):
+    def __init__(self, direction: bf.direction):
+        super().__init__()
+        self.direction: bf.direction = direction
+        self.arrow_color = bf.color.WHITE
+        self.line_width: int = 1
+
+    def set_arrow_color(self, color) -> Self:
         self.arrow_color = color
         self.dirty_surface = True
         return self
 
-    def set_arrow_direction(self,direction:bf.direction)->Self:
+    def set_arrow_direction(self, direction: bf.direction) -> Self:
         self.direction = direction
         self.dirty_surface = True
         return self
 
-    def set_arrow_line_width(self,value:int)->Self:
+    def set_arrow_line_width(self, value: int) -> Self:
         self.line_width = value
         self.dirty_surface = True
         return self
-        
+
     def paint(self):
         super().paint()
         r = self.get_local_inner_rect()
         size = min(r.width, r.height)
-        if size %2 == 0:
+        if size % 2 == 0:
             size -= 1
         r.width = size
         r.height = size
 
-        #pixel alignment
-        if (self.padding[1]+self.padding[3] )%2 ==0:
-            r.height-=1
-        if (self.padding[0]+self.padding[2] )%2 ==0:
-            r.width-=1
+        # pixel alignment
+        if (self.padding[1] + self.padding[3]) % 2 == 0:
+            r.height -= 1
+        if (self.padding[0] + self.padding[2]) % 2 == 0:
+            r.width -= 1
         r.center = self.get_local_inner_rect().center
 
         bf.utils.draw_triangle(
-            surface = self.surface,
-            color = self.arrow_color,
-            rect =r,
-            direction = self.direction,
-            width = self.line_width
-
+            surface=self.surface,
+            color=self.arrow_color,
+            rect=r,
+            direction=self.direction,
+            width=self.line_width,
         )
-        
-
-

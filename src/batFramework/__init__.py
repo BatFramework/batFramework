@@ -2,6 +2,7 @@ import pathlib
 import tomllib
 from importlib.metadata import version, PackageNotFoundError
 
+
 def get_version() -> str:
     try:
         return version("batframework")
@@ -12,6 +13,7 @@ def get_version() -> str:
                 data = tomllib.load(f)
             return data["project"]["version"]
         return "0.0.0"
+
 
 __version__ = get_version()
 
@@ -27,7 +29,7 @@ from .resourceManager import ResourceManager
 from .fontManager import FontManager
 from .utils import Utils as utils
 from .tileset import Tileset
-from .timeManager import TimeManager,Timer,SceneTimer
+from .timeManager import TimeManager, Timer, SceneTimer
 from .easingController import EasingController
 from .propertyEaser import PropertyEaser
 from .cutsceneManager import CutsceneManager
@@ -41,7 +43,15 @@ from .entity import Entity
 from .drawable import Drawable
 from .renderGroup import RenderGroup
 from .dynamicEntity import DynamicEntity
-from .physics import PhysicsWorld, Collision, CollisionLayer, SpatialHash, check_aabb, get_overlap, find_collisions
+from .physics import (
+    PhysicsWorld,
+    Collision,
+    CollisionLayer,
+    SpatialHash,
+    check_aabb,
+    get_overlap,
+    find_collisions,
+)
 from .sprite import Sprite
 from .scrollingSprite import ScrollingSprite
 from .particle import *
@@ -57,8 +67,6 @@ from .manager import Manager
 from .templates import *
 
 
-
-
 def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
     const.set_resolution(resolution)
     const.FLAGS = flags
@@ -66,13 +74,12 @@ def init_screen(resolution: tuple[int, int], flags: int = 0, vsync: int = 0):
     const.SCREEN = pygame.display.set_mode(
         const.RESOLUTION, const.FLAGS, vsync=const.VSYNC
     )
-    print(
-        f"Window : {resolution[0]}x{resolution[1]}"
-    )
+    print(f"Window : {resolution[0]}x{resolution[1]}")
 
 
 def print_version():
     print(f"BatFramework version: {__version__}")
+
 
 def init(
     resolution: tuple[int, int],
@@ -88,7 +95,7 @@ def init(
     pygame.display.set_caption(window_caption)
     init_screen(resolution, flags, vsync)
     pygame.mixer.init()
-    
+
     ResourceManager().set_resource_path(
         resource_path if resource_path is not None else "."
     )

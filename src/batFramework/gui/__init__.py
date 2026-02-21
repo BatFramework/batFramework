@@ -8,9 +8,9 @@ from .clickableWidget import ClickableWidget
 from .root import Root
 from .shape import Shape
 from .meter import BarMeter
-from .textWidget import TextWidget
+from .textRenderer import *
+import batFramework.gui.textEffects as textEffects
 from .label import Label
-from .richLabel import RichLabel
 from .tooltip import ToolTip
 from .animatedLabel import AnimatedLabel
 from .textInput import TextInput
@@ -26,4 +26,5 @@ from .slider import Slider
 from .selector import Selector
 from .scrollingContainer import ScrollingContainer
 from .collapseContainer import CollapseContainer
+from .dropdown import Dropdown
 import batFramework.gui.constraints as constraints

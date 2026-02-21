@@ -1,7 +1,7 @@
 import pygame
 import batFramework as bf
 from functools import lru_cache
-from typing import Callable,Any
+from typing import Callable, Any
 
 
 @lru_cache(maxsize=None)
@@ -24,7 +24,7 @@ class EasingController(bf.Timer):
         update_callback=None,
         end_callback: Callable[[], Any] = None,
         loop: int = 0,
-        register:str="global"
+        register: str = "global",
     ) -> None:
         self.easing_function = easing
         self.update_callback: Callable[[float], Any] = update_callback
@@ -44,11 +44,15 @@ class EasingController(bf.Timer):
         super().update(dt)
         if self.get_progression() == 0:
             return
-        if self.easing_function == bf.easing.LINEAR: # avoid calculating if linear (just use progression as is)
+        if (
+            self.easing_function == bf.easing.LINEAR
+        ):  # avoid calculating if linear (just use progression as is)
             self.value = self.get_progression()
         else:
-            self.value = process_value(self.get_progression(), *self.easing_function.control_points)
-        
+            self.value = process_value(
+                self.get_progression(), *self.easing_function.control_points
+            )
+
         if self.update_callback:
             self.update_callback(self.value)
 

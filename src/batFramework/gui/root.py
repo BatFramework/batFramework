@@ -18,23 +18,29 @@ class Root(InteractiveWidget):
         self.clip_children = False
         self.set_debug_color("yellow")
 
-        self.show_tooltip : bool = True
+        self.show_tooltip: bool = True
         self.tooltip = bf.gui.ToolTip("").set_visible(False)
         self.add(self.tooltip)
         self.set_click_pass_through(True)
 
-    def set_show_tooltip(self,value:bool)->Self:
+        # Track what widget is currently showing tooltip
+        self._tooltip_target: Widget | None = None
+
+    def set_show_tooltip(self, value: bool) -> Self:
         self.show_tooltip = value
         return self
-    
+
     def __str__(self) -> str:
         return "Root"
-    
+
     def to_ascii_tree(self) -> str:
-        def f(w:Widget, depth):
+        def f(w: Widget, depth):
             prefix = " " * (depth * 4) + ("L__ " if depth > 0 else "")
-            children = "\n".join(f(c, depth + 1) for c in w.children) if w.children else ""
+            children = (
+                "\n".join(f(c, depth + 1) for c in w.children) if w.children else ""
+            )
             return f"{prefix}{str(w)}\n{children}"
+
         return f(self, 0)
 
     def set_parent_scene(self, parent_scene: bf.Scene) -> Self:
@@ -59,7 +65,7 @@ class Root(InteractiveWidget):
         for child in self.children:
             yield from child.get_debug_outlines()
 
-    def focus_on(self, widget: InteractiveWidget | None) -> None:
+    def focus_on(self, widget: InteractiveWidget | None, focus_area : pygame.Rect=None) -> None:
         if widget == self.focused:
             return
         if widget and not widget.allow_focus_to_self():
@@ -70,7 +76,7 @@ class Root(InteractiveWidget):
             self.focused = self
             return
         self.focused = widget
-        self.focused.on_get_focus()
+        self.focused.on_get_focus(focus_area)
 
     def get_by_tags(self, *tags) -> list[Widget]:
         res = []
@@ -109,22 +115,23 @@ class Root(InteractiveWidget):
         self.dirty_size_constraints = True
         return self
 
-    def process_event(self,event):
-        if not event.consumed : self.handle_event_early(event)
+    def process_event(self, event):
+        if not event.consumed:
+            self.handle_event_early(event)
         super().process_event(event)
-        
+
     def handle_event_early(self, event):
         if event.type == pygame.VIDEORESIZE and not pygame.SCALED & bf.const.FLAGS:
-            self.set_size((event.w,event.h),force=True)
+            self.set_size((event.w, event.h), force=True)
         return
-    
+
     def handle_event(self, event):
         super().handle_event(event)
-        if not event.consumed :
-            if event.type == pygame.KEYDOWN and event.key==pygame.K_TAB:
+        if not event.consumed:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_TAB:
                 self.tab_focus(event)
 
-    def tab_focus(self,event=None):
+    def tab_focus(self, event=None):
         if self.focused is None:
             return
         keys = pygame.key.get_pressed()
@@ -132,13 +139,13 @@ class Root(InteractiveWidget):
             self.focused.focus_prev_tab(self.focused)
         else:
             self.focused.focus_next_tab(self.focused)
-        if event :event.consumed = True
+        if event:
+            event.consumed = True
 
-
-    def on_click_down(self, button: int,event) -> None:
+    def on_click_down(self, button: int, event) -> None:
         if button == 1:
             self.clear_focused()
-        super().on_click_down(button,event)
+        super().on_click_down(button, event)
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         for child in reversed(self.children):
@@ -155,29 +162,44 @@ class Root(InteractiveWidget):
         prev_hovered = self.hovered
         self.hovered = self.top_at(*mouse_world)
 
-        if (self.hovered and self.hovered.tooltip_text and self.show_tooltip):
-            self.tooltip.set_text(self.hovered.tooltip_text)
-            self.tooltip.fade_in()
-        else:
-            self.tooltip.fade_out()
+        # Tooltip logic: only trigger fade when target changes
+        current_tooltip_widget = (
+            self.hovered if (self.hovered and self.hovered.tooltip_text) else None
+        )
+        if current_tooltip_widget:
+            self.tooltip.set_text(current_tooltip_widget.tooltip_text)
+        if current_tooltip_widget != self._tooltip_target:
+            # Tooltip target changed
+            if current_tooltip_widget and self.show_tooltip:
+                # Start showing tooltip for new target
 
-        # Tooltip logic
-        if self.tooltip.visible: 
+                self.tooltip.fade_in()
+            else:
+                # Hide tooltip (either no target or tooltip disabled)
+                self.tooltip.fade_out()
 
-            tooltip_size = self.tooltip.get_min_required_size()
-            # screen_w, screen_h = self.drawing_camera.rect.size
-            screen_w, screen_h = bf.const.RESOLUTION
+            self._tooltip_target = current_tooltip_widget
 
-            tooltip_x, tooltip_y = mouse_world
-            tooltip_x+=4
-            tooltip_y+=4
-            tooltip_x = min(tooltip_x, screen_w - tooltip_size[0])
-            tooltip_y = min(tooltip_y, screen_h - tooltip_size[1])
-            tooltip_x = max(0, tooltip_x)
-            tooltip_y = max(0, tooltip_y)
+        # Position tooltip
+        if self.tooltip.visible:
+            offset = 2
+            mouse_x, mouse_y = mouse_world
+            tooltip_rect = pygame.FRect(mouse_x, mouse_y,*self.tooltip.get_min_required_size())
+            screen_rect = pygame.Rect(0,0,*bf.const.RESOLUTION)
+            screen_rect = self.drawing_camera.world_to_screen(screen_rect).inflate(-tooltip_rect.w,-tooltip_rect.h)
+            if tooltip_rect.right + offset <= screen_rect.right:
+                tooltip_rect.move_ip(offset,0)
+            else:
+                tooltip_rect.move_ip(-tooltip_rect.w - offset,0)
 
-            self.tooltip.set_position(tooltip_x, tooltip_y)
+            if tooltip_rect.bottom + offset <= screen_rect.bottom:
+                tooltip_rect.move_ip(0,offset)
+            else:
+                tooltip_rect.move_ip(0,-tooltip_rect.h - offset)            
+            
+            self.tooltip.set_position(tooltip_rect.x, tooltip_rect.y)
 
+        # Handle hover state changes
         if self.hovered == prev_hovered:
             if isinstance(self.hovered, InteractiveWidget):
                 self.hovered.on_mouse_motion(*mouse_world)
@@ -188,9 +210,6 @@ class Root(InteractiveWidget):
         if isinstance(self.hovered, InteractiveWidget):
             self.hovered.on_enter()
 
-
-
-
     def update_tree(self):
         # 1st pass
         self.apply_updates("pre")
@@ -199,11 +218,10 @@ class Root(InteractiveWidget):
         self.apply_updates("pre")
         self.apply_updates("post")
 
-
     def apply_pre_updates(self):
-        return 
+        return
 
-    def apply_post_updates(self, skip_draw = False):
+    def apply_post_updates(self, skip_draw=False):
         return
 
     def draw(self, camera: bf.Camera) -> None:
@@ -214,16 +232,18 @@ class Root(InteractiveWidget):
 
         # Draw each child widget, sorted by render order
         for child in [c for c in self.children if c != self.tooltip]:
-            if (not self.clip_children) or (child.rect.colliderect(self.rect) or not child.rect):
+            if (not self.clip_children) or (
+                child.rect.colliderect(self.rect) or not child.rect
+            ):
                 child.draw(camera)
         if self.clip_children:
             camera.surface.set_clip(old_clip)
-        
-        if self.focused != self and (not self.focused is None)  :
+
+        if self.focused != self and (not self.focused is None):
             old_clip = camera.surface.get_clip()
             # set clip to focused widget's parent
             camera.surface.set_clip(self.focused.parent.rect)
-            self.focused.draw_focused(camera)   
+            self.focused.draw_focused(camera)
             camera.surface.set_clip(old_clip)
 
         self.tooltip.draw(camera)

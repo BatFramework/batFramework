@@ -1,146 +1,136 @@
-import batFramework as bf
-import pygame
-from .shape import Shape
-from .textWidget import TextWidget
-from typing import Literal, Self,Union
+from __future__ import annotations
 from math import ceil
+import pygame
+import batFramework as bf
+from .shape import Shape
+from .textMixin import TextMixin
+from .textRenderer import TextRenderer
+from .textEffects import TextEffect
+from typing import Self
 
-class Label(Shape):
 
-    def __init__(self, text: str = "") -> None:
-        super().__init__((0, 0))
+class Label(TextMixin, Shape):
+    """
+    A Shape that renders a single block of text.
+    TextMixin owns all font/style/outline/scroll state.
+    Shape owns background, border, relief painting.
+    This class only adds alignment and ties both together.
+
+    MRO: Label → TextMixin → Shape → Widget
+    super().__init__() threads kwargs through the whole chain,
+    so size=(0,0) lands in Shape and the rest in Widget/Drawable.
+    """
+
+    def __init__(self, text: str = "", renderer: TextRenderer | None = None):
+        super().__init__(text=text, renderer=renderer, size=(0, 0))
         self.alignment: bf.alignment = bf.alignment.CENTER
-        self.text_widget = TextWidget(text)
-        self.set_padding((10, 4))
-        self.set_debug_color("blue")
+        # Blit position in local surface coordinates, updated every build().
+        self.text_rect = pygame.FRect(0, 0, 0, 0)
+        self.text_effect: TextEffect | None = None
         self.set_autoresize(True)
-        self.set_font(force=True)
-        self.add(self.text_widget)
-        
+        self.set_convert_alpha(True)
+        self.set_surface_flags(pygame.SRCALPHA)
+
     def __str__(self) -> str:
-        return f"Label({repr(self.text_widget.text)})"
+        return f"Label({repr(self.text)})"
 
-    def set_visible(self, value):
-        self.text_widget.set_visible(value)
-        return super().set_visible(value)
+    # ------------------------------------------------------------------
+    # Text effect
+    # ------------------------------------------------------------------
 
-    def set_allow_scroll(self, value:bool)->Self:
-        self.text_widget.set_allow_scroll(value)
+    def set_text_effect(self, effect: TextEffect | None) -> Self:
+        self.text_effect = effect
+        self.dirty_surface = True
         return self
 
-    def set_line_alignment(self, alignment: int) -> Self:
-        """
-        alignment: One of pygame.FONT_CENTER, pygame.FONT_LEFT, pygame.FONT_RIGHT
-        """
-        self.text_widget.set_line_alignment(alignment)
-        return self
-    
-    def set_text_color(self, color) -> Self:
-        self.text_widget.set_text_color(color)
-        return self
-
-    def set_italic(self, value: bool) -> Self:
-        self.text_widget.set_italic(value)
-        return self
-
-    def set_bold(self, value: bool) -> Self:
-        self.text_widget.set_bold(value)
-        return self
-
-    def set_underlined(self, value: bool) -> Self:
-        self.text_widget.set_underlined(value)
-        return self
-
-    def set_text_outline_mask_size(self,size:tuple[int,int])->Self:
-        self.text_widget.set_text_outline_mask_size(size)
-        return self
-
-    def set_text_outline_matrix(self, matrix: list[list[0 | 1]]) -> Self:
-        self.text_widget.set_text_outline_matrix(matrix)
-        return self
-
-    def set_text_outline_color(self, color) -> Self:
-        self.text_widget.set_text_outline_color(color)
-        return self
-
-    def set_text_bg_color(self, color) -> Self:
-        self.text_widget.set_text_bg_color(color)
-        return self
-
-    def set_show_text_outline(self,value:bool) -> Self:
-        self.text_widget.set_show_text_outline(value)
-        return self
+    # ------------------------------------------------------------------
+    # Alignment
+    # ------------------------------------------------------------------
 
     def set_alignment(self, alignment: bf.alignment) -> Self:
-        self.alignment = alignment
-        self.dirty_shape = True
+        if self.alignment != alignment:
+            self.alignment = alignment
+            self.dirty_shape = True
         return self
 
-    def set_auto_wraplength(self, val: bool) -> Self:
-        self.text_widget.set_auto_wraplength(val)
-        return self
+    def get_alignment(self) -> bf.alignment:
+        return self.alignment
 
-    def get_debug_outlines(self):
-        if self.visible:
-            yield from super().get_debug_outlines()
-            yield from self.text_widget.get_debug_outlines()
-
-    def set_font(self, font_name: str = None, force: bool = False) -> Self:
-        self.text_widget.set_font(font_name,force)
-        return self
-
-    def set_text_size(self, text_size: int) -> Self:
-        self.text_widget.set_text_size(text_size)
-        return self
-
-    def get_text_size(self) -> int:
-        return self.text_widget.text_size
-
-    def is_antialias(self) -> bool:
-        return self.text_widget.antialias
-
-    def set_antialias(self, value: bool) -> Self:
-        self.text_widget.set_antialias(value)
-        return self
-
-    def set_text(self, text: str) -> Self:
-        self.text_widget.set_text(text)
-        return self
+    # ------------------------------------------------------------------
+    # Sizing
+    # ------------------------------------------------------------------
 
     def get_min_required_size(self) -> tuple[float, float]:
-        return self.expand_rect_with_padding(
-            (0, 0, *self.text_widget.get_min_required_size())
-        ).size
+        tw, th = self.get_text_size()
+        return self.expand_rect_with_padding((0, 0, tw, th)).size
 
-    def get_text(self) -> str:
-        return self.text_widget.text
+    # ------------------------------------------------------------------
+    # Build  (size + text offset, no drawing)
+    # ------------------------------------------------------------------
 
-    def align_text(
-        self, text_rect: pygame.FRect, area: pygame.FRect, alignment: bf.alignment
-    ):
-        if alignment == bf.alignment.LEFT:
-            alignment = bf.alignment.MIDLEFT
-        elif alignment == bf.alignment.MIDRIGHT:
-            alignment = bf.alignment.MIDRIGHT
+    def build(self) -> bool:
+        target = self.resolve_size(self.get_min_required_size())
+        changed = self.rect.size != target
+        if changed:
+            self.set_size(target)
 
-        pos = area.__getattribute__(alignment.value)
-        text_rect.__setattr__(alignment.value, pos)
-        text_rect.y = ceil(text_rect.y)
+        self._recompute_text_rect()
+        return changed
 
-    def build(self):
-        ret = False
-        target_size = self.resolve_size(self.get_min_required_size())
-        if self.rect.size != target_size :
-            self.set_size(target_size)
-            self.text_widget.set_size(self.get_inner_rect().size)
-            ret = True
+    def _recompute_text_rect(self) -> None:
+        tw, th = self.get_text_size()
+        inner = self.get_local_inner_rect()
 
-        padded = self.get_inner_rect()
-        self.align_text(self.text_widget.rect, padded, self.alignment)
-        return ret
-    
-    def apply_pre_updates(self):
-        if self.text_widget.dirty_shape:
-            self.dirty_shape =True
-        return super().apply_pre_updates()
-    
+        # Rect representing the text block
+        self.text_rect.update(0, 0, tw, th)
+
+        # Align text_rect to inner rect using pygame's rect API
+        anchor = self.alignment.value
+        if hasattr(inner, anchor):
+            setattr(self.text_rect, anchor, getattr(inner, anchor))
+        else:
+            self.text_rect.topleft = inner.topleft
+
+        self.text_rect.topleft = (
+            ceil(self.text_rect.left),
+            ceil(self.text_rect.top),
+        )
+
+    # ------------------------------------------------------------------
+    # Paint
+    # ------------------------------------------------------------------
+
+    def _build_style(self):
+        if self.text_effect:
+            # Temporarily swap self.text so the parent builds the style
+            # with the effect-transformed string, then restore immediately.
+            raw = self.text
+            self.text = self.text_effect.apply(raw)
+            style = super()._build_style()
+            self.text = raw
+            return style
+        return super()._build_style()
+
+    def apply_post_updates(self, skip_draw=False):
+        super().apply_post_updates(skip_draw)
+        if self.renderer.DYNAMIC or (self.text_effect and self.text_effect.DYNAMIC):
+            self.dirty_surface = True
+
+    def paint(self) -> None:
+        # Shape draws background fill, relief shadow, and border outline.
+        super().paint()
+        text_surf = self.renderer.render(self._build_style())
+        old_clip = self.surface.get_clip()
+        self.surface.set_clip(self.get_local_inner_rect())
+        self.surface.blit(
+            text_surf, self.text_rect.move(-self.text_scroll.x, -self.text_scroll.y).topleft
+        )
+        self.surface.set_clip(old_clip)
+    def get_debug_outlines(self):
+        if not self.visible:
+            return
+        yield from super().get_debug_outlines()
+        if self.text:
+            yield self.text_rect.move(*self.rect.topleft).move(
+                -self.text_scroll.x, -self.text_scroll.y
+            ), "purple"

@@ -2,7 +2,7 @@ import batFramework as bf
 from .widget import Widget
 from .constraints.constraints import *
 from typing import Self, TYPE_CHECKING
-from abc import ABC,abstractmethod
+from abc import ABC, abstractmethod
 import pygame
 from .interactiveWidget import InteractiveWidget
 
@@ -16,7 +16,7 @@ class Layout(ABC):
         self.child_constraints: list[Constraint] = []
         self.children_rect = pygame.FRect(0, 0, 0, 0)
 
-    def get_free_space(self)->tuple[float,float]:
+    def get_free_space(self) -> tuple[float, float]:
         """
         return the space available for Growing widgets to use
         """
@@ -38,14 +38,21 @@ class Layout(ABC):
 
     def update_children_rect(self):
         if self.parent.get_layout_children():
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft,*self.parent.get_layout_children()[0].get_min_required_size())
-            
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft,
+                *self.parent.get_layout_children()[0].get_min_required_size(),
+            )
+
             self.children_rect.unionall(
-                [pygame.FRect(0,0,*c.get_min_required_size()) for c in self.parent.get_layout_children()[1:]]
+                [
+                    pygame.FRect(0, 0, *c.get_min_required_size())
+                    for c in self.parent.get_layout_children()[1:]
+                ]
             )
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 0, 0)
-        self.children_rect.move_ip(-self.parent.scroll.x,-self.parent.scroll.y)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, 0, 0
+            )
 
     def update_child_constraints(self):
         if self.parent:
@@ -58,7 +65,7 @@ class Layout(ABC):
         """
         return
 
-    def scroll_children(self)->None:
+    def scroll_children(self) -> None:
         return
 
     def get_raw_size(self):
@@ -66,7 +73,7 @@ class Layout(ABC):
         Returns the size the container should have to encapsulate perfectly all of its widgets
         """
         # print(self,self.parent,len(self.parent.get_layout_children()))
-        self.update_children_rect() # TODO: find  a way to call this fewer times
+        self.update_children_rect()  # TODO: find  a way to call this fewer times
         return self.children_rect.size
 
     def get_auto_size(self) -> tuple[float, float]:
@@ -78,41 +85,41 @@ class Layout(ABC):
             target_size[0] = self.parent.get_inner_width()
         if not self.parent.autoresize_h:
             target_size[1] = self.parent.get_inner_height()
-        
-        return self.parent.expand_rect_with_padding((0,0,*target_size)).size 
+
+        return self.parent.expand_rect_with_padding((0, 0, *target_size)).size
         # return target_size
 
-    def scroll_to_widget(self, widget: "Widget"):
+    def scroll_to_widget(self, widget: "Widget",focus_area:pygame.Rect=None):
         """
         Scrolls parent container so that the widget becomes visible.
         If the widget is bigger than the container, aligns top/left.
         """
         inner = self.parent.get_inner_rect()
-
-        if self.parent.clip_children and not inner.contains(widget.rect):
+        if focus_area is None : focus_area = widget.rect
+        if self.parent.clip_children and not inner.contains(focus_area):
             scroll = pygame.Vector2(0, 0)
 
             # Horizontal
-            if widget.rect.w > inner.w:
+            if focus_area.w > inner.w:
                 # Widget is too wide: just align left
-                if widget.rect.left < inner.left:
-                    scroll.x = inner.left - widget.rect.left
+                if focus_area.left < inner.left:
+                    scroll.x = inner.left - focus_area.left
             else:
-                if widget.rect.left < inner.left:
-                    scroll.x = inner.left - widget.rect.left
-                elif widget.rect.right > inner.right:
-                    scroll.x = inner.right - widget.rect.right
+                if focus_area.left < inner.left:
+                    scroll.x = inner.left - focus_area.left
+                elif focus_area.right > inner.right:
+                    scroll.x = inner.right - focus_area.right
 
             # Vertical
-            if widget.rect.h > inner.h:
+            if focus_area.h > inner.h:
                 # Widget is too tall: just align top
-                if widget.rect.top < inner.top:
-                    scroll.y = inner.top - widget.rect.top
+                if focus_area.top < inner.top:
+                    scroll.y = inner.top - focus_area.top
             else:
-                if widget.rect.top < inner.top:
-                    scroll.y = inner.top - widget.rect.top
-                elif widget.rect.bottom > inner.bottom:
-                    scroll.y = inner.bottom - widget.rect.bottom
+                if focus_area.top < inner.top:
+                    scroll.y = inner.top - focus_area.top
+                elif focus_area.bottom > inner.bottom:
+                    scroll.y = inner.bottom - focus_area.bottom
 
             # Apply
             self.parent.scroll_by(-scroll)
@@ -123,36 +130,41 @@ class Layout(ABC):
 
         # recurse upwards if parent has a layout
         if hasattr(self.parent.parent, "layout"):
-            self.parent.parent.layout.scroll_to_widget(widget)
+            self.parent.parent.layout.scroll_to_widget(widget,focus_area)
+
     def handle_event(self, event):
         pass
 
-class FreeLayout(Layout):...
+
+class FreeLayout(Layout): ...
+
 
 class SingleAxisLayout(Layout):
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
     def focus_next_child(self) -> None:
         l = self.parent.get_interactive_children()
         self.parent.focused_index = min(self.parent.focused_index + 1, len(l) - 1)
         focused = l[self.parent.focused_index]
-        focused.get_focus()
+        focused.ask_focus()
 
     def focus_prev_child(self) -> None:
         l = self.parent.get_interactive_children()
         self.parent.focused_index = max(self.parent.focused_index - 1, 0)
         focused = l[self.parent.focused_index]
-        focused.get_focus()
+        focused.ask_focus()
+
 
 class DoubleAxisLayout(Layout):
     """Abstract layout class for layouts that arrange widgets in two dimensions."""
 
-    def focus_up_child(self) -> None:...
-    def focus_down_child(self) -> None:...
-    def focus_right_child(self) -> None:...
-    def focus_left_child(self) -> None:...
+    def focus_up_child(self) -> None: ...
+    def focus_down_child(self) -> None: ...
+    def focus_right_child(self) -> None: ...
+    def focus_left_child(self) -> None: ...
+
 
 class Column(SingleAxisLayout):
     def __init__(self, gap: int = 0):
@@ -160,23 +172,39 @@ class Column(SingleAxisLayout):
         self.gap = gap
 
     def handle_event(self, event):
-        if not self.parent.get_layout_children() or not self.parent.children_has_focus():
+        if (
+            not self.parent.get_layout_children()
+            or not self.parent.children_has_focus()
+        ):
             return
 
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_DOWN, pygame.K_UP):
-                self.focus_next_child() if event.key == pygame.K_DOWN else self.focus_prev_child()
+                (
+                    self.focus_next_child()
+                    if event.key == pygame.K_DOWN
+                    else self.focus_prev_child()
+                )
                 event.consumed = True
 
     def update_children_rect(self):
         layout_children = self.parent.get_layout_children()
         if layout_children:
-            width = max(child.get_min_required_size()[0] if child.autoresize_h else child.rect.w for child in layout_children )
-            height = sum(child.get_min_required_size()[1]if child.autoresize_w else child.rect.h for child in layout_children) + self.gap * (len(layout_children) - 1)
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
+            width = max(
+                child.get_min_required_size()[0] if child.autoresize_w else child.rect.w
+                for child in layout_children
+            )
+            height = sum(
+                child.get_min_required_size()[1] if child.autoresize_h else child.rect.h
+                for child in layout_children
+            ) + self.gap * (len(layout_children) - 1)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, width, height
+            )
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 10, 10)
-        self.children_rect.move_ip(-self.parent.scroll.x,-self.parent.scroll.y)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, 10, 10
+            )
 
     def scroll_children(self):
         topleft = list(self.parent.get_inner_rect().topleft)
@@ -191,29 +219,46 @@ class Column(SingleAxisLayout):
         self.update_children_rect()
         self.scroll_children()
 
+
 class Row(SingleAxisLayout):
     def __init__(self, gap: int = 0):
         super().__init__()
         self.gap = gap
 
     def handle_event(self, event):
-        if not self.parent.get_layout_children() or not self.parent.children_has_focus():
+        if (
+            not self.parent.get_layout_children()
+            or not self.parent.children_has_focus()
+        ):
             return
 
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_RIGHT, pygame.K_LEFT):
-                self.focus_next_child() if event.key == pygame.K_RIGHT else self.focus_prev_child()
+                (
+                    self.focus_next_child()
+                    if event.key == pygame.K_RIGHT
+                    else self.focus_prev_child()
+                )
                 event.consumed = True
 
     def update_children_rect(self):
         layout_children = self.parent.get_layout_children()
         if layout_children:
-            width = sum(child.get_min_required_size()[0] if child.autoresize_w else child.rect.w for child in layout_children ) + self.gap * (len(layout_children) - 1)
-            height = max(child.get_min_required_size()[1] if child.autoresize_h else child.rect.h for child in layout_children )
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
+            width = sum(
+                child.get_min_required_size()[0] if child.autoresize_w else child.rect.w
+                for child in layout_children
+            ) + self.gap * (len(layout_children) - 1)
+            height = max(
+                child.get_min_required_size()[1] if child.autoresize_h else child.rect.h
+                for child in layout_children
+            )
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, width, height
+            )
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 10,10)        
-        self.children_rect.move_ip(-self.parent.scroll.x,-self.parent.scroll.y)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, 10, 10
+            )
 
     def scroll_children(self):
         topleft = list(self.parent.get_inner_rect().topleft)
@@ -227,6 +272,7 @@ class Row(SingleAxisLayout):
     def arrange(self) -> None:
         self.update_children_rect()
         self.scroll_children()
+
 
 class Grid(DoubleAxisLayout):
     def __init__(self, rows: int, cols: int, gap: int = 0):
@@ -246,7 +292,7 @@ class Grid(DoubleAxisLayout):
         target_index = max(0, current_index - self.cols)
         if target_index // self.cols < current_row:
             self.parent.focused_index = target_index
-            l[target_index].get_focus()
+            l[target_index].ask_focus()
 
     def focus_down_child(self) -> None:
         l = self.parent.get_interactive_children()
@@ -259,7 +305,7 @@ class Grid(DoubleAxisLayout):
         target_index = min(len(l) - 1, current_index + self.cols)
         if target_index // self.cols > current_row:
             self.parent.focused_index = target_index
-            l[target_index].get_focus()
+            l[target_index].ask_focus()
 
     def focus_left_child(self) -> None:
         l = self.parent.get_interactive_children()
@@ -271,7 +317,7 @@ class Grid(DoubleAxisLayout):
         target_index = max(0, current_index - 1)
         if target_index // self.cols == current_index // self.cols:
             self.parent.focused_index = target_index
-            l[target_index].get_focus()
+            l[target_index].ask_focus()
 
     def focus_right_child(self) -> None:
         l = self.parent.get_interactive_children()
@@ -283,10 +329,13 @@ class Grid(DoubleAxisLayout):
         target_index = min(len(l) - 1, current_index + 1)
         if target_index // self.cols == current_index // self.cols:
             self.parent.focused_index = target_index
-            l[target_index].get_focus()
+            l[target_index].ask_focus()
 
     def handle_event(self, event):
-        if not self.parent.get_layout_children() or not self.parent.children_has_focus():
+        if (
+            not self.parent.get_layout_children()
+            or not self.parent.children_has_focus()
+        ):
             return
 
         if event.type == pygame.KEYDOWN:
@@ -299,28 +348,43 @@ class Grid(DoubleAxisLayout):
                     self.focus_up_child()
                 elif event.key == pygame.K_DOWN:
                     self.focus_down_child()
-                
+
                 event.consumed = True
 
     def update_children_rect(self):
-        layout_children = self.parent.get_layout_children() 
+        layout_children = self.parent.get_layout_children()
         if layout_children:
-            cell_width = max(child.get_min_required_size()[0] for child in layout_children)
-            cell_height = max(child.get_min_required_size()[1] for child in layout_children)
+            cell_width = max(
+                child.get_min_required_size()[0] for child in layout_children
+            )
+            cell_height = max(
+                child.get_min_required_size()[1] for child in layout_children
+            )
             width = self.cols * cell_width + self.gap * (self.cols - 1)
             height = self.rows * cell_height + self.gap * (self.rows - 1)
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, width, height
+            )
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 10, 10)
-        self.children_rect.move_ip(-self.parent.scroll.x, -self.parent.scroll.y)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, 10, 10
+            )
 
     def scroll_children(self):
         topleft = list(self.parent.get_inner_rect().topleft)
         topleft[0] -= round(self.parent.scroll.x)
         topleft[1] -= round(self.parent.scroll.y)
         layout_children = self.parent.get_layout_children()
-        cell_width = (self.children_rect.width - self.gap * (self.cols - 1)) / self.cols if self.cols else 0
-        cell_height = (self.children_rect.height - self.gap * (self.rows - 1)) / self.rows if self.rows else 0
+        cell_width = (
+            (self.children_rect.width - self.gap * (self.cols - 1)) / self.cols
+            if self.cols
+            else 0
+        )
+        cell_height = (
+            (self.children_rect.height - self.gap * (self.rows - 1)) / self.rows
+            if self.rows
+            else 0
+        )
         for i, child in enumerate(layout_children):
             row = i // self.cols
             col = i % self.cols
@@ -332,17 +396,24 @@ class Grid(DoubleAxisLayout):
         self.update_children_rect()
         self.scroll_children()
 
+
 class RowFill(Row):
 
     def update_children_rect(self):
         parent_width = self.parent.get_inner_width()
         if self.parent.get_layout_children():
-            height = max(child.get_min_required_size()[1] for child in self.parent.get_layout_children())
+            height = max(
+                child.get_min_required_size()[1]
+                for child in self.parent.get_layout_children()
+            )
             width = parent_width
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, width, height
+            )
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, parent_width,10)        
-        self.children_rect.move_ip(-self.parent.scroll.x,-self.parent.scroll.y)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, parent_width, 10
+            )
 
     def scroll_children(self):
         topleft = list(self.parent.get_inner_rect().topleft)
@@ -370,17 +441,24 @@ class RowFill(Row):
         self.resize_children()
         self.scroll_children()
 
+
 class ColumnFill(Column):
 
     def update_children_rect(self):
         parent_height = self.parent.get_inner_height()
         if self.parent.get_layout_children():
-            width = max(child.get_min_required_size()[0] for child in self.parent.get_layout_children())
+            width = max(
+                child.get_min_required_size()[0]
+                for child in self.parent.get_layout_children()
+            )
             height = parent_height
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, width, height)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, width, height
+            )
         else:
-            self.children_rect = pygame.FRect(*self.parent.get_inner_rect().topleft, 10, parent_height)
-        self.children_rect.move_ip(-self.parent.scroll.x, -self.parent.scroll.y)
+            self.children_rect = pygame.FRect(
+                *self.parent.get_inner_rect().topleft, 10, parent_height
+            )
 
     def scroll_children(self):
         topleft = list(self.parent.get_inner_rect().topleft)
@@ -408,6 +486,7 @@ class ColumnFill(Column):
         self.resize_children()
         self.scroll_children()
 
+
 class GridFill(Grid):
     def update_children_rect(self):
         self.children_rect = self.parent.get_inner_rect()
@@ -417,8 +496,16 @@ class GridFill(Grid):
         topleft[0] -= round(self.parent.scroll.x)
         topleft[1] -= round(self.parent.scroll.y)
         layout_children = self.parent.get_layout_children()
-        cell_width = (self.children_rect.width - self.gap * (self.cols - 1)) / self.cols if self.cols else 0
-        cell_height = (self.children_rect.height - self.gap * (self.rows - 1)) / self.rows if self.rows else 0
+        cell_width = (
+            (self.children_rect.width - self.gap * (self.cols - 1)) / self.cols
+            if self.cols
+            else 0
+        )
+        cell_height = (
+            (self.children_rect.height - self.gap * (self.rows - 1)) / self.rows
+            if self.rows
+            else 0
+        )
         for i, child in enumerate(layout_children):
             row = i // self.cols
             col = i % self.cols
@@ -428,8 +515,16 @@ class GridFill(Grid):
 
     def resize_children(self):
         layout_children = self.parent.get_layout_children()
-        cell_width = (self.children_rect.width - self.gap * (self.cols - 1)) / self.cols if self.cols else 0
-        cell_height = (self.children_rect.height - self.gap * (self.rows - 1)) / self.rows if self.rows else 0
+        cell_width = (
+            (self.children_rect.width - self.gap * (self.cols - 1)) / self.cols
+            if self.cols
+            else 0
+        )
+        cell_height = (
+            (self.children_rect.height - self.gap * (self.rows - 1)) / self.rows
+            if self.rows
+            else 0
+        )
         for child in layout_children:
             child.set_autoresize(False)
             child.set_size((cell_width, cell_height))

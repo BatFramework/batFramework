@@ -3,7 +3,7 @@ import batFramework as bf
 
 
 class Scene(BaseScene):
-    def __init__(self,name: str) -> None:
+    def __init__(self, name: str) -> None:
         """
         Default Scene object.
         Has 2 layers (world and hud) by default
@@ -12,12 +12,12 @@ class Scene(BaseScene):
             name: Name of the scene.
         """
         super().__init__(name)
-        self.add_layer(bf.SceneLayer("world",True))
-        hud_layer = bf.SceneLayer("hud",True)
+        self.add_layer(bf.SceneLayer("world", True))
+        hud_layer = bf.SceneLayer("hud", True)
         self.add_layer(hud_layer)
         self.root: bf.gui.Root = bf.gui.Root(hud_layer.camera)
         self.root.rect.center = hud_layer.camera.get_center()
-        self.add("hud",self.root)
+        self.add("hud", self.root)
         self.entities_to_remove = []
         self.entities_to_add = []
 

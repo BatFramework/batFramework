@@ -2,7 +2,13 @@ from __future__ import annotations
 from enum import Enum
 import pygame
 
-playerInput = [pygame.KEYDOWN,pygame.MOUSEBUTTONDOWN,pygame.KEYUP,pygame.MOUSEBUTTONUP]
+playerInput = [
+    pygame.KEYDOWN,
+    pygame.MOUSEBUTTONDOWN,
+    pygame.KEYUP,
+    pygame.MOUSEBUTTONUP,
+]
+
 
 class color:
     WHITE = pygame.Color(255, 255, 255)
@@ -42,13 +48,18 @@ class color:
     CONCRETE = pygame.Color(149, 165, 166)
     CONCRETE_SHADE = pygame.Color(127, 140, 141)
 
+    CREAM = pygame.Color(255,253,208)
+    CREAM_SHADE = pygame.Color(240, 238, 190)
+
+
     # GB
     DARKER_GB = pygame.Color(27, 42, 9)
     DARK_GB = pygame.Color(14, 69, 11)
     LIGHT_GB = pygame.Color(73, 107, 34)
     LIGHTER_GB = pygame.Color(154, 158, 63)
 
-    TRANSPARENT = pygame.Color(0,0,0,0)
+
+    TRANSPARENT = pygame.Color(0, 0, 0, 0)
 
     @classmethod
     def __iter__(cls):
@@ -64,43 +75,59 @@ class color:
                 yield name, value
 
     @staticmethod
-    def mult(color: pygame.typing.ColorLike , factor: float):
+    def mult(color: pygame.typing.ColorLike, factor: float):
         color = pygame.Color(color)
         return pygame.Color(
             min(max(0, int(color[0] * factor)), 255),
             min(max(0, int(color[1] * factor)), 255),
             min(max(0, int(color[2] * factor)), 255),
-            color[3] if len(color)== 4 else 255
+            color[3] if len(color) == 4 else 255,
         )
 
     @staticmethod
-    def lerp(color1: pygame.Color | tuple[int, int, int, int], color2: pygame.Color | tuple[int, int, int, int], t: float) -> pygame.Color:
+    def lerp(
+        color1: pygame.Color | tuple[int, int, int, int],
+        color2: pygame.Color | tuple[int, int, int, int],
+        t: float,
+    ) -> pygame.Color:
         """Linearly interpolate between two colors."""
         t = max(0.0, min(1.0, t))
-        c1 = color1 if isinstance(color1, (tuple, list)) else (color1.r, color1.g, color1.b, color1.a)
-        c2 = color2 if isinstance(color2, (tuple, list)) else (color2.r, color2.g, color2.b, color2.a)
+        c1 = (
+            color1
+            if isinstance(color1, (tuple, list))
+            else (color1.r, color1.g, color1.b, color1.a)
+        )
+        c2 = (
+            color2
+            if isinstance(color2, (tuple, list))
+            else (color2.r, color2.g, color2.b, color2.a)
+        )
         return pygame.Color(
             int(c1[0] + (c2[0] - c1[0]) * t),
             int(c1[1] + (c2[1] - c1[1]) * t),
             int(c1[2] + (c2[2] - c1[2]) * t),
-            int((c1[3] if len(c1) > 3 else 255) + ((c2[3] if len(c2) > 3 else 255) - (c1[3] if len(c1) > 3 else 255)) * t)
+            int(
+                (c1[3] if len(c1) > 3 else 255)
+                + ((c2[3] if len(c2) > 3 else 255) - (c1[3] if len(c1) > 3 else 255))
+                * t
+            ),
         )
 
     @staticmethod
-    def get_name(color_value:pygame.Color):
+    def get_name(color_value: pygame.Color):
         for name, val in color.__dict__.items():
             # Only consider attributes that are pygame.Color instances
             if isinstance(val, pygame.Color) and val == color_value:
                 return name
         return str(color_value)
-    
+
 
 class easing(Enum):
     LINEAR = (0, 0, 1, 1)
     EASE_IN = (0.95, 0, 1, 0.55)
     EASE_OUT = (0.5, 1, 0.5, 1)
     EASE_IN_OUT = (0.55, 0, 0.45, 1)
-    EASE_IN_OUT_ELASTIC = (0.76,-0.36,0.41,1.34)
+    EASE_IN_OUT_ELASTIC = (0.76, -0.36, 0.41, 1.34)
 
     def __init__(self, *control_points):
         self.control_points = control_points
@@ -108,10 +135,11 @@ class easing(Enum):
     @classmethod
     def create(cls, *control_points):
         """Create a custom easing instance."""
-        instance = object.__new__(cls)  
+        instance = object.__new__(cls)
         instance._value_ = control_points
         instance.control_points = control_points
         return instance
+
 
 class axis(Enum):
     HORIZONTAL = "horizontal"
@@ -129,6 +157,8 @@ class alignment(Enum):
     LEFT = "left"
     RIGHT = "right"
     CENTER = "center"
+    CENTERX = "centerx"
+    CENTERY = "centery"
     TOP = "top"
     BOTTOM = "bottom"
     TOPLEFT = "topleft"
@@ -171,4 +201,9 @@ class textMode(Enum):
     ALPHANUMERICAL = 3
 
 
+class unit(Enum):
+    """Unit of measurement for constraints"""
 
+    PIXELS = "px"  # Absolute pixel values
+    PERCENTAGE = "%"  # Percentage of parent's inner rect (excluding padding)
+    PERCENTAGE_RECT = "%rect"  # Percentage of parent's full rect (including padding)

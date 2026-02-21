@@ -1,7 +1,8 @@
 from ..utils import Singleton
 from .widget import Widget
-from .style import Style,DefaultStyle
+from .style import Style, DefaultStyle
 import batFramework as bf
+
 
 class StyleManager(metaclass=Singleton):
     def __init__(self):
@@ -35,7 +36,7 @@ class StyleManager(metaclass=Singleton):
 
     def update_forced(self):
         for style in self.styles:
-            for widget in self.widgets:    
+            for widget in self.widgets:
                 style.apply(widget)
         for key in self.lookup.keys():
             self.lookup[key] = True

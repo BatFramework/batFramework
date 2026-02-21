@@ -1,9 +1,19 @@
+from typing import Callable, Any, Self
+
 
 class TextBuffer:
     def __init__(self, text: str = ""):
         self.lines = text.split("\n") if text else [""]
         self.cursor_x = 0
         self.cursor_y = 0
+
+        self.callback: Callable[[str], Any] = None
+
+    # --- Callback helpers -------------------------------------
+
+    def set_callback(self, callback: Callable[[str], Any]) -> Self:
+        self.callback = callback
+        return self
 
     # --- Internal helpers -------------------------------------
     def _clamp_cursor(self):
@@ -39,39 +49,51 @@ class TextBuffer:
     # --- Modification ------------------------------------------
     def insert_char(self, ch: str):
         line = self.lines[self.cursor_y]
-        self.lines[self.cursor_y] = line[:self.cursor_x] + ch + line[self.cursor_x:]
+        self.lines[self.cursor_y] = line[: self.cursor_x] + ch + line[self.cursor_x :]
         self.cursor_x += len(ch)
+        if self.callback:
+            self.callback(self.get_text())
 
     def backspace(self):
         if self.cursor_x > 0:
             line = self.lines[self.cursor_y]
-            self.lines[self.cursor_y] = line[:self.cursor_x-1] + line[self.cursor_x:]
+            self.lines[self.cursor_y] = (
+                line[: self.cursor_x - 1] + line[self.cursor_x :]
+            )
             self.cursor_x -= 1
         else:
             if self.cursor_y > 0:
-                prev_line_len = len(self.lines[self.cursor_y-1])
-                self.lines[self.cursor_y-1] += self.lines[self.cursor_y]
+                prev_line_len = len(self.lines[self.cursor_y - 1])
+                self.lines[self.cursor_y - 1] += self.lines[self.cursor_y]
                 self.lines.pop(self.cursor_y)
                 self.cursor_y -= 1
                 self.cursor_x = prev_line_len
+        if self.callback:
+            self.callback(self.get_text())
 
     def delete(self):
         line = self.lines[self.cursor_y]
         if self.cursor_x < len(line):
-            self.lines[self.cursor_y] = line[:self.cursor_x] + line[self.cursor_x+1:]
+            self.lines[self.cursor_y] = (
+                line[: self.cursor_x] + line[self.cursor_x + 1 :]
+            )
         else:
             if self.cursor_y < len(self.lines) - 1:
-                self.lines[self.cursor_y] += self.lines[self.cursor_y+1]
+                self.lines[self.cursor_y] += self.lines[self.cursor_y + 1]
                 self.lines.pop(self.cursor_y + 1)
+        if self.callback:
+            self.callback(self.get_text())
 
     def insert_newline(self):
         line = self.lines[self.cursor_y]
-        before = line[:self.cursor_x]
-        after = line[self.cursor_x:]
+        before = line[: self.cursor_x]
+        after = line[self.cursor_x :]
         self.lines[self.cursor_y] = before
-        self.lines.insert(self.cursor_y+1, after)
+        self.lines.insert(self.cursor_y + 1, after)
         self.cursor_y += 1
         self.cursor_x = 0
+        if self.callback:
+            self.callback(self.get_text())
 
     # --- Export -------------------------------------------------
     def get_text(self):
