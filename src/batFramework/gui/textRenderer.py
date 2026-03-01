@@ -7,6 +7,44 @@ from collections import OrderedDict
 TAG_PATTERN = re.compile(r"(?<!\\)\[(\/?)(\w+)(?:=([^\]]+))?\]")
 
 
+def _min_size_key(style: TextStyle) -> tuple:
+    """Hashable key from the style fields that affect text layout/size."""
+    return (
+        style.text,
+        id(style.font),
+        style.bold,
+        style.italic,
+        style.underline,
+        style.wraplength,
+        id(style.text_outline_mask) if style.text_outline_mask else None,
+    )
+
+
+def _cache_min_size(max_size: int = 64):
+    """Per-instance LRU cache for get_min_size, keyed on the text style."""
+    def decorator(method):
+        _method_key = method.__qualname__
+        def wrapper(self, style):
+            try:
+                cache = self._min_size_cache
+            except AttributeError:
+                cache = OrderedDict()
+                self._min_size_cache = cache
+            key = (_method_key, _min_size_key(style))
+            if key in cache:
+                cache.move_to_end(key)
+                return cache[key]
+            result = method(self, style)
+            cache[key] = result
+            if len(cache) > max_size:
+                cache.popitem(last=False)
+            return result
+        wrapper.__name__ = method.__name__
+        wrapper.__qualname__ = method.__qualname__
+        return wrapper
+    return decorator
+
+
 class TextRenderer:
     DYNAMIC = False
 
@@ -63,6 +101,7 @@ class PlainTextRenderer(TextRenderer):
 
         return lines
 
+    @_cache_min_size()
     def get_min_size(self, style: TextStyle):
         font = style.font
         self._apply_font_style(font, style)
@@ -183,6 +222,7 @@ class RichTextRenderer(TextRenderer):
 
         return segments
 
+    @_cache_min_size()
     def get_min_size(self, style: TextStyle):
         surface = self.render(style)
         return surface.get_size()
@@ -315,6 +355,7 @@ class WaveTextRenderer(RichTextRenderer):
             self.amplitude * math.sin(2 * math.pi * self.frequency * t + self.phase + time_phase)
         ))
 
+    @_cache_min_size()
     def get_min_size(self, style: TextStyle) -> tuple[int, int]:
         w, h = super().get_min_size(style)
         extra = int(math.ceil(self.amplitude)) * 2

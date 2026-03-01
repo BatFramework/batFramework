@@ -65,7 +65,6 @@ class Container(Shape, InteractiveWidget):
             return self
 
         r = self.get_inner_rect()
-        self.layout.update_children_rect()  # ensure fresh content size
 
         content_w = self.layout.children_rect.width
         content_h = self.layout.children_rect.height
@@ -170,35 +169,40 @@ class Container(Shape, InteractiveWidget):
 
 
 
-    def apply_post_updates(self, skip_draw: bool = False):
-        # First let base Widget resolve build / constraints
-        super().apply_post_updates(skip_draw=True)
+    def apply_post_updates(self, skip_draw: bool = False) -> None:
+        # ── 1. Resolve own size (same as Widget, inlined so we control flow) ──
+        if self.dirty_shape:
+            if self.build():
+                # Our size changed — layout must re-run regardless of dirty_layout
+                self.dirty_layout = True
+                self.dirty_size_constraints = True
+                self.dirty_position_constraints = True
 
-        # Now shapes are stable. Safe to resolve layout.
-        layout_changed = False
+            self.dirty_shape = False
+            self.dirty_surface = True
 
+        # ── 2. Position constraints (after size is stable) ────────────────────
+        if self.dirty_position_constraints:
+            self.resolve_constraints(position_only=True)
+            self.dirty_position_constraints = False
+
+        # ── 3. Layout (after our own rect is stable) ──────────────────────────
         if self.dirty_layout:
             self.layout.update_child_constraints()
             self.layout.arrange()
             self.dirty_layout = False
-            layout_changed = True
+            self.dirty_surface = True
 
-        # ALWAYS clamp after potential size changes
+        # ── 4. Scroll (clamp first, then sync children) ───────────────────────
         old_scroll = self.scroll.xy
         self.clamp_scroll()
 
-        if layout_changed or self.scroll.xy != old_scroll:
-            self.layout.scroll_children()
-            self.dirty_surface = True
-
-
-
-        if self.dirty_scroll:
+        if self.scroll.xy != old_scroll or self.dirty_scroll:
             self.layout.scroll_children()
             self.dirty_scroll = False
             self.dirty_surface = True
 
-        # Finally paint
+        # ── 5. Paint ──────────────────────────────────────────────────────────
         if self.dirty_surface and not skip_draw:
             self.paint()
             self.dirty_surface = False

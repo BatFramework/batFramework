@@ -186,7 +186,8 @@ class Root(InteractiveWidget):
             mouse_x, mouse_y = mouse_world
             tooltip_rect = pygame.FRect(mouse_x, mouse_y,*self.tooltip.get_min_required_size())
             screen_rect = pygame.Rect(0,0,*bf.const.RESOLUTION)
-            screen_rect = self.drawing_camera.world_to_screen(screen_rect).inflate(-tooltip_rect.w,-tooltip_rect.h)
+
+            screen_rect = self.drawing_camera.world_to_screen(screen_rect).inflate(10,10) # TODO : tooltip rect margin is hardcoded :/
             if tooltip_rect.right + offset <= screen_rect.right:
                 tooltip_rect.move_ip(offset,0)
             else:
@@ -215,8 +216,8 @@ class Root(InteractiveWidget):
         self.apply_updates("pre")
         self.apply_updates("post")
         # 2nd pass
-        self.apply_updates("pre")
-        self.apply_updates("post")
+        # self.apply_updates("pre")
+        # self.apply_updates("post")
 
     def apply_pre_updates(self):
         return

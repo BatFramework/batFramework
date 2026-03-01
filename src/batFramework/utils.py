@@ -366,3 +366,16 @@ class Utils:
         v.rotate_ip(random.randint(0, 360))
         v.normalize_ip()
         return v
+
+    @staticmethod
+    def round_to_step_precision(value, step, min_value=0):
+        """Round value to the nearest step increment offset from min_value."""
+        step_str = format(step, "f")
+        if "." in step_str:
+            decimals = len(step_str.rstrip("0").split(".")[1])
+        else:
+            decimals = 0
+        rounded = round(round((value - min_value) / step) * step + min_value, decimals)
+        if float(step).is_integer():
+            return int(rounded)
+        return rounded

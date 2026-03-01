@@ -124,7 +124,7 @@ class Entity:
         """
         Handle specific events with no action support
         """
-        return False
+        return
 
     def update(self, dt: float) -> None:
         """

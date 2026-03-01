@@ -95,9 +95,12 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return self
 
     def set_render_order(self, render_order: int) -> Self:
+        bound_children = [c for c in self.children if c.render_order == render_order+1]
         super().set_render_order(render_order)
         if self.parent:
             self.parent.do_sort_children = True
+        for child in bound_children:
+            child.set_render_order(render_order+1)
         return self
 
     def expand_rect_with_padding(
@@ -295,7 +298,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         active_constraints.sort(key=lambda c: c.priority, reverse=True)
 
         resolved = []
-        for iteration in range(MAX_ITERATIONS):
+        for _ in range(MAX_ITERATIONS):
             self._constraint_iteration += 1
             changed = False
 
@@ -503,7 +506,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         w = self.parent
         tmp = w
         while not tmp.is_root:
-            if tmp.dirty_size_constraints or tmp.dirty_shape or (tmp.autoresize_h or tmp.autoresize_w):
+            if tmp.dirty_size_constraints or tmp.dirty_shape or tmp.autoresize_h or tmp.autoresize_w:
                 w = tmp
             if not tmp.parent:
                 break

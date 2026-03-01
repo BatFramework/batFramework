@@ -1,23 +1,9 @@
-import math
 import batFramework as bf
 from .shape import Shape
 from ..propertyEaser import PropertyEaser
 from typing import Self
 from .syncedVar import SyncedVar
 from math import ceil
-
-
-def round_to_step_precision(value, step):
-    """Round value to the precision implied by step size."""
-    step_str = format(step, "f")
-    if "." in step_str:
-        decimals = len(step_str.rstrip("0").split(".")[1])
-    else:
-        decimals = 0
-    rounded = round(value, decimals)
-    if float(step).is_integer():
-        return int(rounded)
-    return rounded
 
 
 class Meter(Shape):
@@ -31,6 +17,7 @@ class Meter(Shape):
         synced_var: SyncedVar = None,
     ):
         super().__init__()
+        self.set_padding(0)
         self.min_value = min_value
         self.max_value = max_value
         self.step = step
@@ -59,6 +46,7 @@ class Meter(Shape):
     # ==============================================================
     # Animation API
     # ==============================================================
+
 
     def set_animation_speed(self, speed: float) -> Self:
         """
@@ -116,13 +104,14 @@ class Meter(Shape):
         if self.min_value != range_min or self.max_value != range_max:
             self.min_value = range_min
             self.max_value = range_max
+            self.visual_ratio = self.get_ratio()  # recompute with new range
             self.dirty_shape = True
         return self
 
     def set_value(self, value: float) -> Self:
         value = max(self.min_value, min(self.max_value, value))
         if self.snap:
-            value = round_to_step_precision(value, self.step)
+            value = bf.utils.round_to_step_precision(value, self.step)
         self.synced_var.value = value
         return self
 
@@ -195,11 +184,11 @@ class BarMeter(Meter):
             return self
         self.axis = axis
         if axis == bf.axis.HORIZONTAL:
-            self.content.set_autoresize_h(True).set_autoresize_w(False)
+            # self.content.set_autoresize_h(True).set_autoresize_w(False)
             if self.direction not in [bf.direction.LEFT, bf.direction.RIGHT]:
                 self.set_direction(bf.direction.RIGHT)
         elif axis == bf.axis.VERTICAL:
-            self.content.set_autoresize_h(True).set_autoresize_w(False)
+            # self.content.set_autoresize_h(True).set_autoresize_w(False)
             if self.direction not in [bf.direction.UP, bf.direction.DOWN]:
                 self.set_direction(bf.direction.UP)
         self.dirty_shape = True
@@ -238,4 +227,3 @@ class BarMeter(Meter):
                 self.content.set_position(inner.left + outline, inner.bottom - outline - content_h)
             else:
                 self.content.set_position(inner.left + outline, inner.top + outline)
-    

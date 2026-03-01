@@ -79,6 +79,7 @@ class Selector(Button):
 
         # Bind synced var so external changes propagate to this widget
         self.synced_var.bind(self, self._on_synced_var_update)
+        self._update_arrow_states()
 
     def __str__(self):
         return f"Selector[{self.options[self.current_index] if self.options else ''}]"
@@ -104,14 +105,18 @@ class Selector(Button):
     def _update_arrow_states(self):
         if not self.allow_cycle:
             if self.current_index <= 0:
-                self.left_indicator.disable()
+                self.left_indicator.hide()
             else:
-                self.left_indicator.enable()
+                self.left_indicator.show()
 
             if self.current_index >= len(self.options) - 1:
-                self.right_indicator.disable()
+                self.right_indicator.hide()
             else:
-                self.right_indicator.enable()
+                self.right_indicator.show()
+
+        else:
+            self.left_indicator.show()
+            self.right_indicator.show()
 
     # ------------------------------------------------------------------
     # Configuration API

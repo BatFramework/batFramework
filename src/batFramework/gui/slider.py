@@ -1,12 +1,14 @@
 import batFramework as bf
 import pygame
 
+
 from .widgetUtils import LayoutSlot, distribute_horizontal, distribute_vertical
 from .button import Button
-from .meter import BarMeter,round_to_step_precision
+from .meter import BarMeter
 from .indicator import Indicator, DraggableWidget
 from .shape import Shape
 from .interactiveWidget import InteractiveWidget
+from .interactiveShape import InteractiveShape
 from .syncedVar import SyncedVar
 from typing import Callable, Any, Self
 from math import ceil
@@ -18,18 +20,9 @@ class SliderHandle(Indicator, DraggableWidget):
         super().__init__()
         self.set_color(bf.color.CLOUD_SHADE)
         self.set_click_mask(1)
-        self.enabled : bool = True
         self.synced_var = synced_var
         synced_var.bind(self, self._on_synced_var_update)
-        self.set_debug_color("brown")
-
-    def enable(self)->Self:
-        self.enabled = True
-        return self
-
-    def disable(self)->Self:
-        self.enabled = False
-        return self
+        self.set_debug_color("magenta")
 
     def __str__(self) -> str:
         return "SliderHandle"
@@ -44,7 +37,7 @@ class SliderHandle(Indicator, DraggableWidget):
         super().on_click_down(button, event)
 
     def do_on_drag(self, drag_start, drag_end):
-        if not self.parent or not self.enabled:
+        if not self.parent or not self.is_enabled:
             return
         super().do_on_drag(drag_start, drag_end)
         meter: SliderMeter = self.parent
@@ -55,14 +48,17 @@ class SliderHandle(Indicator, DraggableWidget):
         self.synced_var.value = new_value
 
     def _on_synced_var_update(self, value: float):
-        meter: SliderMeter = self.parent
-        self.set_center(*meter.value_to_position(value))
-        self.rect.clamp_ip(meter.get_inner_rect())
+        self.update_position(value)
 
-    def set_size(self, size):
-        super().set_size(size)
-        if self.parent:
-            self.parent.dirty_shape = True
+
+    def update_position(self, value: float=None)->Self:
+        if value is None:
+            value = self.synced_var.value
+        meter: SliderMeter = self.parent
+        r = self.rect.copy()
+        r.center = meter.value_to_position(value)
+        self.set_center(*r.clamp(meter.get_inner_rect()).center)
+        
 
     def on_exit(self):
         before = self.is_clicked_down
@@ -72,28 +68,29 @@ class SliderHandle(Indicator, DraggableWidget):
     def draw_focused(self, camera):
         return
 
+    def apply_post_updates(self, skip_draw: bool = False):
+        should_update = self.dirty_shape
+        super().apply_post_updates(skip_draw)
+        if should_update: self.update_position()
 
-class SliderMeter(BarMeter, InteractiveWidget):
+class SliderMeter(BarMeter, InteractiveShape):
     def __init__(
         self, min_value=0, max_value=1, step=0.1, synced_var: SyncedVar = None
     ):
-        self.axis = bf.axis.HORIZONTAL
-        self.enabled : bool = True
-        super().__init__(min_value, max_value, step, synced_var)
         self.handle = SliderHandle(synced_var=synced_var)
-        self.add(self.handle)
+        super().__init__(min_value, max_value, step, synced_var)
         self.set_debug_color("black")
-
-    def allow_focus_to_self(self):
-        return super().allow_focus_to_self() and self.enabled
+        self.set_padding(2)
+        self.set_autoresize(True)
+        self.add(self.handle)
 
     def enable(self)->Self:
-        self.enabled = True
+        super().enable()
         self.handle.enable()
         return self
 
     def disable(self)->Self:
-        self.enabled = False
+        super().disable()
         self.handle.disable()
         return self
 
@@ -111,7 +108,11 @@ class SliderMeter(BarMeter, InteractiveWidget):
         return super().set_tooltip_text(text)
 
     def get_min_required_size(self):
-        size = [max(bf.FontManager().DEFAULT_FONT_SIZE // 2, 12)] * 2
+        if not self.parent.text: 
+            size = list(super().get_min_required_size())
+        else:
+            size = [max(bf.FontManager().DEFAULT_FONT_SIZE // 2, 12)] * 2
+            
         if self.axis == bf.axis.HORIZONTAL:
             size[0] = size[1] * 3
         else:
@@ -122,7 +123,7 @@ class SliderMeter(BarMeter, InteractiveWidget):
         rect = self.get_inner_rect()
         value_range = self.get_range()
         if self.snap:
-            value = round_to_step_precision(value, self.step)
+            value = bf.utils.round_to_step_precision(value, self.step)
         ratio = (value - self.min_value) / value_range if value_range else 0
 
         if self.direction in [bf.direction.LEFT, bf.direction.DOWN]:
@@ -165,12 +166,12 @@ class SliderMeter(BarMeter, InteractiveWidget):
             ratio = 1 - ratio
 
         value = self.min_value + ratio * self.get_range()
-        return round_to_step_precision(value, self.step) if self.snap else value
+        return bf.utils.round_to_step_precision(value, self.step) if self.snap else value
 
 
     def handle_event(self, event: pygame.Event):
 
-        if self.enabled and (
+        if self.is_enabled and (
             self.is_hovered
             or getattr(self.parent, "is_hovered", False)
             or self.handle.is_hovered
@@ -188,30 +189,31 @@ class SliderMeter(BarMeter, InteractiveWidget):
                 if (not shift_held and is_horizontal) or (shift_held and is_vertical):
                     return
                 if event.y:
-                    delta = -self.step if event.y < 0 else self.step
+                    delta = -1  if event.y < 0 else 1
                     if self.direction in [bf.direction.DOWN, bf.direction.LEFT]:
                         delta *= -1
-                    delta *= bf.FontManager().DEFAULT_FONT_SIZE
+                    delta *= self.step if self.step > 0 else 1
                     self.parent.set_value(self.parent.get_value() + delta)
+
                     event.consumed = True
         super().handle_event(event)
 
     def on_click_down(self, button: int, event=None):
         # old_consume = event.consumed
-        if not self.parent.is_enabled:
-            return
         super().on_click_down(button, event)
         # event.consumed = old_consume
         if button == 1:
-            self.parent.ask_focus()
+            if not self.parent.ask_focus(): return
             world_pos = self.parent_layer.camera.get_mouse_pos()
             if self.get_inner_rect().collidepoint(*world_pos):
                 new_value = self.position_to_value(world_pos)
                 self.set_value(new_value)
                 self.handle.on_click_down(button, event)
 
-    def on_click_up(self, button, event=None):
-        super().do_on_click_up(button, event)
+    def build(self):
+        changed = super().build()
+        self._build_content()
+        return changed
 
     def _build_content(self):
         super()._build_content()
@@ -221,7 +223,6 @@ class SliderMeter(BarMeter, InteractiveWidget):
             else self.get_inner_width()
         )
         self.handle.set_size(self.handle.resolve_size((handle_size, handle_size)))
-        self.handle._on_synced_var_update(self.synced_var.value)
 
 
 class Slider(Button):
@@ -237,12 +238,7 @@ class Slider(Button):
         self.modify_callback: Callable[[float], Any] = None
         self.meter: SliderMeter = SliderMeter(synced_var=self.synced_var)
         self.add(self.meter)
-        self.meter.set_color(bf.color.TRANSPARENT)
-
         self.synced_var.bind(self, self._on_synced_var_update)
-        self.set_range(0, self.synced_var.value)
-        self.synced_var.update_bound_entities()
-        self.set_snap(True)
 
     def set_snap(self, snap: bool) -> Self:
         self.meter.set_snap(snap)
@@ -271,7 +267,7 @@ class Slider(Button):
     def _on_synced_var_update(self, value):
         if self.modify_callback:
             self.modify_callback(value)
-        rounded = round_to_step_precision(self.get_value(), self.meter.step)
+        rounded = bf.utils.round_to_step_precision(self.get_value(), self.meter.step)
         self.meter.set_tooltip_text(str(rounded))
 
     def set_fill_color(self, color) -> Self:
@@ -288,7 +284,6 @@ class Slider(Button):
         self.meter.set_direction(direction)
         self.set_axis(self.meter.axis)
         return self
-
 
     def __str__(self) -> str:
         return "Slider"
@@ -309,7 +304,6 @@ class Slider(Button):
 
     def set_range(self, range_min: float, range_max: float) -> Self:
         self.meter.set_range(range_min, range_max)
-        # self.meter.set_value(self.synced_var.value)
         self.dirty_shape = True
         return self
 

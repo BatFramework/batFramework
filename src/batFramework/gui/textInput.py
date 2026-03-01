@@ -1,14 +1,14 @@
 import pygame
 import batFramework as bf
 from typing import Callable, Any, Self
-
 from .label import Label
 from .interactiveWidget import InteractiveWidget
+from .interactiveShape import InteractiveShape
 from .textBuffer import TextBuffer
 from .textRenderer import TextRenderer, PlainTextRenderer
 
 
-class TextInput(Label, InteractiveWidget):
+class TextInput(Label, InteractiveShape):
     def __init__(self, text: str = "", renderer: TextRenderer | None = None):
         super().__init__(text="", renderer=renderer or PlainTextRenderer())
         self.set_alignment(bf.alignment.TOPLEFT)

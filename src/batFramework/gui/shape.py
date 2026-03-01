@@ -263,6 +263,14 @@ class Shape(Widget):
             self.outline_width,
         )
 
+    def build(self):
+        target = self.resolve_size(self.get_min_required_size())
+        changed = self.rect.size != target
+        if changed:
+            self.set_size(target)
+
+        return changed
+
     def _paint_rounded_outline(self) -> None:
         if self.outline_color is None:
             return

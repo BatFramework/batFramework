@@ -37,17 +37,15 @@ class Layout(ABC):
             self.parent.dirty_layout = True
 
     def update_children_rect(self):
-        if self.parent.get_layout_children():
+        layout_children = self.parent.get_layout_children()
+        if layout_children:
+            first = layout_children[0]
             self.children_rect = pygame.FRect(
                 *self.parent.get_inner_rect().topleft,
-                *self.parent.get_layout_children()[0].get_min_required_size(),
+                first.rect.w, first.rect.h,
             )
-
             self.children_rect.unionall(
-                [
-                    pygame.FRect(0, 0, *c.get_min_required_size())
-                    for c in self.parent.get_layout_children()[1:]
-                ]
+                [pygame.FRect(0, 0, c.rect.w, c.rect.h) for c in layout_children[1:]]
             )
         else:
             self.children_rect = pygame.FRect(
@@ -72,8 +70,7 @@ class Layout(ABC):
         """
         Returns the size the container should have to encapsulate perfectly all of its widgets
         """
-        # print(self,self.parent,len(self.parent.get_layout_children()))
-        self.update_children_rect()  # TODO: find  a way to call this fewer times
+        self.update_children_rect()
         return self.children_rect.size
 
     def get_auto_size(self) -> tuple[float, float]:
@@ -190,14 +187,11 @@ class Column(SingleAxisLayout):
     def update_children_rect(self):
         layout_children = self.parent.get_layout_children()
         if layout_children:
-            width = max(
-                child.get_min_required_size()[0] if child.autoresize_w else child.rect.w
-                for child in layout_children
+            width = max(child.rect.w for child in layout_children)
+            height = (
+                sum(child.rect.h for child in layout_children)
+                + self.gap * (len(layout_children) - 1)
             )
-            height = sum(
-                child.get_min_required_size()[1] if child.autoresize_h else child.rect.h
-                for child in layout_children
-            ) + self.gap * (len(layout_children) - 1)
             self.children_rect = pygame.FRect(
                 *self.parent.get_inner_rect().topleft, width, height
             )
@@ -244,14 +238,11 @@ class Row(SingleAxisLayout):
     def update_children_rect(self):
         layout_children = self.parent.get_layout_children()
         if layout_children:
-            width = sum(
-                child.get_min_required_size()[0] if child.autoresize_w else child.rect.w
-                for child in layout_children
-            ) + self.gap * (len(layout_children) - 1)
-            height = max(
-                child.get_min_required_size()[1] if child.autoresize_h else child.rect.h
-                for child in layout_children
+            width = (
+                sum(child.rect.w for child in layout_children)
+                + self.gap * (len(layout_children) - 1)
             )
+            height = max(child.rect.h for child in layout_children)
             self.children_rect = pygame.FRect(
                 *self.parent.get_inner_rect().topleft, width, height
             )
@@ -354,12 +345,8 @@ class Grid(DoubleAxisLayout):
     def update_children_rect(self):
         layout_children = self.parent.get_layout_children()
         if layout_children:
-            cell_width = max(
-                child.get_min_required_size()[0] for child in layout_children
-            )
-            cell_height = max(
-                child.get_min_required_size()[1] for child in layout_children
-            )
+            cell_width = max(child.rect.w for child in layout_children)
+            cell_height = max(child.rect.h for child in layout_children)
             width = self.cols * cell_width + self.gap * (self.cols - 1)
             height = self.rows * cell_height + self.gap * (self.rows - 1)
             self.children_rect = pygame.FRect(
@@ -401,14 +388,11 @@ class RowFill(Row):
 
     def update_children_rect(self):
         parent_width = self.parent.get_inner_width()
-        if self.parent.get_layout_children():
-            height = max(
-                child.get_min_required_size()[1]
-                for child in self.parent.get_layout_children()
-            )
-            width = parent_width
+        layout_children = self.parent.get_layout_children()
+        if layout_children:
+            height = max(child.rect.h for child in layout_children)
             self.children_rect = pygame.FRect(
-                *self.parent.get_inner_rect().topleft, width, height
+                *self.parent.get_inner_rect().topleft, parent_width, height
             )
         else:
             self.children_rect = pygame.FRect(
@@ -446,14 +430,11 @@ class ColumnFill(Column):
 
     def update_children_rect(self):
         parent_height = self.parent.get_inner_height()
-        if self.parent.get_layout_children():
-            width = max(
-                child.get_min_required_size()[0]
-                for child in self.parent.get_layout_children()
-            )
-            height = parent_height
+        layout_children = self.parent.get_layout_children()
+        if layout_children:
+            width = max(child.rect.w for child in layout_children)
             self.children_rect = pygame.FRect(
-                *self.parent.get_inner_rect().topleft, width, height
+                *self.parent.get_inner_rect().topleft, width, parent_height
             )
         else:
             self.children_rect = pygame.FRect(

@@ -4,11 +4,12 @@ from typing import Any, Self, Callable
 import pygame
 from .widget import Widget
 from .interactiveWidget import InteractiveWidget
+from .interactiveShape import InteractiveShape
 from .draggableWidget import DraggableWidget
 import batFramework as bf
 
 
-class Indicator(Shape):
+class Indicator(InteractiveShape):
     """
     Shape intended to be used as icons/indicators
     due to its nature, it overrides the top_at function (it can not be 'seen' by the mouse)
@@ -86,7 +87,7 @@ class ArrowIndicator(Indicator):
         super().__init__()
         self.direction: bf.direction = direction
         self.arrow_color = bf.color.WHITE
-        self.line_width: int = 1
+        self.line_width: int = 0
 
     def set_arrow_color(self, color) -> Self:
         self.arrow_color = color

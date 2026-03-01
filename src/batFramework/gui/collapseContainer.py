@@ -47,8 +47,8 @@ class CollapseContainer(Shape, InteractiveWidget):
         return "CollapseContainer"
 
     def _on_state_change(self, value):
-        print("state is ", value)
         self.container.show() if value else self.container.hide()
+
         self.dirty_shape = True
 
     def allow_focus_to_self(self):
