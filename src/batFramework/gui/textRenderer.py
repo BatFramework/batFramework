@@ -4,7 +4,7 @@ import re
 import math
 from collections import OrderedDict
 
-TAG_PATTERN = re.compile(r"(?<!\\)\[(\/?)(\w+)(?:=([^\]]+))?\]")
+TAG_PATTERN = re.compile(r"(\\[\\[])|\[(\/?)(\w+)(?:=([^\]]+))?\]")
 
 
 def _min_size_key(style: TextStyle) -> tuple:

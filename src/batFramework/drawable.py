@@ -57,7 +57,7 @@ class Drawable(Entity):
     def set_render_order(self, render_order: int) -> Self:
         self.render_order = render_order
         if self.parent_layer:
-            self.parent_layer.update_draw_order()
+            self.parent_layer.queue_sort_render_order()
         return self
 
     def set_visible(self, value: bool) -> Self:

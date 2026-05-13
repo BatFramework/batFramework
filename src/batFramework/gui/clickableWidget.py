@@ -63,10 +63,6 @@ class ClickableWidget(InteractiveShape):
         self.callback = callback
         return self
 
-    def set_silent_focus(self, value: bool) -> Self:
-        self.silent_focus = value
-        return self
-
     # -------------------------------------------------------------------------
     # Click logic
     # -------------------------------------------------------------------------
@@ -87,7 +83,6 @@ class ClickableWidget(InteractiveShape):
     def on_key_up(self, key, event):
         if key == pygame.K_SPACE:
             self.on_click_up(1, event)
-        # NOTE: was mistakenly calling do_on_key_down — fixed to do_on_key_up
         self.do_on_key_up(key, event)
 
     def on_click_down(self, button, event) -> None:
@@ -96,10 +91,11 @@ class ClickableWidget(InteractiveShape):
         self.is_clicked_down[button - 1] = True
         if button != 1:
             return
-        event.consumed = not self.click_pass_through
+        if not self.click_pass_through:
+            event.consumed = True
         if self.is_enabled and self.ask_focus():
             self.is_pressed = True
-            if self.click_down_sound:
+            if self.click_down_sound and not self._suppress_sounds:
                 bf.AudioManager().play_sound(self.click_down_sound)
             pygame.mouse.set_cursor(self.click_cursor)
             self.set_relief(self.pressed_relief)
@@ -111,10 +107,11 @@ class ClickableWidget(InteractiveShape):
         self.is_clicked_down[button - 1] = False
         if button != 1:
             return
-        event.consumed = not self.click_pass_through
+        if not self.click_pass_through:
+            event.consumed = True
         if self.is_enabled and self.is_pressed:
             self.is_pressed = False
-            if self.click_up_sound:
+            if self.click_up_sound and not self._suppress_sounds:
                 bf.AudioManager().play_sound(self.click_up_sound)
             self.set_relief(self.unpressed_relief)
             self.click()
@@ -132,7 +129,7 @@ class ClickableWidget(InteractiveShape):
         super().on_exit()
         if self.is_pressed:
             self.set_relief(self.unpressed_relief)
-        self.is_pressed = False
+            self.is_pressed = False
         self.dirty_surface = True
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
 

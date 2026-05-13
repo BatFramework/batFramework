@@ -332,9 +332,10 @@ class Anchor(Constraint):
 
     def apply_constraint(self, parent_widget: Widget, child_widget: Widget):
         parent_rect = self._get_parent_inner_rect(parent_widget)
+        child_copy = child_widget.rect.copy()
         value = getattr(parent_rect, self.edge)
-        setattr(child_widget.rect, self.edge, value)
-
+        setattr(child_copy, self.edge, value)
+        child_widget.set_position(child_copy.x,child_copy.y)
 
 class AnchorTop(Anchor):
     def __init__(self):
@@ -636,67 +637,155 @@ class AspectRatio(Constraint):
 # Grow Constraints (Fill remaining space)
 # ============================================================================
 
-
 class Grow(Constraint, ABC):
+    """Base class for weighted grow constraints (like CSS flex-grow).
+
+    Subclasses handle horizontal (GrowH) or vertical (GrowV) growth.
+    Widgets with a higher weight receive a proportionally larger share
+    of the remaining space along the relevant axis.
+    """
+
+    def __init__(self, weight: float = 1.0):
+        super().__init__()
+        self.affects_size = True
+        self.weight = max(0.0, float(weight))
+
+    # ---- abstract interface ----
+
+    @property
     @abstractmethod
-    def evaluate(self, parent_widget: Widget, child_widget: Widget) -> bool:
-        pass
+    def axis(self) -> int:
+        """0 for horizontal, 1 for vertical."""
+
+    @property
+    @abstractmethod
+    def layout_name(self) -> str:
+        """Name of the layout class that distributes along this axis (e.g. 'Row', 'Column')."""
 
     @abstractmethod
-    def apply_constraint(self, parent_widget: Widget, child_widget: Widget):
-        pass
+    def _get_inner_size(self, widget: Widget) -> float:
+        """Return the inner size of *widget* along this axis."""
+
+    @abstractmethod
+    def _get_rect_size(self, widget: Widget) -> float:
+        """Return the current rect size of *widget* along this axis."""
+
+    @abstractmethod
+    def _apply_size(self, widget: Widget, size: float) -> None:
+        """Resize *widget* to *size* along this axis."""
+
+    # ---- shared helpers ----
+
+    def _layout_children(self, parent: Widget) -> list[Widget]:
+        if hasattr(parent, "get_layout_children"):
+            return parent.get_layout_children()
+        return []
+
+
+    def _gap_pixels(self, parent: Widget, n_children: int) -> float:
+        layout = getattr(parent, "layout", None)
+        if layout is None or layout.__class__.__name__ != self.layout_name:
+            return 0.0
+        gap = float(getattr(layout, "gap", 0) or 0)
+        return max(0, n_children - 1) * gap
+
+    def _available_size(self, parent: Widget, children: list[Widget]) -> float:
+        layout = getattr(parent, "layout", None)
+        if layout is not None and hasattr(layout, "get_free_space"):
+            free = layout.get_free_space()
+            if isinstance(free, (tuple, list)) and len(free) > self.axis:
+                return max(0.0, float(free[self.axis]))
+        return max(0.0, float(self._get_inner_size(parent)))
+
+    def _growers(self, children: list[Widget]) -> list[tuple[Widget, float]]:
+        result = []
+        for child in children:
+            for con in getattr(child, "constraints", []):
+                if type(con) is type(self):
+                    w = max(0.0, float(getattr(con, "weight", 1.0)))
+                    if w > 0.0:
+                        result.append((child, w))
+                    break
+        return result
+
+
+
+    # ----constraint API ----
+
+    def evaluate(self, parent: Widget, child: Widget) -> bool:
+        if not hasattr(parent, "get_layout_children"):
+            return True
+        children = self._layout_children(parent)
+        growers = self._growers(children)
+        if not growers:
+            return True
+        available = self._available_size(parent, children)
+        total_weight = sum(w for _, w in growers) or 1.0
+        for c, w in growers:
+            if c is child:
+                target = available * (w / total_weight)
+                return abs(self._get_rect_size(child) - target) < 0.5
+        return True
+
+    def apply_constraint(self, parent: Widget, child: Widget) -> None:
+        # if parent is not a container, return
+        
+        children = self._layout_children(parent)
+        growers = self._growers(children)
+        if not growers:
+            return
+        
+        available = self._available_size(parent, children)   # already distributable
+        total_weight = sum(w for _, w in growers) or 1.0
+        for c, w in growers:
+            self._apply_size(c, available * (w / total_weight))
 
 
 class GrowH(Grow):
-    def __init__(self):
-        super().__init__()
-        self.affects_size = True
+    """Weighted horizontal grow (like CSS flex-grow) for Row layouts.
 
-    def evaluate(self, parent_widget: Widget, child_widget: Widget) -> bool:
-        siblings = [s for s in parent_widget.children if s != child_widget]
-        sibling_width = sum(s.rect.w for s in siblings)
-        return (
-            abs(parent_widget.get_inner_width() - (child_widget.rect.w + sibling_width))
-            == 0
-        )
+    weight=2 receives twice the leftover width of weight=1.
+    """
 
-    def apply_constraint(self, parent_widget: Widget, child_widget: Widget):
-        child_widget.set_autoresize_w(False)
-        siblings = [s for s in parent_widget.children if s != child_widget]
-        sibling_width = sum(s.rect.w for s in siblings)
+    @property
+    def axis(self) -> int:
+        return 0
 
-        if hasattr(parent_widget, "layout"):
-            w = parent_widget.layout.get_free_space()[0]
-        else:
-            w = parent_widget.get_inner_width()
+    @property
+    def layout_name(self) -> str:
+        return "Row"
 
-        child_widget.set_size((w - sibling_width, None))
+    def _get_inner_size(self, widget: Widget) -> float:
+        return widget.get_inner_width()
+
+    def _get_rect_size(self, widget: Widget) -> float:
+        return widget.rect.w
+
+    def _apply_size(self, widget: Widget, size: float) -> None:
+        widget.set_autoresize_w(False)
+        widget.set_size((size, None))
 
 
 class GrowV(Grow):
-    def __init__(self):
-        super().__init__()
-        self.affects_size = True
+    """Weighted vertical grow (like CSS flex-grow) for Column layouts.
 
-    def evaluate(self, parent_widget: Widget, child_widget: Widget) -> bool:
-        siblings = [s for s in parent_widget.children if s != child_widget]
-        sibling_height = sum(s.rect.h for s in siblings)
-        return (
-            abs(
-                parent_widget.get_inner_height()
-                - (child_widget.rect.h + sibling_height)
-            )
-            == 0
-        )
+    weight=2 receives twice the leftover height of weight=1.
+    """
 
-    def apply_constraint(self, parent_widget: Widget, child_widget: Widget):
-        child_widget.set_autoresize_h(False)
-        siblings = [s for s in parent_widget.children if s != child_widget]
-        sibling_height = sum(s.rect.h for s in siblings)
+    @property
+    def axis(self) -> int:
+        return 1
 
-        if hasattr(parent_widget, "layout"):
-            h = parent_widget.layout.get_free_space()[1]
-        else:
-            h = parent_widget.get_inner_height()
+    @property
+    def layout_name(self) -> str:
+        return "Column"
 
-        child_widget.set_size((None, h - sibling_height))
+    def _get_inner_size(self, widget: Widget) -> float:
+        return float(widget.get_inner_height())
+
+    def _get_rect_size(self, widget: Widget) -> float:
+        return float(widget.rect.h)
+
+    def _apply_size(self, widget: Widget, size: float) -> None:
+        widget.set_autoresize_h(False)
+        widget.set_size((None, size))

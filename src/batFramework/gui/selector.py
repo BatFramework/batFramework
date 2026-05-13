@@ -27,7 +27,7 @@ class Selector(Button):
         self,
         name: str = "",
         options: list[Any] = None,
-        default_value_index: int = None,
+        default_value_index: int = 0,
         display_func: Callable[[Any], str] = None,
         synced_var: SyncedVar = None,
     ):

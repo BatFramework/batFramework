@@ -23,7 +23,9 @@ class Container(Shape, InteractiveWidget):
         return f"Container({self.uid},{len(self.children)})"
 
     def get_min_required_size(self):
-        return self.layout.get_auto_size() if self.layout else self.rect.size
+        if not self.layout:
+            return self.rect.size
+        return self.expand_rect_with_padding((0,0,*self.layout.get_auto_size())).size
 
     def reset_scroll(self) -> Self:
         if self.scroll == (0, 0):

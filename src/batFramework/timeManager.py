@@ -58,8 +58,7 @@ class Timer:
         if not force and not self.is_stopped:
             return self
 
-        if not bf.TimeManager().add_timer(self, self.register):
-            return self
+        bf.TimeManager().add_timer(self, self.register)
 
         self.elapsed_time = 0
         self.is_paused = False

@@ -16,10 +16,16 @@ class Layout(ABC):
         self.child_constraints: list[Constraint] = []
         self.children_rect = pygame.FRect(0, 0, 0, 0)
 
+    def _has_grow(self, child, grow_type) -> bool:
+        for con in getattr(child, "constraints", []):
+            if type(con) is grow_type and float(getattr(con, "weight", 1.0)) > 0.0:
+                return True
+        return False
+
     def get_free_space(self) -> tuple[float, float]:
-        """
-        return the space available for Growing widgets to use
-        """
+        if not self.parent:
+            return (0,0)
+        
         return self.parent.get_inner_rect()
 
     def set_child_constraints(self, *constraints) -> Self:
@@ -42,10 +48,10 @@ class Layout(ABC):
             first = layout_children[0]
             self.children_rect = pygame.FRect(
                 *self.parent.get_inner_rect().topleft,
-                first.rect.w, first.rect.h,
+                *first.get_min_required_size(),
             )
             self.children_rect.unionall(
-                [pygame.FRect(0, 0, c.rect.w, c.rect.h) for c in layout_children[1:]]
+                [pygame.FRect(0, 0, *c.get_min_required_size()) for c in layout_children[1:]]
             )
         else:
             self.children_rect = pygame.FRect(
@@ -83,8 +89,8 @@ class Layout(ABC):
         if not self.parent.autoresize_h:
             target_size[1] = self.parent.get_inner_height()
 
-        return self.parent.expand_rect_with_padding((0, 0, *target_size)).size
-        # return target_size
+        # return self.parent.expand_rect_with_padding((0, 0, *target_size)).size
+        return target_size
 
     def scroll_to_widget(self, widget: "Widget",focus_area:pygame.Rect=None):
         """
@@ -168,6 +174,26 @@ class Column(SingleAxisLayout):
         super().__init__()
         self.gap = gap
 
+    def get_free_space(self) -> tuple[float, float]:
+        """
+        Return distributable space:
+        - width: parent's inner width (Column doesn't distribute width)
+        - height: remaining height after fixed (non GrowV) children + gaps
+        """
+        inner = self.parent.get_inner_rect()
+        children = self.parent.get_layout_children()
+        n = len(children)
+
+        total_gap = max(0, n - 1) * float(self.gap or 0)
+
+        fixed_h = 0.0
+        for c in children:
+            if not self._has_grow(c, GrowV):   # GrowV only
+                fixed_h += c.get_min_required_size()[1] if c.autoresize_h else c.rect.h
+
+        remaining_h = max(0.0, inner.h - total_gap - fixed_h)
+        return (inner.w, remaining_h)
+
     def handle_event(self, event):
         if (
             not self.parent.get_layout_children()
@@ -218,6 +244,27 @@ class Row(SingleAxisLayout):
     def __init__(self, gap: int = 0):
         super().__init__()
         self.gap = gap
+
+    def get_free_space(self) -> tuple[float, float]:
+        """
+        Return distributable space:
+        - width: remaining width after fixed (non GrowH) children + gaps
+        - height: parent's inner height (Row doesn't distribute height)
+        """
+        inner = self.parent.get_inner_rect()
+        children = self.parent.get_layout_children()
+        n = len(children)
+
+        total_gap = max(0, n - 1) * self.gap or 0
+
+        fixed_w = 0.0
+        for c in children:
+            if not self._has_grow(c, GrowH):   # GrowH only
+                fixed_w += c.get_min_required_size()[0] if c.autoresize_w else c.rect.w
+
+        remaining_w = max(0.0, inner.w - total_gap - fixed_w)
+        return (remaining_w, inner.h)
+
 
     def handle_event(self, event):
         if (

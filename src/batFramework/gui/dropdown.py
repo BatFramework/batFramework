@@ -9,7 +9,9 @@ from .container import Container
 from .layout import Column
 from .widgetUtils import LayoutSlot, distribute_horizontal
 from math import ceil
-
+from .button import Button
+from .label import Label
+from .constraints.constraints import FillX 
 
 # ---------------------------------------------------------------------------
 # Inline arrow  (unchanged)
@@ -33,7 +35,7 @@ class _DropdownArrow(ArrowIndicator, ClickableWidget):
 # Option button inside the panel
 # ---------------------------------------------------------------------------
 
-class _OptionButton(Toggle.__bases__[0]):  # resolves to Button at runtime
+class _OptionButton(Label): 
     def __init__(self, label: str, index: int, dropdown: "Dropdown"):
         super().__init__(label)
         self._index = index
@@ -41,6 +43,8 @@ class _OptionButton(Toggle.__bases__[0]):  # resolves to Button at runtime
         self.set_alignment(bf.alignment.LEFT)
         self.set_autoresize_h(True)
         self.set_autoresize_w(False)
+        self.set_debug_color("green")
+        return
         self.set_unpressed_relief(0).set_pressed_relief(0)
         self.set_outline_width(0).set_border_radius(0)
         self.set_callback(self._on_click)
@@ -61,19 +65,23 @@ class _DropDownPanel(Container):
     def __init__(self, dropdown, layout=None, *children):
         self.dropdown = dropdown
         super().__init__(layout, *children)
+        self.set_clip_children(True)
+        self.set_autoresize_w(False)
+        self.set_autoresize_h(True)
+
+    def get_debug_outlines(self):
+        if self.visible:
+            if any(self.padding):
+                yield (self.get_inner_rect(), self.debug_color)
+            # else:
+            yield (self.rect, self.debug_color)
+            for c in self.children:
+                yield from c.get_debug_outlines()
 
     def top_at(self, x, y):
         if not self.dropdown._is_open:
             return None
-        r = self.rect if not self.clip_children else self.get_inner_rect()
-        if r.collidepoint(x, y):
-            for child in reversed(self.children):
-                result = child.top_at(x, y)
-                if result is not None:
-                    return result
-            if self.rect.collidepoint(x, y):
-                return self
-        return None
+        return super().top_at(x,y)
 
 
 # ---------------------------------------------------------------------------
@@ -135,26 +143,22 @@ class Dropdown(Toggle):
             else ""
         )
 
-        # Toggle.__init__: text, no external callback, default_value=False.
-        # Toggle's synced_var[bool] will mirror _is_open.
         super().__init__(text=display_text, callback=None, default_value=False)
 
         # ---- Replace ToggleIndicator with _DropdownArrow --------------------
         self.remove(self.indicator)
-        self.arrow: _DropdownArrow = (
+        self.indicator: _DropdownArrow = (
             _DropdownArrow(bf.direction.DOWN)
             .set_color((0, 0, 0, 0))
             .set_arrow_color(self.text_color)
             .set_outline_width(0)
             .set_pressed_relief(0).set_unpressed_relief(0)
         )
-        self.indicator = self.arrow   # Toggle's build() uses self.indicator
-        self.add(self.arrow)
+        self.add(self.indicator)
 
         # ---- Panel ----------------------------------------------------------
-        self._panel: _DropDownPanel = self._create_panel()
+        self._panel: _DropDownPanel = _DropDownPanel(self, Column().set_child_constraints(FillX()))
         self._option_buttons: list[_OptionButton] = []
-        self._populate_panel()
 
         self.value_var.bind(self, self._on_value_var_update)
 
@@ -185,38 +189,33 @@ class Dropdown(Toggle):
         if root and not self._panel.parent:
             root.add(self._panel)
             self._panel.hide()
+            self._populate_panel()
 
     # ------------------------------------------------------------------
     # Panel helpers
     # ------------------------------------------------------------------
 
-    def _create_panel(self) -> _DropDownPanel:
-        panel = _DropDownPanel(self, Column())
-        panel.set_outline_width(1)
-        panel.set_clip_children(True)
-        panel.set_autoresize_w(False)
-        panel.set_autoresize_h(True)
-        return panel
 
     def _populate_panel(self) -> None:
         """Sync option buttons to self.options, reusing instances in place."""
         current_count = len(self._option_buttons)
         target_count = len(self.options)
 
-        for i in range(min(current_count, target_count)):
+        for i in range(min(current_count, target_count)): # mutate
             btn = self._option_buttons[i]
             btn._index = i
             btn.set_text(self.display_func(self.options[i]))
             btn.set_bold(i == self.current_index)
 
-        for i in range(current_count, target_count):
+        for i in range(current_count, target_count): # add
             btn = _OptionButton(self.display_func(self.options[i]), i, self)
             btn.set_bold(i == self.current_index)
             self._option_buttons.append(btn)
             self._panel.add(btn)
 
-        for btn in self._option_buttons[target_count:]:
+        for btn in self._option_buttons[target_count:]: # remove existing excess
             self._panel.remove(btn)
+
         self._option_buttons = self._option_buttons[:target_count]
 
     def _refresh_panel_highlight(self) -> None:
@@ -244,17 +243,18 @@ class Dropdown(Toggle):
                 root.add(self._panel)
         self._is_open = True
         self.synced_var.value = True   # keep Toggle's bool var in sync
-        self.arrow.set_arrow_direction(bf.direction.UP)
+        self.indicator.set_arrow_direction(bf.direction.UP)
         self._refresh_panel_highlight()
         self._position_panel()
         self._panel.show()
+        self._panel.set_visible(False)
         
     def close(self) -> None:
         if not self._is_open:
             return
         self._is_open = False
         self.synced_var.value = False  # keep Toggle's bool var in sync
-        self.arrow.set_arrow_direction(bf.direction.DOWN)
+        self.indicator.set_arrow_direction(bf.direction.DOWN)
         self._panel.hide()
 
     def toggle_open(self) -> None:

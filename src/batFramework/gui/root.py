@@ -174,20 +174,23 @@ class Root(InteractiveWidget):
                 # Start showing tooltip for new target
 
                 self.tooltip.fade_in()
-            else:
-                # Hide tooltip (either no target or tooltip disabled)
-                self.tooltip.fade_out()
+                
+                
+                
 
-            self._tooltip_target = current_tooltip_widget
+        if self.tooltip.visible and current_tooltip_widget is None and current_tooltip_widget is not self._tooltip_target:
+            # Hide tooltip (either no target or tooltip disabled)
+            self.tooltip.fade_out()
 
+        self._tooltip_target = current_tooltip_widget
         # Position tooltip
         if self.tooltip.visible:
-            offset = 2
+            offset = 2 + 2 * self.tooltip.offset_scale
             mouse_x, mouse_y = mouse_world
             tooltip_rect = pygame.FRect(mouse_x, mouse_y,*self.tooltip.get_min_required_size())
             screen_rect = pygame.Rect(0,0,*bf.const.RESOLUTION)
 
-            screen_rect = self.drawing_camera.world_to_screen(screen_rect).inflate(10,10) # TODO : tooltip rect margin is hardcoded :/
+            screen_rect = self.drawing_camera.world_to_screen(screen_rect).inflate(offset,offset)
             if tooltip_rect.right + offset <= screen_rect.right:
                 tooltip_rect.move_ip(offset,0)
             else:
@@ -205,7 +208,6 @@ class Root(InteractiveWidget):
             if isinstance(self.hovered, InteractiveWidget):
                 self.hovered.on_mouse_motion(*mouse_world)
             return
-
         if isinstance(prev_hovered, InteractiveWidget):
             prev_hovered.on_exit()
         if isinstance(self.hovered, InteractiveWidget):
@@ -216,8 +218,8 @@ class Root(InteractiveWidget):
         self.apply_updates("pre")
         self.apply_updates("post")
         # 2nd pass
-        # self.apply_updates("pre")
-        # self.apply_updates("post")
+        self.apply_updates("pre")
+        self.apply_updates("post")
 
     def apply_pre_updates(self):
         return

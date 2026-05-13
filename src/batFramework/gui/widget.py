@@ -20,7 +20,8 @@ class WidgetMeta(type):
 
 class Widget(bf.Drawable, metaclass=WidgetMeta):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs,surface_flags=pygame.SRCALPHA)
+        self.set_convert_alpha(True)
         self.children: list["Widget"] = []
         self.constraints: list[Constraint] = []
         self.parent: "Widget" = None
@@ -29,9 +30,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.padding = (0, 0, 0, 0)
         self.dirty_surface: bool = True  # If true, will call paint before drawing
         self.dirty_shape: bool = True  # If true, will call (build+paint) before drawing
-        self.dirty_position_constraints: bool = (
-            True  # Flag for position-related constraints
-        )
+        self.dirty_position_constraints: bool = True  # Flag for position-related constraints
         self.dirty_size_constraints: bool = True  # Flag for size-related constraints
 
         self.tooltip_text: str | None = (
@@ -80,16 +79,22 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return "Widget"
 
     def set_autoresize(self, value: bool) -> Self:
+        # if (self.autoresize_w,self.autoresize_h) == (value,value):
+        #     return self
         self.autoresize_w = self.autoresize_h = value
         self.dirty_shape = True
         return self
 
     def set_autoresize_w(self, value: bool) -> Self:
+        if self.autoresize_w == value:
+            return self
         self.autoresize_w = value
         self.dirty_shape = True
         return self
 
     def set_autoresize_h(self, value: bool) -> Self:
+        if self.autoresize_h == value:
+            return self
         self.autoresize_h = value
         self.dirty_shape = True
         return self
@@ -164,6 +169,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         # if self.parent is not None and self.parent != parent:
         #     self.parent.remove(self)
         self.parent = parent
+        self.visit(lambda w : w.set_render_order(w.parent.render_order + 1) if w.parent else None,top_down=True,include_self=True)
         return self
 
     def set_padding(self, value: float | int | tuple | list) -> Self:
@@ -367,7 +373,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def add(self, *children: "Widget") -> Self:
         self.children.extend(children)
         for child in children:
-            if child.render_order == 0:
+            if child.parent is None:
                 child.set_render_order(self.render_order+1)
             child.set_parent(self)
             child.set_parent_layer(self.parent_layer)
@@ -491,15 +497,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
     """
 
-    def update_children_size(self, widget: "Widget"):
-        # print(widget,widget.uid,"constraints resolve in update size func")
 
-        widget.resolve_constraints()
-        if widget.dirty_shape:
-            # print(widget,widget.uid,"build in update size func")
-            widget.build()
-            widget.dirty_shape = False
-            widget.dirty_surface = True
 
     def find_highest_dirty_constraints_widget(self) -> "Widget":
         if self.is_root : return self
@@ -551,7 +549,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         """
 
         if self.dirty_shape:
-
+            clear_dirty_shape = True
             if self.build():
                 self.dirty_size_constraints = True
                 self.dirty_position_constraints = True
@@ -569,7 +567,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                     ):
                         
                         ancestor.dirty_layout = True
-            self.dirty_shape = False
+                        clear_dirty_shape = False
+            self.dirty_shape = False if clear_dirty_shape else True
             self.dirty_surface = True
 
         if self.dirty_position_constraints:

@@ -18,6 +18,8 @@ class Manager(bf.SceneManager):
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
         bf.ResourceManager().set_sharedVar("clock", self.clock)
         bf.ResourceManager().set_sharedVar("debug_mode", self.debug_mode)
+        sm = bf.gui.StyleManager()
+        sm.init()
 
         self.do_pre_init()
         if initial_scenes:

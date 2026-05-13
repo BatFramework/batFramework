@@ -10,6 +10,12 @@ class ToolTip(Label):
 
         self.fade_in_duration: float = 0.1
         self.fade_out_duration: float = 0.1
+        self.offset_scale: float = 4
+        self.target = None
+
+    def set_offset_scale(self, scale: float) -> Self:
+        self.offset_scale = scale
+        return self
 
     def do_when_added(self):
 
@@ -48,29 +54,41 @@ class ToolTip(Label):
     def set_fade_in_delay(self, delay : float) -> Self:
         self.delay_timer.set_duration(delay)
 
-
     def _fade_in_internal(self):
-        """Start fading in the tooltip. PropertyEaser will capture current alpha as start."""
+        # If we got disabled or lost target during delay, abort
+        root = self.get_root()
+        if root and (not root.show_tooltip or root._tooltip_target is None):
+            return
+
         if not self.visible:
             self.set_visible(True)
-        # Don't restart if already fading in
+
         if self.fade_in_easer.has_started() and not self.fade_in_easer.is_stopped:
             return
-        # Stop any ongoing fade out
+
         self.fade_out_easer.stop()
         self.fade_in_easer.start()
 
     def fade_in(self):
         """Trigger fading in after tooltip delay"""
+        # Always reset delay timer cleanly so it can restart even if previously scheduled/paused
+        self.delay_timer.stop()
         self.delay_timer.start(force=True)
 
-
     def fade_out(self):
-        """Start fading out the tooltip. PropertyEaser will capture current alpha as start."""
+        """Hide tooltip and cancel any pending delayed fade-in."""
+        # Cancel any pending delayed fade-in *completely*
+        self.delay_timer.stop()
+
+        # If already invisible and alpha is 0, no need to do anything
+        if not self.visible and self.get_alpha() <= 0:
+            return self
+
         # Don't restart if already fading out
         if self.fade_out_easer.has_started() and not self.fade_out_easer.is_stopped:
-            return
+            return self
+
         # Stop any ongoing fade in
         self.fade_in_easer.stop()
         self.fade_out_easer.start()
-        self.delay_timer.pause()
+        return self

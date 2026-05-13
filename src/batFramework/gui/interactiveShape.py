@@ -5,6 +5,7 @@ import pygame
 import batFramework as bf
 from typing import Self
 from math import cos, ceil
+from contextlib import contextmanager
 
 
 class InteractiveShape(Shape, InteractiveWidget):
@@ -20,6 +21,7 @@ class InteractiveShape(Shape, InteractiveWidget):
     def __init__(self, *args, **kwargs) -> None:
         self._focus_effect_cache: dict = {}
         self._hover_effect_cache: dict = {}
+        self._suppress_sounds: bool = False
 
         # Cursors
         self.hover_cursor = bf.const.DEFAULT_HOVER_CURSOR
@@ -34,7 +36,7 @@ class InteractiveShape(Shape, InteractiveWidget):
     # -------------------------------------------------------------------------
     # Cursor / sound setters
     # -------------------------------------------------------------------------
-
+ 
     def set_hover_cursor(self, cursor: pygame.Cursor) -> Self:
         self.hover_cursor = cursor
         return self
@@ -50,6 +52,22 @@ class InteractiveShape(Shape, InteractiveWidget):
     def set_lose_focus_sound(self, sound_name: str) -> Self:
         self.lose_focus_sound = sound_name
         return self
+
+    @contextmanager
+    def silent(self):
+        """Suppress focus/click sounds for the duration of the block.
+
+        Use when triggering focus or clicks programmatically so that
+        sounds only play in response to actual user input::
+
+            with play_button.silent():
+                play_button.ask_focus()
+        """
+        self._suppress_sounds = True
+        try:
+            yield self
+        finally:
+            self._suppress_sounds = False
 
     # -------------------------------------------------------------------------
     # Focus / hover visual helpers
@@ -71,19 +89,19 @@ class InteractiveShape(Shape, InteractiveWidget):
 
     def _paint_disabled(self) -> None:
         self.surface.blit(
-            self._get_surface_filter(intensity=0.5), (0, 0), special_flags=pygame.BLEND_RGB_SUB
+            self._get_surface_filter(intensity=0.5), self._get_elevated_rect().topleft, special_flags=pygame.BLEND_RGB_SUB
         )
 
     def _paint_hovered(self) -> None:
         self.surface.blit(
-            self._get_surface_filter(), (0, 0), special_flags=pygame.BLEND_RGB_ADD
+            self._get_surface_filter(), self._get_elevated_rect().topleft, special_flags=pygame.BLEND_RGB_ADD
         )
 
     def paint(self) -> None:
         super().paint()  # Shape.paint() handles the base drawing
         if not self.is_enabled:
             self._paint_disabled()
-        elif self.is_hovered:
+        elif self.is_hovered or self.is_focused:
             self._paint_hovered()
 
     def draw_focused(self, camera: bf.Camera) -> None:
@@ -144,12 +162,15 @@ class InteractiveShape(Shape, InteractiveWidget):
 
     def on_get_focus(self, focus_area: pygame.Rect = None) -> None:
         super().on_get_focus(focus_area)
-        if self.get_focus_sound and self.parent_layer and self.parent_layer.scene.is_visible():
+        self.dirty_surface = True
+        if self.get_focus_sound and not self._suppress_sounds and self.parent_layer and self.parent_layer.scene.is_visible():
             bf.AudioManager().play_sound(self.get_focus_sound)
 
     def on_lose_focus(self) -> None:
         super().on_lose_focus()
-        if self.lose_focus_sound and self.parent_layer and self.parent_layer.scene.is_visible():
+        self.dirty_surface = True
+
+        if self.lose_focus_sound and not self._suppress_sounds and self.parent_layer and self.parent_layer.scene.is_visible():
             bf.AudioManager().play_sound(self.lose_focus_sound)
 
     def on_enter(self) -> None:

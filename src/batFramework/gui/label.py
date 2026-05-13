@@ -18,19 +18,17 @@ class Label(TextMixin, Shape):
 
     MRO: Label → TextMixin → Shape → Widget
     super().__init__() threads kwargs through the whole chain,
-    so size=(0,0) lands in Shape and the rest in Widget/Drawable.
     """
 
     def __init__(self, text: str = "", renderer: TextRenderer | None = None):
-        super().__init__(text=text, renderer=renderer, size=(0, 0))
+        super().__init__(text=text, renderer=renderer)
         self.alignment: bf.alignment = bf.alignment.CENTER
         # Blit position in local surface coordinates, updated every build().
         self.text_rect = pygame.FRect(0, 0, 0, 0)
         self.text_effect: TextEffect | None = None
-        self.set_autoresize(True)
-        self.set_convert_alpha(True)
         self.set_surface_flags(pygame.SRCALPHA)
-
+        self.set_convert_alpha(True)
+        self.set_autoresize(True)
     def __str__(self) -> str:
         return f"Label({repr(self.text)})"
 
@@ -126,6 +124,7 @@ class Label(TextMixin, Shape):
             text_surf, self.text_rect.move(-self.text_scroll.x, -self.text_scroll.y).topleft
         )
         self.surface.set_clip(old_clip)
+        
     def get_debug_outlines(self):
         if not self.visible:
             return

@@ -158,7 +158,7 @@ class BarMeter(Meter):
         self.content.top_at = lambda x, y: self._content_top_at(x, y)
         self.add(self.content)
         self.content.set_outline_width(0)
-        self.set_debug_color("pink")
+        self.set_debug_color("white")
 
     def __str__(self) -> str:
         return "BarMeter"

@@ -79,10 +79,10 @@ class SliderMeter(BarMeter, InteractiveShape):
     ):
         self.handle = SliderHandle(synced_var=synced_var)
         super().__init__(min_value, max_value, step, synced_var)
-        self.set_debug_color("black")
-        self.set_padding(2)
-        self.set_autoresize(True)
+        self.set_debug_color("pink")
+        self.set_padding(0)
         self.add(self.handle)
+        self.set_axis(self.axis)
 
     def enable(self)->Self:
         super().enable()
@@ -213,16 +213,23 @@ class SliderMeter(BarMeter, InteractiveShape):
     def build(self):
         changed = super().build()
         self._build_content()
-        return changed
-
-    def _build_content(self):
-        super()._build_content()
         handle_size = (
             self.get_inner_height()
             if self.axis == bf.axis.HORIZONTAL
             else self.get_inner_width()
         )
         self.handle.set_size(self.handle.resolve_size((handle_size, handle_size)))
+        self.handle.update_position()
+        return changed
+
+    def set_axis(self, axis):
+        super().set_axis(axis)
+        if self.axis == bf.axis.HORIZONTAL:
+            self.set_autoresize_w(False).set_autoresize_h(True)
+        else:
+            self.set_autoresize_w(True).set_autoresize_h(False)
+
+        return self
 
 
 class Slider(Button):
@@ -354,7 +361,7 @@ class Slider(Button):
             self._build_style(),
         )
 
-        meter_size = self.meter.resolve_size(self.meter.get_min_required_size())
+        meter_size = self.meter.get_min_required_size()
 
         gap = self.gap if self.text else 0
         if self.axis == bf.axis.HORIZONTAL:
@@ -397,7 +404,7 @@ class Slider(Button):
 
         # ---- Measure ------------------------------------------------
         text_w, text_h = self.get_text_size()
-        meter_min_w, meter_min_h = self.meter.resolve_size(self.meter.get_min_required_size())
+        meter_min_w, meter_min_h = self.meter.get_min_required_size()
 
         local_inner = self.get_local_inner_rect()
 

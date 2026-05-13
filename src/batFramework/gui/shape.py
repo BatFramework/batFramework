@@ -9,6 +9,7 @@ from math import ceil
 class Shape(Widget):
     def __init__(self, size: tuple[float, float] | None = None, *args, **kwargs):
         super().__init__(size=size, convert_alpha=True)
+
         self.color = (0, 0, 0, 0)
         self.border_radius: list[int] = [0]
         self.outline_width: int = 0
@@ -119,107 +120,34 @@ class Shape(Widget):
             if self.outline_width:
                 self._paint_rounded_outline()
 
+
     def _paint_textured(self) -> None:
         self.surface.fill((0, 0, 0, 0))
         if self.texture_surface is None:
             return
-        w, h = self.surface.get_size()
-        sw, sh = self.texture_surface.get_size()
-        sub = self.texture_subsize
+        
 
-        # center
-        center_surface = self.texture_surface.subsurface((sub[0], sub[1], *sub))
-        top_surface = self.texture_surface.subsurface((sub[0], 0, *sub))
-        bottom_surface = self.texture_surface.subsurface((sub[0], sh - sub[1], *sub))
-        left_surface = self.texture_surface.subsurface((0, sub[1], *sub))
-        right_surface = self.texture_surface.subsurface((sw - sub[0], sub[1], *sub))
+        if self.relief != 0:
+            elevated_rect = self._get_elevated_rect()
+            base_rect     = self._get_base_rect()
+            union =elevated_rect.union(base_rect)
+            bf.utils.blit_9slice(self.texture_surface,self.texture_subsize,self.surface,union)
+            if self.shadow_color is not None:
+                shadow_overlay = pygame.Surface(
+                    (int(union.w), int(union.h)), pygame.SRCALPHA
+                )
+                shadow_overlay.fill(self.shadow_color)
+                self.surface.blit(
+                    shadow_overlay,
+                    union.topleft,
+                    special_flags=pygame.BLEND_RGBA_MULT,
+                )
+            # --- Elevated (top face) region ---
+            bf.utils.blit_9slice(self.texture_surface,self.texture_subsize,self.surface,elevated_rect)
 
-        lst = []
-        for y in range(sub[1], h + 1 - sub[1] * 2, sub[1]):
-            for x in range(sub[0], w + 1 - sub[0] * 2, sub[0]):
-                lst.append((center_surface, (x, y)))
+        else:
 
-        w_remainder = w % sub[0]
-        h_remainder = h % sub[1]
-        fix_x = ((w // sub[0]) - 1) * sub[0]
-        fix_y = ((h // sub[1]) - 1) * sub[1]
-
-        if (w > sub[0]) and (w_remainder > 0):
-            # Center : Fix gaps on the x axis
-            h_portion = center_surface.subsurface(0, 0, w_remainder, sub[1])
-            for y in range(sub[1], h - sub[1] * 2, sub[1]):
-                lst.append((h_portion, (fix_x, y)))
-
-            # Fix partial gaps on the top
-
-            t_portion = top_surface.subsurface(0, 0, w_remainder, sub[1])
-            lst.append((t_portion, (fix_x, 0)))
-
-            # Fix partial gaps on the bottom
-            b_portion = bottom_surface.subsurface(0, 0, w_remainder, sub[1])
-            lst.append((b_portion, (fix_x, h - sub[1] - 1)))
-
-        if (h > sub[1]) and (h_remainder > 0):
-            # Center : Fix gaps on the y axis
-            v_portion = center_surface.subsurface(0, 0, sub[0], h_remainder)
-            for x in range(sub[0], w - sub[0] * 2, sub[0]):
-                lst.append((v_portion, (x, fix_y)))
-
-            # Fix partial gaps on the left
-            l_portion = left_surface.subsurface(0, 0, sub[0], h_remainder)
-            lst.append((l_portion, (0, fix_y)))
-
-            # Fix partial gaps on the right
-            r_portion = right_surface.subsurface(0, 0, sub[0], h_remainder)
-            lst.append((r_portion, (w - sub[0] - 1, fix_y)))
-
-        # fix corner gap
-        if h > sub[1] or w > sub[0]:
-            corner_portion = center_surface.subsurface(
-                0,
-                0,
-                w_remainder if w_remainder else sub[0],
-                h_remainder if h_remainder else sub[1],
-            )
-            if w_remainder == 0:
-                fix_x -= sub[0]
-            if h_remainder == 0:
-                fix_y -= sub[1]
-            lst.append((corner_portion, (fix_x - 1, fix_y - 1)))
-
-        # borders
-        lst.extend(
-            [(top_surface, (x, 0)) for x in range(sub[0], w + 1 - sub[0] * 2, sub[0])]
-            + [
-                (bottom_surface, (x, h - sub[1] - 1))
-                for x in range(sub[0], w + 1 - sub[0] * 2, sub[0])
-            ]
-            + [
-                (left_surface, (0, y))
-                for y in range(sub[1], h + 1 - sub[1] * 2, sub[1])
-            ]
-            + [
-                (right_surface, (w - sub[0] - 1, y))
-                for y in range(sub[1], h + 1 - sub[1] * 2, sub[1])
-            ]
-            + [
-                (self.texture_surface.subsurface((0, 0, *sub)), (0, 0)),
-                (
-                    self.texture_surface.subsurface((sw - sub[0], 0, *sub)),
-                    (w - sub[0] - 1, 0),
-                ),
-                (
-                    self.texture_surface.subsurface((0, sh - sub[1], *sub)),
-                    (0, h - sub[1] - 1),
-                ),
-                (
-                    self.texture_surface.subsurface((sw - sub[0], sh - sub[1], *sub)),
-                    (w - sub[0] - 1, h - sub[1] - 1),
-                ),
-            ]
-        )
-
-        self.surface.fblits(lst)
+            bf.utils.blit_9slice(self.texture_surface,self.texture_subsize,self.surface)
 
     def _get_elevated_rect(self) -> pygame.FRect:
         return pygame.FRect(0, 0, self.rect.w, self.rect.h - self.relief)

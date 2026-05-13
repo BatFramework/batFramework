@@ -23,6 +23,7 @@ class SceneLayer:
     def __init__(self, name: str, convert_alpha: bool = False):
         self.scene = None
         self.name = name
+        self._should_reorder_entities:bool = False
         self.entities: dict[int, Entity] = (
             {}
         )  # contains all scene entities : key is uid
@@ -42,6 +43,9 @@ class SceneLayer:
 
     def set_clear_color(self, color):
         self.camera.set_clear_color(color)
+
+    def queue_sort_render_order(self):
+        self._should_reorder_entities = True
 
     def set_scene(self, scene: BaseScene):
         self.scene = scene
@@ -98,7 +102,7 @@ class SceneLayer:
         self.entities_to_remove.clear()
 
         # Add new entities
-        reorder = False
+        reorder = self._should_reorder_entities
         for e in self.entities_to_add:
             self.entities[e.uid] = e
             e.set_parent_layer(self)
@@ -109,7 +113,8 @@ class SceneLayer:
 
         # Reorder draw order if necessary
         if reorder:
-            self.update_draw_order()
+            self._update_draw_order()
+        self._should_reorder_entities = False
 
     def draw(self, surface: pygame.Surface):
         self.camera.clear()
@@ -128,7 +133,7 @@ class SceneLayer:
         # surface.fill("white")
         self.camera.draw(surface)
 
-    def update_draw_order(self):
+    def _update_draw_order(self):
         self.draw_order = sorted(
             (
                 k

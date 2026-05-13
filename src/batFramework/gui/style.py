@@ -13,6 +13,11 @@ class Style:
     def __init__(self):
         pass
 
+    def init(self):
+        """
+        Safe to call when resources are loaded
+        """
+
     def apply(self, widget: Widget):
         pass
 

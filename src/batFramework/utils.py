@@ -379,3 +379,113 @@ class Utils:
         if float(step).is_integer():
             return int(rounded)
         return rounded
+
+
+    @staticmethod
+    def blit_9slice(
+        source: pygame.Surface,
+        sub: tuple[int, int],
+        dest: pygame.Surface | None = None,
+        area: pygame.FRect | None = None,
+    ) -> pygame.Surface:
+        """
+        Tile a 9-slice texture and blit it onto a surface using fblits.
+
+        Args:
+            source: The 9-slice source texture.
+            sub:    (slice_w, slice_h) — size of each of the 9 tiles.
+            dest:   Surface to blit onto. If None, a new SRCALPHA surface is created.
+            area:   Region of dest to fill. If None, the entire dest (or source size
+                    when dest is also None) is used.
+
+        Returns:
+            The destination surface (newly created if dest was None).
+        """
+        sw, sh = source.get_size()
+
+        # --- Resolve destination and draw region ---
+        if dest is None:
+            if area is not None:
+                dest = pygame.Surface((int(area.w), int(area.h)), pygame.SRCALPHA)
+                ox, oy = 0, 0
+                w, h = int(area.w), int(area.h)
+            else:
+                dest = pygame.Surface((sw, sh), pygame.SRCALPHA)
+                ox, oy = 0, 0
+                w, h = sw, sh
+        else:
+            if area is not None:
+                ox, oy = int(area.x), int(area.y)
+                w, h = int(area.w), int(area.h)
+            else:
+                ox, oy = 0, 0
+                w, h = dest.get_size()
+
+        # --- Extract the 9 slices ---
+        tl = source.subsurface((0,           0,           *sub))
+        tc = source.subsurface((sub[0],      0,           *sub))
+        tr = source.subsurface((sw - sub[0], 0,           *sub))
+        ml = source.subsurface((0,           sub[1],      *sub))
+        mc = source.subsurface((sub[0],      sub[1],      *sub))
+        mr = source.subsurface((sw - sub[0], sub[1],      *sub))
+        bl = source.subsurface((0,           sh - sub[1], *sub))
+        bc = source.subsurface((sub[0],      sh - sub[1], *sub))
+        br = source.subsurface((sw - sub[0], sh - sub[1], *sub))
+
+        w_remainder = w % sub[0]
+        h_remainder = h % sub[1]
+        fix_x = ((w // sub[0]) - 1) * sub[0]
+        fix_y = ((h // sub[1]) - 1) * sub[1]
+
+        lst: list[tuple[pygame.Surface, tuple[int, int]]] = []
+
+        # --- Center fill ---
+        for y in range(sub[1], h + 1 - sub[1] * 2, sub[1]):
+            for x in range(sub[0], w + 1 - sub[0] * 2, sub[0]):
+                lst.append((mc, (ox + x, oy + y)))
+
+        # --- Partial-tile gap fixes ---
+        if (w > sub[0]) and (w_remainder > 0):
+            h_portion = mc.subsurface(0, 0, w_remainder, sub[1])
+            for y in range(sub[1], h - sub[1] * 2, sub[1]):
+                lst.append((h_portion, (ox + fix_x, oy + y)))
+            lst.append((tc.subsurface(0, 0, w_remainder, sub[1]), (ox + fix_x, oy)))
+            lst.append((bc.subsurface(0, 0, w_remainder, sub[1]), (ox + fix_x, oy + h - sub[1] - 1)))
+
+        if (h > sub[1]) and (h_remainder > 0):
+            v_portion = mc.subsurface(0, 0, sub[0], h_remainder)
+            for x in range(sub[0], w - sub[0] * 2, sub[0]):
+                lst.append((v_portion, (ox + x, oy + fix_y)))
+            lst.append((ml.subsurface(0, 0, sub[0], h_remainder), (ox,                  oy + fix_y)))
+            lst.append((mr.subsurface(0, 0, sub[0], h_remainder), (ox + w - sub[0] - 1, oy + fix_y)))
+
+        # Corner gap (where x and y partial tiles meet)
+        if h > sub[1] or w > sub[0]:
+            corner_portion = mc.subsurface(
+                0, 0,
+                w_remainder if w_remainder else sub[0],
+                h_remainder if h_remainder else sub[1],
+            )
+            cx = fix_x - (sub[0] if w_remainder == 0 else 0)
+            cy = fix_y - (sub[1] if h_remainder == 0 else 0)
+            lst.append((corner_portion, (ox + cx - 1, oy + cy - 1)))
+
+        # --- Tiled edges ---
+        for x in range(sub[0], w + 1 - sub[0] * 2, sub[0]):
+            
+            lst.append((tc, (ox + x, oy)))
+            lst.append((bc, (ox + x, oy + h - sub[1] - 1)))
+        for y in range(sub[1], h + 1 - sub[1] * 2, sub[1]):
+            lst.append((ml, (ox,                  oy + y)))
+            lst.append((mr, (ox + w - sub[0] - 1, oy + y)))
+
+        # --- Fixed corners ---
+        lst.extend([
+            (tl, (ox,                  oy)),
+            (tr, (ox + w - sub[0] - 1, oy)),
+            (bl, (ox,                  oy + h - sub[1] - 1)),
+            (br, (ox + w - sub[0] - 1, oy + h - sub[1] - 1)),
+        ])
+
+        dest.fblits(lst)
+        return dest

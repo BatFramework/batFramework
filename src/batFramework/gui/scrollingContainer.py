@@ -133,6 +133,8 @@ class ScrollingContainer(Container):
     def __init__(self, layout: Layout = None, *children: Widget) -> None:
         self._scrollbar_thickness: float = 8
         self._scroll_speed: float        = 20.0
+        self._scroll_x_enabled: bool     = True
+        self._scroll_y_enabled: bool     = True
 
         # Public shape handles — style these directly.
         self.v_track  = ScrollingContainer._ScrollTrack(vertical=True)
@@ -149,7 +151,7 @@ class ScrollingContainer(Container):
             sb.set_render_order(999)   # always on top of content
 
         self.set_clip_children(True)
-        self.set_debug_color("teal")
+        self.set_debug_color("yellow")
 
     def __str__(self) -> str:
         return f"ScrollingContainer({self.uid},{len(self.children)})"
@@ -167,12 +169,33 @@ class ScrollingContainer(Container):
         self._scroll_speed = max(1.0, speed)
         return self
 
+    def set_scroll_x_enabled(self, enabled: bool) -> Self:
+        if self._scroll_x_enabled != enabled:
+            self._scroll_x_enabled = enabled
+            if not enabled:
+                self.set_scroll((0, self.scroll.y))
+            self.dirty_layout = True
+        return self
+
+    def set_scroll_y_enabled(self, enabled: bool) -> Self:
+        if self._scroll_y_enabled != enabled:
+            self._scroll_y_enabled = enabled
+            if not enabled:
+                self.set_scroll((self.scroll.x, 0))
+            self.dirty_layout = True
+        return self
+
     # ── Exclude scrollbar widgets from the layout ─────────────────────────────
 
     def get_layout_children(self):
         return [c for c in super().get_layout_children() if c not in self._scrollbar_widgets]
 
     # ── Inner rect (shrinks to make room for visible scrollbars) ──────────────
+
+    def set_scroll(self, value: tuple[float]) -> Self:
+        x = value[0] if self._scroll_x_enabled else self.scroll.x
+        y = value[1] if self._scroll_y_enabled else self.scroll.y
+        return super().set_scroll((x, y))
 
     def _base_inner_rect(self) -> pygame.FRect:
         return super().get_inner_rect()
@@ -193,6 +216,13 @@ class ScrollingContainer(Container):
             r.height = max(0, r.height - self._scrollbar_thickness)
         return r
 
+    def get_min_required_size(self):
+        w,h =  super().get_min_required_size()
+        if self.v_track.visible:
+            w+=self._scrollbar_thickness
+        if self.h_track.visible:
+            h+=self._scrollbar_thickness
+        return w,h
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         # first check if the point is inside the scrollbar handles and then tracks
@@ -230,8 +260,8 @@ class ScrollingContainer(Container):
             if need_v and not need_h: need_h = cw > base.width  - t
             if need_h and not need_v: need_v = ch > base.height - t
 
-        for w in (self.v_track, self.v_handle): w.set_visible(need_v)
-        for w in (self.h_track, self.h_handle): w.set_visible(need_h)
+        for w in (self.v_track, self.v_handle): w.set_visible(need_v and self._scroll_y_enabled)
+        for w in (self.h_track, self.h_handle): w.set_visible(need_h and self._scroll_x_enabled)
 
         return old_v != need_v or old_h != need_h
 

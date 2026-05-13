@@ -6,10 +6,18 @@ import batFramework as bf
 
 class StyleManager(metaclass=Singleton):
     def __init__(self):
+        self._is_initialized = False
         self.styles: list[Style] = []
         self.widgets: set[Widget] = set()
         self.lookup: dict[Widget, bool] = {}
         self.add(DefaultStyle())
+
+    def init(self):
+        if self._is_initialized : return
+        self._is_initialized = True
+
+        for s in self.styles:
+            s.init()
 
     def register_widget(self, widget: Widget):
         if widget in self.widgets:
@@ -31,6 +39,8 @@ class StyleManager(metaclass=Singleton):
 
     def add(self, style: Style):
         self.styles.append(style)
+        if self._is_initialized:
+            style.init()
         self.lookup = {key: False for key in self.lookup}
         self.update()
 
