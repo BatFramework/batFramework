@@ -26,7 +26,7 @@ class DefaultStyle(Style):
     def apply(self, w):
         if isinstance(w, Shape):
             
-            w.set_color(bf.color.CREAM)
+            w.set_color(bf.color.WHITE)
             w.set_outline_width(1)
             w.set_outline_color(bf.color.DARK_GRAY)
             w.set_shadow_color(bf.color.CLOUD_SHADE)
