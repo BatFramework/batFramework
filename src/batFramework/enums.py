@@ -1,5 +1,6 @@
 from __future__ import annotations
 from enum import Enum
+from enum import IntEnum
 import pygame
 
 playerInput = [
@@ -9,6 +10,13 @@ playerInput = [
     pygame.MOUSEBUTTONUP,
 ]
 
+
+class GuiLayer(IntEnum):
+    NORMAL  = 0
+    OVERLAY = 1   # dropdowns, context menus, transient popups
+    MODAL   = 2   # blocking dialogs
+    TOOLTIP = 3
+    DEBUG   = 4
 
 class color:
     WHITE = pygame.Color(255, 255, 255)

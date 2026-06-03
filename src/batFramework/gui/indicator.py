@@ -46,6 +46,9 @@ class ToggleIndicator(Indicator):
         )
         self.add_constraints(bf.gui.AspectRatio(1, reference_axis=bf.axis.VERTICAL))
 
+    def allow_focus_to_self(self) -> bool:
+        return False
+
     def do_when_added(self):
         self.set_value(self.value)
         return super().do_when_added()

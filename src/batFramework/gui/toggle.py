@@ -96,14 +96,17 @@ class Toggle(Button):
 
     def get_min_required_size(self) -> tuple[float, float]:
         text_w, text_h = self.get_text_size()
-        ind_size = max(self.font.get_height() // 2, 8)
+        base = max(self.font.get_height() // 2, 8)
+        res = self.indicator.get_min_required_size()
+        ind_size = max(base,res[0]), max(base,res[1])
         gap = self.gap if self.text else 0
 
-        w = text_w + ind_size + gap
-        h = max(text_h, ind_size) + self.unpressed_relief
+        w = text_w + ind_size[0] + gap
+        h = max(text_h, ind_size[1]) + self.unpressed_relief
 
-        return self.expand_rect_with_padding((0, 0, w, h)).size
-
+        r = self.expand_rect_with_padding((0, 0, w, h)).size
+        return self.compute_min_size(r)
+    
     # ------------------------------------------------------------
     # Layout (widgetUtils)
     # ------------------------------------------------------------
@@ -129,10 +132,10 @@ class Toggle(Button):
         if has_text:
             slots = [
                 LayoutSlot((text_w, text_h), 0),
-                LayoutSlot((ind_size, ind_size), ind_weight),
+                LayoutSlot(self.indicator.rect.size, ind_weight),
             ]
         else:
-            slots = [LayoutSlot((ind_size, ind_size), ind_weight)]
+            slots = [LayoutSlot(self.indicator.rect.size, ind_weight)]
 
         rects = distribute_horizontal(
             slots=slots,

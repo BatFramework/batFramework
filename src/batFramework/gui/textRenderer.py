@@ -4,8 +4,7 @@ import re
 import math
 from collections import OrderedDict
 
-TAG_PATTERN = re.compile(r"(\\[\\[])|\[(\/?)(\w+)(?:=([^\]]+))?\]")
-
+TAG_PATTERN = re.compile(r"\[(\/?)(\w+)(?:=([^\]]+))?\]")
 
 def _min_size_key(style: TextStyle) -> tuple:
     """Hashable key from the style fields that affect text layout/size."""
@@ -113,6 +112,7 @@ class PlainTextRenderer(TextRenderer):
 
         for line in lines:
             w, h = font.size(line if line else " ")
+            #w+=1 
             max_w = max(max_w, w)
             total_h += h
 

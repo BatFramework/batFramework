@@ -164,11 +164,13 @@ class SceneManager:
             self.scenes[index].do_on_enter_early()
         target_scene.on_enter()
 
-    def cycle_debug_mode(self):
+    def cycle_debug_mode(self)-> bf.debugMode:
         current_index = bf.ResourceManager().get_sharedVar("debug_mode").value
         next_index = (current_index + 1) % len(bf.debugMode)
         bf.ResourceManager().set_sharedVar("debug_mode", bf.debugMode(next_index))
-        return bf.debugMode(next_index)
+        res = bf.debugMode(next_index)
+        pygame.event.post(pygame.event.Event(bf.const.DEBUG_MODE_CHANGE_EVENT, {"mode": res}))
+        return res
 
     def set_debug_mode(self, debugMode: bf.debugMode):
         bf.ResourceManager().set_sharedVar("debug_mode", debugMode)

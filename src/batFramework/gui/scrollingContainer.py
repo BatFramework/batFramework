@@ -222,7 +222,8 @@ class ScrollingContainer(Container):
             w+=self._scrollbar_thickness
         if self.h_track.visible:
             h+=self._scrollbar_thickness
-        return w,h
+        
+        return self.compute_min_size((w, h))
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         # first check if the point is inside the scrollbar handles and then tracks
@@ -361,7 +362,7 @@ class ScrollingContainer(Container):
 
         # ── 2. Position constraints (after size is stable) ────────────────────
         if self.dirty_position_constraints:
-            self.resolve_constraints(position_only=True)
+            self.resolve_constraints("position")
             self.dirty_position_constraints = False
 
         # ── 3. Layout (after our rect is stable) ──────────────────────────────

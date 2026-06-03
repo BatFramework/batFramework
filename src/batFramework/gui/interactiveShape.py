@@ -4,7 +4,7 @@ from .interactiveWidget import InteractiveWidget
 import pygame
 import batFramework as bf
 from typing import Self
-from math import cos, ceil
+from math import cos, ceil, sin
 from contextlib import contextmanager
 
 
@@ -106,44 +106,25 @@ class InteractiveShape(Shape, InteractiveWidget):
 
     def draw_focused(self, camera: bf.Camera) -> None:
         """Animated pulsing focus ring drawn in screen space."""
-        prop = 8
-        pulse = int(prop * 0.75 - (prop * cos(pygame.time.get_ticks() / 100) / 4))
-        delta = (pulse // 2) * 2  # keep even
 
-        screen_rect = camera.world_to_screen(
-            self.rect.inflate(prop + self.outline_width, prop + self.outline_width)
-        )
+        screen_rect = camera.world_to_screen(self.rect)
 
-        inner = screen_rect.inflate(-delta, -delta)
-        inner.topleft = 0, 0
-        inner.w = ceil(inner.w) + 1
-        inner.h = ceil(inner.h) + 1
+        deltax = ceil( sin(pygame.time.get_ticks() / 150))
+        deltay = ceil( sin(pygame.time.get_ticks() / 150))
+        
+        if self.rect.w %2 != 0:
+            deltax += 1
 
-        surface = self._focus_effect_cache.get(inner.size)
-        if surface is None:
-            surface = pygame.Surface(inner.size)
-            self._focus_effect_cache[inner.size] = surface
+        if self.rect.h %2 != 0:
+            deltay += 1
 
-        surface.set_colorkey((255, 0, 255))
-        surface.fill((255, 0, 255))
-        pygame.draw.rect(surface, "white", inner, 2, *self.border_radius)
-
-        # Horizontal and vertical cross-cuts to form a bracket-style ring
         pygame.draw.rect(
-            surface,
-            (255, 0, 255),
-            inner.inflate(-1 * (min(16, int(inner.w * 0.75)) & ~1), 0),
-            2,
+            camera.surface,
+            bf.color.BLUE,
+            screen_rect.inflate(4+2*deltax, 4+2*deltay),
+            width=2,
+            border_radius=self.border_radius[0]+2 if self.border_radius else 0,
         )
-        pygame.draw.rect(
-            surface,
-            (255, 0, 255),
-            inner.inflate(0, -1 * (min(16, int(inner.h * 0.75)) & ~1)),
-            2,
-        )
-
-        inner.center = screen_rect.center
-        camera.surface.blit(surface, inner)
 
     # -------------------------------------------------------------------------
     # Cache invalidation

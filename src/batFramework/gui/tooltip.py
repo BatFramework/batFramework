@@ -18,6 +18,8 @@ class ToolTip(Label):
         return self
 
     def do_when_added(self):
+        if r:=self.get_root():
+            r.attach_to_layer(self, bf.GuiLayer.TOOLTIP)
 
         self.fade_in_easer = bf.PropertyEaser(
             duration=self.fade_in_duration,
@@ -40,6 +42,8 @@ class ToolTip(Label):
         self.set_padding((4, 2))
         self.set_visible(False)
         self.set_alpha(0)
+
+
 
     def __str__(self):
         return f"ToolTip('{self.text}')"

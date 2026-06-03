@@ -148,16 +148,10 @@ class SingleAxisLayout(Layout):
         super().__init__(parent)
 
     def focus_next_child(self) -> None:
-        l = self.parent.get_interactive_children()
-        self.parent.focused_index = min(self.parent.focused_index + 1, len(l) - 1)
-        focused = l[self.parent.focused_index]
-        focused.ask_focus()
+        self.parent.focus_next_tab()
 
     def focus_prev_child(self) -> None:
-        l = self.parent.get_interactive_children()
-        self.parent.focused_index = max(self.parent.focused_index - 1, 0)
-        focused = l[self.parent.focused_index]
-        focused.ask_focus()
+        self.parent.focus_prev_tab()
 
 
 class DoubleAxisLayout(Layout):
@@ -213,10 +207,10 @@ class Column(SingleAxisLayout):
     def update_children_rect(self):
         layout_children = self.parent.get_layout_children()
         if layout_children:
-            width = max(child.rect.w for child in layout_children)
+            width = max(child.rect.w+1 for child in layout_children)
             height = (
                 sum(child.rect.h for child in layout_children)
-                + self.gap * (len(layout_children) - 1)
+                + self.gap * (len(layout_children) - 1) + 1
             )
             self.children_rect = pygame.FRect(
                 *self.parent.get_inner_rect().topleft, width, height

@@ -8,7 +8,11 @@ if TYPE_CHECKING:
     from .constraints.constraints import Constraint
     from .root import Root
 
+from typing import Literal
+
 MAX_ITERATIONS = 10
+ResolveMode = Literal["all", "size", "position"]
+
 
 
 class WidgetMeta(type):
@@ -24,9 +28,11 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.set_convert_alpha(True)
         self.children: list["Widget"] = []
         self.constraints: list[Constraint] = []
+        self.gui_layer: bf.GuiLayer = bf.GuiLayer.NORMAL
         self.parent: "Widget" = None
         self.do_sort_children = False
         self.clip_children: bool = True
+        self.min_size: tuple[float, float] = (0, 0)
         self.padding = (0, 0, 0, 0)
         self.dirty_surface: bool = True  # If true, will call paint before drawing
         self.dirty_shape: bool = True  # If true, will call (build+paint) before drawing
@@ -41,9 +47,21 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             True,
             True,
         )  # If True, the widget will have dynamic size depending on its contents
-        self._constraint_iteration = 0
+
+        self._resolving_constraints: bool = False                 # re-entrancy guard
         self._constraints_to_ignore: list[Constraint] = []
-        self._constraints_capture: list[Constraint] = []
+        self._last_constraint_priorities: list[int] = []          # for change detection
+        self._last_resolved: list[tuple[Constraint, int]] = []    # debug snapshot
+
+    def set_min_size(self, size: tuple[float, float]) -> Self:
+        self.min_size = size
+        self.dirty_shape = True
+        return self
+
+
+    def get_gui_layer(self) -> bf.GuiLayer:
+        return self.gui_layer
+
 
     def set_tooltip_text(self, text: str | None) -> Self:
         self.tooltip_text = text
@@ -203,7 +221,10 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         )
 
     def get_min_required_size(self) -> tuple[float, float]:
-        return self.rect.size
+        return self.compute_min_size(self.rect.size)
+
+    def compute_min_size(self, requested_size: tuple[float, float]) -> tuple[float, float]:
+        return max(self.min_size[0], requested_size[0]), max(self.min_size[1], requested_size[1])
 
     def get_inner_width(self) -> float:
         return self.rect.w - self.padding[0] - self.padding[2]
@@ -266,85 +287,88 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
         return self
 
-    def resolve_constraints(
-        self, size_only: bool = False, position_only: bool = False
-    ) -> None:
-        """
-        Resolve constraints affecting size and/or position independently.
 
-        This system attempts to apply constraints iteratively until a stable solution is found,
-        or until MAX_ITERATIONS is reached.
+
+    def resolve_constraints(self, mode: ResolveMode = "all") -> None:
+        """
+        Resolve constraints affecting size, position, or both.
+
+        Iterates until a stable solution is found, MAX_ITERATIONS is reached,
+        or oscillation is detected.
         """
         if self.parent is None or not self.constraints:
-            if size_only:
-                self.dirty_size_constraints = False
-            if position_only:
-                self.dirty_position_constraints = False
+            self._clear_constraint_dirty(mode)
             return
 
-        # If not currently resolving constraints, reset tracking lists
-        if not self._constraint_iteration:
-            self._constraints_capture = []
-        else:
-            # Detect constraint priority changes since last resolution
+        # Re-entrancy guard. If a constraint's apply() triggers another
+        # resolve on the same widget, bail rather than corrupt state.
+        if self._resolving_constraints:
+            return
+        self._resolving_constraints = True
+
+        try:
+            # If priorities changed since last call, the ignore list is stale.
             current_priorities = [c.priority for c in self.constraints]
-            if current_priorities != self._constraints_capture:
-                self._constraints_capture = current_priorities
+            if current_priorities != self._last_constraint_priorities:
+                self._last_constraint_priorities = current_priorities
                 self._constraints_to_ignore = []
 
-        # Filter constraints based on what needs resolving
-        def is_relevant(c: "Constraint") -> bool:
-            return (
-                c.affects_size
-                if size_only
-                else c.affects_position if position_only else True
-            )
+            # Filter to relevant constraints, highest priority first.
+            if mode == "size":
+                relevant = [c for c in self.constraints if c.affects_size]
+            elif mode == "position":
+                relevant = [c for c in self.constraints if c.affects_position]
+            else:
+                relevant = list(self.constraints)
+            relevant.sort(key=lambda c: c.priority, reverse=True)
 
-        active_constraints = [c for c in self.constraints if is_relevant(c)]
-        active_constraints.sort(key=lambda c: c.priority, reverse=True)
+            resolved: dict[int, Constraint] = {}   # id -> constraint
+            seen_states: set[frozenset[int]] = set()
+            iteration = 0
+            converged = False
 
-        resolved = []
-        for _ in range(MAX_ITERATIONS):
-            self._constraint_iteration += 1
-            changed = False
+            for iteration in range(1, MAX_ITERATIONS + 1):
+                changed = False
 
-            for constraint in active_constraints:
-                if constraint in resolved:
-                    # Re-evaluate to confirm the constraint is still satisfied
-                    if not constraint.evaluate(self.parent, self):
-                        resolved.remove(constraint)
-                        changed = True
-                else:
-                    # Try applying unresolved constraint
-                    if constraint.apply(self.parent, self):
-                        resolved.append(constraint)
+                # Phase 1: drop previously-resolved constraints that broke.
+                for cid, c in list(resolved.items()):
+                    if not c.evaluate(self.parent, self):
+                        del resolved[cid]
                         changed = True
 
-            if not changed:
-                break  # All constraints stable — done
+                # Phase 2: try to apply unresolved constraints.
+                for c in relevant:
+                    if id(c) in resolved:
+                        continue
+                    if c.apply(self.parent, self):
+                        resolved[id(c)] = c
+                        changed = True
 
-        # If solution is still unstable, record the unresolved ones
-        if self._constraint_iteration >= MAX_ITERATIONS:
-            self._constraints_to_ignore += [
-                c for c in active_constraints if c not in resolved
-            ]
+                if not changed:
+                    converged = True
+                    break
 
-        # Record final resolved constraints for debugging/tracking
-        self._constraints_capture.clear()
-        self._constraints_capture.extend(
-            (c, self._constraint_iteration) for c in resolved
-        )
+                state = frozenset(resolved.keys())
+                if state in seen_states:
+                    break
+                seen_states.add(state)
 
-        # Clear appropriate dirty flags
-        if size_only:
+            if not converged:
+                self._constraints_to_ignore += [
+                    c for c in relevant if id(c) not in resolved
+                ]
+
+            self._last_resolved = [(c, iteration) for c in resolved.values()]
+            self._clear_constraint_dirty(mode)
+        finally:
+            self._resolving_constraints = False
+
+
+    def _clear_constraint_dirty(self, mode: ResolveMode) -> None:
+        if mode in ("size", "all"):
             self.dirty_size_constraints = False
-        if position_only:
-            self.dirty_position_constraints = False
-
-        # Debug print for ignored constraints
-        # if self._constraints_to_ignore:
-        # print(f"{self} ignored constraints: {[str(c) for c in self._constraints_to_ignore]}")
-
+        if mode in ("position", "all"):
+            self.dirty_position_constraints = False     
     def has_constraint(self, name: str) -> bool:
         return any(c.name == name for c in self.constraints)
 
@@ -393,10 +417,10 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             self.parent.do_sort_children = True
 
     def resolve_size(self, target_size):
-        return (
+        return self.compute_min_size((
             target_size[0] if self.autoresize_w else self.rect.w,
             target_size[1] if self.autoresize_h else self.rect.h,
-        )
+        ))
 
     def set_size(self, size: tuple) -> Self:
         size = list(size)
@@ -521,7 +545,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             self.dirty_surface = True
         return super().set_surface_flags(surface_flags)
 
-    def apply_updates(self, pass_type):
+    def apply_updates(self, pass_type : Literal["pre","post"]):
         # print(f"Apply updates {pass_type} called on {self}")
         if pass_type == "pre":
             self.apply_pre_updates()
@@ -538,7 +562,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         Resolves size-related constraints before propagating updates to children.
         """
         if self.dirty_size_constraints:
-            self.resolve_constraints(size_only=True)
+            self.resolve_constraints(mode = "size")
             self.dirty_size_constraints = False
             self.dirty_position_constraints = True
 
@@ -572,7 +596,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             self.dirty_surface = True
 
         if self.dirty_position_constraints:
-            self.resolve_constraints(position_only=True)
+            self.resolve_constraints(mode = "position")
 
         if self.dirty_surface and not skip_draw:
             self.paint()

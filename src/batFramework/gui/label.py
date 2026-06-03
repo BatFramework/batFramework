@@ -60,7 +60,8 @@ class Label(TextMixin, Shape):
 
     def get_min_required_size(self) -> tuple[float, float]:
         tw, th = self.get_text_size()
-        return self.expand_rect_with_padding((0, 0, tw, th)).size
+        r =  self.expand_rect_with_padding((0, 0, tw, th)).size
+        return self.compute_min_size(r)
 
     # ------------------------------------------------------------------
     # Build  (size + text offset, no drawing)

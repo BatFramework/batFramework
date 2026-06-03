@@ -12,9 +12,9 @@ class Button(Label, ClickableWidget):
 
 
     def __str__(self) -> str:
-        return f"Button('{repr(self.text)}')"
+        return f"Button({repr(self.text)})"
 
     def get_min_required_size(self):
         res = Label.get_min_required_size(self)
         res =  res[0], res[1] + self.unpressed_relief
-        return res
+        return self.compute_min_size(res)

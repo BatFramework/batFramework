@@ -19,6 +19,7 @@ class Debugger(Label):
         self.refresh_counter: float = 0
         self.add_tags("debugger")
         self.set_visible(False)
+        self.set_alignment(bf.alignment.TOPLEFT)
         self.set_renderer(RichTextRenderer())
         
     def set_parent(self, parent):
@@ -55,6 +56,12 @@ class Debugger(Label):
         except KeyError:
             return False
 
+    def handle_event(self, event: pygame.event.Event) -> bool:
+        if event.type == bf.const.DEBUG_MODE_CHANGE_EVENT:
+            self.set_visible(event.mode == bf.debugMode.DEBUGGER)
+            return True
+        return super().handle_event(event)
+
     def set_parent_scene(self, scene) -> Self:
         super().set_parent_scene(scene)
         self.set_render_order(sys.maxsize - 100)
@@ -84,16 +91,12 @@ class Debugger(Label):
         if not self.parent_scene:
             return
 
-        if bf.ResourceManager().get_sharedVar("debug_mode") != bf.debugMode.DEBUGGER:
-            self.set_visible(False)
-            return
+        if self.visible:
+            self.refresh_counter = self.refresh_counter + dt
 
-        self.set_visible(True)
-        self.refresh_counter = self.refresh_counter + dt
-
-        if self.refresh_counter > self.refresh_interval:
-            self.refresh_counter = 0
-            self.update_text()
+            if self.refresh_counter > self.refresh_interval:
+                self.refresh_counter = 0
+                self.update_text()
 
     def __str__(self) -> str:
         return "Debugger"

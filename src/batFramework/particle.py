@@ -28,7 +28,9 @@ class TimedParticle(Particle):
         self.duration = duration
 
     def do_when_added(self):
-        if self.generator and self.generator.parent_scene:
+        if not self.generator:
+            return
+        if   self.generator.parent_scene:
             self.timer = bf.SceneTimer(
                 self.duration,
                 end_callback=self.kill,
@@ -96,11 +98,12 @@ class ParticleGenerator(bf.Drawable):
             )
         yield (self.rect, "cyan")
 
-    def add_particle(self, particle: Particle):
-        particle.generator = self
-        particle.do_when_added()
-        self.particles.append(particle)
-        self.count += 1
+    def emit(self, *particle: Particle):
+        for p in particle:
+            p.generator = self
+            p.do_when_added()
+            self.particles.append(p)
+            self.count += 1
 
     def clear(self):
         self.particles = []

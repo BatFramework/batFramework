@@ -1,3 +1,5 @@
+from typing import Literal
+
 from .container import Container
 from .scrollingContainer import ScrollingContainer
 from .interactiveWidget import InteractiveWidget
@@ -10,12 +12,16 @@ import batFramework as bf
 from .syncedVar import SyncedVar
 from .widget import Widget
 from .layout import Layout
+from .constraints.constraints import AspectRatio
 
 
 class CollapseIndicator(ArrowIndicator):
     def __init__(self, synced_var: SyncedVar[bool]):
         super().__init__(bf.direction.RIGHT)
         synced_var.bind(self, self.on_state_change)
+        self.set_arrow_color(bf.color.BLACK)
+        self.add_constraints(AspectRatio(1, reference_axis=bf.axis.VERTICAL))
+        self.set_min_size((15,15))
 
     def on_state_change(self, state: bool):
         self.set_arrow_direction(bf.direction.DOWN if state else bf.direction.RIGHT)
@@ -30,7 +36,7 @@ class CollapseIndicator(ArrowIndicator):
 class CollapseContainer(Shape, InteractiveWidget):
     def __init__(self, text: str, layout: Layout = None, *children: Widget, **kwargs):
         super().__init__(**kwargs)
-        self.state = SyncedVar[bool](False)
+        self.state = SyncedVar[bool](True)
         self.state.bind(self, self._on_state_change)
         self.toggle = Toggle(text, synced_var=self.state)
         self.toggle.set_autoresize_w(False)
@@ -47,8 +53,13 @@ class CollapseContainer(Shape, InteractiveWidget):
         return "CollapseContainer"
 
     def _on_state_change(self, value):
-        self.container.show() if value else self.container.hide()
+        if value:
+            self.container.show() 
+            self.container.dirty_layout = True
 
+        else :
+            self.container.hide()
+        
         self.dirty_shape = True
 
     def allow_focus_to_self(self):
@@ -76,18 +87,7 @@ class CollapseContainer(Shape, InteractiveWidget):
             self.container.set_position(*self.toggle.rect.bottomleft)
         return res
 
-    def apply_updates(self, pass_type):
 
-        if pass_type == "pre":
-            self.apply_pre_updates()
-            if self.state.value:
-                self.container.apply_updates("pre")
-            self.toggle.apply_updates("pre")
-        elif pass_type == "post":
-            if self.state.value:
-                self.container.apply_updates("post")
-            self.toggle.apply_updates("post")
-            self.apply_post_updates(skip_draw=not self.visible)
 
     def get_min_required_size(self):
         t_min = self.toggle.get_min_required_size()
@@ -100,6 +100,8 @@ class CollapseContainer(Shape, InteractiveWidget):
         if not self.state.value:
             c_min = (c_min[0], 0)
 
-        return self.expand_rect_with_padding(
+        r =  self.expand_rect_with_padding(
             (0, 0, max(t_min[0], c_min[0]), t_min[1] + c_min[1])
         ).size
+
+        return self.compute_min_size(r)

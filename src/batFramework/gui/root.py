@@ -7,8 +7,13 @@ import sys
 
 
 class Root(InteractiveWidget):
+    is_focus_scope = True
+
     def __init__(self, camera) -> None:
         super().__init__()
+        self._layers: dict[bf.GuiLayer, list[Widget]] = {
+            l: [] for l in bf.GuiLayer if l != bf.GuiLayer.NORMAL
+        }
         self.is_root = True
         self.drawing_camera: bf.Camera = camera
         self.visible = False
@@ -32,6 +37,27 @@ class Root(InteractiveWidget):
 
     def __str__(self) -> str:
         return "Root"
+
+    def attach_to_layer(self, widget: Widget, layer: bf.GuiLayer) -> None:
+        if layer == bf.GuiLayer.NORMAL:
+            return # NORMAL layer is for regular child widgets, not layered ones; ignore layer assignment for NORMAL
+        if widget.parent is not None and widget.parent is not self :
+            widget.parent.remove(widget)
+        if widget not in self.children:
+            self.add(widget)
+        
+        widget.gui_layer = layer
+        for layer_widgets in self._layers.values():
+            if widget in layer_widgets:
+                layer_widgets.remove(widget)
+        self._layers[layer].append(widget)
+
+    def detach_from_layer(self, widget: Widget) -> None:
+        for layer_widgets in self._layers.values():
+            if widget in layer_widgets:
+                layer_widgets.remove(widget)
+        if widget.parent is self:
+            self.remove(widget)
 
     def to_ascii_tree(self) -> str:
         def f(w: Widget, depth):
@@ -89,11 +115,6 @@ class Root(InteractiveWidget):
         self.visit(getter)
         return res
 
-    def focus_next_tab(self, widget):
-        return
-
-    def focus_prev_tab(self, widget):
-        return
 
     def get_by_uid(self, uid: int) -> "Widget":
         def helper(w: "Widget", uid: int) -> "Widget":
@@ -132,7 +153,7 @@ class Root(InteractiveWidget):
                 self.tab_focus(event)
 
     def tab_focus(self, event=None):
-        if self.focused is None:
+        if self.focused is None: 
             return
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
@@ -227,26 +248,19 @@ class Root(InteractiveWidget):
     def apply_post_updates(self, skip_draw=False):
         return
 
-    def draw(self, camera: bf.Camera) -> None:
-        if self.clip_children:
-            new_clip = camera.world_to_screen(self.get_inner_rect())
-            old_clip = camera.surface.get_clip()
-            camera.surface.set_clip(new_clip)
+    def draw(self, camera):
+        layered = {w for layer_widgets in self._layers.values() for w in layer_widgets}
+        for child in self.children:
+            if child in layered: # skip widgets that are drawn in layers after the main pass
+                continue
+            child.draw(camera)
 
-        # Draw each child widget, sorted by render order
-        for child in [c for c in self.children if c != self.tooltip]:
-            if (not self.clip_children) or (
-                child.rect.colliderect(self.rect) or not child.rect
-            ):
-                child.draw(camera)
-        if self.clip_children:
-            camera.surface.set_clip(old_clip)
-
-        if self.focused != self and (not self.focused is None):
+        if self.focused is not self and self.focused is not None:
             old_clip = camera.surface.get_clip()
-            # set clip to focused widget's parent
             camera.surface.set_clip(self.focused.parent.rect)
             self.focused.draw_focused(camera)
             camera.surface.set_clip(old_clip)
 
-        self.tooltip.draw(camera)
+        for layer in sorted(self._layers.keys()):
+            for w in self._layers[layer]:
+                w.draw(camera)

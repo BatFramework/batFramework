@@ -34,7 +34,7 @@ class Meter(Shape):
         # and equals it instantly when animation_speed == 0.
         # ----------------------------------------------------------
         self.visual_ratio: float = self.get_ratio()
-        self._animation_speed: float = 0.0   # 0 = instant
+        self._animation_speed: float = 0.0  # 0 = instant
         self._easer: PropertyEaser | None = None
 
         self.synced_var.bind(self, self._on_synced_var_update)
@@ -46,7 +46,6 @@ class Meter(Shape):
     # ==============================================================
     # Animation API
     # ==============================================================
-
 
     def set_animation_speed(self, speed: float) -> Self:
         """
@@ -200,10 +199,9 @@ class BarMeter(Meter):
         return res
 
     def _build_content(self) -> None:
-        
         """Size and position the content bar using visual_ratio, not get_ratio()."""
         inner = self.get_inner_rect()
-        ratio = self.visual_ratio          # ← animated display value
+        ratio = self.visual_ratio  # ← animated display value
 
         self.content.set_border_radius(*[round(b / 2) for b in self.border_radius])
 
@@ -218,12 +216,16 @@ class BarMeter(Meter):
             if self.direction == bf.direction.RIGHT:
                 self.content.set_position(inner.left + outline, inner.top + outline)
             else:
-                self.content.set_position(inner.right - outline - content_w, inner.top + outline)
+                self.content.set_position(
+                    inner.right - outline - content_w, inner.top + outline
+                )
         else:
             content_w = available_w
             content_h = max(0, ceil(available_h * ratio))
             self.content.set_size((content_w, content_h))
             if self.direction == bf.direction.UP:
-                self.content.set_position(inner.left + outline, inner.bottom - outline - content_h)
+                self.content.set_position(
+                    inner.left + outline, inner.bottom - outline - content_h
+                )
             else:
                 self.content.set_position(inner.left + outline, inner.top + outline)

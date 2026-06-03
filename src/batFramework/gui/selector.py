@@ -247,8 +247,8 @@ class Selector(Button):
             self.right_indicator.outline_width, self.left_indicator.outline_width
         )
 
-        return self.expand_rect_with_padding((0, 0, total_w, total_h)).size
-
+        r = self.expand_rect_with_padding((0, 0, total_w, total_h)).size
+        return self.compute_min_size(r)
     # ------------------------------------------------------------------
     # Layout via build() — mirrors Slider/Toggle pattern
     # ------------------------------------------------------------------

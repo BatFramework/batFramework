@@ -14,7 +14,8 @@ def children_has_focus(widget) -> bool:
 
 
 class InteractiveWidget(Widget):
-
+    is_focus_scope: bool = False
+    trap_focus: bool = False
     def __init__(self, *args, **kwargs) -> None:
         self.is_focused: bool = False
         self.is_hovered: bool = False
@@ -42,6 +43,53 @@ class InteractiveWidget(Widget):
                 self.on_key_down(event.key, event)
             elif event.type == pygame.KEYUP:
                 self.on_key_up(event.key, event)
+
+
+    # -----------------------------------------------------------------
+    # Scope discovery and tree descent (generic, not overridden often)
+    # -----------------------------------------------------------------
+
+    def find_focus_scope(self) -> "InteractiveWidget | None":
+        """Walk up to find the nearest enclosing focus scope."""
+        w = self.parent
+        while w is not None:
+            if isinstance(w, InteractiveWidget) and w.is_focus_scope:
+                return w
+            w = w.parent
+        return None
+
+    def find_first_focusable(self) -> "InteractiveWidget | None":
+        if isinstance(self, InteractiveWidget) and self.allow_focus_to_self():
+            return self
+        for c in self.children:
+            if isinstance(c, InteractiveWidget):
+                r = c.find_first_focusable()
+                if r is not None:
+                    return r
+            # Non-interactive children: descend to look for interactive grandchildren.
+            else:
+                for gc in c.children:
+                    if isinstance(gc, InteractiveWidget):
+                        r = gc.find_first_focusable()
+                        if r is not None:
+                            return r
+        return None
+
+    def find_last_focusable(self) -> "InteractiveWidget | None":
+        for c in reversed(self.children):
+            if isinstance(c, InteractiveWidget):
+                r = c.find_last_focusable()
+                if r is not None:
+                    return r
+            else:
+                for gc in reversed(c.children):
+                    if isinstance(gc, InteractiveWidget):
+                        r = gc.find_last_focusable()
+                        if r is not None:
+                            return r
+        if isinstance(self, InteractiveWidget) and self.allow_focus_to_self():
+            return self
+        return None
 
     # -------------------------------------------------------------------------
     # Focus management
@@ -76,89 +124,103 @@ class InteractiveWidget(Widget):
     def set_focused_child(self, child: "InteractiveWidget", focus_area: pygame.Rect = None):
         pass
 
-    # -------------------------------------------------------------------------
-    # Tab-order navigation helpers
-    # -------------------------------------------------------------------------
 
-    def get_interactive_widgets(self):
-        """Retrieve all interactive widgets in the tree, in depth-first order."""
-        widgets = []
-        stack = [self]
-        while stack:
-            widget = stack.pop()
-            if isinstance(widget, InteractiveWidget) and widget.allow_focus_to_self():
-                widgets.append(widget)
-            stack.extend(reversed(widget.children))
-        return widgets
+    # -----------------------------------------------------------------
+    # Scope behavior — defaults that handle the common case.
+    # Override `get_next_focus` / `get_prev_focus` / `_focus_candidates`
+    # on a subclass for custom navigation.
+    # -----------------------------------------------------------------
 
-    def find_next_widget(self, current):
-        """Find the next interactive widget, considering parent and sibling relationships."""
-        if current.is_root:
+    def _focus_candidates(self) -> list["Widget"]:
+        """Children this scope considers part of its tab order."""
+        return list(self.children)
+
+    def get_next_focus(self, from_widget: "InteractiveWidget") -> "InteractiveWidget | None":
+        """Called on a scope. Returns the next focus target after `from_widget` within this scope."""
+        if not self.is_focus_scope:
+            # Non-scopes just delegate up.
+            return self.parent.get_next_focus(from_widget) if isinstance(self.parent, InteractiveWidget) else None
+        return self._step_focus(from_widget, +1)
+
+    def get_prev_focus(self, from_widget: "InteractiveWidget") -> "InteractiveWidget | None":
+        if not self.is_focus_scope:
+            return self.parent.get_prev_focus(from_widget) if isinstance(self.parent, InteractiveWidget) else None
+        return self._step_focus(from_widget, -1)
+
+    def _step_focus(self, from_widget: "InteractiveWidget", direction: int) -> "InteractiveWidget | None":
+        candidates = self._focus_candidates()
+
+        # Find which candidate contains from_widget (could be from_widget itself, or an ancestor of it).
+        idx = -1
+        for i, c in enumerate(candidates):
+            if c is from_widget or self._is_descendant(from_widget, c):
+                idx = i
+                break
+
+        # Walk in `direction` from idx, looking for next focusable.
+        if direction > 0:
+            search_range = range(idx + 1, len(candidates))
+        else:
+            search_range = range(idx - 1, -1, -1)
+
+        for i in search_range:
+            target = candidates[i]
+            if not isinstance(target, InteractiveWidget):
+                continue
+            first = target.find_first_focusable() if direction > 0 else target.find_last_focusable()
+            if first is not None:
+                return first
+
+        # Ran off the end of this scope.
+        if self.trap_focus:
+            # Wrap within this scope.
+            wrap_range = range(0, len(candidates)) if direction > 0 else range(len(candidates) - 1, -1, -1)
+            for i in wrap_range:
+                target = candidates[i]
+                if not isinstance(target, InteractiveWidget):
+                    continue
+                first = target.find_first_focusable() if direction > 0 else target.find_last_focusable()
+                if first is not None and first is not from_widget:
+                    return first
             return None
 
-        siblings = (
-            current.parent.get_interactive_children()
-            if hasattr(current.parent, "layout")
-            else current.parent.children
-        )
-        try:
-            start_index = siblings.index(current)
-        except ValueError:
-            start_index = 0
-
-        good_index = -1
-        for i in range(start_index + 1, len(siblings)):
-            sibling = siblings[i]
-            if isinstance(sibling, InteractiveWidget) and sibling is not current:
-                if sibling.allow_focus_to_self():
-                    good_index = i
-                    break
-
-        if good_index >= 0:
-            return siblings[good_index]
-        return self.find_next_widget(current.parent)
-
-    def find_prev_widget(self, current: "Widget"):
-        """Find the previous interactive widget, considering parent and sibling relationships."""
-        if current.is_root:
+        # Delegate to the next enclosing scope.
+        outer = self.find_focus_scope()
+        if outer is None:
             return None
+        return outer.get_next_focus(self) if direction > 0 else outer.get_prev_focus(self)
 
-        siblings = (
-            current.parent.get_interactive_children()
-            if hasattr(current.parent, "layout")
-            else current.parent.children
-        )
-        try:
-            start_index = siblings.index(current)
-        except ValueError:
-            start_index = 0
+    @staticmethod
+    def _is_descendant(w: "Widget", ancestor: "Widget") -> bool:
+        while w is not None:
+            if w is ancestor:
+                return True
+            w = w.parent
+        return False
 
-        good_index = -1
-        for i in range(start_index - 1, -1, -1):
-            sibling = siblings[i]
-            if isinstance(sibling, InteractiveWidget) and sibling is not current:
-                if sibling.allow_focus_to_self():
-                    good_index = i
-                    break
+    # -----------------------------------------------------------------
+    # Public entry points
+    # -----------------------------------------------------------------
 
-        if good_index >= 0:
-            return siblings[good_index]
-        return self.find_prev_widget(current.parent)
+    def focus_next_tab(self, current: "InteractiveWidget" = None) -> None:
+        current = current or self
+        scope = current.find_focus_scope()
+        if scope is None:
+            return
+        nxt = scope.get_next_focus(current)
+        if nxt is not None:
+            nxt.ask_focus()
 
-    def focus_next_tab(self, previous_widget):
-        """Focus the next interactive widget."""
-        if previous_widget:
-            next_widget = self.find_next_widget(previous_widget)
-            if next_widget:
-                next_widget.ask_focus()
+    def focus_prev_tab(self, current: "InteractiveWidget" = None) -> None:
+        current = current or self
+        scope = current.find_focus_scope()
+        if scope is None:
+            return
+        prv = scope.get_prev_focus(current)
+        if prv is not None:
+            prv.ask_focus()
 
-    def focus_prev_tab(self, previous_widget):
-        """Focus the previous interactive widget."""
-        if previous_widget:
-            prev_widget = self.find_prev_widget(previous_widget)
-            if prev_widget:
-                prev_widget.ask_focus()
-
+ 
     # -------------------------------------------------------------------------
     # Event handlers — override in subclasses via do_* hooks
     # -------------------------------------------------------------------------

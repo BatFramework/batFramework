@@ -27,7 +27,7 @@ class ClickableWidget(InteractiveShape):
 
     def get_min_required_size(self) -> tuple[float, float]:
         res = super().get_min_required_size()
-        return res[0], res[1] + self.unpressed_relief
+        return self.compute_min_size((res[0], res[1] + self.unpressed_relief))
 
     def set_unpressed_relief(self, relief: int) -> Self:
         if relief == self.unpressed_relief:

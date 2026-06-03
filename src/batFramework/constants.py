@@ -10,6 +10,7 @@ class Constants:
     FLAGS: int = pygame.SCALED | pygame.RESIZABLE
     FPS: int = 60
     MUSIC_END_EVENT = pygame.event.custom_type()
+    DEBUG_MODE_CHANGE_EVENT = pygame.event.custom_type()
 
     DEFAULT_CURSOR = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)
     DEFAULT_HOVER_CURSOR = pygame.cursors.Cursor(pygame.SYSTEM_CURSOR_ARROW)

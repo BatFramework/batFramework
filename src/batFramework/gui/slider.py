@@ -27,6 +27,9 @@ class SliderHandle(Indicator, DraggableWidget):
     def __str__(self) -> str:
         return "SliderHandle"
 
+    def allow_focus_to_self(self) -> bool:
+        return False
+
     def top_at(self, x, y):
         return Shape.top_at(self, x, y)
 
@@ -117,7 +120,8 @@ class SliderMeter(BarMeter, InteractiveShape):
             size[0] = size[1] * 3
         else:
             size[1] = size[0] * 3
-        return self.expand_rect_with_padding((0, 0, *size)).size
+        r = self.expand_rect_with_padding((0, 0, *size)).size
+        return self.compute_min_size(r)
 
     def value_to_position(self, value: float) -> tuple[float, float]:
         rect = self.get_inner_rect()
@@ -374,8 +378,9 @@ class Slider(Button):
         full_rect = pygame.FRect(0, 0, width, height)
         full_rect.h += self.unpressed_relief
 
-        return self.expand_rect_with_padding((0, 0, *full_rect.size)).size
-
+        r = self.expand_rect_with_padding((0, 0, *full_rect.size)).size
+        return self.compute_min_size(r)
+    
     def _is_label_first(self) -> bool:
         """
         Returns True if label should be placed before the meter
