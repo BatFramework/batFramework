@@ -1,3 +1,4 @@
+from .enums import GuiLayer
 from .widget import Widget
 from .styleManager import StyleManager
 from .style import Style
@@ -7,6 +8,7 @@ from .draggableWidget import DraggableWidget
 from .clickableWidget import ClickableWidget
 from .root import Root
 from .shape import Shape
+from .interactiveShape import InteractiveShape, FocusIndicator
 from .meter import BarMeter
 from .textRenderer import *
 import batFramework.gui.textEffects as textEffects

@@ -19,7 +19,7 @@ class ToolTip(Label):
 
     def do_when_added(self):
         if r:=self.get_root():
-            r.attach_to_layer(self, bf.GuiLayer.TOOLTIP)
+            r.attach_to_layer(self, bf.gui.GuiLayer.TOOLTIP)
 
         self.fade_in_easer = bf.PropertyEaser(
             duration=self.fade_in_duration,
@@ -38,7 +38,7 @@ class ToolTip(Label):
 
         self.delay_timer = bf.Timer(0.5,self._fade_in_internal,0)
 
-        self.set_render_order(sys.maxsize)
+        self.set_draw_order(sys.maxsize)
         self.set_padding((4, 2))
         self.set_visible(False)
         self.set_alpha(0)

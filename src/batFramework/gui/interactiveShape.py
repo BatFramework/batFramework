@@ -3,10 +3,36 @@ from .shape import Shape
 from .interactiveWidget import InteractiveWidget
 import pygame
 import batFramework as bf
-from typing import Self
+from ..camera import Camera
+from typing import Self,Callable,Any
+from types import MethodType
 from math import cos, ceil, sin
 from contextlib import contextmanager
 
+
+class FocusIndicator:
+
+    def default_pulse(self, camera: Camera) -> None:
+        """Animated pulsing focus ring drawn in screen space."""
+
+        screen_rect = camera.world_to_screen(self.rect)
+
+        deltax = ceil( sin(pygame.time.get_ticks() / 150))
+        deltay = ceil( sin(pygame.time.get_ticks() / 150))
+        
+        if self.rect.w %2 != 0:
+            deltax += 1
+
+        if self.rect.h %2 != 0:
+            deltay += 1
+
+        pygame.draw.rect(
+            camera.surface,
+            bf.color.BLUE,
+            screen_rect.inflate(4+2*deltax, 4+2*deltay),
+            width=2,
+            border_radius=self.border_radius[0]+2 if self.border_radius else 0,
+        )
 
 class InteractiveShape(Shape, InteractiveWidget):
     """
@@ -30,6 +56,8 @@ class InteractiveShape(Shape, InteractiveWidget):
         # Sounds
         self.get_focus_sound: str | None = None
         self.lose_focus_sound: str | None = None
+        self.draw_focused : Callable[["InteractiveShape",Camera], None] = None
+        self.set_focus_effect(FocusIndicator.default_pulse)
 
         super().__init__(*args, **kwargs)
 
@@ -73,6 +101,19 @@ class InteractiveShape(Shape, InteractiveWidget):
     # Focus / hover visual helpers
     # -------------------------------------------------------------------------
 
+
+    def set_focus_effect(self, effect_func: Callable[["InteractiveShape",Camera], None] | None) -> Self:
+        """
+        Set a custom focus effect function. The function should take two arguments: 
+        the InteractiveShape instance and the Camera instance, 
+        and should handle drawing the desired focus effect in screen space.
+        """
+        if effect_func is None:
+            self.draw_focused = None
+        else:
+            self.draw_focused = MethodType(effect_func, self)
+        return self
+
     def _get_surface_filter(self, intensity:float=0.1) -> pygame.Surface:
         """Silhouette surface used for hover (add) and disabled (sub) blending."""
         size = int(self.rect.w), int(self.rect.h)
@@ -104,27 +145,6 @@ class InteractiveShape(Shape, InteractiveWidget):
         elif self.is_hovered or self.is_focused:
             self._paint_hovered()
 
-    def draw_focused(self, camera: bf.Camera) -> None:
-        """Animated pulsing focus ring drawn in screen space."""
-
-        screen_rect = camera.world_to_screen(self.rect)
-
-        deltax = ceil( sin(pygame.time.get_ticks() / 150))
-        deltay = ceil( sin(pygame.time.get_ticks() / 150))
-        
-        if self.rect.w %2 != 0:
-            deltax += 1
-
-        if self.rect.h %2 != 0:
-            deltay += 1
-
-        pygame.draw.rect(
-            camera.surface,
-            bf.color.BLUE,
-            screen_rect.inflate(4+2*deltax, 4+2*deltay),
-            width=2,
-            border_radius=self.border_radius[0]+2 if self.border_radius else 0,
-        )
 
     # -------------------------------------------------------------------------
     # Cache invalidation
@@ -144,14 +164,14 @@ class InteractiveShape(Shape, InteractiveWidget):
     def on_get_focus(self, focus_area: pygame.Rect = None) -> None:
         super().on_get_focus(focus_area)
         self.dirty_surface = True
-        if self.get_focus_sound and not self._suppress_sounds and self.parent_layer and self.parent_layer.scene.is_visible():
+        if self.get_focus_sound and not self._suppress_sounds and self.parent_scene and self.parent_scene.is_visible():
             bf.AudioManager().play_sound(self.get_focus_sound)
 
     def on_lose_focus(self) -> None:
         super().on_lose_focus()
         self.dirty_surface = True
 
-        if self.lose_focus_sound and not self._suppress_sounds and self.parent_layer and self.parent_layer.scene.is_visible():
+        if self.lose_focus_sound and not self._suppress_sounds and self.parent_scene and self.parent_scene.is_visible():
             bf.AudioManager().play_sound(self.lose_focus_sound)
 
     def on_enter(self) -> None:

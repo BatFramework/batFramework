@@ -1,7 +1,7 @@
 import batFramework as bf
 from .widget import Widget
 from .constraints.constraints import *
-from typing import Self, TYPE_CHECKING
+from typing import Self, TYPE_CHECKING,Callable,Any, Literal
 from abc import ABC, abstractmethod
 import pygame
 from .interactiveWidget import InteractiveWidget
@@ -22,7 +22,7 @@ class Layout(ABC):
                 return True
         return False
 
-    def get_free_space(self) -> tuple[float, float]:
+    def get_free_space(self) ->tuple[float, float]:
         if not self.parent:
             return (0,0)
         
@@ -30,15 +30,15 @@ class Layout(ABC):
 
     def set_child_constraints(self, *constraints) -> Self:
         self.child_constraints = list(constraints)
-        self.update_child_constraints()
-        self.notify_parent()
+        self.update_children_state()
+        self.mark_dirty()
         return self
 
     def set_parent(self, parent: Widget):
         self.parent = parent
-        self.notify_parent()
+        self.mark_dirty()
 
-    def notify_parent(self) -> None:
+    def mark_dirty(self) -> None:
         if self.parent:
             self.parent.dirty_layout = True
 
@@ -58,7 +58,7 @@ class Layout(ABC):
                 *self.parent.get_inner_rect().topleft, 0, 0
             )
 
-    def update_child_constraints(self):
+    def update_children_state(self):
         if self.parent:
             for child in self.parent.get_layout_children():
                 child.add_constraints(*self.child_constraints)
@@ -142,10 +142,16 @@ class Layout(ABC):
 class FreeLayout(Layout): ...
 
 
-class SingleAxisLayout(Layout):
+class SingleAxisLayout(Layout,ABC):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.alignment = None
+
+    def set_alignment(self,alignment:bf.alignment)->Self:
+        self.alignment = alignment
+        self.mark_dirty()
+        return self
 
     def focus_next_child(self) -> None:
         self.parent.focus_next_tab()
@@ -154,7 +160,7 @@ class SingleAxisLayout(Layout):
         self.parent.focus_prev_tab()
 
 
-class DoubleAxisLayout(Layout):
+class DoubleAxisLayout(Layout, ABC):
     """Abstract layout class for layouts that arrange widgets in two dimensions."""
 
     def focus_up_child(self) -> None: ...
@@ -167,6 +173,20 @@ class Column(SingleAxisLayout):
     def __init__(self, gap: int = 0):
         super().__init__()
         self.gap = gap
+        self.alignment : Literal[
+            bf.alignment.LEFT,bf.alignment.RIGHT,
+            bf.alignment.CENTERX,bf.alignment.CENTERX
+            ] = bf.alignment.CENTER
+
+    def set_alignment(
+            self, 
+            alignment :Literal[
+                bf.alignment.LEFT,bf.alignment.RIGHT,
+                bf.alignment.CENTERX,bf.alignment.CENTERX
+            ]):
+        if alignment == bf.alignment.CENTER :
+            alignment = bf.alignment.CENTERX
+        return super().set_alignment(alignment)
 
     def get_free_space(self) -> tuple[float, float]:
         """
@@ -221,13 +241,14 @@ class Column(SingleAxisLayout):
             )
 
     def scroll_children(self):
-        topleft = list(self.parent.get_inner_rect().topleft)
-        topleft[0] -= round(self.parent.scroll.x)
-        topleft[1] -= round(self.parent.scroll.y)
-        layout_children = self.parent.get_layout_children()
-        for child in layout_children:
-            child.set_position(*topleft)
-            topleft[1] += child.rect.height + self.gap
+        rect = self.parent.get_inner_rect()
+        rect = rect.move(-round(self.parent.scroll.x),-round(self.parent.scroll.y))
+        top = rect.top  
+        for child in self.parent.get_layout_children():
+            copy = child.rect.copy()
+            setattr(copy, self.alignment.value,getattr(rect,self.alignment.value))
+            child.set_position(copy.left,top)
+            top += child.rect.height + self.gap
 
     def arrange(self) -> None:
         self.update_children_rect()
@@ -552,7 +573,6 @@ class GridFill(Grid):
             child.set_size((cell_width, cell_height))
 
     def arrange(self) -> None:
-        print("arrange grid fill")
         self.update_children_rect()
         self.resize_children()
         self.scroll_children()

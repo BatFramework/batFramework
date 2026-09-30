@@ -4,6 +4,9 @@ import batFramework as bf
 import pygame
 import sys
 from .textRenderer import RichTextRenderer
+import logging
+
+logger = logging.getLogger(__name__)
 
 def convert_to_int(*args):
     return [int(arg) for arg in args]
@@ -64,7 +67,7 @@ class Debugger(Label):
 
     def set_parent_scene(self, scene) -> Self:
         super().set_parent_scene(scene)
-        self.set_render_order(sys.maxsize - 100)
+        self.set_draw_order(sys.maxsize - 100)
         self.update_text()
         return self
 
@@ -81,7 +84,7 @@ class Debugger(Label):
         )
 
         d2 = "\n".join(
-            key + ":" + str(data()) if key != "" else str(data())
+            f"[color=blue]{key}[/color]" + ":" + str(data()) if key != "" else str(data())
             for key, data in self.dynamic_data.items()
         )
 
@@ -111,7 +114,7 @@ class FPSDebugger(Debugger):
 
     def do_when_added(self):
         if not self.parent_scene or not self.parent_scene.manager:
-            print("Debugger could not link to the manager")
+            logger.warning(f"{self} could not link to the manager")
             return
         manager_link = self.parent_scene.manager
         self.add_dynamic("FPS", lambda: str(round(manager_link.get_fps())))
@@ -121,7 +124,7 @@ class BasicDebugger(FPSDebugger):
 
     def do_when_added(self):
         if not self.parent_scene or not self.parent_scene.manager:
-            print("Debugger could not link to the manager")
+            logger.warning(f"{self} could not link to the manager")
             return
         self.add_dynamic(
             "Resolution", lambda: "x".join(str(i) for i in bf.const.RESOLUTION)

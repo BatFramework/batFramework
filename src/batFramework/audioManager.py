@@ -1,5 +1,8 @@
 import pygame
 import batFramework as bf
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AudioManager(metaclass=bf.Singleton):
@@ -62,7 +65,7 @@ class AudioManager(metaclass=bf.Singleton):
     ) -> bool:
         sound_data = self._sounds.get(name)
         if not sound_data:
-            print(f"[AudioManager] Sound '{name}' not loaded.")
+            logger.warning(f"Sound '{name}' not loaded")
             return False
         sound = sound_data["sound"]
         volume = max(0.0, min(volume, 1.0)) * self._sound_volume
@@ -70,8 +73,8 @@ class AudioManager(metaclass=bf.Singleton):
         if self._use_custom_channels and channel_name:
             channel = self._channels.get(channel_name)
             if not channel:
-                print(
-                    f"[AudioManager] Channel '{channel_name}' not found. Using default channel."
+                logger.warning(
+                    f"Channel '{channel_name}' not found, using default channel"
                 )
                 sound.set_volume(volume)
                 sound.play()
@@ -87,7 +90,7 @@ class AudioManager(metaclass=bf.Singleton):
     def stop_sound(self, name: str) -> bool:
         sound_data = self._sounds.get(name)
         if not sound_data:
-            print(f"[AudioManager] Sound '{name}' not loaded.")
+            logger.warning(f"Sound '{name}' not loaded")
             return False
         sound_data["sound"].stop()
         return True
@@ -117,7 +120,7 @@ class AudioManager(metaclass=bf.Singleton):
     def play_music(self, name: str, loops: int = 0, fade_ms: int = 500) -> bool:
         path = self._musics.get(name)
         if not path:
-            print(f"[AudioManager] Music '{name}' not loaded.")
+            logger.warning(f"Music '{name}' not loaded")
             return False
         try:
             pygame.mixer.music.load(path)
@@ -126,7 +129,7 @@ class AudioManager(metaclass=bf.Singleton):
             self._current_music = name
             return True
         except pygame.error as e:
-            print(f"[AudioManager] Failed to play music '{name}': {e}")
+            logger.error(f"Failed to play music '{name}': {e}")
             return False
 
     def stop_music(self) -> None:

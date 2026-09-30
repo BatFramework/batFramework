@@ -217,7 +217,7 @@ class Container(Shape, InteractiveWidget):
 
         # ── 4. Layout children ────────────────────────────────────────────────
         if self.dirty_layout:
-            self.layout.update_child_constraints()
+            self.layout.update_children_state()
             self.layout.arrange()
             self.dirty_layout = False
             self.dirty_surface = True

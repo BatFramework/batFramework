@@ -5,7 +5,10 @@ import sys
 import json
 from typing import Any, Callable
 from .utils import Singleton
+import logging
 import asyncio
+
+logger = logging.getLogger(__name__)
 
 if getattr(sys, "frozen", False):
     # If the application is run as a bundle, the PyInstaller bootloader
@@ -57,18 +60,18 @@ class ResourceManager(metaclass=Singleton):
                 elif file.lower().endswith((".mp3", ".wav", ".ogg")):
                     bf.AudioManager().load_sound(file.split(".")[0], file_path)
                 elif file.lower().endswith((".ttf", ".otf")):
-                    bf.FontManager().load_font(file_path, file.split(".")[0])
+                    self.load_font(file)
 
                 loaded_files += 1
                 # Report progress
                 # if self.progress_callback:
                 # self.progress_callback(loaded_files / total_files)
 
-        print(f"Loaded resources in directory: '{path}'")
+        logger.info(f"Loaded resources in directory: '{path}'")
 
     def set_resource_path(self, path: str):
         self.RESOURCE_PATH = os.path.join(application_path, path)
-        print(f"Resource path : '{self.RESOURCE_PATH}'")
+        logger.info(f"Resource path : '{self.RESOURCE_PATH}'")
 
     def get_path(self, path: str) -> str:
         # Normalize path separators
@@ -96,8 +99,11 @@ class ResourceManager(metaclass=Singleton):
                 data = json.load(file)
             return data
         except FileNotFoundError:
-            print(f"File '{path}' not found")
+            logger.warning(f"File '{path}' not found")
             return None
+
+    def load_font(self, filepath)->None:
+        bf.FontManager().load_font(filepath, os.path.basename(filepath).split('.')[0])
 
     def save_json_to_file(self, path: str, data) -> bool:
         try:
@@ -128,3 +134,4 @@ class ResourceManager(metaclass=Singleton):
         Get a shared variable
         """
         return self.shared_variables.get(name, error_value)
+

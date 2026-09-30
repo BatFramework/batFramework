@@ -39,14 +39,15 @@ class Camera:
 
         self.surface: pygame.Surface = pygame.Surface((0, 0))
 
-        self._clear_color: pygame.typing.ColorLike = (
+        self.clear_color: pygame.typing.ColorLike = (
             pygame.Color(0, 0, 0, 0) if convert_alpha else pygame.Color(0, 0, 0)
         )
 
         self.follow_point_func = None
         self.damping = float("inf")
         self._damping_is_inf: bool = True   # cached — updated in set_follow_damping
-        self.dead_zone_radius = 10
+        self.dead_zone_radius: float = 0  # target can move this far from the center before the camera follows
+        self.follow_speed: float = float("inf")  # max follow speed in world units per second
 
         self.zoom_factor = 1
         self.max_zoom = 2
@@ -59,6 +60,14 @@ class Camera:
         # Cached half-screen dimensions — updated in set_size
         self._half_w: float = self.rect.w / 2
         self._half_h: float = self.rect.h / 2
+
+        # Cached render surface -> screen transform — updated in zoom
+        # (the effective scale can differ slightly from zoom_factor because
+        # the render size is rounded to whole pixels)
+        self._render_half_w: float = self._half_w
+        self._render_half_h: float = self._half_h
+        self._scale_x: float = 1.0
+        self._scale_y: float = 1.0
 
         self.zoom(1, force=True)
 
@@ -82,9 +91,6 @@ class Camera:
     # Configuration
     # ------------------------------------------------------------------
 
-    def set_clear_color(self, color: pygame.Color | tuple | str) -> Self:
-        self._clear_color = color
-        return self
 
     def set_max_zoom(self, value: float) -> Self:
         self.max_zoom = value
@@ -95,19 +101,23 @@ class Camera:
         return self
 
     def set_follow_point_func(self, func) -> Self:
+        """func returns the world point the camera center should follow"""
         self.follow_point_func = func
         return self
 
     def set_follow_speed(self, speed: float) -> Self:
+        """Max follow speed in world units per second (inf = no limit)"""
         self.follow_speed = speed
         return self
 
     def set_follow_damping(self, damping: float) -> Self:
+        """Higher follows tighter, inf snaps to the target"""
         self.damping = damping
         self._damping_is_inf = (damping == float("inf"))
         return self
 
     def set_dead_zone_radius(self, radius: float) -> Self:
+        """Distance the target can move from the center before the camera follows"""
         self.dead_zone_radius = radius
         return self
 
@@ -118,12 +128,16 @@ class Camera:
     def _render_size(self) -> tuple[int, int]:
         """
         Render surface size for the current zoom and rotation.
-        At rotation=0: screen size / zoom, rounded to even pixels.
+        At rotation=0: screen size / zoom, rounded to even pixels
+        (exactly the screen size at zoom 1).
         At any other angle: a square whose side equals ceil(sqrt(w²+h²))
         so no content is ever clipped regardless of angle.
         """
-        base_w = round((self.rect.w / self.zoom_factor) / 2) * 2
-        base_h = round((self.rect.h / self.zoom_factor) / 2) * 2
+        if self.zoom_factor == 1:
+            base_w, base_h = int(self.rect.w), int(self.rect.h)
+        else:
+            base_w = max(2, round((self.rect.w / self.zoom_factor) / 2) * 2)
+            base_h = max(2, round((self.rect.h / self.zoom_factor) / 2) * 2)
 
         if self.rotation == 0:
             return (base_w, base_h)
@@ -167,8 +181,22 @@ class Camera:
 
         self.world_rect = self.surface.get_frect(center=self.world_rect.center)
         self._sync_world_pos()
+        self._update_render_transform()
         self.clear()
         return self
+
+    def _update_render_transform(self) -> None:
+        """Cache how the render surface maps onto the screen (see draw)."""
+        sw, sh = self.surface.get_size()
+        self._render_half_w = sw / 2
+        self._render_half_h = sh / 2
+        if self.rotation == 0:
+            # the render surface is stretched to the screen size
+            self._scale_x = self.rect.w / sw
+            self._scale_y = self.rect.h / sh
+        else:
+            # rotozoom scales uniformly by zoom_factor
+            self._scale_x = self._scale_y = self.zoom_factor
 
     def _free_cache(self) -> None:
         self.cached_surfaces.clear()
@@ -189,8 +217,8 @@ class Camera:
         self._half_w = size[0] / 2
         self._half_h = size[1] / 2
         self.transform_target_surface = pygame.Surface(self.rect.size, self.flags)
-        self.world_rect.center = (self._half_w, self._half_h)
-        self.zoom(self.zoom_factor)
+        # rebuild the render surface for the new size, keeping the camera center
+        self.zoom(self.zoom_factor, force=True)
         return self
 
     # ------------------------------------------------------------------
@@ -198,9 +226,9 @@ class Camera:
     # ------------------------------------------------------------------
 
     def clear(self) -> None:
-        if self._clear_color is None:
+        if self.clear_color is None:
             return
-        self.surface.fill(self._clear_color)
+        self.surface.fill(self.clear_color)
 
     def get_center(self) -> tuple[float, float]:
         return self.world_rect.center
@@ -244,13 +272,16 @@ class Camera:
         )
 
     def world_to_screen_scaled(self, rect: pygame.Rect | pygame.FRect) -> pygame.FRect:
-        z = self.zoom_factor
-        return pygame.FRect(
-            (rect[0] - self._world_x) * z,
-            (rect[1] - self._world_y) * z,
-            rect[2] * z,
-            rect[3] * z,
+        """
+        World rect to final screen coordinates (after zoom and rotation).
+        When rotated, the result is the rect's size scaled, centered on its
+        transformed center (the rotated rect itself is not axis aligned).
+        """
+        w, h = rect[2] * self._scale_x, rect[3] * self._scale_y
+        cx, cy = self.world_to_screen_point_scaled(
+            (rect[0] + rect[2] / 2, rect[1] + rect[3] / 2)
         )
+        return pygame.FRect(cx - w / 2, cy - h / 2, w, h)
 
     def world_to_screen_point(
         self, point: tuple[float, float] | tuple[int, int]
@@ -260,15 +291,24 @@ class Camera:
     def world_to_screen_point_scaled(
         self, point: tuple[float, float] | tuple[int, int]
     ) -> tuple[float, float]:
-        z = self.zoom_factor
-        return ((point[0] - self._world_x) * z, (point[1] - self._world_y) * z)
+        """World point to final screen coordinates (after zoom and rotation)."""
+        # offset from the render surface center, scaled to screen pixels
+        dx = (point[0] - self._world_x - self._render_half_w) * self._scale_x
+        dy = (point[1] - self._world_y - self._render_half_h) * self._scale_y
+        if self.rotation != 0:
+            # rotozoom rotates counter-clockwise on screen (y down)
+            dx, dy = (
+                self._cos_r * dx + self._sin_r * dy,
+                -self._sin_r * dx + self._cos_r * dy,
+            )
+        return (dx + self._half_w, dy + self._half_h)
 
     def screen_to_world(
         self, point: tuple[float, float] | tuple[int, int]
     ) -> tuple[float, float]:
         """Rotates, scales and translates a screen point to world coordinates."""
-        hw, hh = self._half_w, self._half_h
-        dx, dy = point[0] - hw, point[1] - hh
+        # the screen center always shows the render surface center (see draw)
+        dx, dy = point[0] - self._half_w, point[1] - self._half_h
 
         if self.rotation != 0:
             dx, dy = (
@@ -276,10 +316,9 @@ class Camera:
                 self._sin_r * dx + self._cos_r * dy,
             )
 
-        z = self.zoom_factor
         return (
-            (dx + hw) / z + self._world_x,
-            (dy + hh) / z + self._world_y,
+            self._world_x + self._render_half_w + dx / self._scale_x,
+            self._world_y + self._render_half_h + dy / self._scale_y,
         )
 
     # ------------------------------------------------------------------
@@ -291,20 +330,28 @@ class Camera:
             return
 
         self._follow_target.update(self.follow_point_func())
-        self.vector_center.update(self._world_x, self._world_y)
+        # start from the current center, so manual moves (set_center, move_by...) are kept
+        self.vector_center.update(self.world_rect.center)
+        delta = self._follow_target - self.vector_center
 
-        if self._damping_is_inf:
-            self.vector_center.update(self._follow_target)
-        else:
-            self.vector_center += (self._follow_target - self.vector_center) * (
-                1.0 - math.exp(-self.damping * dt)
-            )
+        # dead zone: only follow by how far the target is outside the radius
+        distance = delta.length()
+        if distance <= self.dead_zone_radius:
+            return
+        if self.dead_zone_radius > 0:
+            delta.scale_to_length(distance - self.dead_zone_radius)
 
-        # Assign .x/.y directly — faster than .center = tuple
-        self.world_rect.x = self.vector_center.x
-        self.world_rect.y = self.vector_center.y
-        self._world_x = self.vector_center.x
-        self._world_y = self.vector_center.y
+        if not self._damping_is_inf:
+            # framerate independent exponential smoothing
+            delta *= 1.0 - math.exp(-self.damping * dt)
+
+        max_step = self.follow_speed * dt
+        if delta.length_squared() > max_step * max_step:
+            delta.scale_to_length(max_step)
+
+        self.vector_center += delta
+        self.world_rect.center = self.vector_center
+        self._sync_world_pos()
 
     # ------------------------------------------------------------------
     # Draw
@@ -315,18 +362,30 @@ class Camera:
         zoom = self.zoom_factor
         flags = self.blit_special_flags
 
-        # Fast path
-        if zoom == 1 and rotation == 0:
+        # Fast path (render surface is exactly the screen size)
+        if rotation == 0 and self._scale_x == 1 and self._scale_y == 1:
             surface.blit(self.surface, (0, 0), special_flags=flags)
             return
 
         if rotation != 0:
-            # Rotate first, scale uniformly via rotozoom
-            rotated = pygame.transform.rotozoom(self.surface, rotation, zoom)
+            # # Rotate first, scale uniformly via rotozoom
+            # rotated = pygame.transform.rotozoom(self.surface, rotation, zoom)
 
-            rw, rh = rotated.get_size()
+            # rw, rh = rotated.get_size()
+            # surface.blit(
+            #     rotated,
+            #     (self._half_w - rw * 0.5, self._half_h - rh * 0.5),
+            #     special_flags=flags,
+            # )
+            rotated = pygame.transform.rotate(self.surface, rotation)
+            scaled_size = (
+                round(rotated.get_width() * zoom),
+                round(rotated.get_height() * zoom),
+            )
+            transformed = pygame.transform.scale(rotated, scaled_size)
+            rw, rh = transformed.get_size()
             surface.blit(
-                rotated,
+                transformed,
                 (self._half_w - rw * 0.5, self._half_h - rh * 0.5),
                 special_flags=flags,
             )

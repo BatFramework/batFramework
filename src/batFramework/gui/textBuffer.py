@@ -21,7 +21,14 @@ class TextBuffer:
         line_len = len(self.lines[self.cursor_y])
         self.cursor_x = max(0, min(self.cursor_x, line_len))
 
+
     # --- Cursor movement ---------------------------------------
+
+    def set_cursor_position(self, x: int, y: int):
+        self.cursor_x = x
+        self.cursor_y = y
+        self._clamp_cursor()
+
     def move_left(self):
         if self.cursor_x > 0:
             self.cursor_x -= 1
@@ -95,6 +102,21 @@ class TextBuffer:
         if self.callback:
             self.callback(self.get_text())
 
-    # --- Export -------------------------------------------------
+    def clear(self, ignore_callback: bool = False):
+        self.lines = [""]
+        self.cursor_x = 0
+        self.cursor_y = 0
+        if self.callback and not ignore_callback:
+            self.callback(self.get_text())
+            
+    def set_text(self, text: str):
+        self.lines = text.split("\n") if text else [""]
+        self.cursor_x = 0
+        self.cursor_y = 0
+        if self.callback:
+            self.callback(self.get_text())
+
+
+   # --- Export -------------------------------------------------
     def get_text(self):
         return "\n".join(self.lines)

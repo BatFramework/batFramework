@@ -78,7 +78,7 @@ class AnimatedSprite(bf.Drawable):
         """
         Sets the current animation,
         if animation with given name hasn't been added, nothing happens
-        queued animation plays after 'loop' number of animations (first one doesn't countz)
+        queued animation plays after 'loop' number of animations (starting count at 0)
         if loop is negative, animation loops indefinitely and queued_animation is ignored
 
         """
@@ -113,21 +113,16 @@ class AnimatedSprite(bf.Drawable):
         )
         self.sprite_rect.move_ip(*self.sprite_rect_offset)
 
-    def draw(self, camera):
+    def get_blit_data(self, camera):
         if not self.animation:
-            return
+            return None
         self.surface = self._animation.get_frame(
             self._animation.frame_number, *self._flip
         )
         if (
             not self.visible
-            or self.drawn_by_group
             or not camera.world_rect.colliderect(self.sprite_rect)
             or self.surface.get_alpha() == 0
         ):
-            return
-        camera.surface.blit(
-            self.surface,
-            camera.world_to_screen(self.sprite_rect),
-            special_flags=self.blit_flags,
-        )
+            return None
+        return self.surface, camera.world_to_screen(self.sprite_rect)

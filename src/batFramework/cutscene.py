@@ -1,6 +1,9 @@
 import batFramework as bf
 from .transition import Transition
 from typing import Callable, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Cutscene:
@@ -29,7 +32,7 @@ class Cutscene:
         """
         Mark self as over
         """
-        print("Start ", self)
+        logger.debug(f"Cutscene ended: {self}")
 
         self.is_over = True
 

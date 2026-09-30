@@ -9,13 +9,13 @@ import sys
 class Root(InteractiveWidget):
     is_focus_scope = True
 
-    def __init__(self, camera) -> None:
+    def __init__(self, camera: bf.Camera | None = None) -> None:
         super().__init__()
-        self._layers: dict[bf.GuiLayer, list[Widget]] = {
-            l: [] for l in bf.GuiLayer if l != bf.GuiLayer.NORMAL
+        self._layers: dict[bf.gui.GuiLayer, list[Widget]] = {
+            l: [] for l in bf.gui.GuiLayer if l != bf.gui.GuiLayer.NORMAL
         }
         self.is_root = True
-        self.drawing_camera: bf.Camera = camera
+        self._default_camera: bf.Camera | None = camera  # used while not in a scene
         self.visible = False
         self.rect.size = pygame.display.get_surface().get_size()
         self.focused: InteractiveWidget | None = self
@@ -31,6 +31,11 @@ class Root(InteractiveWidget):
         # Track what widget is currently showing tooltip
         self._tooltip_target: Widget | None = None
 
+    @property
+    def drawing_camera(self) -> bf.Camera:
+        """Camera the gui is drawn with (the camera of the root's layer in the scene)"""
+        return self.get_camera() or self._default_camera
+
     def set_show_tooltip(self, value: bool) -> Self:
         self.show_tooltip = value
         return self
@@ -38,8 +43,8 @@ class Root(InteractiveWidget):
     def __str__(self) -> str:
         return "Root"
 
-    def attach_to_layer(self, widget: Widget, layer: bf.GuiLayer) -> None:
-        if layer == bf.GuiLayer.NORMAL:
+    def attach_to_layer(self, widget: Widget, layer: bf.gui.GuiLayer) -> None:
+        if layer == bf.gui.GuiLayer.NORMAL:
             return # NORMAL layer is for regular child widgets, not layered ones; ignore layer assignment for NORMAL
         if widget.parent is not None and widget.parent is not self :
             widget.parent.remove(widget)
@@ -255,7 +260,9 @@ class Root(InteractiveWidget):
                 continue
             child.draw(camera)
 
-        if self.focused is not self and self.focused is not None:
+        if self.focused is not self and self.focused \
+            is not None and self.focused.parent is not None \
+                and self.focused.draw_focused is not None:
             old_clip = camera.surface.get_clip()
             camera.surface.set_clip(self.focused.parent.rect)
             self.focused.draw_focused(camera)

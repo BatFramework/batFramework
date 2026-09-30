@@ -8,7 +8,7 @@ class DynamicEntity(bf.Entity):
         super().__init__(*args, **kwargs)
         self.velocity = pygame.math.Vector2(0, 0)
         self.ignore_collisions: bool = False
-        self.grounded: bool = False  # Set by physics when standing on ground
+        self.grounded: bool = False  # 
         self._was_grounded: bool = False  # Previous frame grounded state
         self.mass: float = 1.0
         self.restitution: float = 0.5  # 1.0 is bouncy, 0.0 is not bouncy
@@ -36,9 +36,6 @@ class DynamicEntity(bf.Entity):
         Returns:
             True to keep velocity, False to zero velocity (default)
         """
-        # PhysicsWorld resets grounded=False at the start of each frame before
-        # movement, so this runs only when a real ground collision is resolved.
-        # _was_grounded holds last frame's value and is also set by PhysicsWorld.
         if self.velocity.y > 0:
             self.grounded = True
             if not self._was_grounded:

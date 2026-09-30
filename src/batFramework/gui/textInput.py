@@ -1,3 +1,4 @@
+from ssl import VerifyFlags
 import pygame
 import batFramework as bf
 from typing import Callable, Any, Self
@@ -9,10 +10,9 @@ from .textRenderer import TextRenderer, PlainTextRenderer
 
 
 class TextInput(Label, InteractiveShape):
-    def __init__(self, text: str = "", renderer: TextRenderer | None = None):
+    def __init__(self, text: str = "", renderer: TextRenderer | None = None,placeholder_text:str=""):
         super().__init__(text="", renderer=renderer or PlainTextRenderer())
         self.set_alignment(bf.alignment.TOPLEFT)
-
         self.buffer = TextBuffer(text)
         self.set_text(self.buffer.get_text())
 
@@ -27,6 +27,12 @@ class TextInput(Label, InteractiveShape):
 
         self.text_scroll.xy = (0, 0)
         self.edited_this_frame: bool = False
+        self.is_newline_allowed : bool = False
+
+        self.placeholder = Label(" "+placeholder_text.strip()).set_visible(self.get_text()=="")
+        self.placeholder.top_at = lambda *args : None
+        self.placeholder.set_color(bf.color.TRANSPARENT).set_outline_width(0).set_text_color(bf.color.LIGHT_GRAY).set_padding(0)
+        self.add(self.placeholder)
 
         self.set_padding((6, 4))
         self.set_autoresize(True)
@@ -34,9 +40,18 @@ class TextInput(Label, InteractiveShape):
     def __str__(self) -> str:
         return f"TextInput({repr(self.buffer.get_text())})"
 
+
+    def set_placeholder_text(self, text:str)->Self:
+        self.placeholder.set_text(text)
+        return self
+
     # =================================================
     # Cursor
     # =================================================
+
+    def set_cursor_position(self, x: int, y: int):
+        self.buffer.set_cursor_position(x, y)
+        self._after_edit()
 
     def _toggle_cursor(self):
         self.cursor_visible = not self.cursor_visible
@@ -87,13 +102,19 @@ class TextInput(Label, InteractiveShape):
     # Input handling
     # =================================================
 
+    def allow_newline(self, value:bool)->Self:
+        self.is_newline_allowed = value
+        return self
+
     def handle_event(self, event):
         self.edited_this_frame = False
         super().handle_event(event)
-        if event.consumed or not self.is_focused:
+        if event.consumed or not self.is_focused or not self.is_enabled:
             return
 
         if event.type == pygame.TEXTINPUT:
+            if not self.is_newline_allowed and "\n" in event.text:
+                event.text = event.text.replace("\n", "")
             self.buffer.insert_char(event.text)
             self._after_edit()
             event.consumed = True
@@ -108,7 +129,7 @@ class TextInput(Label, InteractiveShape):
             self.buffer.backspace()
         elif k == pygame.K_DELETE:
             self.buffer.delete()
-        elif k == pygame.K_RETURN:
+        elif k == pygame.K_RETURN and self.is_newline_allowed:
             self.buffer.insert_newline()
         elif k == pygame.K_LEFT:
             self.buffer.move_left()
@@ -126,11 +147,17 @@ class TextInput(Label, InteractiveShape):
         event.consumed = True
 
     def _after_edit(self):
-        self.set_text(self.buffer.get_text())
+        self.set_text(self.buffer.get_text(), bypass_buffer=True)
         self._show_cursor()        # visible now, blink timer untouched
         self.dirty_surface = True  # cursor position may have changed even if text/visibility didn't
         self.edited_this_frame = True
+        self.placeholder.set_visible(self.get_text()=="")
 
+    def set_text(self, text: str, bypass_buffer : bool = False) -> Self:
+        if not bypass_buffer:
+            self.buffer.set_text(text)
+            return super().set_text(self.buffer.get_text())
+        return super().set_text(text)
     # =================================================
     # Cursor helpers
     # =================================================
@@ -139,7 +166,7 @@ class TextInput(Label, InteractiveShape):
         font = self.font
         y = 0
         for i, line in enumerate(self.buffer.lines):
-            h = font.get_height()
+            h = font.get_linesize()
             if i == self.buffer.cursor_y:
                 x = font.size(line[: self.buffer.cursor_x])[0]
                 return x, y, h
@@ -189,10 +216,10 @@ class TextInput(Label, InteractiveShape):
             parent.set_focused_child(self, caret_rect)
 
     def _place_cursor_from_mouse(self):
-        if not self.parent_layer:
+        if not self.parent_scene:
             return
 
-        camera = self.parent_layer.camera
+        camera = self.get_camera()
         mx, my = camera.get_mouse_pos()
         inner = self.get_inner_rect()
 
@@ -220,6 +247,11 @@ class TextInput(Label, InteractiveShape):
         self.buffer.cursor_y = line_index
         self._after_edit()
 
+    def get_min_required_size(self) -> tuple[float, float]:
+        tw, th = max(self.get_text_size(),self.placeholder.get_text_size())
+        r =  self.expand_rect_with_padding((0, 0, tw, th)).size
+        return self.compute_min_size(r)
+
     # =================================================
     # Callback
     # =================================================
@@ -239,6 +271,9 @@ class TextInput(Label, InteractiveShape):
         if changed:
             self.set_size(target)
         self._recompute_text_rect()
+        r = self.placeholder.rect.copy()
+        self._align_text_helper(r)
+        self.placeholder.set_position(*r.move(*self.rect.topleft).topleft)
         return changed
 
     def apply_post_updates(self, skip_draw=False):
@@ -252,8 +287,14 @@ class TextInput(Label, InteractiveShape):
     # =================================================
 
     def paint(self) -> None:
+        if self.placeholder.visible:
+            self.surface.blit(
+            self.placeholder.surface, 
+            self.placeholder.rect.move(-self.text_scroll.x, -self.text_scroll.y).topleft
+        )
         super().paint()
-        if not self.cursor_visible:
+        
+        if not self.cursor_visible or not self.is_enabled:
             return
 
         cx, cy, ch = self._get_cursor_pixel_rect()

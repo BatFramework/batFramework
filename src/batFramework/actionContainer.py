@@ -1,5 +1,8 @@
 import batFramework as bf
 import pygame
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ActionContainer:
@@ -12,8 +15,10 @@ class ActionContainer:
         return iter(self._actions.values())
 
     def __getitem__(self, key):
-        return self._actions[key]
-
+        r = self._actions.get(key)
+        if r is None:
+            logger.warning(f"Action key '{key}' not found")
+        return r
     def __setitem__(self, key, value):
         self._actions[key] = value
 
@@ -98,6 +103,6 @@ class HybridControls(ActionContainer):
             bf.Action("down").add_key_control(pygame.K_DOWN, pygame.K_s).set_holding(),
             bf.Action("left").add_key_control(pygame.K_LEFT, pygame.K_a).set_holding(),
             bf.Action("right")
-            .add_key_control(pygame.K_RIGHT, pygame.K_r)
+            .add_key_control(pygame.K_RIGHT, pygame.K_d)
             .set_holding(),
         )

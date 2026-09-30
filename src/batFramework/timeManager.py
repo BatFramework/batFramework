@@ -1,5 +1,8 @@
 import batFramework as bf
 from typing import Callable, Union, Self, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Timer:
@@ -29,6 +32,7 @@ class Timer:
         self.is_paused: bool = False
         self.do_delete: bool = False
         self.is_stopped: bool = True
+        self.auto_delete : bool = True
 
     def __str__(self) -> str:
         loop_info = "infinite" if self.loop == -1 else f"{self.loop} loops left"
@@ -37,6 +41,14 @@ class Timer:
     def set_register(self, new_register):
         if bf.TimeManager().change_timer_register(self, new_register):
             self.register = new_register
+
+    def set_auto_delete(self, value:bool)->Self:
+        """
+        Marks the timer as valid for deletion once it completes naturally
+        Infinite timers won't get deleted by this, the only way to delete them is to do it manually.
+        """
+        self.auto_delete = value
+        return self
 
     def stop(self) -> Self:
         """
@@ -128,6 +140,9 @@ class Timer:
 
         self.is_stopped = True
 
+        if self.loop == 0 and self.auto_delete :
+            self.delete()
+
     def should_delete(self) -> bool:
         return self.do_delete
 
@@ -196,7 +211,7 @@ class TimeManager(metaclass=bf.Singleton):
         if register in self.registers:
             self.registers[register].add_timer(timer)
             return True
-        print(f"Register '{register}' does not exist.")
+        logger.warning(f"Register '{register}' does not exist")
         return False
 
     def change_timer_register(self, timer: Timer, new_register: TimerRegister):
@@ -218,7 +233,7 @@ class TimeManager(metaclass=bf.Singleton):
         if name in self.registers:
             self.registers[name].active = active
         else:
-            print(f"Register '{name}' does not exist.")
+            logger.warning(f"Register '{name}' does not exist")
 
     def deactivate_register(self, name):
         self.activate_register(name, active=False)

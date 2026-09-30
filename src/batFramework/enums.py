@@ -11,12 +11,19 @@ playerInput = [
 ]
 
 
-class GuiLayer(IntEnum):
-    NORMAL  = 0
-    OVERLAY = 1   # dropdowns, context menus, transient popups
-    MODAL   = 2   # blocking dialogs
-    TOOLTIP = 3
-    DEBUG   = 4
+class Layer:
+    """
+    Scene layer names. Each layer of a scene is drawn with its own camera,
+    in the scene's layer order (see Scene.add_layer).
+    Subclass it to declare custom layers:
+
+        class MyLayer(bf.Layer):
+            MINIMAP = "minimap"
+    """
+
+    WORLD = "world"  # the scene's main camera
+    HUD = "hud"  # screen space, never zoomed or moved (gui widgets)
+
 
 class color:
     WHITE = pygame.Color(255, 255, 255)

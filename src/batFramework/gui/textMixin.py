@@ -210,7 +210,7 @@ class TextMixin:
         auto-resize horizontally (otherwise wrapping would fight expansion).
         """
         if self.auto_wraplength and not self.autoresize_w:
-            return int(self.get_inner_width())
+            return int(self.get_inner_width()) 
         return self.wraplength
 
     # ==============================================================

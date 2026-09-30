@@ -26,9 +26,10 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs,surface_flags=pygame.SRCALPHA)
         self.set_convert_alpha(True)
+        self.draw_layer = bf.Layer.HUD
         self.children: list["Widget"] = []
         self.constraints: list[Constraint] = []
-        self.gui_layer: bf.GuiLayer = bf.GuiLayer.NORMAL
+        self.gui_layer: bf.gui.GuiLayer = bf.gui.GuiLayer.NORMAL
         self.parent: "Widget" = None
         self.do_sort_children = False
         self.clip_children: bool = True
@@ -59,7 +60,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return self
 
 
-    def get_gui_layer(self) -> bf.GuiLayer:
+    def get_gui_layer(self) -> bf.gui.GuiLayer:
         return self.gui_layer
 
 
@@ -83,8 +84,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def kill(self):
         if self.parent:
             self.parent.remove(self)
-        if self.parent_scene and self.parent_layer is not None:
-            self.parent_scene.remove(self.parent_layer.name, self)
 
         return super().kill()
 
@@ -117,13 +116,13 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.dirty_shape = True
         return self
 
-    def set_render_order(self, render_order: int) -> Self:
-        bound_children = [c for c in self.children if c.render_order == render_order+1]
-        super().set_render_order(render_order)
+    def set_draw_order(self, draw_order: int) -> Self:
+        bound_children = [c for c in self.children if c.draw_order == draw_order+1]
+        super().set_draw_order(draw_order)
         if self.parent:
             self.parent.do_sort_children = True
         for child in bound_children:
-            child.set_render_order(render_order+1)
+            child.set_draw_order(draw_order+1)
         return self
 
     def expand_rect_with_padding(
@@ -166,6 +165,12 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
         return self
 
+    def get_camera(self) -> bf.Camera | None:
+        # children are drawn by their parent, so they share its camera
+        if self.parent is not None:
+            return self.parent.get_camera()
+        return super().get_camera()
+
     def set_parent_scene(self, parent_scene: bf.Scene | None) -> Self:
         super().set_parent_scene(parent_scene)
         if parent_scene is None and self.parent_scene != None:
@@ -175,19 +180,13 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             c.set_parent_scene(parent_scene)
         return self
 
-    def set_parent_layer(self, layer):
-        super().set_parent_layer(layer)
-        for c in self.children:
-            c.set_parent_layer(layer)
-        return self
-
     def set_parent(self, parent: "Widget") -> Self:
         if parent == self.parent:
             return self
         # if self.parent is not None and self.parent != parent:
         #     self.parent.remove(self)
         self.parent = parent
-        self.visit(lambda w : w.set_render_order(w.parent.render_order + 1) if w.parent else None,top_down=True,include_self=True)
+        self.visit(lambda w : w.set_draw_order(w.parent.draw_order + 1) if w.parent else None,top_down=True,include_self=True)
         return self
 
     def set_padding(self, value: float | int | tuple | list) -> Self:
@@ -398,9 +397,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.children.extend(children)
         for child in children:
             if child.parent is None:
-                child.set_render_order(self.render_order+1)
+                child.set_draw_order(self.draw_order+1)
             child.set_parent(self)
-            child.set_parent_layer(self.parent_layer)
             child.set_parent_scene(self.parent_scene)
         if self.parent:
             self.parent.do_sort_children = True
@@ -411,7 +409,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             if child in children:
                 child.set_parent(None)
                 child.set_parent_scene(None)
-                child.set_parent_layer(None)
                 self.children.remove(child)
         if self.parent:
             self.parent.do_sort_children = True
@@ -442,7 +439,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
     def update(self, dt) -> None:
         if self.do_sort_children:
-            self.children.sort(key=lambda c: c.render_order)
+            self.children.sort(key=lambda c: c.draw_order)
             self.do_sort_children = False
         _ = [c.update(dt) for c in self.children]
         super().update(dt)

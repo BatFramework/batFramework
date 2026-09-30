@@ -56,7 +56,7 @@ class DraggableWidget(InteractiveWidget):
         )
 
         if self.is_dragged and self.is_dragged_outside:
-            x, y = self.parent_layer.camera.get_mouse_pos()
+            x, y = self.get_camera().get_mouse_pos()
             if self.drag_start == None:
                 self.offset = x - self.rect.x, y - self.rect.y
                 self.drag_start = x, y

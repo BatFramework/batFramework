@@ -21,7 +21,6 @@ class Entity:
         self.rect = pygame.FRect(0, 0, *size)
         self.tags: list[str] = []
         self.parent_scene: bf.Scene | None = None
-        self.parent_layer: bf.SceneLayer | None = None
         self.debug_color: tuple | str = "red"
 
     def __del__(self):
@@ -55,13 +54,11 @@ class Entity:
 
     def kill(self):
         """
-        Removes the entity from a scene layer
+        Removes the entity from a scene
         """
-        if self.parent_layer:
-            self.parent_layer.remove(self)
+        if self.parent_scene is not None:
+            self.parent_scene.remove(self)
 
-    def set_parent_layer(self, layer):
-        self.parent_layer = layer
 
     def set_parent_scene(self, scene) -> Self:
         if scene == self.parent_scene:

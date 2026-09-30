@@ -28,15 +28,18 @@ class ScrollingContainer(Container):
             self.set_autoresize(False)
             self.set_color((0, 0, 0, 40))
 
+        def __str__(self):
+            return "ScrollTrack"
+
         def do_on_click_down(self, button: int, event=None) -> None:
             if button != 1:
                 return
             sc: "ScrollingContainer" = self.parent
-            if sc is None or not sc.parent_layer:
+            if sc is None or not sc.parent_scene:
                 return
 
             handle = sc.v_handle if self._vertical else sc.h_handle
-            mouse  = sc.parent_layer.camera.get_mouse_pos()
+            mouse  = sc.get_camera().get_mouse_pos()
 
             if self._vertical:
                 content    = sc.layout.children_rect.height
@@ -81,6 +84,8 @@ class ScrollingContainer(Container):
             super().__init__()
             self.set_autoresize(False)
             
+        def __str__(self):
+            return "ScrollHandle"
 
 
         # on_enter / on_exit already set dirty_surface via InteractiveWidget — no override needed.
@@ -93,17 +98,14 @@ class ScrollingContainer(Container):
                 self._prev_dragging = dragging
                 self.dirty_surface  = True
 
-        def paint(self) -> None:
-            super().paint()
-
         def do_on_drag(self, drag_start, drag_end) -> None:
             """Translate mouse position into a scroll ratio and push it to the parent."""
             sc: "ScrollingContainer" = self.parent
-            if sc is None or not sc.layout or not sc.parent_layer:
+            if sc is None or not sc.layout or not sc.parent_scene:
                 return
 
             track = sc.v_track if self._vertical else sc.h_track
-            mouse = sc.parent_layer.camera.get_mouse_pos()
+            mouse = sc.get_camera().get_mouse_pos()
 
             if self._vertical:
                 content    = sc.layout.children_rect.height
@@ -135,6 +137,9 @@ class ScrollingContainer(Container):
         self._scroll_speed: float        = 20.0
         self._scroll_x_enabled: bool     = True
         self._scroll_y_enabled: bool     = True
+        self._scroll_track_x_gap : int = 4
+        self._scroll_track_y_gap : int = 4
+
 
         # Public shape handles — style these directly.
         self.v_track  = ScrollingContainer._ScrollTrack(vertical=True)
@@ -148,7 +153,7 @@ class ScrollingContainer(Container):
         for sb in self._scrollbar_widgets:
             sb.set_visible(False)
             self.add(sb)
-            sb.set_render_order(999)   # always on top of content
+            sb.set_draw_order(999)   # always on top of content
 
         self.set_clip_children(True)
         self.set_debug_color("yellow")
@@ -163,6 +168,16 @@ class ScrollingContainer(Container):
         if self._scrollbar_thickness != thickness:
             self._scrollbar_thickness = thickness
             self.dirty_layout = True
+        return self
+
+    def set_scrollbar_x_gap(self,gap:int)->Self:
+        self._scroll_track_x_gap = gap
+        self.dirty_shape = True
+        return self
+
+    def set_scrollbar_y_gap(self,gap:int)->Self:
+        self._scroll_track_y_gap = gap
+        self.dirty_shape = True
         return self
 
     def set_scroll_speed(self, speed: float) -> Self:
@@ -203,32 +218,47 @@ class ScrollingContainer(Container):
     def get_inner_rect(self) -> pygame.FRect:
         r = super().get_inner_rect()
         if self.v_track.visible:
-            r.width  = max(0, r.width  - self._scrollbar_thickness)
+            r.width  = max(0, r.width  - self._scrollbar_thickness - self._scroll_track_y_gap)
         if self.h_track.visible:
-            r.height = max(0, r.height - self._scrollbar_thickness)
+            r.height = max(0, r.height - self._scrollbar_thickness - self._scroll_track_x_gap)
         return r
+
+
+    def get_inner_width(self):
+        w = super().get_inner_width()
+        if self.v_track.visible:
+            w  = max(0, w  - self._scrollbar_thickness-self._scroll_track_y_gap)
+        return w
+            
+
+    def get_inner_height(self):
+        h = super().get_inner_height()
+        if self.h_track.visible:
+            h  = max(0, h  - self._scrollbar_thickness-self._scroll_track_x_gap)
+        return h
+            
 
     def get_local_inner_rect(self) -> pygame.FRect:
         r = super().get_local_inner_rect()
         if self.v_track.visible:
-            r.width  = max(0, r.width  - self._scrollbar_thickness)
+            r.width  = max(0, r.width  - self._scrollbar_thickness-self._scroll_track_y_gap)
         if self.h_track.visible:
-            r.height = max(0, r.height - self._scrollbar_thickness)
+            r.height = max(0, r.height - self._scrollbar_thickness-self._scroll_track_x_gap)
         return r
 
     def get_min_required_size(self):
         w,h =  super().get_min_required_size()
         if self.v_track.visible:
-            w+=self._scrollbar_thickness
+            w += self._scrollbar_thickness + self._scroll_track_y_gap
+
         if self.h_track.visible:
-            h+=self._scrollbar_thickness
-        
+            h += self._scrollbar_thickness + self._scroll_track_x_gap
         return self.compute_min_size((w, h))
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
         # first check if the point is inside the scrollbar handles and then tracks
         r = self.v_handle.top_at(x, y)
-        if r is not None:
+        if r is not None:   
             return r
         r = self.v_track.top_at(x, y)
         if r is not None:
@@ -243,66 +273,116 @@ class ScrollingContainer(Container):
 
     # ── Scrollbar visibility ──────────────────────────────────────────────────
 
+    def _compute_scrollbar_visibility(self) -> tuple[bool, bool]:
+        if not self.get_layout_children():
+            return False, False
+
+        base = self._base_inner_rect()
+        cw = self.layout.children_rect.width
+        ch = self.layout.children_rect.height
+
+        bar_w = self._scrollbar_thickness + self._scroll_track_y_gap
+        bar_h = self._scrollbar_thickness + self._scroll_track_x_gap
+
+        need_h = self._scroll_x_enabled and cw > base.width + 1
+        need_v = self._scroll_y_enabled and ch > base.height + 1
+
+        # Account for cross-axis scrollbar stealing viewport space.
+        if need_v and not need_h:
+            need_h = self._scroll_x_enabled and cw > base.width - bar_w + 1
+
+        if need_h and not need_v:
+            need_v = self._scroll_y_enabled and ch > base.height - bar_h + 1
+
+        return need_v, need_h
+
+
     def _update_scrollbar_visibility(self) -> bool:
-        """Show/hide track+handle pairs. Returns True if anything changed."""
         old_v = self.v_track.visible
         old_h = self.h_track.visible
 
-        if not self.get_layout_children():
-            need_v = need_h = False
-        else:
-            base   = self._base_inner_rect()
-            cw, ch = self.layout.children_rect.width, self.layout.children_rect.height
-            t      = self._scrollbar_thickness
+        need_v, need_h = self._compute_scrollbar_visibility()
 
-            need_h = cw > base.width
-            need_v = ch > base.height
-            # one scrollbar may push the other axis over the threshold
-            if need_v and not need_h: need_h = cw > base.width  - t
-            if need_h and not need_v: need_v = ch > base.height - t
+        for w in (self.v_track, self.v_handle):
+            if w.visible != need_v:
+                w.set_visible(need_v)
 
-        for w in (self.v_track, self.v_handle): w.set_visible(need_v and self._scroll_y_enabled)
-        for w in (self.h_track, self.h_handle): w.set_visible(need_h and self._scroll_x_enabled)
+        for w in (self.h_track, self.h_handle):
+            if w.visible != need_h:
+                w.set_visible(need_h)
 
         return old_v != need_v or old_h != need_h
-
     # ── Scrollbar geometry ────────────────────────────────────────────────────
 
+
+
     def _update_scrollbar_rects(self) -> None:
-        """Position and size track+handle widgets to match current scroll state."""
-        base  = self._base_inner_rect()
+        base = self._base_inner_rect()
         inner = self.get_inner_rect()
-        t     = self._scrollbar_thickness
 
         if self.v_track.visible:
-            track_rect = pygame.FRect(base.right - t, base.top, t, inner.height)
-            self.v_track.set_position(*track_rect.topleft)
-            self.v_track.set_size(track_rect.size)
+            min_handle = self._scrollbar_thickness + self._scroll_track_y_gap
 
-            ch       = self.layout.children_rect.height
-            vh       = inner.height
-            handle_h = max(t, self.v_track.get_inner_height() * min(1.0, vh / ch) if ch > 0 else t)
-            sr       = self.scroll.y / max(1, ch - vh)
-            self.v_handle.set_size((self.v_track.get_inner_width(), handle_h))
+            self.v_track.set_position(
+                base.right - self._scrollbar_thickness,base.top
+            ).set_size((
+                self._scrollbar_thickness,
+                inner.height,
+            ))
+
+            ch = self.layout.children_rect.height
+            vh = inner.height
+            max_scroll = max(0, ch - vh)
+
+            track_h = self.v_track.get_inner_height()
+            handle_h = max(
+                min_handle,
+                track_h * min(1.0, vh / ch) if ch > 0 else min_handle,
+            )
+
+            usable = max(0, track_h - handle_h)
+            ratio = 0.0 if max_scroll <= 0 else self.scroll.y / max_scroll
+
+
             self.v_handle.set_position(
                 self.v_track.get_inner_left(),
-                self.v_track.get_inner_top() + sr * (self.v_track.get_inner_height() - handle_h)
-            )
+                self.v_track.get_inner_top() + ratio * usable
+            ).set_size((    self.v_track.get_inner_width(),
+                handle_h
+            ))
 
         if self.h_track.visible:
-            track_rect = pygame.FRect(base.left, base.bottom - t, inner.width, t)
-            self.h_track.set_position(*track_rect.topleft)
-            self.h_track.set_size(track_rect.size)
+            min_handle = self._scrollbar_thickness + self._scroll_track_x_gap
 
-            cw       = self.layout.children_rect.width
-            vw       = inner.width
-            handle_w = max(t, self.h_track.get_inner_width() * min(1.0, vw / cw) if cw > 0 else t)
-            sr       = self.scroll.x / max(1, cw - vw)
-            self.h_handle.set_size((handle_w, self.h_track.get_inner_height()))
-            self.h_handle.set_position(
-                self.h_track.get_inner_left() + sr * (self.h_track.get_inner_width() - handle_w),
-                self.h_track.get_inner_top()
+            self.v_track.set_position(
+                base.left,base.bottom - self._scrollbar_thickness
+            ).set_size((
+              inner.width,
+                self._scrollbar_thickness,
+            ))
+
+
+
+            cw = self.layout.children_rect.width
+            vw = inner.width
+            max_scroll = max(0, cw - vw)
+
+            track_w = self.h_track.get_inner_width()
+            handle_w = max(
+                min_handle,
+                track_w * min(1.0, vw / cw) if cw > 0 else min_handle,
             )
+
+            usable = max(0, track_w - handle_w)
+            ratio = 0.0 if max_scroll <= 0 else self.scroll.x / max_scroll
+
+            self.h_handle.set_position(
+                self.h_track.get_inner_left() + ratio * usable,
+                self.h_track.get_inner_top()
+            ).set_size((    handle_w,
+                self.h_track.get_inner_height(),
+            ))
+
 
     # ── Events ────────────────────────────────────────────────────────────────
 
@@ -312,8 +392,8 @@ class ScrollingContainer(Container):
             event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP)
             and event.button in (4, 5)
             and (self.v_track.visible or self.h_track.visible)
-            and self.parent_layer
-            and self.rect.collidepoint(*self.parent_layer.camera.get_mouse_pos())
+            and self.parent_scene
+            and self.rect.collidepoint(*self.get_camera().get_mouse_pos())
         ):
             event.consumed = True
             return
@@ -322,11 +402,11 @@ class ScrollingContainer(Container):
         super().handle_event(event)
 
     def _handle_mouse_wheel(self, event) -> None:
-        if event.type != pygame.MOUSEWHEEL or not self.parent_layer:
+        if event.type != pygame.MOUSEWHEEL or not self.parent_scene:
             return
         # Use rect collision instead of is_hovered so scrolling works even
         # when the mouse is hovering a child scrollbar widget.
-        if not self.rect.collidepoint(*self.parent_layer.camera.get_mouse_pos()):
+        if not self.rect.collidepoint(*self.get_camera().get_mouse_pos()):
             return
         if not self.v_track.visible and not self.h_track.visible:
             return
@@ -348,52 +428,55 @@ class ScrollingContainer(Container):
         event.consumed = True
 
     # ── Update pipeline ───────────────────────────────────────────────────────
-
     def apply_post_updates(self, skip_draw: bool = False) -> None:
-        # ── 1. Resolve own size ───────────────────────────────────────────────
+        # 1. Resolve own size.
         if self.dirty_shape:
             if self.build():
-                # Our rect changed — layout must re-run to reflow children.
-                self.dirty_layout               = True
-                self.dirty_size_constraints     = True
+                self.dirty_layout = True
+                self.dirty_size_constraints = True
                 self.dirty_position_constraints = True
-            self.dirty_shape   = False
+
+            self.dirty_shape = False
             self.dirty_surface = True
 
-        # ── 2. Position constraints (after size is stable) ────────────────────
+        # 2. Position constraints.
         if self.dirty_position_constraints:
             self.resolve_constraints("position")
             self.dirty_position_constraints = False
 
-        # ── 3. Layout (after our rect is stable) ──────────────────────────────
+        # 3. Layout pass.
         if self.dirty_layout:
-            self.layout.update_child_constraints()
+            self.layout.update_children_state()
             self.layout.arrange()
-            self.dirty_layout  = False
+            self.dirty_layout = False
             self.dirty_surface = True
 
-        # ── 4. Scrollbar visibility (may shrink inner rect → re-arrange) ──────
-        if self._update_scrollbar_visibility():
-            self.layout.arrange()
-            self.dirty_surface = True
+        # 4. Scrollbar visibility can change viewport size.
+        # Re-arrange after visibility changes, then check once more because
+        # the content size may have changed after the viewport shrank.
+        for _ in range(2):
+            if self._update_scrollbar_visibility():
+                self.layout.arrange()
+                self.dirty_surface = True
+            else:
+                break
 
-        # ── 5. Clamp + sync children (once, covers layout shifts and dirty_scroll)
+        # 5. Clamp after final viewport and children_rect are stable.
         old_scroll = self.scroll.xy
         self.clamp_scroll()
 
         if self.scroll.xy != old_scroll or self.dirty_scroll:
             self.layout.scroll_children()
-            self.dirty_scroll  = False
+            self.dirty_scroll = False
             self.dirty_surface = True
 
-        # ── 6. Position scrollbar widgets to match current scroll state ───────
+        # 6. Position scrollbar widgets.
         self._update_scrollbar_rects()
 
-        # ── 7. Paint ──────────────────────────────────────────────────────────
+        # 7. Paint.
         if self.dirty_surface and not skip_draw:
             self.paint()
             self.dirty_surface = False
-
     # ── Draw ──────────────────────────────────────────────────────────────────
 
     def draw(self, camera: bf.Camera) -> None:

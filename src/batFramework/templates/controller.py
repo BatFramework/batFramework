@@ -1,179 +1,121 @@
 import batFramework as bf
 import pygame
+import math
+from typing import Self
 from .stateMachine import *
 
 
 class PlatformController(bf.DynamicEntity):
-    """
-    2D Platformer controller with proper physics.
-
-    Physics model:
-    - Acceleration applied based on input
-    - Friction applied when no input (frame-rate independent)
-    - Velocity clamped to max_speed
-    - Gravity handled by PhysicsWorld
-    - User has to define the minimum actions : `left`, `right` and `jump`
-        and add them to the `control` ActionContainer
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.control = bf.ActionContainer()
-
-        # Movement parameters
-        self.max_speed = 200  # Maximum horizontal speed (pixels/sec)
-        self.acceleration = 800  # Acceleration when moving (pixels/sec²)
-        self.friction = 600  # Deceleration when no input (pixels/sec²)
-
-        # Jump parameters
-        self.jump_force = -400  # Initial jump velocity (pixels/sec)
-        self.gravity = 800  # Handled by PhysicsWorld, but kept for reference
-        self.terminal_velocity = 1000  # Max fall speed (pixels/sec)
-
-        # Collision
-        self.max_slope = 0
-
-        # Internal state
-        self._input_direction = 0  # -1, 0, or 1
-
-    def reset_actions(self):
-        self.control.reset()
-
-    def process_actions(self, event):
-        self.control.process_event(event)
-
-    def update(self, dt):
-        # Get input direction
-        self._input_direction = 0
-        if self.control.is_active("left"):
-            self._input_direction -= 1
-        if self.control.is_active("right"):
-            self._input_direction += 1
-
-        # Apply horizontal physics
-        if self._input_direction != 0:
-            # Accelerate in input direction
-            target_velocity = self._input_direction * self.max_speed
-
-            # Accelerate towards target
-            if abs(self.velocity.x) < abs(target_velocity):
-                # Speed up
-                self.velocity.x += self._input_direction * self.acceleration * dt
-                # Clamp to max speed
-                if self._input_direction > 0:
-                    self.velocity.x = min(self.velocity.x, self.max_speed)
-                else:
-                    self.velocity.x = max(self.velocity.x, -self.max_speed)
-            else:
-                # Already at/above target speed (direction change or speed boost)
-                # Quickly adjust to target
-                self.velocity.x = target_velocity
-        else:
-            # No input - apply friction
-            if abs(self.velocity.x) > 0.01:
-                # Apply friction as deceleration
-                friction_force = self.friction * dt
-                if abs(self.velocity.x) <= friction_force:
-                    self.velocity.x = 0  # Stop if velocity would change sign
-                else:
-                    # Decelerate
-                    sign = 1 if self.velocity.x > 0 else -1
-                    self.velocity.x -= sign * friction_force
-            else:
-                self.velocity.x = 0
-
-        # Jump
-        if self.grounded and self.control.is_active("jump"):
-            self.velocity.y = self.jump_force
-            self.grounded = False
-
-        # Clamp terminal velocity
-        if self.velocity.y > self.terminal_velocity:
-            self.velocity.y = self.terminal_velocity
-
-        super().update(dt)
-
+    #TODO
+    pass
 
 class TopDownController(bf.DynamicEntity):
     """
-    Top-down controller with 8-directional movement and proper physics.
+    8-directional top-down movement, to mix with any Drawable subclass:
 
-    Features:
-    - Diagonal movement normalized correctly
-    - Smooth acceleration/deceleration
-    - Frame-rate independent friction
+        class Player(bf.TopDownController, bf.Sprite): ...
+        class Player(bf.AnimatedSprite, bf.TopDownController): ...  # also works
+
+    Reads the "up", "down", "left" and "right" actions of self.controls,
+    moves velocity toward direction * speed and moves the entity every
+    update, before do_update.
+    Speed is in pixels per second, acceleration/deceleration in pixels per
+    second² (inf = instant, the default).
+
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        speed: float = 200.0,
+        acceleration: float = float("inf"),
+        deceleration: float = float("inf"),
+        controls: bf.ActionContainer | None = None,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
-        self.control = bf.ActionContainer()
+        self.controls: bf.ActionContainer = (
+            controls if controls is not None else bf.DirectionalKeyControls()
+        )
+        self.speed: float = speed
+        self.acceleration: float = acceleration
+        self.deceleration: float = deceleration
+        self.controls_enabled: bool = True
+        self.input_direction = pygame.Vector2(0, 0)  # normalized, (0, 0) when idle
+        self.facing = pygame.Vector2(0, 1)  # last non-zero input direction
+        self._target_velocity = pygame.Vector2(0, 0)  # reused in update
 
-        # Movement parameters
-        self.max_speed = 300  # Maximum speed (pixels/sec)
-        self.acceleration = 1200  # Acceleration (pixels/sec²)
-        self.friction = 800  # Deceleration when no input (pixels/sec²)
+    def set_speed(self, speed: float) -> Self:
+        self.speed = speed
+        return self
 
-        # Internal state
-        self._input_vector = pygame.Vector2(0, 0)
+    def set_acceleration(self, acceleration: float) -> Self:
+        self.acceleration = acceleration
+        return self
 
-    def reset_actions(self):
-        self.control.reset()
+    def set_deceleration(self, deceleration: float) -> Self:
+        self.deceleration = deceleration
+        return self
 
-    def process_actions(self, event):
-        self.control.process_event(event)
+    def set_controls(self, controls: bf.ActionContainer) -> Self:
+        """controls must contain "up", "down", "left" and "right" actions"""
+        self.controls.hard_reset()
+        self.controls = controls
+        return self
 
-    def update(self, dt):
-        # Get input as a vector
-        self._input_vector.update(0, 0)
+    def set_controls_enabled(self, value: bool) -> Self:
+        """When disabled, input is ignored and the entity decelerates to a stop"""
+        self.controls_enabled = value
+        return self
 
-        if self.control.is_active("left"):
-            self._input_vector.x -= 1
-        if self.control.is_active("right"):
-            self._input_vector.x += 1
-        if self.control.is_active("up"):
-            self._input_vector.y -= 1
-        if self.control.is_active("down"):
-            self._input_vector.y += 1
+    @property
+    def is_moving(self) -> bool:
+        return self.velocity.x != 0 or self.velocity.y != 0
 
-        # Handle movement
-        if self._input_vector.length_squared() > 0:
-            # Normalize to prevent faster diagonal movement
-            self._input_vector.normalize_ip()
+    # inputs are always tracked (even when disabled) so held keys stay in sync
+    def process_actions(self, event: pygame.Event) -> None:
+        super().process_actions(event)
+        self.controls.process_event(event)
 
-            # Calculate target velocity
-            target_velocity = self._input_vector * self.max_speed
+    def reset_actions(self) -> None:
+        super().reset_actions()
+        self.controls.reset()
 
-            # Accelerate towards target velocity
-            velocity_diff = target_velocity - self.velocity
-            max_delta = self.acceleration * dt
+    def do_when_removed(self):
+        # key releases won't be received anymore
+        self.controls.hard_reset()
+        super().do_when_removed()
 
-            if velocity_diff.length_squared() > 0:
-                # Accelerate in the direction of the difference
-                if velocity_diff.length() <= max_delta:
-                    # Can reach target this frame
-                    self.velocity = target_velocity
-                else:
-                    # Accelerate by max amount
-                    self.velocity += velocity_diff.normalize() * max_delta
+    def update_input_direction(self) -> None:
+        direction = self.input_direction
+        direction.update(0, 0)
+        if self.controls_enabled:
+            controls = self.controls
+            direction.x = bool(controls["right"]) - bool(controls["left"])
+            direction.y = bool(controls["down"]) - bool(controls["up"])
+        if direction.x or direction.y:
+            direction.normalize_ip()
+            self.facing.update(direction)
+
+    def update_movement(self, dt: float) -> None:
+        self.update_input_direction()
+        moving = self.input_direction.x or self.input_direction.y
+        target = self._target_velocity
+        target.update(self.input_direction)
+        target *= self.speed
+
+        rate = self.acceleration if moving else self.deceleration
+        if math.isinf(rate):
+            self.velocity.update(target)
         else:
-            # No input - apply friction
-            if self.velocity.length_squared() > 0.01:
-                friction_magnitude = self.friction * dt
+            self.velocity.move_towards_ip(target, rate * dt)
 
-                if self.velocity.length() <= friction_magnitude:
-                    # Stop completely
-                    self.velocity.update(0, 0)
-                else:
-                    # Apply friction
-                    friction_vector = self.velocity.normalize() * friction_magnitude
-                    self.velocity -= friction_vector
-            else:
-                self.velocity.update(0, 0)
+        if self.is_moving:
+            self.move_by_velocity(dt)
 
-        # Ensure we don't exceed max speed (safety check)
-        if self.velocity.length() > self.max_speed:
-            self.velocity.scale_to_length(self.max_speed)
-
+    def update(self, dt: float) -> None:
+        self.update_movement(dt)
+        # continue the chain (do_update, reset_actions, animations of the Drawable...)
         super().update(dt)
 
 
@@ -210,7 +152,7 @@ class CameraController(bf.Entity):
             pass
 
     def update(self, dt):
-        cam = self.parent_layer.camera
+        cam = self.parent_scene.camera
         if self.mouse_actions["zoom_in"]:
             if self.mouse_actions["control"]:
                 cam.rotate_by(10)

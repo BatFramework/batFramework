@@ -208,7 +208,7 @@ class SliderMeter(BarMeter, InteractiveShape):
         # event.consumed = old_consume
         if button == 1:
             if not self.parent.ask_focus(): return
-            world_pos = self.parent_layer.camera.get_mouse_pos()
+            world_pos = self.get_camera().get_mouse_pos()
             if self.get_inner_rect().collidepoint(*world_pos):
                 new_value = self.position_to_value(world_pos)
                 self.set_value(new_value)

@@ -1,6 +1,9 @@
-import dataclasses 
+import dataclasses
+
+import pygame 
 import batFramework as bf
-from typing import Self, Callable, Any
+from typing import Self, Callable, Any, TypeVar, Generic
+from batFramework.gui.interactiveWidget import InteractiveWidget
 from .toggle import Toggle
 from .indicator import ArrowIndicator
 from .clickableWidget import ClickableWidget
@@ -10,6 +13,7 @@ from .layout import Column
 from .button import Button
 from .constraints.constraints import FillX
 
+OptionType = TypeVar("OptionType")
 
 # ---------------------------------------------------------------------------
 # Helper widgets
@@ -36,11 +40,9 @@ class _OptionButton(Button):
         super().__init__(dropdown.display_func(dropdown.options[index]), self._select)
         self._dropdown = dropdown
         self._index = index
-        (self.set_alignment(bf.alignment.LEFT)
-             .set_autoresize_w(False).set_autoresize_h(True)
+        (self.set_alignment(bf.alignment.CENTER)
              .set_unpressed_relief(0).set_pressed_relief(0)
-             .set_outline_width(0).set_border_radius(0)
-             .set_debug_color("green"))
+             .set_debug_color("pink"))
 
     def refresh(self, index: int) -> None:
         """Re-point this button at a (possibly different) option index."""
@@ -62,8 +64,9 @@ class _DropDownPanel(Container):
 
     def __init__(self, dropdown: "Dropdown"):
         self.dropdown = dropdown
-        super().__init__(Column().set_child_constraints(FillX()))
+        super().__init__(Column(4).set_child_constraints(FillX()))
         self.set_clip_children(True)
+        self.set_padding((0,4))
 
     def top_at(self, x, y):
         return super().top_at(x, y) if self.dropdown.is_open else None
@@ -77,12 +80,26 @@ class _DropDownPanel(Container):
         for c in self.children:
             yield from c.get_debug_outlines()
 
+    def open(self)->Self:
+        self.dirty_shape = True
+        self.show()
+        return self
+    
+    def close(self)->Self:
+        self.hide()
+        return self
+    
+    def build(self):
+        changed = super().build()
+        if changed :
+            self.set_position(*self.rect.move_to(midtop=self.dropdown.rect.midbottom).topleft)
+        return changed
 
 # ---------------------------------------------------------------------------
 # Dropdown
 # ---------------------------------------------------------------------------
 
-class Dropdown(Toggle):
+class Dropdown(Toggle, Generic[OptionType]):
     """
     Button that reveals a panel of selectable options.
 
@@ -96,13 +113,13 @@ class Dropdown(Toggle):
         self,
         options: list[Any] = None,
         default_value_index: int = None,
-        display_func: Callable[[Any], str] = None,
-        synced_var: SyncedVar = None,   # the *value* var, not the open/close one
+        display_func: Callable[[OptionType], str] = None,
+        synced_var: SyncedVar[OptionType] = None,   # the *value* var, not the open/close one
     ):
         self.options: list[Any] = options or []
-        self.display_func: Callable[[Any], str] = display_func or str
-        self.on_modify_callback: Callable[[Any, int], Any] | None = None
-        self.value_var: SyncedVar = synced_var if synced_var is not None else SyncedVar(None)
+        self.display_func: Callable[[OptionType], str] = display_func or str
+        self.on_modify_callback: Callable[[OptionType, int], Any] | None = None
+        self.value_var: SyncedVar[OptionType] = synced_var if synced_var is not None else SyncedVar(None)
         self.current_index: int | None = self._resolve_initial_index(default_value_index)
 
         super().__init__(text=self._current_text(), callback=None, default_value=False)
@@ -143,6 +160,11 @@ class Dropdown(Toggle):
     def close(self) -> None:       self.synced_var.value = False
     def toggle_open(self) -> None: self.synced_var.value = not self.is_open
 
+    def _focus_candidates(self) -> list[InteractiveWidget]:
+        if self.is_open and self.options:
+            return [self._option_buttons[self.current_index]]
+        return []
+
     def click(self) -> None:
         """Toggle inherits this — clicking the button toggles the panel."""
         self.toggle_open()
@@ -154,21 +176,19 @@ class Dropdown(Toggle):
     def _do_open(self) -> None:
         self.indicator.set_arrow_direction(bf.direction.UP)
         self._refresh_panel_highlight()
-        self._panel.set_position(*self._panel.rect.move_to(midtop=self.rect.midbottom).topleft)
+        
         if (root := self.get_root()):
-            root.attach_to_layer(self._panel, bf.GuiLayer.OVERLAY)
-        self._panel.show()
-        if (first := self.find_first_focusable()):
-            first.ask_focus()
+            root.attach_to_layer(self._panel, bf.gui.GuiLayer.OVERLAY)
+        
+        self._panel.open()
 
     def _do_close(self) -> None:
         self.indicator.set_arrow_direction(bf.direction.DOWN)
-        self._panel.hide()
+        self._panel.close()
         if (root := self.get_root()):
             root.detach_from_layer(self._panel)
 
     def on_lose_focus(self):
-        self.close()
         return super().on_lose_focus()
 
     # ------------------------------------------------------------------
@@ -178,8 +198,22 @@ class Dropdown(Toggle):
     def do_when_added(self):
         super().do_when_added()
         self._populate_panel()
-        self._panel.hide()
+        self._panel.close()
 
+    def on_key_down(self, key, event=None):
+        if key == pygame.K_DOWN and self.options:
+            new_index = (self.current_index + 1) % len(self.options)
+            self.set_by_index(new_index)
+            event.consumed = True
+        elif key == pygame.K_UP and self.options:
+            new_index = (self.current_index - 1) % len(self.options)
+            self.set_by_index(new_index)
+            event.consumed = True
+        elif key in [pygame.K_RETURN, pygame.K_ESCAPE] and self.is_open:
+            self.close()
+            event.consumed = True
+        if not event.consumed:
+            super().on_key_down(key, event)
     # ------------------------------------------------------------------
     # Panel sync — reuse existing buttons; add or trim only the difference
     # ------------------------------------------------------------------
@@ -226,7 +260,7 @@ class Dropdown(Toggle):
     # Options & value API
     # ------------------------------------------------------------------
 
-    def set_options(self, options: list[Any], reset_index: bool = True) -> Self:
+    def set_options(self, options: list[OptionType], reset_index: bool = True) -> Self:
         self.options = options
         if reset_index or self.current_index is None:
             self.current_index = 0 if options else None
@@ -239,7 +273,7 @@ class Dropdown(Toggle):
     def get_current_index(self) -> int | None:
         return self.current_index
 
-    def get_current_value(self) -> Any:
+    def get_current_value(self) -> OptionType | None:
         if not self.options or self.current_index is None:
             return None
         return self.options[self.current_index]
@@ -256,18 +290,20 @@ class Dropdown(Toggle):
         self.value_var.value = value   # binding no-ops via current_index check
         if self.on_modify_callback:
             self.on_modify_callback(value, index)
+        if self.is_open:
+            self._refresh_panel_highlight()
         return self
 
-    def set_by_value(self, value: Any) -> Self:
+    def set_by_value(self, value: OptionType) -> Self:
         if value in self.options:
             self.set_by_index(self.options.index(value))
         return self
 
-    def set_modify_callback(self, func: Callable[[Any, int], Any]) -> Self:
+    def set_modify_callback(self, func: Callable[[OptionType, int], Any]) -> Self:
         self.on_modify_callback = func
         return self
 
-    def _on_value_var_update(self, value: Any) -> None:
+    def _on_value_var_update(self, value: OptionType) -> None:
         """Selected value changed externally (or via set_by_index — but that no-ops here)."""
         if value not in self.options:
             return
@@ -285,14 +321,12 @@ class Dropdown(Toggle):
 
     def get_min_required_size(self) -> tuple[float, float]:
         # Measure widest possible text so the button doesn't resize on selection change.
-        old_text = self.text
         max_w, max_h = 0, 0
-        style = dataclasses.replace(self._build_style())
+        style = dataclasses.replace(self._build_style(),bold=True)
         for option in self.options:
             style.text = self.display_func(option)
             w, h = self.renderer.get_min_size(style)
             max_w, max_h = max(max_w, w), max(max_h, h)
-        self.text = old_text
 
         ind = max(self.font.get_height() // 2, 8)
         gap = self.gap if self.text else 0
@@ -302,6 +336,6 @@ class Dropdown(Toggle):
 
     def build(self):
         changed = super().build()
-        if changed:
-            self._panel.set_min_size((self.rect.w, 0))  # panel ≥ button width
+        # if changed:
+        #     self._panel.set_min_size((self.rect.w, 0))  # panel ≥ button width
         return changed

@@ -1,5 +1,5 @@
 from .widget import Widget
-from typing import Self
+from typing import Callable, Self,Any
 import pygame
 import batFramework as bf
 
@@ -23,6 +23,7 @@ class InteractiveWidget(Widget):
         self.focused_index = 0
         self.is_enabled: bool = True
         self.click_pass_through: bool = False
+        self.custom_handlers: dict[pygame.Event, tuple[bool,bool,Callable[[Self], bool]]] = {}
         super().__init__(*args, **kwargs)
 
     # -------------------------------------------------------------------------
@@ -30,6 +31,7 @@ class InteractiveWidget(Widget):
     # -------------------------------------------------------------------------
 
     def handle_event(self, event):
+
         if self.is_hovered:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.is_clicked_down[event.button - 1] = True
@@ -43,6 +45,13 @@ class InteractiveWidget(Widget):
                 self.on_key_down(event.key, event)
             elif event.type == pygame.KEYUP:
                 self.on_key_up(event.key, event)
+
+        if event.type in self.custom_handlers:
+            if_hovered, if_focused, handler = self.custom_handlers[event.type]
+            if (not if_hovered or self.is_hovered) and (not if_focused or self.is_focused):
+                if handler(self, event):
+                    event.consumed = True
+                    return
 
 
     # -----------------------------------------------------------------
@@ -66,13 +75,6 @@ class InteractiveWidget(Widget):
                 r = c.find_first_focusable()
                 if r is not None:
                     return r
-            # Non-interactive children: descend to look for interactive grandchildren.
-            else:
-                for gc in c.children:
-                    if isinstance(gc, InteractiveWidget):
-                        r = gc.find_first_focusable()
-                        if r is not None:
-                            return r
         return None
 
     def find_last_focusable(self) -> "InteractiveWidget | None":
@@ -81,12 +83,6 @@ class InteractiveWidget(Widget):
                 r = c.find_last_focusable()
                 if r is not None:
                     return r
-            else:
-                for gc in reversed(c.children):
-                    if isinstance(gc, InteractiveWidget):
-                        r = gc.find_last_focusable()
-                        if r is not None:
-                            return r
         if isinstance(self, InteractiveWidget) and self.allow_focus_to_self():
             return self
         return None
@@ -264,6 +260,13 @@ class InteractiveWidget(Widget):
 
     def on_mouse_motion(self, x, y) -> None:
         self.do_on_mouse_motion(x, y)
+
+    def add_custom_handler(
+            self, event_type: int, handler: Callable[[Self, pygame.Event], bool], 
+            if_hovered: bool = False, if_focused: bool = False) -> Self:
+        """Add a custom event handler for a specific Pygame event type. The handler should return True if it consumes the event."""
+        self.custom_handlers[event_type] = (if_hovered, if_focused, handler)
+        return self
 
     # -------------------------------------------------------------------------
     # do_* extension hooks (override in subclasses)

@@ -76,24 +76,30 @@ class Label(TextMixin, Shape):
         self._recompute_text_rect()
         return changed
 
-    def _recompute_text_rect(self) -> None:
-        tw, th = self.get_text_size()
-        inner = self.get_local_inner_rect()
 
-        # Rect representing the text block
-        self.text_rect.update(0, 0, tw, th)
+    def _align_text_helper(self,text_rect):
+        inner = self.get_local_inner_rect()
 
         # Align text_rect to inner rect using pygame's rect API
         anchor = self.alignment.value
         if hasattr(inner, anchor):
-            setattr(self.text_rect, anchor, getattr(inner, anchor))
+            setattr(text_rect, anchor, getattr(inner, anchor))
         else:
-            self.text_rect.topleft = inner.topleft
+            text_rect.topleft = inner.topleft
 
-        self.text_rect.topleft = (
-            ceil(self.text_rect.left),
-            ceil(self.text_rect.top),
+        text_rect.topleft = (
+            ceil(text_rect.left),
+            ceil(text_rect.top),
         )
+
+    def _recompute_text_rect(self) -> None:
+        tw, th = self.get_text_size()
+
+        # Rect representing the text block
+        self.text_rect.update(0, 0, tw, th)
+        self._align_text_helper(self.text_rect)
+
+
 
     # ------------------------------------------------------------------
     # Paint

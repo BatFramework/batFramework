@@ -4,7 +4,9 @@ import re
 import math
 from collections import OrderedDict
 
-TAG_PATTERN = re.compile(r"\[(\/?)(\w+)(?:=([^\]]+))?\]")
+TAG_PATTERN = re.compile(
+    r"(\*\*|__|\*|\[color=([^\]]+)\]|\[/color\])"
+)
 
 def _min_size_key(style: TextStyle) -> tuple:
     """Hashable key from the style fields that affect text layout/size."""
@@ -84,18 +86,42 @@ class PlainTextRenderer(TextRenderer):
         if not wraplength:
             return text.split("\n")
 
+        def fits(s: str) -> bool:
+            return font.size(s)[0] <= wraplength
+
         lines = []
         for raw_line in text.split("\n"):
             words = raw_line.split(" ")
             current = ""
             for word in words:
                 test = current + (" " if current else "") + word
-                if font.size(test)[0] <= wraplength:
+                if fits(test):
                     current = test
-                else:
+                    continue
+
+                # Whole word doesn't fit appended to the current line.
+                if fits(word):
+                    # It fits on a line of its own: wrap normally.
                     if current:
                         lines.append(current)
                     current = word
+                    continue
+
+                # Word is longer than wraplength by itself: break it with hyphens.
+                if current:
+                    if fits(current + " " + word[0] + "-"):
+                        current += " "          # keep the word on this line
+                    else:
+                        lines.append(current)   # flush the complete word(s) first
+                        current = ""
+
+                for char in word:
+                    if fits(current + char + "-") or not current:
+                        current += char
+                    else:
+                        lines.append(current + "-")
+                        current = char
+
             lines.append(current)
 
         return lines
@@ -176,9 +202,40 @@ class RichTextRenderer(TextRenderer):
             self._empty_surface = pygame.Surface((1, font.get_height()), pygame.SRCALPHA)
         return self._empty_surface
 
+    def _apply_font_override(
+        self,
+        font: pygame.font.Font,
+        style: TextStyle,
+        override: dict,
+    ):
+        font.set_bold(override.get("bold", style.bold))
+        font.set_italic(override.get("italic", style.italic))
+        font.set_underline(override.get("underline", style.underline))
+
+    def _measure(
+        self,
+        text: str,
+        font: pygame.font.Font,
+        style: TextStyle,
+        override: dict,
+    ) -> int:
+        self._apply_font_override(font, style, override)
+        return font.size(text if text else " ")[0]
+
+    def _render_segment(
+        self,
+        text: str,
+        font: pygame.font.Font,
+        style: TextStyle,
+        override: dict,
+    ) -> pygame.Surface:
+        self._apply_font_override(font, style, override)
+        color = override.get("color", style.color)
+        return font.render(text if text else " ", style.antialias, color)
+
     def _parse(self, text):
         pos = 0
-        stack = [(None, {})]
+        stack = []
         segments = []
 
         def _compute_current_state():
@@ -187,33 +244,46 @@ class RichTextRenderer(TextRenderer):
                 state.update(props)
             return state
 
+        def _remove_nearest(tag):
+            for i in range(len(stack) - 1, -1, -1):
+                if stack[i][0] == tag:
+                    stack.pop(i)
+                    return True
+            return False
+
+        def _toggle(tag, props):
+            if not _remove_nearest(tag):
+                stack.append((tag, props))
+
         for m in TAG_PATTERN.finditer(text):
             start, end = m.span()
 
             if start > pos:
                 segments.append((text[pos:start], _compute_current_state()))
 
-            closing, tag, value = m.groups()
+            token = m.group(1)
 
-            if not closing:
-                props = {}
-                if tag == "b":
-                    props["bold"] = True
-                elif tag == "i":
-                    props["italic"] = True
-                elif tag == "u":
-                    props["underline"] = True
-                elif tag == "color":
-                    try:
-                        props["color"] = pygame.Color(value)
-                    except (ValueError, TypeError):
-                        props["color"] = pygame.Color(0, 0, 0)
-                stack.append((tag, props))
-            else:
-                for i in range(len(stack) - 1, 0, -1):
-                    if stack[i][0] == tag:
-                        stack.pop(i)
-                        break
+            if token == "**":
+                _toggle("bold", {"bold": True})
+
+            elif token == "*":
+                _toggle("italic", {"italic": True})
+
+            elif token == "__":
+                _toggle("underline", {"underline": True})
+
+            elif token.startswith("[color="):
+                value = m.group(2)
+
+                try:
+                    color = pygame.Color(value)
+                except (ValueError, TypeError):
+                    color = pygame.Color(0, 0, 0)
+
+                stack.append(("color", {"color": color}))
+
+            elif token == "[/color]":
+                _remove_nearest("color")
 
             pos = end
 
@@ -221,6 +291,98 @@ class RichTextRenderer(TextRenderer):
             segments.append((text[pos:], _compute_current_state()))
 
         return segments
+
+    def _wrap_segments(
+        self,
+        segments: list[tuple[str, dict]],
+        font: pygame.font.Font,
+        style: TextStyle,
+    ):
+        wraplength = style.wraplength
+
+        lines: list[list[tuple[str, dict]]] = []
+        current_line: list[tuple[str, dict]] = []
+
+        def current_width() -> int:
+            return sum(
+                self._measure(text, font, style, override)
+                for text, override in current_line
+            )
+
+        def flush_line():
+            nonlocal current_line
+            lines.append(current_line)
+            current_line = []
+
+        def append_piece(text: str, override: dict):
+            if text:
+                current_line.append((text, override))
+
+        if not wraplength:
+            for text, override in segments:
+                parts = text.split("\n")
+
+                for i, part in enumerate(parts):
+                    append_piece(part, override)
+
+                    if i < len(parts) - 1:
+                        flush_line()
+
+            lines.append(current_line)
+            return lines
+
+        for text, override in segments:
+            paragraphs = text.split("\n")
+
+            for paragraph_index, paragraph in enumerate(paragraphs):
+                words = paragraph.split(" ")
+
+                for word_index, word in enumerate(words):
+                    prefix = ""
+
+                    if word_index > 0:
+                        prefix = " "
+
+                    piece = prefix + word
+                    test_width = current_width() + self._measure(piece, font, style, override)
+
+                    if test_width <= wraplength:
+                        append_piece(piece, override)
+                        continue
+
+                    word_width = self._measure(word, font, style, override)
+
+                    if word_width <= wraplength:
+                        if current_line:
+                            flush_line()
+                        append_piece(word, override)
+                        continue
+
+                    if current_line:
+                        if self._measure(prefix + word[0] + "-", font, style, override) + current_width() <= wraplength:
+                            append_piece(prefix, override)
+                        else:
+                            flush_line()
+
+                    current = ""
+
+                    for char in word:
+                        test = current + char + "-"
+
+                        if self._measure(test, font, style, override) <= wraplength or not current:
+                            current += char
+                        else:
+                            append_piece(current + "-", override)
+                            flush_line()
+                            current = char
+
+                    append_piece(current, override)
+
+                if paragraph_index < len(paragraphs) - 1:
+                    flush_line()
+
+        lines.append(current_line)
+        return lines
 
     @_cache_min_size()
     def get_min_size(self, style: TextStyle):
@@ -234,53 +396,51 @@ class RichTextRenderer(TextRenderer):
             return self._get_empty(font)
 
         segments = self._parse(style.text)
+        wrapped_lines = self._wrap_segments(segments, font, style)
 
-        current_line = []
-        max_line_height = 0
-        lines = []
+        rendered_lines: list[tuple[list[pygame.Surface], int]] = []
 
-        for text, override in segments:
-            parts = text.split("\n")
-            for i, part in enumerate(parts):
-                font.set_bold(override.get("bold", style.bold))
-                font.set_italic(override.get("italic", style.italic))
-                font.set_underline(override.get("underline", style.underline))
-                color = override.get("color", style.color)
+        for line in wrapped_lines:
+            line_surfaces = []
+            max_line_height = 0
 
-                surf = font.render(part if part else " ", style.antialias, color)
-                current_line.append(surf)
-                max_line_height = max(max_line_height, surf.get_height())
+            if not line:
+                surf = self._render_segment(" ", font, style, {})
+                line_surfaces.append(surf)
+                max_line_height = surf.get_height()
+            else:
+                for text, override in line:
+                    surf = self._render_segment(text, font, style, override)
+                    line_surfaces.append(surf)
+                    max_line_height = max(max_line_height, surf.get_height())
 
-                if i < len(parts) - 1:
-                    lines.append((current_line, max_line_height))
-                    current_line = []
-                    max_line_height = 0
-
-        lines.append((current_line, max_line_height))
+            rendered_lines.append((line_surfaces, max_line_height))
 
         total_w = 0
         total_h = 0
-        for line, h in lines:
-            w = sum(s.get_width() for s in line)
+
+        for line_surfaces, h in rendered_lines:
+            w = sum(surf.get_width() for surf in line_surfaces)
             total_w = max(total_w, w)
             total_h += h
 
         if total_h == 0:
             total_h = font.get_height()
+
         if total_w == 0:
             total_w = 1
 
         surface = pygame.Surface((total_w, total_h), pygame.SRCALPHA)
+
         y = 0
-        for line, h in lines:
+        for line_surfaces, h in rendered_lines:
             x = 0
-            for surf in line:
+            for surf in line_surfaces:
                 surface.blit(surf, (x, y))
                 x += surf.get_width()
             y += h
 
         return surface
-
 
 # ---------------------------------------------------------------------------
 # WaveTextRenderer
