@@ -1,18 +1,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Self, Callable, Any
 from collections.abc import Iterable
+from math import isfinite, isnan
 import batFramework as bf
 import pygame
 
 if TYPE_CHECKING:
     from .constraints.constraints import Constraint
     from .root import Root
-
-from typing import Literal
-
-MAX_ITERATIONS = 10
-ResolveMode = Literal["all", "size", "position"]
-
 
 
 class WidgetMeta(type):
@@ -34,11 +29,13 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.do_sort_children = False
         self.clip_children: bool = True
         self.min_size: tuple[float, float] = (0, 0)
+        self._requested_size = self.rect.size
+        self.desired_size: tuple[float, float] = (0, 0)
+        self.available_size: tuple[float, float] = (float("inf"), float("inf"))
+        self._measure_size = None
+        self._arranging = False
         self.padding = (0, 0, 0, 0)
         self.dirty_surface: bool = True  # If true, will call paint before drawing
-        self.dirty_shape: bool = True  # If true, will call (build+paint) before drawing
-        self.dirty_position_constraints: bool = True  # Flag for position-related constraints
-        self.dirty_size_constraints: bool = True  # Flag for size-related constraints
 
         self.tooltip_text: str | None = (
             None  # If not None, will display a text when hovered
@@ -49,14 +46,10 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             True,
         )  # If True, the widget will have dynamic size depending on its contents
 
-        self._resolving_constraints: bool = False                 # re-entrancy guard
-        self._constraints_to_ignore: list[Constraint] = []
-        self._last_constraint_priorities: list[int] = []          # for change detection
-        self._last_resolved: list[tuple[Constraint, int]] = []    # debug snapshot
 
     def set_min_size(self, size: tuple[float, float]) -> Self:
         self.min_size = size
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
 
@@ -99,21 +92,21 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         # if (self.autoresize_w,self.autoresize_h) == (value,value):
         #     return self
         self.autoresize_w = self.autoresize_h = value
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def set_autoresize_w(self, value: bool) -> Self:
         if self.autoresize_w == value:
             return self
         self.autoresize_w = value
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def set_autoresize_h(self, value: bool) -> Self:
         if self.autoresize_h == value:
             return self
         self.autoresize_h = value
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def set_draw_order(self, draw_order: int) -> Self:
@@ -145,7 +138,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         dx, dy = x - self.rect.x, y - self.rect.y
         self.rect.topleft = x, y
         _ = [c.set_position(c.rect.x + dx, c.rect.y + dy) for c in self.children]
-        self.dirty_position_constraints: bool = True
         return self
 
     def set_center(self, x=None, y=None) -> Self:
@@ -161,7 +153,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             c.set_center(c.rect.centerx + dx, c.rect.centery + dy)
             for c in self.children
         ]
-        self.dirty_position_constraints: bool = True
 
         return self
 
@@ -202,34 +193,137 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         else:
             self.padding = (value,) * 4
 
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def get_inner_rect(self) -> pygame.FRect:
-        r = self.rect.inflate(
-            -self.padding[0] - self.padding[2], -self.padding[1] - self.padding[3]
-        )
-        return r
+        return self.get_local_inner_rect().move(self.rect.topleft)
 
     def get_local_inner_rect(self) -> pygame.FRect:
         return pygame.FRect(
             self.padding[0],
             self.padding[1],
-            self.rect.w - self.padding[2] - self.padding[0],
-            self.rect.h - self.padding[1] - self.padding[3],
+            max(0, self.rect.w - self.padding[2] - self.padding[0]),
+            max(0, self.rect.h - self.padding[1] - self.padding[3]),
         )
 
     def get_min_required_size(self) -> tuple[float, float]:
-        return self.compute_min_size(self.rect.size)
+        return self.compute_min_size(self._requested_size)
+
+    @staticmethod
+    def _validate_size(size, *, finite=False):
+        width, height = map(float, size)
+        if any(isnan(v) or v < 0 or (finite and not isfinite(v)) for v in (width, height)):
+            raise ValueError("Layout sizes must be non-negative (arranged sizes must be finite)")
+        return width, height
+
+    def get_content_size(self, size):
+        """Space inside padding and relief, independent of the current rect."""
+        return (max(0, size[0] - self.padding[0] - self.padding[2]),
+                max(0, size[1] - self.padding[1] - self.padding[3] - getattr(self, "relief", 0)))
+
+    def constrain_size(self, preferred, available):
+        """Apply pure size policies, then enforce the parent's hard maximum.
+
+        Higher priorities win; later constraints win ties. Custom size
+        constraints implement Constraint.constrain_size during measurement.
+        """
+        size = self.compute_min_size(preferred)
+        for constraint in sorted(self.constraints, key=lambda c: c.priority):
+            if constraint.affects_size:
+                size = constraint.constrain_size(self, size, available)
+        return tuple(max(0, min(value, limit)) for value, limit in zip(size, available))
+
+    def measure(self, available_size: tuple[float, float]) -> tuple[float, float]:
+        """Receive a maximum and return a preference without changing geometry.
+
+        Infinity is supported for unbounded axes (e.g. scrolling content).
+        Padding belongs to this widget's size, not the offered child space.
+        """
+        self.available_size = self._validate_size(available_size)
+        limits = list(self.constrain_size(self.available_size, self.available_size))
+        for axis, auto in enumerate((self.autoresize_w, self.autoresize_h)):
+            if not auto:
+                limits[axis] = min(limits[axis], max(self.min_size[axis], self._requested_size[axis]))
+        # Explicit constraints can override a fixed preferred size.
+        self._measure_size = self.constrain_size(limits, self.available_size)
+        try:
+            preferred = self.measure_override(self.get_content_size(self._measure_size))
+            preferred = tuple(preferred[i] if auto else self._requested_size[i]
+                              for i, auto in enumerate((self.autoresize_w, self.autoresize_h)))
+            self.desired_size = self.constrain_size(preferred, self.available_size)
+        finally:
+            self._measure_size = None
+        return self.desired_size
+
+    def measure_override(self, available_size):
+        """Override for intrinsic content; return the full size including padding."""
+        for child in self.children:
+            child.measure(available_size)
+        return self.get_min_required_size()
+
+    def constrain_position(self, proposed_rect) -> pygame.FRect:
+        """Calculate final placement against the parent's arranged bounds.
+
+        Pure position hooks run from low to high priority, in insertion order
+        for ties. The returned rectangle keeps the parent's assigned size.
+        """
+        rect = pygame.FRect(proposed_rect)
+        if self.parent is None:
+            return rect
+        assigned_size = rect.size
+        outer = self.parent.rect.copy()
+        inner = self.parent.get_inner_rect()
+        for constraint in sorted(self.constraints, key=lambda c: c.priority):
+            if not constraint.affects_position:
+                continue
+            rect = pygame.FRect(constraint.constrain_position(rect.copy(), outer.copy(), inner.copy()))
+            if rect.size != assigned_size:
+                raise ValueError(f"{constraint.name}: position constraints must preserve the assigned size")
+            if not all(isfinite(value) for value in rect.topleft):
+                raise ValueError(f"{constraint.name}: position constraints must return finite coordinates")
+        return rect
+
+    def arrange(self, final_rect) -> None:
+        """Accept an exact (width, height) or world-space (x, y, width, height).
+
+        The parent's allocation is authoritative, even below our minimum.
+        arrange_override() positions content and descendants using that size.
+        """
+        if len(final_rect) == 2:
+            final_rect = (*self.rect.topleft, *final_rect)
+        rect = pygame.FRect(final_rect)
+        self._validate_size(rect.size, finite=True)
+        rect = self.constrain_position(rect)
+        self._arranging = True
+        try:
+            self.set_position(*rect.topleft)
+            if self.rect.size != rect.size:
+                self.dirty_surface = True
+            self.rect.size = rect.size
+            self.arrange_override()
+        finally:
+            self._arranging = False
+
+    def arrange_override(self):
+        self.arrange_children()
+
+    def arrange_children(self, exclude=()):
+        """Arrange ordinary children; composites exclude their owned slots."""
+        inner = self.get_content_size(self.rect.size)
+        for child in self.children:
+            if child not in exclude:
+                size = child.constrain_size(child.desired_size, inner)
+                child.arrange((*child.rect.topleft, *size))
 
     def compute_min_size(self, requested_size: tuple[float, float]) -> tuple[float, float]:
         return max(self.min_size[0], requested_size[0]), max(self.min_size[1], requested_size[1])
 
     def get_inner_width(self) -> float:
-        return self.rect.w - self.padding[0] - self.padding[2]
+        return max(0, self.rect.w - self.padding[0] - self.padding[2])
 
     def get_inner_height(self) -> float:
-        return self.rect.h - self.padding[1] - self.padding[3]
+        return max(0, self.rect.h - self.padding[1] - self.padding[3])
 
     def get_inner_left(self) -> float:
         return self.rect.left + self.padding[0]
@@ -261,113 +355,15 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         new_constraints = [c for c in constraints if c.name not in existing_names]
         self.constraints.extend(new_constraints)
 
-        # Sort constraints by priority
-        self.constraints.sort(key=lambda c: c.priority)
-
-        # Update dirty flags based on the new constraints
-        if any(c.affects_size for c in new_constraints):
-            self.dirty_size_constraints = True
-        if any(c.affects_position for c in new_constraints):
-            self.dirty_position_constraints = True
-
-        # Clear ignored constraints
-        self._constraints_to_ignore = []
-
         return self
 
     def remove_constraints(self, *names: str) -> Self:
-        for c in self.constraints:
-            if c.name in names:
-                c.on_removal(self)
         self.constraints = [c for c in self.constraints if c.name not in names]
-        self._constraints_to_ignore = []
-        self.dirty_size_constraints = True
-        self.dirty_position_constraints = True
 
         return self
 
 
 
-    def resolve_constraints(self, mode: ResolveMode = "all") -> None:
-        """
-        Resolve constraints affecting size, position, or both.
-
-        Iterates until a stable solution is found, MAX_ITERATIONS is reached,
-        or oscillation is detected.
-        """
-        if self.parent is None or not self.constraints:
-            self._clear_constraint_dirty(mode)
-            return
-
-        # Re-entrancy guard. If a constraint's apply() triggers another
-        # resolve on the same widget, bail rather than corrupt state.
-        if self._resolving_constraints:
-            return
-        self._resolving_constraints = True
-
-        try:
-            # If priorities changed since last call, the ignore list is stale.
-            current_priorities = [c.priority for c in self.constraints]
-            if current_priorities != self._last_constraint_priorities:
-                self._last_constraint_priorities = current_priorities
-                self._constraints_to_ignore = []
-
-            # Filter to relevant constraints, highest priority first.
-            if mode == "size":
-                relevant = [c for c in self.constraints if c.affects_size]
-            elif mode == "position":
-                relevant = [c for c in self.constraints if c.affects_position]
-            else:
-                relevant = list(self.constraints)
-            relevant.sort(key=lambda c: c.priority, reverse=True)
-
-            resolved: dict[int, Constraint] = {}   # id -> constraint
-            seen_states: set[frozenset[int]] = set()
-            iteration = 0
-            converged = False
-
-            for iteration in range(1, MAX_ITERATIONS + 1):
-                changed = False
-
-                # Phase 1: drop previously-resolved constraints that broke.
-                for cid, c in list(resolved.items()):
-                    if not c.evaluate(self.parent, self):
-                        del resolved[cid]
-                        changed = True
-
-                # Phase 2: try to apply unresolved constraints.
-                for c in relevant:
-                    if id(c) in resolved:
-                        continue
-                    if c.apply(self.parent, self):
-                        resolved[id(c)] = c
-                        changed = True
-
-                if not changed:
-                    converged = True
-                    break
-
-                state = frozenset(resolved.keys())
-                if state in seen_states:
-                    break
-                seen_states.add(state)
-
-            if not converged:
-                self._constraints_to_ignore += [
-                    c for c in relevant if id(c) not in resolved
-                ]
-
-            self._last_resolved = [(c, iteration) for c in resolved.values()]
-            self._clear_constraint_dirty(mode)
-        finally:
-            self._resolving_constraints = False
-
-
-    def _clear_constraint_dirty(self, mode: ResolveMode) -> None:
-        if mode in ("size", "all"):
-            self.dirty_size_constraints = False
-        if mode in ("position", "all"):
-            self.dirty_position_constraints = False     
     def has_constraint(self, name: str) -> bool:
         return any(c.name == name for c in self.constraints)
 
@@ -400,6 +396,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                 child.set_draw_order(self.draw_order+1)
             child.set_parent(self)
             child.set_parent_scene(self.parent_scene)
+        self.dirty_surface = True
         if self.parent:
             self.parent.do_sort_children = True
         return self
@@ -412,23 +409,19 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                 self.children.remove(child)
         if self.parent:
             self.parent.do_sort_children = True
-
-    def resolve_size(self, target_size):
-        return self.compute_min_size((
-            target_size[0] if self.autoresize_w else self.rect.w,
-            target_size[1] if self.autoresize_h else self.rect.h,
-        ))
+        self.dirty_surface = True
+        return self
 
     def set_size(self, size: tuple) -> Self:
-        size = list(size)
-        if size[0] is None:
-            size[0] = self.rect.w
-        if size[1] is None:
-            size[1] = self.rect.h
+        if self._arranging:
+            return self  # arrangement hooks cannot replace the parent's allocation
+        previous = self._requested_size
+        size = self._validate_size(tuple(previous[i] if v is None else v for i, v in enumerate(size)), finite=True)
+        self._requested_size = tuple(size)
         if size[0] == self.rect.w and size[1] == self.rect.h:
             return self
         self.rect.size = size
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def process_event(self, event: pygame.Event) -> None:
@@ -459,13 +452,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             self.surface = self.surface.convert_alpha()
         self.surface.set_alpha(old_alpha)
         return True
-
-    def build(self) -> bool:
-        """
-        Updates the size of the widget.
-        return True if size changed
-        """
-        return False
 
     def paint(self) -> None:
         self._resize_surface()
@@ -512,26 +498,6 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         if self.parent:
             self.parent.visit_up(func, *args, **kwargs)
 
-    """
-    1 : 
-    bottom up -> only build children
-
-    """
-
-
-
-    def find_highest_dirty_constraints_widget(self) -> "Widget":
-        if self.is_root : return self
-        w = self.parent
-        tmp = w
-        while not tmp.is_root:
-            if tmp.dirty_size_constraints or tmp.dirty_shape or tmp.autoresize_h or tmp.autoresize_w:
-                w = tmp
-            if not tmp.parent:
-                break
-            tmp = tmp.parent
-        return w
-
     def set_convert_alpha(self, value):
         if value != self.convert_alpha:
             self.dirty_surface = True
@@ -542,60 +508,15 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             self.dirty_surface = True
         return super().set_surface_flags(surface_flags)
 
-    def apply_updates(self, pass_type : Literal["pre","post"]):
-        # print(f"Apply updates {pass_type} called on {self}")
-        if pass_type == "pre":
-            self.apply_pre_updates()
-            for child in self.children:
-                child.apply_updates("pre")
-        elif pass_type == "post":
-            for child in self.children:
-                child.apply_updates("post")
-            self.apply_post_updates(skip_draw=not self.visible)
+    def needs_paint(self) -> bool:
+        """Whether this widget's surface needs repainting this frame."""
+        return self.visible and self.dirty_surface
 
-    def apply_pre_updates(self):
-        """
-        TOP TO BOTTOM
-        Resolves size-related constraints before propagating updates to children.
-        """
-        if self.dirty_size_constraints:
-            self.resolve_constraints(mode = "size")
-            self.dirty_size_constraints = False
-            self.dirty_position_constraints = True
-
-    def apply_post_updates(self, skip_draw: bool = False):
-        """
-        BOTTOM TO TOP
-        Resolves position-related constraints after propagating updates from children.
-        """
-
-        if self.dirty_shape:
-            clear_dirty_shape = True
-            if self.build():
-                self.dirty_size_constraints = True
-                self.dirty_position_constraints = True
-                ancestor = self.find_highest_dirty_constraints_widget()
-                if ancestor:
-                    ancestor.dirty_shape = True
-                    # trigger layout or constraint updates in parent
-                    from .container import Container
-                    from .scrollingContainer import ScrollingContainer
-
-                    if ancestor and (
-                        (isinstance(ancestor, Container)
-                        and (ancestor.autoresize_h or ancestor.autoresize_w))
-                        or isinstance(ancestor, ScrollingContainer)
-                    ):
-                        
-                        ancestor.dirty_layout = True
-                        clear_dirty_shape = False
-            self.dirty_shape = False if clear_dirty_shape else True
-            self.dirty_surface = True
-
-        if self.dirty_position_constraints:
-            self.resolve_constraints(mode = "position")
-
-        if self.dirty_surface and not skip_draw:
+    def paint_tree(self):
+        """Paint after arrangement, children first for composite surfaces."""
+        for child in self.children:
+            child.paint_tree()
+        if self.needs_paint():
             self.paint()
             self.dirty_surface = False
 

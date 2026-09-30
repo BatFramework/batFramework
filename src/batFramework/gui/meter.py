@@ -29,7 +29,7 @@ class Meter(Shape):
 
         # ----------------------------------------------------------
         # Animation
-        # visual_ratio is what _build_content uses for drawing.
+        # visual_ratio is what arrange_override uses for drawing.
         # It trails the true ratio when animation is active,
         # and equals it instantly when animation_speed == 0.
         # ----------------------------------------------------------
@@ -79,7 +79,7 @@ class Meter(Shape):
     def _set_visual_ratio(self, value: float) -> None:
         """Setter used by the easer — marks dirty so paint() is called."""
         self.visual_ratio = value
-        self.dirty_shape = True
+        self.dirty_surface = True
 
     # ==============================================================
     # Value management
@@ -104,7 +104,7 @@ class Meter(Shape):
             self.min_value = range_min
             self.max_value = range_max
             self.visual_ratio = self.get_ratio()  # recompute with new range
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def set_value(self, value: float) -> Self:
@@ -133,14 +133,14 @@ class Meter(Shape):
             self._animate_to(target)
         else:
             self.visual_ratio = target
-            self.dirty_shape = True
+            self.dirty_surface = True
 
     def set_synced_var(self, synced_var: SyncedVar) -> Self:
         if self.synced_var:
             self.synced_var.unbind(self)
         self.synced_var = synced_var
         self.synced_var.bind(self, self._on_synced_var_update)
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
 
@@ -175,7 +175,7 @@ class BarMeter(Meter):
             self.set_axis(bf.axis.HORIZONTAL)
         elif direction in [bf.direction.UP, bf.direction.DOWN]:
             self.set_axis(bf.axis.VERTICAL)
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def set_axis(self, axis: bf.axis) -> Self:
@@ -190,42 +190,28 @@ class BarMeter(Meter):
             # self.content.set_autoresize_h(True).set_autoresize_w(False)
             if self.direction not in [bf.direction.UP, bf.direction.DOWN]:
                 self.set_direction(bf.direction.UP)
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
-    def build(self) -> bool:
-        res = super().build()
-        self._build_content()
-        return res
-
-    def _build_content(self) -> None:
-        """Size and position the content bar using visual_ratio, not get_ratio()."""
+    def arrange_override(self):
+        """Allocate the content bar from the current visual ratio."""
         inner = self.get_inner_rect()
-        ratio = self.visual_ratio  # ← animated display value
-
-        self.content.set_border_radius(*[round(b / 2) for b in self.border_radius])
-
         outline = self.outline_width
-        available_w = inner.width - outline * 2
-        available_h = inner.height - outline * 2
-
+        available_w = max(0, inner.width - outline * 2)
+        available_h = max(0, inner.height - outline * 2)
         if self.axis == bf.axis.HORIZONTAL:
-            content_w = max(0, ceil(available_w * ratio))
-            content_h = available_h
-            self.content.set_size((content_w, content_h))
-            if self.direction == bf.direction.RIGHT:
-                self.content.set_position(inner.left + outline, inner.top + outline)
-            else:
-                self.content.set_position(
-                    inner.right - outline - content_w, inner.top + outline
-                )
+            width = min(available_w, max(0, ceil(available_w * self.visual_ratio)))
+            height = available_h
+            x = inner.left + outline if self.direction == bf.direction.RIGHT else inner.right - outline - width
+            y = inner.top + outline
         else:
-            content_w = available_w
-            content_h = max(0, ceil(available_h * ratio))
-            self.content.set_size((content_w, content_h))
-            if self.direction == bf.direction.UP:
-                self.content.set_position(
-                    inner.left + outline, inner.bottom - outline - content_h
-                )
-            else:
-                self.content.set_position(inner.left + outline, inner.top + outline)
+            width = available_w
+            height = min(available_h, max(0, ceil(available_h * self.visual_ratio)))
+            x = inner.left + outline
+            y = inner.bottom - outline - height if self.direction == bf.direction.UP else inner.top + outline
+        self.content.set_border_radius([round(b / 2) for b in self.border_radius])
+        self.content.arrange((x, y, width, height))
+        self.arrange_children(exclude=self._meter_children())
+
+    def _meter_children(self):
+        return (self.content,)

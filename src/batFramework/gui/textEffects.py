@@ -4,7 +4,7 @@ textEffects.py
 Class-based text-level effects for use with RichTextRenderer.
 
 Every effect exposes:
-    DYNAMIC: bool           — True → Label marks dirty_surface each frame
+    DYNAMIC: bool           — True → Label requests repainting each frame
     apply(text: str) -> str — returns a tagged display string
 
 Dynamic effects are time-gated: apply() recomputes only when at least

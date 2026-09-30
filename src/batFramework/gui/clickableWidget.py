@@ -33,7 +33,7 @@ class ClickableWidget(InteractiveShape):
         if relief == self.unpressed_relief:
             return self
         self.unpressed_relief = relief
-        self.dirty_shape = True
+        self.dirty_surface = True
         if not self.is_pressed:
             self.set_relief(relief)
         return self
@@ -42,7 +42,7 @@ class ClickableWidget(InteractiveShape):
         if relief == self.pressed_relief:
             return self
         self.pressed_relief = relief
-        self.dirty_shape = True
+        self.dirty_surface = True
         if self.is_pressed:
             self.set_relief(relief)
         return self

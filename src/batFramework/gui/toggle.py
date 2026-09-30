@@ -48,7 +48,7 @@ class Toggle(Button):
         self.remove(self.indicator)
         self.indicator = indicator
         self.add(indicator)
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def set_visible(self, value: bool) -> Self:
@@ -80,14 +80,14 @@ class Toggle(Button):
     def set_spacing(self, spacing: bf.spacing) -> Self:
         if spacing != self.spacing:
             self.spacing = spacing
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def set_gap(self, value: int | float) -> Self:
         value = max(0, value)
         if value != self.gap:
             self.gap = value
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     # ------------------------------------------------------------
@@ -111,15 +111,15 @@ class Toggle(Button):
     # Layout (widgetUtils)
     # ------------------------------------------------------------
 
-    def build(self) -> bool:
-        res = super().build()
+    def arrange_override(self):
+        self._recompute_text_rect()
 
         local_inner = self.get_local_inner_rect()
 
         text_w, text_h = self.get_text_size()
         ind_size = max(self.font.get_height() // 2, 8)
 
-        self.indicator.set_size(self.indicator.resolve_size((ind_size, ind_size)))
+        indicator_size = self.indicator.constrain_size((ind_size, ind_size), local_inner.size)
 
         has_text = bool(self.text)
         gap = (self.gap if self.text else 0) if self.spacing == bf.spacing.MANUAL else 0
@@ -132,10 +132,10 @@ class Toggle(Button):
         if has_text:
             slots = [
                 LayoutSlot((text_w, text_h), 0),
-                LayoutSlot(self.indicator.rect.size, ind_weight),
+                LayoutSlot(indicator_size, ind_weight),
             ]
         else:
-            slots = [LayoutSlot(self.indicator.rect.size, ind_weight)]
+            slots = [LayoutSlot(indicator_size, ind_weight)]
 
         rects = distribute_horizontal(
             slots=slots,
@@ -156,10 +156,6 @@ class Toggle(Button):
         else:
             ind_rect = rects[0]
 
-        # ---- Indicator position (WORLD coords) --------------------
-        self.indicator.set_position(
-            x=ind_rect.left + self.rect.x,
-            y=ind_rect.top + self.rect.y,
-        )
-
-        return res
+        size = self.indicator.constrain_size(indicator_size, ind_rect.size)
+        self.indicator.arrange((ind_rect.left + self.rect.x, ind_rect.top + self.rect.y, *size))
+        self.arrange_children(exclude=(self.indicator,))

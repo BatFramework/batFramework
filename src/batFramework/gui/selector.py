@@ -126,13 +126,13 @@ class Selector(Button):
         value = max(0, value)
         if value != self.gap:
             self.gap = value
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def set_spacing(self, spacing: bf.spacing) -> Self:
         if spacing != self.spacing:
             self.spacing = spacing
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def set_arrow_color(self, color) -> Self:
@@ -250,17 +250,17 @@ class Selector(Button):
         r = self.expand_rect_with_padding((0, 0, total_w, total_h)).size
         return self.compute_min_size(r)
     # ------------------------------------------------------------------
-    # Layout via build() — mirrors Slider/Toggle pattern
+    # Child arrangement — mirrors Slider/Toggle pattern
     # ------------------------------------------------------------------
 
-    def build(self) -> bool:
-        res = super().build()
+    def arrange_override(self):
+        self._recompute_text_rect()
 
         local_inner = self.get_local_inner_rect()
         text_w, text_h = self.get_text_size()
 
         # Arrow size: square whose side equals the inner height
-        arrow_size = arrow_size = max(self.font.get_height() // 2, 10)
+        arrow_size = max(self.font.get_height() // 2, 10)
         arrow_slot_size = (arrow_size, arrow_size)
 
         # Resolve gap
@@ -303,30 +303,13 @@ class Selector(Button):
         ty = ceil(text_rect.centery - text_h / 2)
         self.text_rect.update(tx, ty, text_w, text_h)
 
-        # ---- Label position (WORLD coords) ----------------------------
         if self.label.text:
-            self.label.set_size(self.label.resolve_size((label_w, label_h)))
-            self.label.set_position(
-                x=label_rect.left + self.rect.x,
-                y=label_rect.top + self.rect.y,
-            )
-
-        # ---- Arrow sizes and positions (WORLD coords) -----------------
-        left_size = self.left_indicator.resolve_size(arrow_slot_size)
-        self.left_indicator.set_size(left_size)
-        self.left_indicator.set_position(
-            x=left_rect.left + self.rect.x,
-            y=left_rect.top + self.rect.y,
-        )
-
-        right_size = self.right_indicator.resolve_size(arrow_slot_size)
-        self.right_indicator.set_size(right_size)
-        self.right_indicator.set_position(
-            x=right_rect.left + self.rect.x,
-            y=right_rect.top + self.rect.y,
-        )
-
-        return res
+            self.label.arrange(label_rect.move(self.rect.topleft))
+        else:
+            self.label.arrange((*self.rect.topleft, 0, 0))
+        self.left_indicator.arrange(left_rect.move(self.rect.topleft))
+        self.right_indicator.arrange(right_rect.move(self.rect.topleft))
+        self.arrange_children(exclude=(self.label, self.left_indicator, self.right_indicator))
 
     # ------------------------------------------------------------------
     # Keyboard input

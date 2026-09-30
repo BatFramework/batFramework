@@ -39,9 +39,7 @@ class CollapseContainer(Shape, InteractiveWidget):
         self.state = SyncedVar[bool](True)
         self.state.bind(self, self._on_state_change)
         self.toggle = Toggle(text, synced_var=self.state)
-        self.toggle.set_autoresize_w(False)
         self.container = Container(layout, *children)
-        self.container.set_autoresize_w(False)
         self.add(self.toggle, self.container)
         self.state.value = False
         self.toggle.set_indicator(CollapseIndicator(self.state))
@@ -55,12 +53,12 @@ class CollapseContainer(Shape, InteractiveWidget):
     def _on_state_change(self, value):
         if value:
             self.container.show() 
-            self.container.dirty_layout = True
+            self.container.dirty_surface = True
 
         else :
             self.container.hide()
         
-        self.dirty_shape = True
+        self.dirty_surface = True
 
     def allow_focus_to_self(self):
         return super().allow_focus_to_self() and self.toggle.allow_focus_to_self()
@@ -71,37 +69,26 @@ class CollapseContainer(Shape, InteractiveWidget):
             return True
         return False
 
-    def build(self):
-        res = False
-        min_size = self.get_min_required_size()
-        target_size = self.resolve_size(min_size)
-        if self.rect.size != target_size:
-            self.set_size(target_size)
-            res = True
+    def measure_override(self, available_size):
+        # These two children stretch across the control; their preferred width
+        # is still intrinsic during measurement.
+        toggle_size = self.toggle.measure(available_size)
+        content_offer = (available_size[0], max(0, available_size[1] - toggle_size[1]))
+        content_size = self.container.measure(content_offer)
+        for child in self.children:
+            if child not in (self.toggle, self.container):
+                child.measure(available_size)
+        height = toggle_size[1] + (content_size[1] if self.state.value else 0)
+        return self.compute_min_size((max(toggle_size[0], content_size[0]) + self.padding[0] + self.padding[2],
+                                      height + self.padding[1] + self.padding[3] + self.relief))
 
+    def arrange_override(self):
         inner = self.get_inner_rect()
-        self.toggle.set_size((inner.w, None))
-        self.toggle.set_position(*inner.topleft)
-        if self.state.value:
-            self.container.set_size((inner.w, None))
-            self.container.set_position(*self.toggle.rect.bottomleft)
-        return res
-
-
+        toggle_height = min(inner.h, self.toggle.desired_size[1])
+        self.toggle.arrange((inner.x, inner.y, inner.w, toggle_height))
+        height = min(max(0, inner.h - toggle_height), self.container.desired_size[1]) if self.state.value else 0
+        self.container.arrange((inner.x, inner.y + toggle_height, inner.w, height))
+        self.arrange_children(exclude=(self.toggle, self.container))
 
     def get_min_required_size(self):
-        t_min = self.toggle.get_min_required_size()
-        if self.container.layout:
-            c_min = self.container.expand_rect_with_padding(
-                (0, 0, *self.container.layout.get_raw_size())
-            ).size
-        else:
-            c_min = self.container.get_min_required_size()
-        if not self.state.value:
-            c_min = (c_min[0], 0)
-
-        r =  self.expand_rect_with_padding(
-            (0, 0, max(t_min[0], c_min[0]), t_min[1] + c_min[1])
-        ).size
-
-        return self.compute_min_size(r)
+        return self.desired_size

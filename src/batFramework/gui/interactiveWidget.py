@@ -2,7 +2,9 @@ from .widget import Widget
 from typing import Callable, Self,Any
 import pygame
 import batFramework as bf
+import logging
 
+logger = logging.getLogger(__name__)
 
 def children_has_focus(widget) -> bool:
     if isinstance(widget, InteractiveWidget) and widget.is_focused:
@@ -199,6 +201,7 @@ class InteractiveWidget(Widget):
     # -----------------------------------------------------------------
 
     def focus_next_tab(self, current: "InteractiveWidget" = None) -> None:
+        logger.debug(f"focus next in {self=} {current=}")
         current = current or self
         scope = current.find_focus_scope()
         if scope is None:
@@ -208,6 +211,8 @@ class InteractiveWidget(Widget):
             nxt.ask_focus()
 
     def focus_prev_tab(self, current: "InteractiveWidget" = None) -> None:
+        logger.debug(f"focus prev in {self=} {current=}")
+
         current = current or self
         scope = current.find_focus_scope()
         if scope is None:

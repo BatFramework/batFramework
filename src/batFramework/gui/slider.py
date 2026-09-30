@@ -71,11 +71,6 @@ class SliderHandle(Indicator, DraggableWidget):
     def draw_focused(self, camera):
         return
 
-    def apply_post_updates(self, skip_draw: bool = False):
-        should_update = self.dirty_shape
-        super().apply_post_updates(skip_draw)
-        if should_update: self.update_position()
-
 class SliderMeter(BarMeter, InteractiveShape):
     def __init__(
         self, min_value=0, max_value=1, step=0.1, synced_var: SyncedVar = None
@@ -123,8 +118,9 @@ class SliderMeter(BarMeter, InteractiveShape):
         r = self.expand_rect_with_padding((0, 0, *size)).size
         return self.compute_min_size(r)
 
-    def value_to_position(self, value: float) -> tuple[float, float]:
+    def value_to_position(self, value: float, handle_size=None) -> tuple[float, float]:
         rect = self.get_inner_rect()
+        width, height = self.handle.rect.size if handle_size is None else handle_size
         value_range = self.get_range()
         if self.snap:
             value = bf.utils.round_to_step_precision(value, self.step)
@@ -134,14 +130,14 @@ class SliderMeter(BarMeter, InteractiveShape):
             ratio = 1 - ratio
 
         if self.axis == bf.axis.HORIZONTAL:
-            x = rect.left + (self.handle.rect.w / 2) + ratio * (rect.width - self.handle.rect.w)
+            x = rect.left + (width / 2) + ratio * (rect.width - width)
             y = rect.centery
         else:
             x = rect.centerx
             y = (
                 rect.bottom
-                - (self.handle.rect.h / 2)
-                - ratio * (rect.height - self.handle.rect.h)
+                - (height / 2)
+                - ratio * (rect.height - height)
             )
         return (x, y)
 
@@ -207,24 +203,28 @@ class SliderMeter(BarMeter, InteractiveShape):
         super().on_click_down(button, event)
         # event.consumed = old_consume
         if button == 1:
-            if not self.parent.ask_focus(): return
+            if not self.ask_focus(): return
             world_pos = self.get_camera().get_mouse_pos()
             if self.get_inner_rect().collidepoint(*world_pos):
                 new_value = self.position_to_value(world_pos)
                 self.set_value(new_value)
                 self.handle.on_click_down(button, event)
 
-    def build(self):
-        changed = super().build()
-        self._build_content()
-        handle_size = (
-            self.get_inner_height()
-            if self.axis == bf.axis.HORIZONTAL
-            else self.get_inner_width()
-        )
-        self.handle.set_size(self.handle.resolve_size((handle_size, handle_size)))
-        self.handle.update_position()
-        return changed
+    def _meter_children(self):
+        return (self.content, self.handle)
+
+    def get_handle_size(self, available_size):
+        """Preferred thumb size inside the rail; scrollbars can vary its length."""
+        side = available_size[1] if self.axis == bf.axis.HORIZONTAL else available_size[0]
+        return (side, side)
+
+    def arrange_override(self):
+        super().arrange_override()
+        inner = self.get_inner_rect()
+        size = self.handle.constrain_size(self.get_handle_size(inner.size), inner.size)
+        rect = pygame.FRect(0, 0, *size)
+        rect.center = self.value_to_position(self.synced_var.value, size)
+        self.handle.arrange(rect.clamp(inner))
 
     def set_axis(self, axis):
         super().set_axis(axis)
@@ -288,7 +288,7 @@ class Slider(Button):
     def set_axis(self, axis: bf.axis) -> Self:
         self.meter.set_axis(axis)
         self.axis = self.meter.axis
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def set_direction(self, direction: bf.direction) -> Self:
@@ -306,7 +306,7 @@ class Slider(Button):
     def set_spacing(self, spacing: bf.spacing) -> Self:
         if spacing != self.spacing:
             self.spacing = spacing
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def set_modify_callback(self, callback: Callable[[float], Any]) -> Self:
@@ -315,12 +315,12 @@ class Slider(Button):
 
     def set_range(self, range_min: float, range_max: float) -> Self:
         self.meter.set_range(range_min, range_max)
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def set_step(self, step: float) -> Self:
         self.meter.set_step(step)
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def set_value(self, value) -> Self:
@@ -404,8 +404,8 @@ class Slider(Button):
 
 
 
-    def build(self) -> bool:
-        res = super().build()
+    def arrange_override(self):
+        self._recompute_text_rect()
 
         # ---- Measure ------------------------------------------------
         text_w, text_h = self.get_text_size()
@@ -489,14 +489,5 @@ class Slider(Button):
 
             self.text_rect.update(tx, ty, text_w, text_h)
 
-        # ---- Meter size --------------------------------------------
-        meter_size = meter_rect.size
-        self.meter.set_size(meter_size)
-
-        # ---- Meter position (WORLD coords) -------------------------
-        self.meter.set_position(
-            x=meter_rect.left + self.rect.x,
-            y=meter_rect.top + self.rect.y,
-        )
-
-        return res
+        self.meter.arrange(meter_rect.move(self.rect.topleft))
+        self.arrange_children(exclude=(self.meter,))

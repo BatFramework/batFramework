@@ -20,7 +20,9 @@ def distribute_horizontal(
     Slots with weight > 0 share the leftover space proportionally.
     """
     fixed_w = sum(s.size[0] for s in slots if s.weight == 0)
-    total_gap = gap * (len(slots) - 1)
+    gap = min(max(0, gap), rect.width / max(1, len(slots) - 1))
+    total_gap = gap * max(0, len(slots) - 1)
+    fixed_scale = min(1, max(0, rect.width - total_gap) / fixed_w) if fixed_w else 1
     leftover = max(0.0, rect.width - fixed_w - total_gap)
     total_weight = sum(s.weight for s in slots if s.weight > 0)
 
@@ -29,7 +31,7 @@ def distribute_horizontal(
         if slot.weight > 0 and total_weight > 0:
             widths.append(leftover * slot.weight / total_weight)
         else:
-            widths.append(slot.size[0])
+            widths.append(slot.size[0] * fixed_scale)
 
     total_w = sum(widths) + total_gap
     start_x = {
@@ -43,7 +45,7 @@ def distribute_horizontal(
     result: list[pygame.FRect] = []
     x = start_x
     for slot, w in zip(slots, widths):
-        h = slot.size[1]
+        h = min(slot.size[1], max(0, rect.height))
         r = pygame.FRect(x, rect.centery - h / 2, w, h)
         result.append(r)
         x += w + gap
@@ -58,7 +60,9 @@ def distribute_vertical(
     alignment: bf.alignment = bf.alignment.CENTER,
 ) -> list[pygame.FRect]:
     fixed_h = sum(s.size[1] for s in slots if s.weight == 0)
-    total_gap = gap * (len(slots) - 1)
+    gap = min(max(0, gap), rect.height / max(1, len(slots) - 1))
+    total_gap = gap * max(0, len(slots) - 1)
+    fixed_scale = min(1, max(0, rect.height - total_gap) / fixed_h) if fixed_h else 1
     leftover = max(0.0, rect.height - fixed_h - total_gap)
     total_weight = sum(s.weight for s in slots if s.weight > 0)
 
@@ -67,7 +71,7 @@ def distribute_vertical(
         if slot.weight > 0 and total_weight > 0:
             heights.append(leftover * slot.weight / total_weight)
         else:
-            heights.append(slot.size[1])
+            heights.append(slot.size[1] * fixed_scale)
 
     total_h = sum(heights) + total_gap
     start_y = {
@@ -79,7 +83,7 @@ def distribute_vertical(
     result: list[pygame.FRect] = []
     y = start_y
     for slot, h in zip(slots, heights):
-        w = slot.size[0]
+        w = min(slot.size[0], max(0, rect.width))
         r = pygame.FRect(rect.centerx - w / 2, y, w, h)
         result.append(r)
         y += h + gap

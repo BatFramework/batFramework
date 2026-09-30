@@ -265,22 +265,16 @@ class TextInput(Label, InteractiveShape):
         self._after_edit()
         return self
 
-    def build(self) -> bool:
-        target = self.resolve_size(self.get_min_required_size())
-        changed = self.rect.size != target
-        if changed:
-            self.set_size(target)
+    def arrange_override(self):
         self._recompute_text_rect()
-        r = self.placeholder.rect.copy()
-        self._align_text_helper(r)
-        self.placeholder.set_position(*r.move(*self.rect.topleft).topleft)
-        return changed
-
-    def apply_post_updates(self, skip_draw=False):
-        super().apply_post_updates(skip_draw)
+        size = self.placeholder.constrain_size(self.placeholder.desired_size, self.get_inner_rect().size)
+        rect = pygame.FRect(0, 0, *size)
+        self._align_text_helper(rect)
+        self.placeholder.arrange(rect.move(self.rect.topleft))
+        self.arrange_children(exclude=(self.placeholder,))
         if self.edited_this_frame:
-            self._ensure_cursor_visible()
             self.edited_this_frame = False
+            self._ensure_cursor_visible()
 
     # =================================================
     # Paint

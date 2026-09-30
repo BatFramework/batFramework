@@ -77,7 +77,7 @@ class TextMixin:
         if self.font_size != size:
             self.font_size = size
             self.font = bf.FontManager().get_font(self.font_name, self.font_size)
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def get_font_size(self) -> int:
@@ -87,7 +87,7 @@ class TextMixin:
         if self.font_name != name:
             self.font_name = name
             self.font = bf.FontManager().get_font(self.font_name, self.font_size)
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def get_font_name(self) -> str | None:
@@ -102,7 +102,7 @@ class TextMixin:
         text = self.filter_function(raw) if self.filter_function else raw
         if self.text != text:
             self.text = text
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def get_text(self) -> str:
@@ -146,7 +146,7 @@ class TextMixin:
     def set_bold(self, value: bool) -> Self:
         if self.bold != value:
             self.bold = value
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def is_bold(self) -> bool:
@@ -155,7 +155,7 @@ class TextMixin:
     def set_italic(self, value: bool) -> Self:
         if self.italic != value:
             self.italic = value
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def is_italic(self) -> bool:
@@ -164,7 +164,7 @@ class TextMixin:
     def set_underline(self, value: bool) -> Self:
         if self.underline != value:
             self.underline = value
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def is_underline(self) -> bool:
@@ -187,7 +187,7 @@ class TextMixin:
         """Explicit pixel wraplength. Set to 0 to disable."""
         if self.wraplength != value:
             self.wraplength = value
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def get_wraplength(self) -> int:
@@ -200,7 +200,7 @@ class TextMixin:
         """
         if self.auto_wraplength != value:
             self.auto_wraplength = value
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def _get_effective_wraplength(self) -> int:
@@ -209,8 +209,14 @@ class TextMixin:
         Respects auto_wraplength, but only when the widget is not set to
         auto-resize horizontally (otherwise wrapping would fight expansion).
         """
-        if self.auto_wraplength and not self.autoresize_w:
-            return int(self.get_inner_width()) 
+        if self.auto_wraplength:
+            if self._measure_size is not None:
+                width = self.get_content_size(self._measure_size)[0]
+            else:
+                width = self.get_inner_width()
+            from math import isfinite
+            if isfinite(width):
+                return max(1, int(width))
         return self.wraplength
 
     # ==============================================================
@@ -238,7 +244,7 @@ class TextMixin:
     def set_show_text_outline(self, value: bool) -> Self:
         if self.show_text_outline != value:
             self.show_text_outline = value
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def set_text_outline_color(self, color: pygame.typing.ColorLike) -> Self:
@@ -281,7 +287,7 @@ class TextMixin:
                     )
                 except IndexError:
                     pass
-        self.dirty_shape = True
+        self.dirty_surface = True
         return self
 
     def _get_outline_offset(self) -> tuple[int, int]:
@@ -314,7 +320,7 @@ class TextMixin:
     def set_renderer(self, renderer: TextRenderer) -> Self:
         if self.renderer is not renderer:
             self.renderer = renderer
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def get_renderer(self) -> TextRenderer:

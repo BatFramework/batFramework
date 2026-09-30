@@ -24,7 +24,7 @@ class Shape(Widget):
         return self.rect.bottom - self.padding[3] - self.relief
 
     def get_inner_height(self) -> float:
-        return self.rect.h - self.padding[1] - self.padding[3] - self.relief
+        return max(0, self.rect.h - self.padding[1] - self.padding[3] - self.relief)
 
     def get_inner_top(self) -> float:
         return self.rect.y + self.padding[1]
@@ -33,16 +33,16 @@ class Shape(Widget):
         return pygame.FRect(
             self.padding[0],
             self.padding[1],
-            self.rect.w - self.padding[2] - self.padding[0],
-            self.rect.h - self.padding[1] - self.padding[3] - self.relief,
+            max(0, self.rect.w - self.padding[2] - self.padding[0]),
+            max(0, self.rect.h - self.padding[1] - self.padding[3] - self.relief),
         )
 
     def get_inner_rect(self) -> pygame.FRect:
         return pygame.FRect(
             self.rect.x + self.padding[0],
             self.rect.y + self.padding[1],
-            self.rect.w - self.padding[2] - self.padding[0],
-            self.rect.h - self.padding[1] - self.padding[3] - self.relief,
+            max(0, self.rect.w - self.padding[2] - self.padding[0]),
+            max(0, self.rect.h - self.padding[1] - self.padding[3] - self.relief),
         )
 
     def set_shadow_color(self, color: pygame.typing.ColorLike) -> Self:
@@ -53,7 +53,7 @@ class Shape(Widget):
     def set_relief(self, relief: int) -> Self:
         if relief < 0:
             return self
-        self.dirty_shape = self.relief != relief
+        self.dirty_surface |= self.relief != relief
         self.relief = relief
         return self
 
@@ -190,14 +190,6 @@ class Shape(Widget):
             self._get_elevated_rect(),
             self.outline_width,
         )
-
-    def build(self):
-        target = self.resolve_size(self.get_min_required_size())
-        changed = self.rect.size != target
-        if changed:
-            self.set_size(target)
-
-        return changed
 
     def _paint_rounded_outline(self) -> None:
         if self.outline_color is None:

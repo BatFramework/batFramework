@@ -4,6 +4,7 @@ import sys
 from typing import Self
 
 class ToolTip(Label):
+    """Label with delayed visibility; Root owns its measurement and placement."""
 
     def __init__(self, text=""):
         super().__init__(text)
@@ -11,7 +12,10 @@ class ToolTip(Label):
         self.fade_in_duration: float = 0.1
         self.fade_out_duration: float = 0.1
         self.offset_scale: float = 4
+        self.max_width: float = 320
+        self.screen_margin: float = 4
         self.target = None
+        self.set_auto_wraplength(True)
 
     def set_offset_scale(self, scale: float) -> Self:
         self.offset_scale = scale
@@ -26,7 +30,7 @@ class ToolTip(Label):
             easing=bf.easing.EASE_OUT,
             loop=0,
             register=self.parent_scene.name,
-        ).add_custom(self.get_alpha, self.set_alpha, 255)
+        ).add_custom(self.get_alpha, self.set_alpha, 255).set_auto_delete(False)
 
         self.fade_out_easer = bf.PropertyEaser(
             duration=self.fade_out_duration,
@@ -34,9 +38,10 @@ class ToolTip(Label):
             loop=0,
             register=self.parent_scene.name,
             end_callback=lambda: self.set_visible(False),
-        ).add_custom(self.get_alpha, self.set_alpha, 0)
+        ).add_custom(self.get_alpha, self.set_alpha, 0).set_auto_delete(False)
 
-        self.delay_timer = bf.Timer(0.5,self._fade_in_internal,0)
+        self.delay_timer = bf.Timer(0.5, self._fade_in_internal, 0,
+                                   register=self.parent_scene.name).set_auto_delete(False)
 
         self.set_draw_order(sys.maxsize)
         self.set_padding((4, 2))
@@ -51,17 +56,31 @@ class ToolTip(Label):
     def top_at(self, x, y):
         return None  # Tooltips should not block mouse
 
+    def set_target(self, target) -> Self:
+        """Update content and appearance state; never change layout geometry."""
+        if target is not None:
+            self.set_text(target.tooltip_text)
+        if target is self.target:
+            return self
+        self.target = target
+        if target is None:
+            self.fade_out()
+        else:
+            self.fade_in()
+        return self
+
     # -----------------------------------------
     # Fade Logic
     # -----------------------------------------
 
     def set_fade_in_delay(self, delay : float) -> Self:
         self.delay_timer.set_duration(delay)
+        return self
 
     def _fade_in_internal(self):
         # If we got disabled or lost target during delay, abort
         root = self.get_root()
-        if root and (not root.show_tooltip or root._tooltip_target is None):
+        if self.target is None or root is None or not root.show_tooltip:
             return
 
         if not self.visible:
@@ -75,9 +94,13 @@ class ToolTip(Label):
 
     def fade_in(self):
         """Trigger fading in after tooltip delay"""
-        # Always reset delay timer cleanly so it can restart even if previously scheduled/paused
         self.delay_timer.stop()
-        self.delay_timer.start(force=True)
+        self.fade_out_easer.stop()
+        if self.visible:
+            # Retargeting a visible tooltip should not blink or finish fading out.
+            self._fade_in_internal()
+        else:
+            self.delay_timer.start(force=True)
 
     def fade_out(self):
         """Hide tooltip and cancel any pending delayed fade-in."""

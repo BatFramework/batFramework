@@ -23,7 +23,7 @@ class Label(TextMixin, Shape):
     def __init__(self, text: str = "", renderer: TextRenderer | None = None):
         super().__init__(text=text, renderer=renderer)
         self.alignment: bf.alignment = bf.alignment.CENTER
-        # Blit position in local surface coordinates, updated every build().
+        # Blit position in local surface coordinates, updated during arrangement.
         self.text_rect = pygame.FRect(0, 0, 0, 0)
         self.text_effect: TextEffect | None = None
         self.set_surface_flags(pygame.SRCALPHA)
@@ -48,7 +48,7 @@ class Label(TextMixin, Shape):
     def set_alignment(self, alignment: bf.alignment) -> Self:
         if self.alignment != alignment:
             self.alignment = alignment
-            self.dirty_shape = True
+            self.dirty_surface = True
         return self
 
     def get_alignment(self) -> bf.alignment:
@@ -64,18 +64,12 @@ class Label(TextMixin, Shape):
         return self.compute_min_size(r)
 
     # ------------------------------------------------------------------
-    # Build  (size + text offset, no drawing)
+    # Arrangement (text offset, no drawing)
     # ------------------------------------------------------------------
 
-    def build(self) -> bool:
-        target = self.resolve_size(self.get_min_required_size())
-        changed = self.rect.size != target
-        if changed:
-            self.set_size(target)
-
+    def arrange_override(self):
         self._recompute_text_rect()
-        return changed
-
+        super().arrange_override()
 
     def _align_text_helper(self,text_rect):
         inner = self.get_local_inner_rect()
@@ -116,10 +110,11 @@ class Label(TextMixin, Shape):
             return style
         return super()._build_style()
 
-    def apply_post_updates(self, skip_draw=False):
-        super().apply_post_updates(skip_draw)
-        if self.renderer.DYNAMIC or (self.text_effect and self.text_effect.DYNAMIC):
-            self.dirty_surface = True
+    def needs_paint(self) -> bool:
+        return self.visible and bool(
+            self.dirty_surface or self.renderer.DYNAMIC
+            or (self.text_effect and self.text_effect.DYNAMIC)
+        )
 
     def paint(self) -> None:
         # Shape draws background fill, relief shadow, and border outline.

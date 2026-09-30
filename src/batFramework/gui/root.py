@@ -2,7 +2,7 @@ import batFramework as bf
 from .interactiveWidget import InteractiveWidget
 from .widget import Widget
 import pygame
-from typing import Self
+from typing import Self, Callable
 import sys
 
 
@@ -14,6 +14,7 @@ class Root(InteractiveWidget):
         self._layers: dict[bf.gui.GuiLayer, list[Widget]] = {
             l: [] for l in bf.gui.GuiLayer if l != bf.gui.GuiLayer.NORMAL
         }
+        self._popup_layouts: dict[Widget, Callable[[pygame.FRect], None]] = {}
         self.is_root = True
         self._default_camera: bf.Camera | None = camera  # used while not in a scene
         self.visible = False
@@ -28,8 +29,6 @@ class Root(InteractiveWidget):
         self.add(self.tooltip)
         self.set_click_pass_through(True)
 
-        # Track what widget is currently showing tooltip
-        self._tooltip_target: Widget | None = None
 
     @property
     def drawing_camera(self) -> bf.Camera:
@@ -38,12 +37,15 @@ class Root(InteractiveWidget):
 
     def set_show_tooltip(self, value: bool) -> Self:
         self.show_tooltip = value
+        if not value:
+            self.tooltip.set_target(None)
         return self
 
     def __str__(self) -> str:
         return "Root"
 
-    def attach_to_layer(self, widget: Widget, layer: bf.gui.GuiLayer) -> None:
+    def attach_to_layer(self, widget: Widget, layer: bf.gui.GuiLayer,
+                        layout_callback: Callable[[pygame.FRect], None] | None = None) -> None:
         if layer == bf.gui.GuiLayer.NORMAL:
             return # NORMAL layer is for regular child widgets, not layered ones; ignore layer assignment for NORMAL
         if widget.parent is not None and widget.parent is not self :
@@ -56,8 +58,12 @@ class Root(InteractiveWidget):
             if widget in layer_widgets:
                 layer_widgets.remove(widget)
         self._layers[layer].append(widget)
+        self._popup_layouts.pop(widget, None)
+        if layout_callback is not None:
+            self._popup_layouts[widget] = layout_callback
 
     def detach_from_layer(self, widget: Widget) -> None:
+        self._popup_layouts.pop(widget, None)
         for layer_widgets in self._layers.values():
             if widget in layer_widgets:
                 layer_widgets.remove(widget)
@@ -90,6 +96,7 @@ class Root(InteractiveWidget):
         if isinstance(self.hovered, InteractiveWidget):
             self.hovered.on_exit()
         self.hovered = None
+        self.tooltip.set_target(None)
 
     def get_debug_outlines(self):
         yield (self.rect, self.debug_color)
@@ -137,8 +144,7 @@ class Root(InteractiveWidget):
         if not force:
             return self
         self.rect.size = size
-        self.dirty_shape = True
-        self.dirty_size_constraints = True
+        self.dirty_surface = True
         return self
 
     def process_event(self, event):
@@ -174,7 +180,14 @@ class Root(InteractiveWidget):
         super().on_click_down(button, event)
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
+        layered = {w for widgets in self._layers.values() for w in widgets}
+        for layer in sorted(self._layers, reverse=True):
+            for widget in reversed(self._layers[layer]):
+                if widget.visible and (hit := widget.top_at(x, y)) is not None:
+                    return hit
         for child in reversed(self.children):
+            if child in layered:
+                continue
             r = child.top_at(x, y)
             if r is not None:
                 return r
@@ -184,50 +197,10 @@ class Root(InteractiveWidget):
         super().update(dt)
         self.update_tree()
 
-        mouse_world = self.drawing_camera.get_mouse_pos()
+    def _update_hover(self, mouse_world):
+        """Hit-test the normal UI after its final rectangles have been assigned."""
         prev_hovered = self.hovered
         self.hovered = self.top_at(*mouse_world)
-
-        # Tooltip logic: only trigger fade when target changes
-        current_tooltip_widget = (
-            self.hovered if (self.hovered and self.hovered.tooltip_text) else None
-        )
-        if current_tooltip_widget:
-            self.tooltip.set_text(current_tooltip_widget.tooltip_text)
-        if current_tooltip_widget != self._tooltip_target:
-            # Tooltip target changed
-            if current_tooltip_widget and self.show_tooltip:
-                # Start showing tooltip for new target
-
-                self.tooltip.fade_in()
-                
-                
-                
-
-        if self.tooltip.visible and current_tooltip_widget is None and current_tooltip_widget is not self._tooltip_target:
-            # Hide tooltip (either no target or tooltip disabled)
-            self.tooltip.fade_out()
-
-        self._tooltip_target = current_tooltip_widget
-        # Position tooltip
-        if self.tooltip.visible:
-            offset = 2 + 2 * self.tooltip.offset_scale
-            mouse_x, mouse_y = mouse_world
-            tooltip_rect = pygame.FRect(mouse_x, mouse_y,*self.tooltip.get_min_required_size())
-            screen_rect = pygame.Rect(0,0,*bf.const.RESOLUTION)
-
-            screen_rect = self.drawing_camera.world_to_screen(screen_rect).inflate(offset,offset)
-            if tooltip_rect.right + offset <= screen_rect.right:
-                tooltip_rect.move_ip(offset,0)
-            else:
-                tooltip_rect.move_ip(-tooltip_rect.w - offset,0)
-
-            if tooltip_rect.bottom + offset <= screen_rect.bottom:
-                tooltip_rect.move_ip(0,offset)
-            else:
-                tooltip_rect.move_ip(0,-tooltip_rect.h - offset)            
-            
-            self.tooltip.set_position(tooltip_rect.x, tooltip_rect.y)
 
         # Handle hover state changes
         if self.hovered == prev_hovered:
@@ -239,19 +212,68 @@ class Root(InteractiveWidget):
         if isinstance(self.hovered, InteractiveWidget):
             self.hovered.on_enter()
 
+    def measure(self, available_size):
+        super().measure(available_size)
+        self.desired_size = self.available_size
+        return self.desired_size
+
+    def measure_override(self, available_size):
+        # The tooltip has its own bounded layout pass after hover is resolved.
+        for child in self.children:
+            if child is not self.tooltip and child not in self._popup_layouts:
+                child.measure(available_size)
+        return self.get_min_required_size()
+
+    def arrange_override(self):
+        self.arrange_children(exclude=(self.tooltip, *self._popup_layouts))
+
+    @staticmethod
+    def _place_tooltip(size, mouse_world, bounds, gap):
+        """Pure placement: prefer down/right, flip at edges, then clamp."""
+        x, y = mouse_world
+        rect = pygame.FRect(x + gap, y + gap, *size)
+        if rect.right > bounds.right:
+            rect.x = x - gap - rect.width
+        if rect.bottom > bounds.bottom:
+            rect.y = y - gap - rect.height
+        return rect.clamp(bounds)
+
+    def _layout_tooltip(self, mouse_world, viewport):
+        if not self.tooltip.visible:
+            return
+        # Keep all geometry in GUI world coordinates, including camera bounds.
+        margin = self.tooltip.screen_margin
+        mx, my = min(margin, viewport.width / 2), min(margin, viewport.height / 2)
+        bounds = pygame.FRect(viewport.x + mx, viewport.y + my,
+                             max(0, viewport.width - 2 * mx), max(0, viewport.height - 2 * my))
+        available = (min(self.tooltip.max_width, bounds.width), bounds.height)
+        desired = self.tooltip.measure(available)
+        gap = max(0, 2 + 2 * self.tooltip.offset_scale)
+        rect = self._place_tooltip(desired, mouse_world, bounds, gap)
+        self.tooltip.arrange(rect)
+
     def update_tree(self):
-        # 1st pass
-        self.apply_updates("pre")
-        self.apply_updates("post")
-        # 2nd pass
-        self.apply_updates("pre")
-        self.apply_updates("post")
+        self.measure(self.rect.size)
+        self.arrange(self.rect)
+        camera = self.drawing_camera
+        viewport = camera.world_rect if camera is not None else self.rect
+        # Anchors now have final rectangles. Popups negotiate their bounded
+        # allocations before hover resolution and before the tree is painted.
+        for popup, layout in tuple(self._popup_layouts.items()):
+            if popup.visible:
+                layout(viewport.copy())
+        if camera is not None:
+            mouse_world = camera.get_mouse_pos()
+            self._update_hover(mouse_world)
+            target = self.hovered if (self.show_tooltip and self.hovered
+                                      and self.hovered.tooltip_text) else None
+            self.tooltip.set_target(target)
+            self._layout_tooltip(mouse_world, camera.world_rect)
+        self.paint_tree()
 
-    def apply_pre_updates(self):
-        return
-
-    def apply_post_updates(self, skip_draw=False):
-        return
+    def needs_paint(self) -> bool:
+        # Root owns layout and layers, but has no visual surface of its own.
+        return False
 
     def draw(self, camera):
         layered = {w for layer_widgets in self._layers.values() for w in layer_widgets}

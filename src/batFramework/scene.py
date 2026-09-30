@@ -421,7 +421,7 @@ class Scene:
 
     def on_enter(self):
         self.root.clear_hovered()
-        self.root.build()
+        self.root.update_tree()
         bf.TimeManager().activate_register(self.name)
         self.do_on_enter()
 

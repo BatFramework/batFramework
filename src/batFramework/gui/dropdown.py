@@ -8,10 +8,9 @@ from .toggle import Toggle
 from .indicator import ArrowIndicator
 from .clickableWidget import ClickableWidget
 from .syncedVar import SyncedVar
-from .container import Container
+from .scrollingContainer import ScrollingContainer
 from .layout import Column
 from .button import Button
-from .constraints.constraints import FillX
 
 OptionType = TypeVar("OptionType")
 
@@ -40,7 +39,8 @@ class _OptionButton(Button):
         super().__init__(dropdown.display_func(dropdown.options[index]), self._select)
         self._dropdown = dropdown
         self._index = index
-        (self.set_alignment(bf.alignment.CENTER)
+        (self.set_alignment(bf.alignment.MIDLEFT)
+             .set_auto_wraplength(True)
              .set_unpressed_relief(0).set_pressed_relief(0)
              .set_debug_color("pink"))
 
@@ -55,18 +55,38 @@ class _OptionButton(Button):
         self._dropdown.close()
         self.lose_focus()
 
+    def on_key_down(self, key, event):
+        if key == pygame.K_RETURN:
+            self._select()
+            event.consumed = True
+            return
+        super().on_key_down(key, event)
+
     def __str__(self):
         return f"OptionButton({self.text})"
 
 
-class _DropDownPanel(Container):
+class _OptionColumn(Column):
+    """Measure natural row widths; stretch rows only into their final slots."""
+
+    def _rects(self, inner, sizes):
+        rects = super()._rects(inner, sizes)
+        for child, rect in rects.items():
+            rect.left = inner.left
+            rect.w = child.constrain_size((inner.width, rect.height),
+                                          (inner.width, float("inf")))[0]
+        return rects
+
+
+class _DropDownPanel(ScrollingContainer):
     """Floating panel that holds the option buttons."""
 
     def __init__(self, dropdown: "Dropdown"):
         self.dropdown = dropdown
-        super().__init__(Column(4).set_child_constraints(FillX()))
-        self.set_clip_children(True)
-        self.set_padding((0,4))
+        super().__init__(_OptionColumn(4))
+        self.set_scroll_x_enabled(False)
+        self.set_padding(4)
+        self.reveal_selection = False
 
     def top_at(self, x, y):
         return super().top_at(x, y) if self.dropdown.is_open else None
@@ -81,7 +101,8 @@ class _DropDownPanel(Container):
             yield from c.get_debug_outlines()
 
     def open(self)->Self:
-        self.dirty_shape = True
+        self.dirty_surface = True
+        self.reveal_selection = True
         self.show()
         return self
     
@@ -89,11 +110,55 @@ class _DropDownPanel(Container):
         self.hide()
         return self
     
-    def build(self):
-        changed = super().build()
-        if changed :
-            self.set_position(*self.rect.move_to(midtop=self.dropdown.rect.midbottom).topleft)
-        return changed
+    def layout_popup(self, viewport):
+        """Called by the root after the dropdown button has been arranged."""
+        dropdown = self.dropdown
+        margin = max(0, dropdown.panel_screen_margin)
+        mx, my = min(margin, viewport.w / 2), min(margin, viewport.h / 2)
+        bounds = pygame.FRect(viewport.x + mx, viewport.y + my,
+                             max(0, viewport.w - 2 * mx), max(0, viewport.h - 2 * my))
+        anchor = dropdown.rect
+        gap = max(0, dropdown.panel_gap)
+        maximum_height = min(max(0, dropdown.panel_max_height), bounds.h)
+        natural = self.measure((bounds.w, maximum_height))
+        width = min(bounds.w, max(anchor.w, natural[0]))
+        below = max(0, bounds.bottom - max(bounds.top, anchor.bottom + gap))
+        above = max(0, min(bounds.bottom, anchor.top - gap) - bounds.top)
+        open_below = natural[1] <= below or (natural[1] > above and below >= above)
+        height_limit = min(maximum_height, below if open_below else above)
+        desired = self.measure((width, height_limit))
+        rect = pygame.FRect(anchor.left, anchor.bottom + gap if open_below
+                            else anchor.top - gap - desired[1], width, desired[1])
+        rect.clamp_ip(bounds)
+
+        # Selection is an index into measured rows, so no provisional child
+        # arrangement is needed to reveal it on opening or keyboard navigation.
+        if self.reveal_selection and dropdown.current_index is not None:
+            rows = dropdown._option_buttons
+            index = dropdown.current_index
+            top = sum(row.desired_size[1] + self.layout.gap for row in rows[:index])
+            bottom = top + rows[index].desired_size[1]
+            height = self.get_content_size(rect.size)[1]
+            if top < self.scroll.y:
+                self.scroll.y = top
+            elif bottom > self.scroll.y + height:
+                self.scroll.y = max(0, bottom - height)
+        self.reveal_selection = False
+        self.arrange(rect)
+
+    def handle_event(self, event):
+        if not self.dropdown.is_open:
+            return
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self.dropdown.close()
+            event.consumed = True
+            return
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.parent_scene:
+            mouse = self.get_camera().get_mouse_pos()
+            if not self.rect.collidepoint(mouse) and not self.dropdown.rect.collidepoint(mouse):
+                self.dropdown.close()
+                return
+        super().handle_event(event)
 
 # ---------------------------------------------------------------------------
 # Dropdown
@@ -137,6 +202,13 @@ class Dropdown(Toggle, Generic[OptionType]):
         self._panel = _DropDownPanel(self)
         self.add(self._panel)
         self._option_buttons: list[_OptionButton] = []
+        self.panel_gap = 4
+        self.panel_screen_margin = 4
+        self.panel_max_height = 320
+        # Each option registers with StyleManager when construction completes.
+        # Scene attachment only refreshes the existing rows.
+        self._populate_panel()
+        self._panel.close()
 
         self.value_var.bind(self, self._on_value_var_update)
 
@@ -174,18 +246,22 @@ class Dropdown(Toggle, Generic[OptionType]):
         self._do_open() if new_value else self._do_close()
 
     def _do_open(self) -> None:
+        if not self.options:
+            self.synced_var.value = False
+            return
         self.indicator.set_arrow_direction(bf.direction.UP)
         self._refresh_panel_highlight()
         
         if (root := self.get_root()):
-            root.attach_to_layer(self._panel, bf.gui.GuiLayer.OVERLAY)
+            root.attach_to_layer(self._panel, bf.gui.GuiLayer.OVERLAY,
+                                 layout_callback=self._panel.layout_popup)
         
         self._panel.open()
 
     def _do_close(self) -> None:
         self.indicator.set_arrow_direction(bf.direction.DOWN)
         self._panel.close()
-        if (root := self.get_root()):
+        if (root := self._panel.get_root()):
             root.detach_from_layer(self._panel)
 
     def on_lose_focus(self):
@@ -199,6 +275,10 @@ class Dropdown(Toggle, Generic[OptionType]):
         super().do_when_added()
         self._populate_panel()
         self._panel.close()
+
+    def do_when_removed(self):
+        self.close()
+        super().do_when_removed()
 
     def on_key_down(self, key, event=None):
         if key == pygame.K_DOWN and self.options:
@@ -233,6 +313,12 @@ class Dropdown(Toggle, Generic[OptionType]):
         for btn in self._option_buttons[target:]:
             self._panel.remove(btn)
         del self._option_buttons[target:]
+        self._panel.reveal_selection = True
+
+    @property
+    def panel(self) -> ScrollingContainer:
+        """The floating panel, exposed for styling and scrollbar configuration."""
+        return self._panel
 
     def _refresh_panel_highlight(self) -> None:
         for btn in self._option_buttons:
@@ -262,12 +348,14 @@ class Dropdown(Toggle, Generic[OptionType]):
 
     def set_options(self, options: list[OptionType], reset_index: bool = True) -> Self:
         self.options = options
-        if reset_index or self.current_index is None:
+        if not options or reset_index or self.current_index is None:
             self.current_index = 0 if options else None
         else:
             self.current_index = min(self.current_index, len(options) - 1)
         self._populate_panel()
         self.set_text(self._current_text())
+        if not self.options:
+            self.close()
         return self
 
     def get_current_index(self) -> int | None:
@@ -292,6 +380,7 @@ class Dropdown(Toggle, Generic[OptionType]):
             self.on_modify_callback(value, index)
         if self.is_open:
             self._refresh_panel_highlight()
+            self._panel.reveal_selection = True
         return self
 
     def set_by_value(self, value: OptionType) -> Self:
@@ -312,6 +401,8 @@ class Dropdown(Toggle, Generic[OptionType]):
             return
         self.current_index = new_index
         self.set_text(self.display_func(value))
+        self._refresh_panel_highlight()
+        self._panel.reveal_selection = True
         if self.on_modify_callback:
             self.on_modify_callback(value, new_index)
 
@@ -333,9 +424,3 @@ class Dropdown(Toggle, Generic[OptionType]):
         w = max_w + ind + gap
         h = max(max_h, ind) + self.unpressed_relief
         return self.compute_min_size(self.expand_rect_with_padding((0, 0, w, h)).size)
-
-    def build(self):
-        changed = super().build()
-        # if changed:
-        #     self._panel.set_min_size((self.rect.w, 0))  # panel ≥ button width
-        return changed

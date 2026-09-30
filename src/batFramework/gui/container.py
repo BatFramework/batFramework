@@ -12,11 +12,9 @@ class Container(Shape, InteractiveWidget):
     is_focus_scope = True
     def __init__(self, layout: Layout = None, *children: Widget) -> None:
         super().__init__()
-        self.dirty_layout: bool = False
         self.layout = layout if layout else Column()
         self.layout.set_parent(self)
         self.scroll = Vector2(0, 0)
-        self.dirty_scroll = False
         self.set_debug_color("green")
         self.add(*children)
 
@@ -26,12 +24,6 @@ class Container(Shape, InteractiveWidget):
     def __str__(self) -> str:
         return f"Container({self.uid},{len(self.children)})"
 
-    def get_min_required_size(self):
-        if not self.layout:
-            return self.rect.size
-        r = self.expand_rect_with_padding((0,0,*self.layout.get_auto_size())).size
-        return self.compute_min_size(r)
-    
     def reset_scroll(self) -> Self:
         if self.scroll == (0, 0):
             return self
@@ -47,8 +39,7 @@ class Container(Shape, InteractiveWidget):
         self.scroll.update(value)
         # print("Scroll updated to", value)
         self.clamp_scroll()
-        self.dirty_scroll = True
-        # self.dirty_layout = True
+        self.dirty_surface = True
         return self
 
     def scrollX_by(self, x: float) -> Self:
@@ -92,7 +83,7 @@ class Container(Shape, InteractiveWidget):
             tmp.set_parent(None)
             self.layout.set_parent(self)
             self.reset_scroll()
-            self.dirty_layout = True
+            self.dirty_surface = True
         return self
 
     def get_interactive_children(self) -> list[InteractiveWidget]:
@@ -113,18 +104,16 @@ class Container(Shape, InteractiveWidget):
         for child in self.children:
             child.set_parent(None)
         self.children.clear()
-        self.dirty_layout = True
+        self.dirty_surface = True
 
     def add(self, *child: Widget) -> Self:
         super().add(*child)
-        self.dirty_shape = True
-        self.dirty_layout = True
+        self.dirty_surface = True
         return self
 
     def remove(self, *child: Widget) -> Self:
         super().remove(*child)
-        self.dirty_shape = True
-        self.dirty_layout = True
+        self.dirty_surface = True
         return self
 
     def top_at(self, x: float | int, y: float | int) -> "None|Widget":
@@ -168,69 +157,21 @@ class Container(Shape, InteractiveWidget):
         """Return whether the container can get focused"""
         return bool(self.get_interactive_children()) and self.visible
 
-    def build(self) -> bool:
-        changed = False
-        if self.layout is not None:
-            old_size = self.rect.size
-            size = self.layout.get_auto_size()
-            self.set_size(self.resolve_size(size))
-            changed = self.rect.size != old_size
-        return super().build() or changed
+    def get_layout_available_size(self, available_size):
+        return available_size
 
-    def apply_post_updates(self, skip_draw: bool = False) -> None:
-        # ── 1. Build (auto-size from children) ────────────────────────────────
-        if self.dirty_shape:
-            if self.build():
-                # Our own size changed because children changed.
-                # Mark everything that depends on our size.
-                self.dirty_layout = True
-                self.dirty_size_constraints = True
-                self.dirty_position_constraints = True
+    def measure_override(self, available_size):
+        content = self.layout.measure(self.get_layout_available_size(available_size))
+        for child in self.children:
+            if child not in self.get_layout_children():
+                child.measure(available_size)
+        return (content[0] + self.padding[0] + self.padding[2],
+                content[1] + self.padding[1] + self.padding[3] + self.relief)
 
-                # Propagate up the tree, same as Widget does.
-                ancestor = self.find_highest_dirty_constraints_widget()
-                if ancestor and ancestor is not self:
-                    ancestor.dirty_shape = True
-                    from .scrollingContainer import ScrollingContainer
-                    if ((isinstance(ancestor, Container)
-                        and (ancestor.autoresize_h or ancestor.autoresize_w))
-                        or isinstance(ancestor, ScrollingContainer)):
-                        ancestor.dirty_layout = True
+    def arrange_override(self):
+        self.layout.arrange()
 
-            self.dirty_shape = False
-            self.dirty_surface = True
-
-        # ── 2. Re-resolve size constraints ────────────────────────────────────
-        # build() may have just resized us based on children's auto-size.
-        # Constraints like FillX must get a chance to override that here,
-        # not wait for next frame's pre-pass.
-        if self.dirty_size_constraints:
-            self.resolve_constraints(mode="size")
-            self.dirty_size_constraints = False
-            # If a constraint changed our size, layout must re-arrange.
-            self.dirty_layout = True
-
-        # ── 3. Position constraints ───────────────────────────────────────────
-        if self.dirty_position_constraints:
-            self.resolve_constraints(mode="position")
-            self.dirty_position_constraints = False
-
-        # ── 4. Layout children ────────────────────────────────────────────────
-        if self.dirty_layout:
-            self.layout.update_children_state()
-            self.layout.arrange()
-            self.dirty_layout = False
-            self.dirty_surface = True
-
-        # ── 5. Scroll ─────────────────────────────────────────────────────────
-        old_scroll = self.scroll.xy
-        self.clamp_scroll()
-        if self.scroll.xy != old_scroll or self.dirty_scroll:
-            self.layout.scroll_children()
-            self.dirty_scroll = False
-            self.dirty_surface = True
-
-        # ── 6. Paint ──────────────────────────────────────────────────────────
-        if self.dirty_surface and not skip_draw:
-            self.paint()
-            self.dirty_surface = False
+    def get_min_required_size(self):
+        content = self.layout.get_raw_size()
+        return self.compute_min_size((content[0] + self.padding[0] + self.padding[2],
+                                      content[1] + self.padding[1] + self.padding[3] + self.relief))
