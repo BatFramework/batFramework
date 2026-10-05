@@ -1,7 +1,7 @@
 import batFramework as bf
 from .interactiveWidget import InteractiveWidget
 from .widget import Widget
-from .geometry import fit_rect, inset_rect
+from .guiUtils import fit_rect, inset_rect
 import pygame
 from typing import Self, Callable
 

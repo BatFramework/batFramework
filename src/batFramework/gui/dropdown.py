@@ -11,7 +11,7 @@ from .syncedVar import SyncedVar
 from .scrollingContainer import ScrollingContainer
 from .layout import Column
 from .button import Button
-from .geometry import fit_rect, inset_rect
+from .guiUtils import fit_rect, inset_rect
 
 OptionType = TypeVar("OptionType")
 

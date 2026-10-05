@@ -1,5 +1,5 @@
 from .guiEnums import GuiLayer
-from .geometry import fit_rect, inset_rect
+from .guiUtils import fit_rect, inset_rect
 from .widget import Widget
 from .styleManager import StyleManager
 from .style import Style
