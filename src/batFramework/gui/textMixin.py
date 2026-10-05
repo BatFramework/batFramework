@@ -78,6 +78,7 @@ class TextMixin:
             self.font_size = size
             self.font = bf.FontManager().get_font(self.font_name, self.font_size)
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def get_font_size(self) -> int:
@@ -88,6 +89,7 @@ class TextMixin:
             self.font_name = name
             self.font = bf.FontManager().get_font(self.font_name, self.font_size)
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def get_font_name(self) -> str | None:
@@ -103,6 +105,7 @@ class TextMixin:
         if self.text != text:
             self.text = text
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def get_text(self) -> str:
@@ -147,6 +150,7 @@ class TextMixin:
         if self.bold != value:
             self.bold = value
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def is_bold(self) -> bool:
@@ -156,6 +160,7 @@ class TextMixin:
         if self.italic != value:
             self.italic = value
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def is_italic(self) -> bool:
@@ -165,6 +170,7 @@ class TextMixin:
         if self.underline != value:
             self.underline = value
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def is_underline(self) -> bool:
@@ -174,6 +180,7 @@ class TextMixin:
         if self.antialias != value:
             self.antialias = value
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def get_antialias(self) -> bool:
@@ -188,6 +195,7 @@ class TextMixin:
         if self.wraplength != value:
             self.wraplength = value
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def get_wraplength(self) -> int:
@@ -201,6 +209,7 @@ class TextMixin:
         if self.auto_wraplength != value:
             self.auto_wraplength = value
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def _get_effective_wraplength(self) -> int:
@@ -232,6 +241,7 @@ class TextMixin:
         if self.line_alignment != alignment:
             self.line_alignment = alignment
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def get_line_alignment(self) -> int:
@@ -245,6 +255,7 @@ class TextMixin:
         if self.show_text_outline != value:
             self.show_text_outline = value
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def set_text_outline_color(self, color: pygame.typing.ColorLike) -> Self:
@@ -288,6 +299,7 @@ class TextMixin:
                 except IndexError:
                     pass
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def _get_outline_offset(self) -> tuple[int, int]:
@@ -305,12 +317,14 @@ class TextMixin:
         if self.text_scroll.x != x or self.text_scroll.y != y:
             self.text_scroll.update(x, y)
             self.dirty_surface = True
+            self.mark_arrange_dirty()
         return self
 
     def scroll_by(self, x: float = 0, y: float = 0) -> Self:
         if x or y:
             self.text_scroll += x, y
             self.dirty_surface = True
+            self.mark_arrange_dirty()
         return self
 
     # ==============================================================
@@ -321,6 +335,7 @@ class TextMixin:
         if self.renderer is not renderer:
             self.renderer = renderer
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def get_renderer(self) -> TextRenderer:

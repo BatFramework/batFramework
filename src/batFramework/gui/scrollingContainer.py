@@ -89,18 +89,21 @@ class ScrollingContainer(Container):
         self._scrollbar_thickness = max(2, thickness)
         self._measured_base_size = None
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def set_scrollbar_x_gap(self, gap: int) -> Self:
         self._scroll_track_x_gap = max(0, gap)
         self._measured_base_size = None
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def set_scrollbar_y_gap(self, gap: int) -> Self:
         self._scroll_track_y_gap = max(0, gap)
         self._measured_base_size = None
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def set_scroll_speed(self, speed: float) -> Self:
@@ -112,6 +115,7 @@ class ScrollingContainer(Container):
         self._measured_base_size = None
         self.clamp_scroll()
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def set_scroll_y_enabled(self, enabled: bool) -> Self:
@@ -119,6 +123,7 @@ class ScrollingContainer(Container):
         self._measured_base_size = None
         self.clamp_scroll()
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def get_layout_children(self):

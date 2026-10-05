@@ -1,4 +1,4 @@
-from ssl import VerifyFlags
+import logging
 import pygame
 import batFramework as bf
 from typing import Callable, Any, Self
@@ -8,6 +8,7 @@ from .interactiveShape import InteractiveShape
 from .textBuffer import TextBuffer
 from .textRenderer import TextRenderer, PlainTextRenderer
 
+logger = logging.getLogger(__name__)
 
 class TextInput(Label, InteractiveShape):
     def __init__(self, text: str = "", renderer: TextRenderer | None = None,placeholder_text:str=""):
@@ -30,6 +31,8 @@ class TextInput(Label, InteractiveShape):
         self.is_newline_allowed : bool = False
 
         self.placeholder = Label(" "+placeholder_text.strip()).set_visible(self.get_text()=="")
+        self.placeholder.set_visible = lambda v :Label.set_visible(self.placeholder,self.get_text()=="")
+
         self.placeholder.top_at = lambda *args : None
         self.placeholder.set_color(bf.color.TRANSPARENT).set_outline_width(0).set_text_color(bf.color.LIGHT_GRAY).set_padding(0)
         self.add(self.placeholder)
@@ -93,7 +96,7 @@ class TextInput(Label, InteractiveShape):
         self.dirty_surface = True
 
     def on_click_down(self, button, event=None):
-        if button == 1:
+        if button == 1 and not getattr(event, "synthetic_capture", False):
             self.ask_focus()
             self._place_cursor_from_mouse()
         return super().on_click_down(button, event)
@@ -148,6 +151,7 @@ class TextInput(Label, InteractiveShape):
 
     def _after_edit(self):
         self.set_text(self.buffer.get_text(), bypass_buffer=True)
+        self.mark_arrange_dirty()
         self._show_cursor()        # visible now, blink timer untouched
         self.dirty_surface = True  # cursor position may have changed even if text/visibility didn't
         self.edited_this_frame = True
@@ -294,6 +298,7 @@ class TextInput(Label, InteractiveShape):
         cx, cy, ch = self._get_cursor_pixel_rect()
         inner = self.get_local_inner_rect()
 
+        #draw the cursor
         pygame.draw.rect(
             self.surface,
             self.text_color,

@@ -39,6 +39,7 @@ class Label(TextMixin, Shape):
     def set_text_effect(self, effect: TextEffect | None) -> Self:
         self.text_effect = effect
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     # ------------------------------------------------------------------

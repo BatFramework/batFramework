@@ -19,3 +19,4 @@ gamejam/
 /HalloweenGamejam
 test_gamejam_extract/
 .vscode/
+*.prof

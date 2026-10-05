@@ -127,12 +127,14 @@ class Selector(Button):
         if value != self.gap:
             self.gap = value
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def set_spacing(self, spacing: bf.spacing) -> Self:
         if spacing != self.spacing:
             self.spacing = spacing
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def set_arrow_color(self, color) -> Self:

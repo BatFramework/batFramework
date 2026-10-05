@@ -22,6 +22,10 @@ class InteractiveWidget(Widget):
         self.is_focused: bool = False
         self.is_hovered: bool = False
         self.is_clicked_down: list[bool] = [False] * 5
+        # Physical button state while a mouse press that began here is active.
+        # Keep it separate from is_clicked_down, which subclasses also use for
+        # keyboard and programmatic clicks.
+        self._mouse_pressed_snapshot: list[bool] | None = None
         self.focused_index = 0
         self.is_enabled: bool = True
         self.click_pass_through: bool = False
@@ -35,12 +39,18 @@ class InteractiveWidget(Widget):
     def handle_event(self, event):
 
         if self.is_hovered:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                self.is_clicked_down[event.button - 1] = True
-                self.on_click_down(event.button, event)
-            elif event.type == pygame.MOUSEBUTTONUP:
-                self.is_clicked_down[event.button - 1] = False
-                self.on_click_up(event.button, event)
+            if (event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP)
+                    and 1 <= event.button <= 5):
+                pressed = event.type == pygame.MOUSEBUTTONDOWN
+                if self.is_clicked_down[event.button - 1] != pressed:
+                    self._track_mouse_button(event.button, pressed)
+                    self.is_clicked_down[event.button - 1] = pressed
+                    if pressed:
+                        self.on_click_down(event.button, event)
+                    else:
+                        self.on_click_up(event.button, event)
+                    if not any(self.is_clicked_down):
+                        self._mouse_pressed_snapshot = None
 
         if self.is_focused:
             if event.type == pygame.KEYDOWN:
@@ -54,6 +64,36 @@ class InteractiveWidget(Widget):
                 if handler(self, event):
                     event.consumed = True
                     return
+
+    def _track_mouse_button(self, button: int, pressed: bool) -> None:
+        """Record an event handled here, including presses forwarded by a parent."""
+        if self._mouse_pressed_snapshot is None:
+            if not pressed:
+                return
+            self._mouse_pressed_snapshot = list(pygame.mouse.get_pressed(5))
+        self._mouse_pressed_snapshot[button - 1] = pressed
+
+    def update(self, dt: float) -> None:
+        super().update(dt)
+        if self._mouse_pressed_snapshot is None:
+            return
+        pressed_now = list(pygame.mouse.get_pressed(5))
+        for index, (was_pressed, is_pressed) in enumerate(
+                zip(self._mouse_pressed_snapshot, pressed_now)):
+            if was_pressed == is_pressed:
+                continue
+            was_owned = self.is_clicked_down[index]
+            self.is_clicked_down[index] = is_pressed
+            event = pygame.event.Event(
+                pygame.MOUSEBUTTONDOWN if is_pressed else pygame.MOUSEBUTTONUP,
+                button=index + 1, pos=pygame.mouse.get_pos(), consumed=False,
+                synthetic_capture=True,
+            )
+            if is_pressed:
+                self.on_click_down(index + 1, event)
+            elif was_owned:
+                self.on_click_up(index + 1, event)
+        self._mouse_pressed_snapshot = pressed_now if any(self.is_clicked_down) else None
 
 
     # -----------------------------------------------------------------
@@ -201,7 +241,7 @@ class InteractiveWidget(Widget):
     # -----------------------------------------------------------------
 
     def focus_next_tab(self, current: "InteractiveWidget" = None) -> None:
-        logger.debug(f"focus next in {self=} {current=}")
+        # logger.debug(f"focus next in {self=} {current=}")
         current = current or self
         scope = current.find_focus_scope()
         if scope is None:
@@ -211,7 +251,7 @@ class InteractiveWidget(Widget):
             nxt.ask_focus()
 
     def focus_prev_tab(self, current: "InteractiveWidget" = None) -> None:
-        logger.debug(f"focus prev in {self=} {current=}")
+        # logger.debug(f"focus prev in {self=} {current=}")
 
         current = current or self
         scope = current.find_focus_scope()
@@ -259,7 +299,8 @@ class InteractiveWidget(Widget):
 
     def on_exit(self) -> None:
         self.is_hovered = False
-        self.is_clicked_down = [False] * 5
+        if self._mouse_pressed_snapshot is None:
+            self.is_clicked_down = [False] * 5
         self.dirty_surface = True
         self.do_on_exit()
 

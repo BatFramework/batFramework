@@ -33,9 +33,17 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         self.desired_size: tuple[float, float] = (0, 0)
         self.available_size: tuple[float, float] = (float("inf"), float("inf"))
         self._measure_size = None
+        self._measured_offer: tuple[float, float] | None = None
+        self._measured_parent_size: tuple[float, float] | None = None
         self._arranging = False
+        self._arranged_input: tuple[float, float, float, float] | None = None
+        self._arranged_parent: tuple | None = None
+        self._arranged_state = None
         self.padding = (0, 0, 0, 0)
         self.dirty_surface: bool = True  # If true, will call paint before drawing
+        self.dirty_shape: bool = True  # Preferred size or a descendant may have changed.
+        self._shape_revision = 0
+        self.dirty_arrange: bool = True  # Final placement or descendant geometry may have changed.
 
         self.tooltip_text: str | None = (
             None  # If not None, will display a text when hovered
@@ -48,8 +56,28 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
 
 
     def set_min_size(self, size: tuple[float, float]) -> Self:
-        self.min_size = size
-        self.dirty_surface = True
+        if self.min_size != size:
+            self.min_size = size
+            self.dirty_surface = True
+            self.mark_shape_dirty()
+        return self
+
+    def mark_shape_dirty(self) -> Self:
+        """Invalidate this measurement and the ancestors that depend on it."""
+        self._shape_revision += 1
+        widget = self
+        while widget is not None:
+            widget.dirty_shape = True
+            widget.dirty_arrange = True
+            widget = widget.parent
+        return self
+
+    def mark_arrange_dirty(self) -> Self:
+        """Invalidate placement without discarding measured sizes."""
+        widget = self
+        while widget is not None:
+            widget.dirty_arrange = True
+            widget = widget.parent
         return self
 
 
@@ -70,8 +98,9 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         return self
 
     def set_visible(self, value):
-        if self.visible != value and value == True:
+        if self.visible != value:
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return super().set_visible(value)
 
     def kill(self):
@@ -91,8 +120,10 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
     def set_autoresize(self, value: bool) -> Self:
         # if (self.autoresize_w,self.autoresize_h) == (value,value):
         #     return self
-        self.autoresize_w = self.autoresize_h = value
-        self.dirty_surface = True
+        if (self.autoresize_w, self.autoresize_h) != (value, value):
+            self.autoresize_w = self.autoresize_h = value
+            self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def set_autoresize_w(self, value: bool) -> Self:
@@ -100,6 +131,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             return self
         self.autoresize_w = value
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def set_autoresize_h(self, value: bool) -> Self:
@@ -107,6 +139,7 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             return self
         self.autoresize_h = value
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def set_draw_order(self, draw_order: int) -> Self:
@@ -135,6 +168,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             y = self.rect.y
         if (x, y) == self.rect.topleft:
             return self
+        if not self._is_arranging_tree():
+            self.mark_arrange_dirty()
         dx, dy = x - self.rect.x, y - self.rect.y
         self.rect.topleft = x, y
         _ = [c.set_position(c.rect.x + dx, c.rect.y + dy) for c in self.children]
@@ -147,6 +182,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             y = self.rect.centery
         if (x, y) == self.rect.center:
             return self
+        if not self._is_arranging_tree():
+            self.mark_arrange_dirty()
         dx, dy = x - self.rect.centerx, y - self.rect.centery
         self.rect.center = x, y
         _ = [
@@ -155,6 +192,14 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         ]
 
         return self
+
+    def _is_arranging_tree(self) -> bool:
+        widget = self
+        while widget is not None:
+            if widget._arranging:
+                return True
+            widget = widget.parent
+        return False
 
     def get_camera(self) -> bf.Camera | None:
         # children are drawn by their parent, so they share its camera
@@ -177,10 +222,12 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         # if self.parent is not None and self.parent != parent:
         #     self.parent.remove(self)
         self.parent = parent
+        self.mark_shape_dirty()
         self.visit(lambda w : w.set_draw_order(w.parent.draw_order + 1) if w.parent else None,top_down=True,include_self=True)
         return self
 
     def set_padding(self, value: float | int | tuple | list) -> Self:
+        previous = self.padding
         if isinstance(value, Iterable):
             if len(value) > 4:
                 pass
@@ -193,7 +240,9 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         else:
             self.padding = (value,) * 4
 
-        self.dirty_surface = True
+        if self.padding != previous:
+            self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def get_inner_rect(self) -> pygame.FRect:
@@ -240,7 +289,13 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         Infinity is supported for unbounded axes (e.g. scrolling content).
         Padding belongs to this widget's size, not the offered child space.
         """
-        self.available_size = self._validate_size(available_size)
+        offer = self._validate_size(available_size)
+        parent_size = ((self.parent._measure_size or self.parent.rect.size)
+                       if self.parent is not None else None)
+        if (not self.dirty_shape and offer == self._measured_offer
+                and parent_size == self._measured_parent_size):
+            return self.desired_size
+        self.available_size = offer
         limits = list(self.constrain_size(self.available_size, self.available_size))
         for axis, auto in enumerate((self.autoresize_w, self.autoresize_h)):
             if not auto:
@@ -254,6 +309,9 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             self.desired_size = self.constrain_size(preferred, self.available_size)
         finally:
             self._measure_size = None
+        self._measured_offer = offer
+        self._measured_parent_size = parent_size
+        self.dirty_shape = False
         return self.desired_size
 
     def measure_override(self, available_size):
@@ -294,7 +352,19 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             final_rect = (*self.rect.topleft, *final_rect)
         rect = pygame.FRect(final_rect)
         self._validate_size(rect.size, finite=True)
+        assigned = tuple(rect)
+        parent_bounds = None
+        if self.parent is not None and any(c.affects_position for c in self.constraints):
+            parent_bounds = (tuple(self.parent.rect), tuple(self.parent.get_inner_rect()))
+        state = self.get_arrangement_state()
+        if (not self.dirty_arrange and assigned == self._arranged_input
+                and parent_bounds == self._arranged_parent
+                and state == self._arranged_state):
+            return
         rect = self.constrain_position(rect)
+        # Mutations made inside arrange_override remain pending for the next
+        # update; this pass clears only the invalidation it is handling now.
+        self.dirty_arrange = False
         self._arranging = True
         try:
             self.set_position(*rect.topleft)
@@ -302,8 +372,18 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
                 self.dirty_surface = True
             self.rect.size = rect.size
             self.arrange_override()
+            self._arranged_input = assigned
+            self._arranged_parent = parent_bounds
+            self._arranged_state = state
+        except Exception:
+            self.dirty_arrange = True
+            raise
         finally:
             self._arranging = False
+
+    def get_arrangement_state(self):
+        """Additional mutable placement inputs, beyond the assigned rectangle."""
+        return None
 
     def arrange_override(self):
         self.arrange_children()
@@ -354,11 +434,20 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         existing_names = {c.name for c in self.constraints}
         new_constraints = [c for c in constraints if c.name not in existing_names]
         self.constraints.extend(new_constraints)
+        for constraint in new_constraints:
+            constraint.add_owner(self)
+        if new_constraints:
+            self.mark_shape_dirty()
 
         return self
 
     def remove_constraints(self, *names: str) -> Self:
+        removed = [c for c in self.constraints if c.name in names]
         self.constraints = [c for c in self.constraints if c.name not in names]
+        for constraint in removed:
+            constraint.remove_owner(self)
+        if removed:
+            self.mark_shape_dirty()
 
         return self
 
@@ -397,6 +486,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
             child.set_parent(self)
             child.set_parent_scene(self.parent_scene)
         self.dirty_surface = True
+        if children:
+            self.mark_shape_dirty()
         if self.parent:
             self.parent.do_sort_children = True
         return self
@@ -410,6 +501,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         if self.parent:
             self.parent.do_sort_children = True
         self.dirty_surface = True
+        if children:
+            self.mark_shape_dirty()
         return self
 
     def set_size(self, size: tuple) -> Self:
@@ -418,6 +511,8 @@ class Widget(bf.Drawable, metaclass=WidgetMeta):
         previous = self._requested_size
         size = self._validate_size(tuple(previous[i] if v is None else v for i, v in enumerate(size)), finite=True)
         self._requested_size = tuple(size)
+        if self._requested_size != previous:
+            self.mark_shape_dirty()
         if size[0] == self.rect.w and size[1] == self.rect.h:
             return self
         self.rect.size = size

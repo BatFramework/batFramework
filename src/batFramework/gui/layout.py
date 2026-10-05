@@ -16,6 +16,14 @@ class Layout:
     axis = None
     fill = False
 
+    def __setattr__(self, name, value):
+        watched = name in {"gap", "alignment", "rows", "cols"}
+        previous = self.__dict__.get(name, object()) if watched else None
+        object.__setattr__(self, name, value)
+        if watched and previous != value:
+            if "parent" in self.__dict__:
+                self.mark_dirty()
+
     def __init__(self, parent=None):
         self.parent = parent
         self.child_constraints = []
@@ -24,14 +32,24 @@ class Layout:
         self.alignment = None
         self.desired_size = (0, 0)
         self._effective_gap = 0
+        self._arranged_key = None
+        self._arranged_rects = None
 
     def set_parent(self, parent):
         self.parent = parent
         self.mark_dirty()
 
     def mark_dirty(self):
+        self._arranged_key = None
+        self._arranged_rects = None
         if self.parent:
             self.parent.dirty_surface = True
+            self.parent.mark_shape_dirty()
+
+    def get_arrangement_state(self):
+        """Inputs that can change child slots without changing the parent box."""
+        return (self.gap, self.alignment, getattr(self, "rows", None),
+                getattr(self, "cols", None), self.axis, self.fill)
 
     def set_child_constraints(self, *constraints) -> Self:
         if self.parent:
@@ -131,13 +149,34 @@ class Layout:
     def arrange(self):
         inner = self.parent.get_inner_rect()
         available = self.parent.get_layout_available_size(inner.size)
+        children = self.parent.get_layout_children()
+        key = (tuple(inner), tuple(available), tuple(self.parent.scroll),
+               self.get_arrangement_state(),
+               tuple((child, child.desired_size, child._shape_revision) for child in children))
+        # Free layouts read each child's current position when making slots.
+        # A stored slot would hide an explicit position change on a child.
+        position_from_children = self.axis is None and type(self)._rects is Layout._rects
+        if (not position_from_children and key == self._arranged_key
+                and self._arranged_rects is not None):
+            arranged_scroll = self.parent.scroll.copy()
+            for child, rect in self._arranged_rects.items():
+                if child.dirty_arrange or child._arranged_input != tuple(rect):
+                    child.arrange(rect)
+            delta = arranged_scroll - self.parent.scroll
+            if delta:
+                for child in children:
+                    child.set_position(child.rect.x + delta.x, child.rect.y + delta.y)
+            return
         sizes = self._sizes(available)
         extent = self._extent(sizes)
         self.children_rect = pygame.FRect(*inner.topleft, *extent)
         self.parent.clamp_scroll()
         arranged_scroll = self.parent.scroll.copy()
-        for child, rect in self._rects(inner, sizes).items():
+        rects = self._rects(inner, sizes)
+        for child, rect in rects.items():
             child.arrange(rect)
+        self._arranged_key = key
+        self._arranged_rects = {child: rect.copy() for child, rect in rects.items()}
         # An edited input can scroll its focus area during arrangement. Apply
         # that translation to every sibling before painting, without relayout.
         delta = arranged_scroll - self.parent.scroll
@@ -206,8 +245,6 @@ class SingleAxisLayout(Layout):
         return self
 
     def focus_next_child(self,current=None):
-        logger.debug(f"{self.parent=}")
-
         self.parent.focus_next_tab(current)
 
     def focus_prev_child(self,current=None):

@@ -181,5 +181,5 @@ class InteractiveShape(Shape, InteractiveWidget):
         pygame.mouse.set_cursor(self.hover_cursor)
 
     def on_exit(self) -> None:
-        super().on_exit()  # clears is_hovered, is_clicked_down, dirty_surface, calls do_on_exit
+        super().on_exit()  # clears hover and updates press state, calls do_on_exit
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)

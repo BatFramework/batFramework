@@ -129,7 +129,7 @@ class CameraController(bf.Entity):
     - Ctrl + Scroll: Rotate camera
     """
 
-    def __init__(self, *args, drag_mouse_button: int = 1, **kwargs):
+    def __init__(self, layer = bf.Layer.WORLD, *args, drag_mouse_button: int = 1, **kwargs):
         super().__init__(*args, **kwargs)
         self.origin = None  # Previous frame's world mouse pos
         self.mouse_actions = bf.ActionContainer(
@@ -141,6 +141,7 @@ class CameraController(bf.Entity):
             bf.Action("zoom_in").add_mouse_control(4).set_consume_event(True),
             bf.Action("zoom_out").add_mouse_control(5).set_consume_event(True),
         )
+        self.layer = layer
 
     def reset_actions(self):
         self.mouse_actions.reset()
@@ -152,7 +153,7 @@ class CameraController(bf.Entity):
             pass
 
     def update(self, dt):
-        cam = self.parent_scene.camera
+        cam = self.parent_scene.get_camera(self.layer)
         if self.mouse_actions["zoom_in"]:
             if self.mouse_actions["control"]:
                 cam.rotate_by(10)

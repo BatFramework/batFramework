@@ -63,11 +63,6 @@ class SliderHandle(Indicator, DraggableWidget):
         self.set_center(*r.clamp(meter.get_inner_rect()).center)
         
 
-    def on_exit(self):
-        before = self.is_clicked_down
-        super().on_exit()
-        self.is_clicked_down = before
-
     def draw_focused(self, camera):
         return
 
@@ -226,6 +221,11 @@ class SliderMeter(BarMeter, InteractiveShape):
         rect.center = self.value_to_position(self.synced_var.value, size)
         self.handle.arrange(rect.clamp(inner))
 
+    def get_arrangement_state(self):
+        return (super().get_arrangement_state(), self.synced_var.value,
+                getattr(self, "viewport_fraction", None),
+                getattr(self, "minimum_thumb_length", None))
+
     def set_axis(self, axis):
         super().set_axis(axis)
         if self.axis == bf.axis.HORIZONTAL:
@@ -300,13 +300,17 @@ class Slider(Button):
         return "Slider"
 
     def set_gap(self, value: int | float) -> Self:
-        self.gap = max(0, value)
+        value = max(0, value)
+        if self.gap != value:
+            self.gap = value
+            self.mark_shape_dirty()
         return self
 
     def set_spacing(self, spacing: bf.spacing) -> Self:
         if spacing != self.spacing:
             self.spacing = spacing
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def set_modify_callback(self, callback: Callable[[float], Any]) -> Self:

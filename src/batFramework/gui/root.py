@@ -1,9 +1,9 @@
 import batFramework as bf
 from .interactiveWidget import InteractiveWidget
 from .widget import Widget
+from .geometry import fit_rect, inset_rect
 import pygame
 from typing import Self, Callable
-import sys
 
 
 class Root(InteractiveWidget):
@@ -145,6 +145,7 @@ class Root(InteractiveWidget):
             return self
         self.rect.size = size
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def process_event(self, event):
@@ -175,7 +176,7 @@ class Root(InteractiveWidget):
             event.consumed = True
 
     def on_click_down(self, button: int, event) -> None:
-        if button == 1:
+        if button == 1 and not getattr(event, "synthetic_capture", False):
             self.clear_focused()
         super().on_click_down(button, event)
 
@@ -228,28 +229,27 @@ class Root(InteractiveWidget):
         self.arrange_children(exclude=(self.tooltip, *self._popup_layouts))
 
     @staticmethod
-    def _place_tooltip(size, mouse_world, bounds, gap):
+    def _place_tooltip(size, mouse_world, bounds, gap, margin=0):
         """Pure placement: prefer down/right, flip at edges, then clamp."""
         x, y = mouse_world
+        safe_bounds = inset_rect(bounds, margin)
         rect = pygame.FRect(x + gap, y + gap, *size)
-        if rect.right > bounds.right:
+        if rect.right > safe_bounds.right:
             rect.x = x - gap - rect.width
-        if rect.bottom > bounds.bottom:
+        if rect.bottom > safe_bounds.bottom:
             rect.y = y - gap - rect.height
-        return rect.clamp(bounds)
+        return fit_rect(rect, bounds, rect.topleft, margin)
 
     def _layout_tooltip(self, mouse_world, viewport):
         if not self.tooltip.visible:
             return
         # Keep all geometry in GUI world coordinates, including camera bounds.
         margin = self.tooltip.screen_margin
-        mx, my = min(margin, viewport.width / 2), min(margin, viewport.height / 2)
-        bounds = pygame.FRect(viewport.x + mx, viewport.y + my,
-                             max(0, viewport.width - 2 * mx), max(0, viewport.height - 2 * my))
+        bounds = inset_rect(viewport, margin)
         available = (min(self.tooltip.max_width, bounds.width), bounds.height)
         desired = self.tooltip.measure(available)
         gap = max(0, 2 + 2 * self.tooltip.offset_scale)
-        rect = self._place_tooltip(desired, mouse_world, bounds, gap)
+        rect = self._place_tooltip(desired, mouse_world, viewport, gap, margin)
         self.tooltip.arrange(rect)
 
     def update_tree(self):

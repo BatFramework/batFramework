@@ -80,6 +80,20 @@ preserves the scrollbars. Wheel input retains its magnitude, Shift redirects
 vertical wheel input horizontally, and events bubble when scrolling cannot
 move further. Dragging or clicking a scrollbar preserves keyboard focus.
 
+## Floating rectangle placement
+
+`bf.gui.fit_rect(rect, bounds, preferred_topleft, margin=0)` returns a new
+`pygame.FRect` positioned as close as possible to the preferred top-left within
+the bounds and safety margin. It preserves size unless a dimension exceeds the
+safe area, in which case that dimension is reduced. Inputs are never modified.
+Negative margins act as zero; excessive margins collapse the available space
+at the center of each affected axis.
+
+Use `bf.gui.inset_rect(bounds, margin)` to obtain the same safe area for
+measurement. Dropdown panels and tooltips share these helpers after choosing
+their preferred side of the button or pointer. All rectangles and positions
+must use the same coordinate system.
+
 ## Dropdown layout
 
 Option rows measure their text naturally. They stretch to the panel's content
@@ -157,8 +171,24 @@ drawing and `needs_paint()` for custom repaint policies. Geometry belongs in
 measurement and arrangement, never in painting. Root participates in traversal
 but does not paint its own surface.
 
-Layout is measured and arranged on every tree update. `dirty_surface` is the
-only invalidation flag: use it when a content or style change needs repainting.
+`dirty_shape` marks a changed size or content preference. It propagates from a
+widget to its ancestors, and `measure()` clears it after measuring. A clean
+widget reuses its desired size when offered the same bounds; a different offer
+always triggers measurement. Mutating a registered constraint also invalidates
+its owner, including when an animation assigns directly to its value. Use
+`mark_shape_dirty()` in custom setters that can change measured size.
+
+`dirty_arrange` tracks changes to final placement. Arrangement is reused when
+the assigned rectangle, parent bounds, and widget-specific placement state are
+unchanged. Size invalidation also invalidates arrangement. Scrolling and meter
+value changes invalidate arrangement alone, so their content can move without
+remeasuring text or other intrinsic sizes. Custom widgets with mutable placement
+inputs should call `mark_arrange_dirty()` or expose them through
+`get_arrangement_state()`. Row, column, and grid layouts reuse child slots while
+their viewport, scroll, child sizes, and layout settings are unchanged. Free
+layouts recompute slots because their positions come from child rectangles.
+`dirty_surface` separately controls repainting; color
+changes need neither measurement nor arrangement.
 
 Custom size constraints must implement the pure hook:
 

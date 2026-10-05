@@ -40,7 +40,11 @@ class Container(Shape, InteractiveWidget):
         # print("Scroll updated to", value)
         self.clamp_scroll()
         self.dirty_surface = True
+        self.mark_arrange_dirty()
         return self
+
+    def get_arrangement_state(self):
+        return (self.scroll.x, self.scroll.y)
 
     def scrollX_by(self, x: float) -> Self:
         if x == 0:
@@ -105,6 +109,7 @@ class Container(Shape, InteractiveWidget):
             child.set_parent(None)
         self.children.clear()
         self.dirty_surface = True
+        self.mark_shape_dirty()
 
     def add(self, *child: Widget) -> Self:
         super().add(*child)

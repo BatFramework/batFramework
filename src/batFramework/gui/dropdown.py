@@ -11,6 +11,7 @@ from .syncedVar import SyncedVar
 from .scrollingContainer import ScrollingContainer
 from .layout import Column
 from .button import Button
+from .geometry import fit_rect, inset_rect
 
 OptionType = TypeVar("OptionType")
 
@@ -113,10 +114,7 @@ class _DropDownPanel(ScrollingContainer):
     def layout_popup(self, viewport):
         """Called by the root after the dropdown button has been arranged."""
         dropdown = self.dropdown
-        margin = max(0, dropdown.panel_screen_margin)
-        mx, my = min(margin, viewport.w / 2), min(margin, viewport.h / 2)
-        bounds = pygame.FRect(viewport.x + mx, viewport.y + my,
-                             max(0, viewport.w - 2 * mx), max(0, viewport.h - 2 * my))
+        bounds = inset_rect(viewport, dropdown.panel_screen_margin)
         anchor = dropdown.rect
         gap = max(0, dropdown.panel_gap)
         maximum_height = min(max(0, dropdown.panel_max_height), bounds.h)
@@ -127,9 +125,10 @@ class _DropDownPanel(ScrollingContainer):
         open_below = natural[1] <= below or (natural[1] > above and below >= above)
         height_limit = min(maximum_height, below if open_below else above)
         desired = self.measure((width, height_limit))
-        rect = pygame.FRect(anchor.left, anchor.bottom + gap if open_below
-                            else anchor.top - gap - desired[1], width, desired[1])
-        rect.clamp_ip(bounds)
+        preferred = (anchor.left, anchor.bottom + gap if open_below
+                     else anchor.top - gap - desired[1])
+        rect = fit_rect(pygame.FRect(0, 0, width, desired[1]), viewport,
+                        preferred, dropdown.panel_screen_margin)
 
         # Selection is an index into measured rows, so no provisional child
         # arrangement is needed to reveal it on opening or keyboard navigation.

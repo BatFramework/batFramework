@@ -12,7 +12,7 @@ class DraggableWidget(InteractiveWidget):
             False  # the widget is following the mouse AND the mouse is in the widget
         )
         self.is_dragged_outside: bool = (
-            False  # the widget is following the mouse BUT the mouse is NOT in the widget
+            False  # an allowed button remains pressed, even outside the widget
         )
         super().__init__(*args, **kwargs)
 
@@ -31,42 +31,47 @@ class DraggableWidget(InteractiveWidget):
     def on_click_down(self, button, event=None):
         if button < 1 or button > 5:
             return
+        if event is None or event.type == pygame.MOUSEBUTTONDOWN:
+            self._track_mouse_button(button, True)
+        was_dragged = self.is_dragged
         self.is_clicked_down[button - 1] = True
-        self.is_dragged = any(
-            i == j and i == True for i, j in zip(self.is_clicked_down, self.click_mask)
-        )
-        if self.is_dragged:
+        self.is_dragged = any(pressed and allowed for pressed, allowed in
+                              zip(self.is_clicked_down, self.click_mask))
+        if self.is_dragged and not was_dragged:
+            self.drag_start = None
+            self.offset = None
+        if self.is_dragged and event is not None:
             event.consumed = True
         self.do_on_click_down(button, event)
 
     def on_click_up(self, button, event=None):
         if button < 1 or button > 5:
             return
+        if event is None or event.type == pygame.MOUSEBUTTONUP:
+            self._track_mouse_button(button, False)
+        was_dragged = self.is_dragged
         self.is_clicked_down[button - 1] = False
-        self.is_dragged = any(
-            i == j and i == True for i, j in zip(self.is_clicked_down, self.click_mask)
-        )
+        self.is_dragged = any(pressed and allowed for pressed, allowed in
+                              zip(self.is_clicked_down, self.click_mask))
+        if was_dragged and not self.is_dragged:
+            self.drag_start = None
+            self.offset = None
         self.do_on_click_up(button, event)
 
     def update(self, dt: float):
         super().update(dt)
-        self.is_dragged_outside = any(
-            i == j and i == True
-            for i, j in zip(pygame.mouse.get_pressed(5), self.click_mask)
-        )
-
-        if self.is_dragged and self.is_dragged_outside:
-            x, y = self.get_camera().get_mouse_pos()
-            if self.drag_start == None:
-                self.offset = x - self.rect.x, y - self.rect.y
-                self.drag_start = x, y
-            else:
-                self.do_on_drag(self.drag_start, (x, y))
-
-        else:
-            self.drag_start = None
-            self.offset = None
-            self.is_clicked_down = [False] * 5
-
+        self.is_dragged_outside = any(pressed and allowed for pressed, allowed in
+                                      zip(self.is_clicked_down, self.click_mask))
         if not self.is_dragged_outside:
             self.is_dragged = False
+            self.drag_start = None
+            self.offset = None
+            return
+        if not self.is_dragged:
+            return
+        x, y = self.get_camera().get_mouse_pos()
+        if self.drag_start is None:
+            self.offset = x - self.rect.x, y - self.rect.y
+            self.drag_start = x, y
+        else:
+            self.do_on_drag(self.drag_start, (x, y))

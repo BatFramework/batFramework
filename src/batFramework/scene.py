@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Callable, Self
 
 from batFramework.drawable import Drawable
 from batFramework.entity import Entity
@@ -281,7 +281,13 @@ class Scene:
         if event.type == pygame.VIDEORESIZE and not pygame.SCALED & bf.const.FLAGS:
             for camera in self.get_cameras():
                 if camera.fullscreen:
-                    camera.set_size(bf.const.RESOLUTION)
+                    # World cameras keep their center when their viewport
+                    # changes. The HUD is screen-space, so its top-left must
+                    # remain aligned with the GUI root instead.
+                    hud_position = camera.get_position() if camera is self.hud_camera else None
+                    camera.set_size((event.w, event.h))
+                    if hud_position is not None:
+                        camera.set_position(*hud_position)
 
         for e in reversed(self.entities):
             e.process_event(event)
@@ -443,3 +449,21 @@ class Scene:
 
     def do_on_exit_early(self) -> None:
         pass
+
+    def every(self, duration : float = 1, callback : Callable[[None],Any]=None)->bf.SceneTimer:
+        """Schedule a callback to run repeatedly while this scene is active.
+
+        Args:
+            duration: The time interval in seconds between callback invocations.
+            callback: The function to call on each interval.
+        """
+        return bf.SceneTimer(duration,callback,-1,self.name).start()
+
+    def after(self, duration : float = 1, callback : Callable[[None],Any]= None)->bf.SceneTimer:
+        """Schedule a callback to run once after a delay.
+
+        Args:
+            duration: The delay in seconds before invoking the callback.
+            callback: The function to call once after the delay.
+        """
+        return bf.SceneTimer(duration,callback,0,self.name).start()

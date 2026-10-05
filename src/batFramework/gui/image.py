@@ -45,6 +45,7 @@ class Image(Shape):
             return self
         self.original_surface = tmp
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def from_surface(self, surface: pygame.Surface) -> Self:
@@ -52,4 +53,5 @@ class Image(Shape):
             return self
         self.original_surface = surface
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self

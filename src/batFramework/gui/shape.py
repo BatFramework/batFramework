@@ -53,7 +53,9 @@ class Shape(Widget):
     def set_relief(self, relief: int) -> Self:
         if relief < 0:
             return self
-        self.dirty_surface |= self.relief != relief
+        if self.relief != relief:
+            self.dirty_surface = True
+            self.mark_shape_dirty()
         self.relief = relief
         return self
 

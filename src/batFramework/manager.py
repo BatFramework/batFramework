@@ -22,7 +22,7 @@ class Manager(bf.SceneManager):
         self.is_async_running: bool = False
         self.running = False
         pygame.mouse.set_cursor(bf.const.DEFAULT_CURSOR)
-        bf.ResourceManager().set_sharedVar("clock", self.clock)
+        self.context.clock = self.clock
         sm = bf.gui.StyleManager()
         sm.init()
 
@@ -90,6 +90,7 @@ class Manager(bf.SceneManager):
         if event.type == pygame.VIDEORESIZE and not (bf.const.FLAGS & pygame.SCALED):
             logger.debug(f"Window resized to {event.w}x{event.h}")
             bf.const.set_resolution((event.w, event.h))
+            self.screen = bf.const.SCREEN
 
         if event.consumed:
             return

@@ -81,6 +81,7 @@ class Toggle(Button):
         if spacing != self.spacing:
             self.spacing = spacing
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     def set_gap(self, value: int | float) -> Self:
@@ -88,6 +89,7 @@ class Toggle(Button):
         if value != self.gap:
             self.gap = value
             self.dirty_surface = True
+            self.mark_shape_dirty()
         return self
 
     # ------------------------------------------------------------

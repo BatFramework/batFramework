@@ -89,7 +89,8 @@ def init(
     logger.info(f"BatFramework version: {__version__}")
     pygame.display.set_caption(window_caption)
     init_screen(resolution, flags, vsync)
-    pygame.mixer.init()
+    if pygame.mixer.get_init() is None:
+        pygame.mixer.init()
 
     ResourceManager().set_resource_path(
         resource_path if resource_path is not None else "."

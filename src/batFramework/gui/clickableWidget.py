@@ -34,6 +34,7 @@ class ClickableWidget(InteractiveShape):
             return self
         self.unpressed_relief = relief
         self.dirty_surface = True
+        self.mark_shape_dirty()
         if not self.is_pressed:
             self.set_relief(relief)
         return self
@@ -91,6 +92,10 @@ class ClickableWidget(InteractiveShape):
         self.is_clicked_down[button - 1] = True
         if button != 1:
             return
+        # Reconciled presses belong to a gesture already in progress and must
+        # not start a new button activation.
+        if getattr(event, "synthetic_capture", False):
+            return
         if not self.click_pass_through:
             event.consumed = True
         if self.is_enabled and self.ask_focus():
@@ -114,7 +119,8 @@ class ClickableWidget(InteractiveShape):
             if self.click_up_sound and not self._suppress_sounds:
                 bf.AudioManager().play_sound(self.click_up_sound)
             self.set_relief(self.unpressed_relief)
-            self.click()
+            if not getattr(event, "synthetic_capture", False):
+                self.click()
             self.do_on_click_up(button, event)
 
     def on_enter(self) -> None:

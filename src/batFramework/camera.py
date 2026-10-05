@@ -211,9 +211,10 @@ class Camera:
     def set_size(self, size: tuple[int, int] | None = None) -> Self:
         if size is None:
             size = bf.const.RESOLUTION
-        center = self.rect.center
+        # rect describes the camera's screen viewport. Resizing must keep that
+        # viewport anchored; preserving its center makes a fullscreen camera
+        # drift into negative screen coordinates as the window grows.
         self.rect.size = size
-        self.rect.center = center
         self._half_w = size[0] / 2
         self._half_h = size[1] / 2
         self.transform_target_surface = pygame.Surface(self.rect.size, self.flags)

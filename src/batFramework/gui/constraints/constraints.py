@@ -2,13 +2,30 @@ from abc import ABC, abstractmethod
 import batFramework as bf
 import pygame
 from math import isfinite
+from weakref import WeakSet
 
 class Constraint:
     def __init__(self, name: str | None = None, priority: int = 0):
+        self._owners = WeakSet()
         self.priority = priority
         self.name = name if name is not None else type(self).__name__
         self.affects_size = False
         self.affects_position = False
+
+    def __setattr__(self, name, value):
+        # Policies are often animated by assigning directly to ``value``.
+        # Keep those changes observable without requiring a widget-specific API.
+        previous = self.__dict__.get(name, object())
+        object.__setattr__(self, name, value)
+        if not name.startswith("_") and previous != value:
+            for owner in tuple(self.__dict__.get("_owners", ())):
+                owner.mark_shape_dirty()
+
+    def add_owner(self, widget):
+        self._owners.add(widget)
+
+    def remove_owner(self, widget):
+        self._owners.discard(widget)
 
     def constrain_size(self, child_widget, preferred, available):
         """Return a preference without changing widgets or constraint state.

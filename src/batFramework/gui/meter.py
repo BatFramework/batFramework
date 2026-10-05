@@ -80,6 +80,10 @@ class Meter(Shape):
         """Setter used by the easer — marks dirty so paint() is called."""
         self.visual_ratio = value
         self.dirty_surface = True
+        self.mark_arrange_dirty()
+
+    def get_arrangement_state(self):
+        return self.visual_ratio
 
     # ==============================================================
     # Value management
@@ -105,6 +109,7 @@ class Meter(Shape):
             self.max_value = range_max
             self.visual_ratio = self.get_ratio()  # recompute with new range
             self.dirty_surface = True
+            self.mark_arrange_dirty()
         return self
 
     def set_value(self, value: float) -> Self:
@@ -134,6 +139,7 @@ class Meter(Shape):
         else:
             self.visual_ratio = target
             self.dirty_surface = True
+            self.mark_arrange_dirty()
 
     def set_synced_var(self, synced_var: SyncedVar) -> Self:
         if self.synced_var:
@@ -191,6 +197,7 @@ class BarMeter(Meter):
             if self.direction not in [bf.direction.UP, bf.direction.DOWN]:
                 self.set_direction(bf.direction.UP)
         self.dirty_surface = True
+        self.mark_shape_dirty()
         return self
 
     def arrange_override(self):

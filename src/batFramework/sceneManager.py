@@ -12,7 +12,9 @@ def swap(lst, index1, index2):
 class SceneManager:
     def __init__(self) -> None:
         self.scenes: list[bf.Scene] = []
-        self.shared_events = {pygame.WINDOWRESIZED}
+        # Every scene owns cameras that must follow a physical window resize,
+        # including scenes underneath the currently active one.
+        self.shared_events = {pygame.VIDEORESIZE, pygame.WINDOWRESIZED}
         self.current_transition: tuple[str, bf.transition.Transition, int] | None = None
         bf.Context.debug_mode = bf.debugMode.HIDDEN
 

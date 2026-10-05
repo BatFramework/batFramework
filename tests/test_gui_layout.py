@@ -58,6 +58,159 @@ class LayoutTests(unittest.TestCase):
         self.root.update_tree()
         self.assertEqual(top.rect.size, (110, 70))
 
+    def test_dirty_shape_reuses_measurement_until_content_or_offer_changes(self):
+        class CountingLabel(bf.gui.Label):
+            def __init__(self, text):
+                super().__init__(text)
+                self.measure_calls = 0
+
+            def measure_override(self, available_size):
+                self.measure_calls += 1
+                return super().measure_override(available_size)
+
+        label = CountingLabel("Short")
+        panel = self.container(bf.gui.Column(), label)
+        self.update(panel)
+        first = label.measure_calls
+        self.root.update_tree()
+        self.assertEqual(label.measure_calls, first)
+        label.set_color("red")
+        self.root.update_tree()
+        self.assertEqual(label.measure_calls, first)
+        label.set_text("A substantially longer label")
+        self.assertTrue(label.dirty_shape)
+        self.assertTrue(panel.dirty_shape)
+        self.assertTrue(self.root.dirty_shape)
+        self.root.update_tree()
+        self.assertGreater(label.measure_calls, first)
+        self.assertFalse(label.dirty_shape)
+        calls = label.measure_calls
+        label.measure((20, 20))
+        self.assertGreater(label.measure_calls, calls)
+
+    def test_mutated_size_constraint_invalidates_shared_owners(self):
+        width = bf.gui.Width(40)
+        first = self.box(10, 10).add_constraints(width)
+        second = self.box(10, 10).add_constraints(width)
+        panel = self.container(bf.gui.Row(), first, second)
+        self.update(panel)
+        self.assertEqual((first.rect.w, second.rect.w), (40, 40))
+        width.value = 75  # PropertyEaser uses direct attribute assignment.
+        self.assertTrue(first.dirty_shape)
+        self.assertTrue(second.dirty_shape)
+        self.assertTrue(panel.dirty_shape)
+        self.root.update_tree()
+        self.assertEqual((first.rect.w, second.rect.w), (75, 75))
+
+    def test_padding_and_relief_invalidate_parent_measurement(self):
+        child = bf.gui.Label("Padding")
+        panel = self.container(bf.gui.Column(), child)
+        self.update(panel)
+        before = panel.rect.size
+        child.set_padding(3)
+        panel.set_relief(4)
+        self.assertTrue(panel.dirty_shape)
+        self.root.update_tree()
+        self.assertEqual(panel.rect.size, (before[0] + 6, before[1] + 10))
+
+    def test_arrangement_is_cached_until_geometry_changes(self):
+        class CountingShape(bf.gui.Shape):
+            def __init__(self):
+                super().__init__((20, 10))
+                self.arrange_calls = 0
+
+            def arrange_override(self):
+                self.arrange_calls += 1
+                super().arrange_override()
+
+        child = CountingShape()
+        panel = self.container(bf.gui.Column(), child)
+        self.update(panel)
+        self.assertEqual(child.arrange_calls, 1)
+        self.root.update_tree()
+        self.assertEqual(child.arrange_calls, 1)
+        child.set_color("red")
+        self.root.update_tree()
+        self.assertEqual(child.arrange_calls, 1)
+        child.set_size((35, 10))
+        self.root.update_tree()
+        self.assertEqual(child.arrange_calls, 2)
+        self.assertEqual(child.rect.w, 35)
+
+    def test_scroll_rearranges_children_without_remeasuring(self):
+        child = self.box(40, 300)
+        panel = bf.gui.ScrollingContainer(bf.gui.Column(), child)
+        panel.set_size((80, 80)).set_autoresize(False)
+        self.update(panel)
+        self.root.update_tree()  # Consume first-pass scrollbar visibility changes.
+        before = child.rect.y
+        self.assertFalse(panel.dirty_shape)
+        panel.set_scroll((0, 35))
+        self.assertFalse(panel.dirty_shape)
+        self.assertTrue(panel.dirty_arrange)
+        self.root.update_tree()
+        self.assertEqual(child.rect.y, before - 35)
+
+    def test_position_constraint_mutation_rearranges_same_allocation(self):
+        margin = bf.gui.MarginRight(3)
+        child = self.box(20, 10).add_constraints(margin)
+        panel = self.container(bf.gui.FreeLayout(), child).set_size((100, 50)).set_autoresize(False)
+        self.update(panel)
+        self.assertEqual(child.rect.right, panel.get_inner_rect().right - 3)
+        margin.right = 12
+        self.root.update_tree()
+        self.assertEqual(child.rect.right, panel.get_inner_rect().right - 12)
+
+    def test_meter_value_rearranges_fill_with_same_outer_rect(self):
+        meter = bf.gui.BarMeter(0, 1)
+        meter.set_size((100, 12)).set_autoresize(False)
+        self.update(meter)
+        before = meter.content.rect.w
+        meter.set_value(0.75)
+        self.root.update_tree()
+        self.assertGreater(meter.content.rect.w, before)
+
+    def test_layout_reuses_sibling_slots_for_local_arrangement_change(self):
+        class CountingColumn(bf.gui.Column):
+            def __init__(self):
+                super().__init__()
+                self.arrangement_sizes = 0
+
+            def _sizes(self, available, measure=False):
+                if not measure:
+                    self.arrangement_sizes += 1
+                return super()._sizes(available, measure)
+
+        meter = bf.gui.BarMeter(0, 1).set_size((100, 12)).set_autoresize(False)
+        sibling = self.box(20, 10)
+        layout = CountingColumn()
+        panel = self.container(layout, meter, sibling)
+        self.update(panel)
+        before = (layout.arrangement_sizes, sibling.rect.copy(), meter.content.rect.w)
+        meter.set_value(0.6)
+        self.root.update_tree()
+        self.assertEqual(layout.arrangement_sizes, before[0])
+        self.assertEqual(sibling.rect, before[1])
+        self.assertGreater(meter.content.rect.w, before[2])
+
+    def test_free_layout_preserves_explicit_child_move(self):
+        child = self.box(20, 10)
+        panel = self.container(bf.gui.FreeLayout(), child)
+        self.update(panel)
+        child.set_position(35, 24)
+        self.root.update_tree()
+        self.assertEqual(child.rect.topleft, (35, 24))
+
+    def test_layout_gap_change_invalidates_cached_slots(self):
+        layout = bf.gui.Column(2)
+        first, second = self.box(20, 10), self.box(20, 10)
+        panel = self.container(layout, first, second)
+        self.update(panel)
+        top = second.rect.top
+        layout.gap = 9
+        self.root.update_tree()
+        self.assertEqual(second.rect.top, top + 7)
+
     def test_parent_assignment_is_authoritative(self):
         label = bf.gui.Label("long text").set_min_size((100, 100))
         label.measure((20, 10))

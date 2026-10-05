@@ -59,6 +59,7 @@ class CollapseContainer(Shape, InteractiveWidget):
             self.container.hide()
         
         self.dirty_surface = True
+        self.mark_shape_dirty()
 
     def allow_focus_to_self(self):
         return super().allow_focus_to_self() and self.toggle.allow_focus_to_self()

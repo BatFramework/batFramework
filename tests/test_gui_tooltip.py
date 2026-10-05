@@ -137,9 +137,9 @@ class TooltipTests(unittest.TestCase):
             setattr(widget, method, tracked)
         self.root.update_tree()
         self.assertEqual([(name, method) for name, method, _ in calls],
-                         [("normal", "arrange"), ("tooltip", "measure"),
-                          ("tooltip", "arrange"), ("tooltip", "paint")])
-        self.assertTrue(all(value == text for _, _, value in calls[1:]))
+                         [("tooltip", "measure"), ("tooltip", "arrange"),
+                          ("tooltip", "paint")])
+        self.assertTrue(all(value == text for _, _, value in calls))
         self.assertGreater(self.tip.rect.h, self.tip.font.get_height() + 4)
         self.assertLessEqual(self.tip.rect.w, 320)
         self.assertEqual(self.tip.surface.get_size(), tuple(map(int, self.tip.rect.size)))
